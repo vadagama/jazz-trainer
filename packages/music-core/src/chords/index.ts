@@ -1,6 +1,8 @@
-/**
- * Chord model + chord-symbol parser/serializer.
- * Implemented in F1 (see docs/06-dsl.md §2–4).
- */
-
-export {};
+export { parseChord } from './parseChord.js';
+export { serializeChord } from './serializeChord.js';
+export {
+  QUALITY_MATCHERS,
+  ALTERATION_TOKENS,
+  EXTENSION_TOKENS,
+  normalizeBody,
+} from './data.js';
