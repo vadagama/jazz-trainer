@@ -38,3 +38,8 @@ npm-debug.log*
 
 # Local working files (plans, scratch)
 tmp/
+
+# Playwright MCP artifacts and dev screenshots
+.playwright-mcp/
+*.png
+*.jpeg
