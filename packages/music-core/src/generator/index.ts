@@ -1,6 +1,3 @@
-/**
- * Data-driven harmony generator: generate() / listPatterns().
- * Implemented in F3 (see docs/features/03-harmony-generator.md).
- */
-
-export {};
+export { generate, listPatterns } from './generate.js';
+export { keyToPitchClass, spellPitchClass, spellingTable } from './transpose.js';
+export { PATTERNS, PATTERNS_BY_ID, type PatternDef, type PatternStep } from './patterns.js';
