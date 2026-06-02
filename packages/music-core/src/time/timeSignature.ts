@@ -1,0 +1,43 @@
+import type { TimeSignatureString } from '@jazz/shared';
+
+/** Pulses per quarter note — internal tick resolution (docs/02-audio-engine.md §3). */
+export const PPQ = 480;
+
+/** A bar's time signature. `beatUnit` is the note value of one beat (4 = quarter, 8 = eighth). */
+export interface TimeSignature {
+  beatsPerBar: number;
+  beatUnit: 4 | 8;
+}
+
+/** Parse a `"n/m"` string (e.g. `"4/4"`, `"6/8"`) into a {@link TimeSignature}. */
+export function parseTimeSignature(str: TimeSignatureString | string): TimeSignature {
+  const [beatsRaw, unitRaw] = str.split('/');
+  const beatsPerBar = Number(beatsRaw);
+  const beatUnit = Number(unitRaw);
+  if (!Number.isInteger(beatsPerBar) || beatsPerBar <= 0) {
+    throw new Error(`Invalid time signature: "${str}"`);
+  }
+  if (beatUnit !== 4 && beatUnit !== 8) {
+    throw new Error(`Unsupported beat unit in "${str}" (only /4 and /8 are supported)`);
+  }
+  return { beatsPerBar, beatUnit };
+}
+
+/** Ticks per beat: a quarter-note beat is PPQ, an eighth-note beat is PPQ/2. */
+export function ticksPerBeat(sig: TimeSignature): number {
+  return sig.beatUnit === 4 ? PPQ : PPQ / 2;
+}
+
+/** Ticks in a full bar. */
+export function ticksPerBar(sig: TimeSignature): number {
+  return sig.beatsPerBar * ticksPerBeat(sig);
+}
+
+/**
+ * Default strong (accented) beats. Compound 6/8 is grouped 3+3, so beats 0 and 3
+ * are strong; everything else accents the downbeat only.
+ */
+export function defaultStrongBeats(sig: TimeSignature): number[] {
+  if (sig.beatUnit === 8 && sig.beatsPerBar === 6) return [0, 3];
+  return [0];
+}

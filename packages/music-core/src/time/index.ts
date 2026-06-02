@@ -1,6 +1,15 @@
-/**
- * Musical time model: TimeSignature, MusicalPosition, PPQ, conversions.
- * Implemented in F2 (see docs/02-audio-engine.md §3).
- */
-
-export {};
+export {
+  PPQ,
+  parseTimeSignature,
+  ticksPerBeat,
+  ticksPerBar,
+  defaultStrongBeats,
+  type TimeSignature,
+} from './timeSignature.js';
+export {
+  positionToTicks,
+  ticksToPosition,
+  ticksToSeconds,
+  secondsToTicks,
+  type MusicalPosition,
+} from './position.js';
