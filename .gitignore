@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build output
+dist/
+build/
+*.tsbuildinfo
+
+# Test / coverage
+coverage/
+.vitest/
+playwright-report/
+test-results/
+.playwright/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Database (SQLite)
+*.sqlite
+*.sqlite3
+*.db
+data/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Local working files (plans, scratch)
+tmp/
