@@ -1,0 +1,75 @@
+@import 'tailwindcss';
+
+/* Class-based dark mode (we ship dark-first: <html class="dark">). */
+@custom-variant dark (&:is(.dark *));
+
+/* Map design tokens to Tailwind theme so utilities like bg-background work. */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+}
+
+/* Light palette (fallback; app defaults to dark). */
+:root {
+  --radius: 0.625rem;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.55 0.18 265);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --border: oklch(0.922 0 0);
+  --ring: oklch(0.55 0.18 265);
+}
+
+/* Dark palette (default). */
+.dark {
+  --background: oklch(0.16 0.01 265);
+  --foreground: oklch(0.95 0 0);
+  --card: oklch(0.2 0.012 265);
+  --card-foreground: oklch(0.95 0 0);
+  --primary: oklch(0.68 0.17 265);
+  --primary-foreground: oklch(0.16 0.01 265);
+  --secondary: oklch(0.27 0.012 265);
+  --secondary-foreground: oklch(0.95 0 0);
+  --muted: oklch(0.27 0.012 265);
+  --muted-foreground: oklch(0.7 0.01 265);
+  --accent: oklch(0.3 0.02 265);
+  --accent-foreground: oklch(0.95 0 0);
+  --border: oklch(0.3 0.012 265);
+  --ring: oklch(0.68 0.17 265);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family:
+      ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "jsx": "react-jsx",
+    "types": ["vite/client"],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@jazz/shared": ["../../packages/shared/src/index.ts"],
+      "@jazz/music-core": ["../../packages/music-core/src/index.ts"]
+    },
+    "noEmit": true
+  },
+  "include": ["src", "e2e", "vite.config.ts"]
+}
