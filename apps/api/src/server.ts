@@ -19,7 +19,7 @@ export interface BuildServerOptions {
 }
 
 const CONFIG_DEFAULTS: ApiConfig = {
-  port: 3000,
+  port: 3999,
   webOrigin: 'http://localhost:5173',
   authDevMode: false,
   databaseUrl: './data/jazz-trainer.sqlite',
@@ -27,7 +27,7 @@ const CONFIG_DEFAULTS: ApiConfig = {
   sessionTtlMs: 30 * 24 * 60 * 60 * 1000,
   googleClientId: null,
   googleClientSecret: null,
-  googleCallbackUrl: 'http://localhost:3000/api/auth/google/callback',
+  googleCallbackUrl: 'http://localhost:3999/api/auth/google/callback',
 };
 
 /**

@@ -15,7 +15,7 @@ const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): ApiConfig {
   return {
-    port: Number(env.API_PORT ?? 3000),
+    port: Number(env.API_PORT ?? 3999),
     webOrigin: env.WEB_ORIGIN ?? 'http://localhost:5173',
     authDevMode: env.AUTH_DEV_MODE === 'true',
     databaseUrl: env.DATABASE_URL ?? './data/jazz-trainer.sqlite',
@@ -24,6 +24,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ApiConfig {
     googleClientId: env.GOOGLE_CLIENT_ID ?? null,
     googleClientSecret: env.GOOGLE_CLIENT_SECRET ?? null,
     googleCallbackUrl:
-      env.GOOGLE_CALLBACK_URL ?? 'http://localhost:3000/api/auth/google/callback',
+      env.GOOGLE_CALLBACK_URL ?? 'http://localhost:3999/api/auth/google/callback',
   };
 }

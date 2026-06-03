@@ -48,7 +48,7 @@ export function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
 
-      {/* Editor has its own full-screen layout (no AppShell) */}
+      {/* Editor has its own full-screen layout (outside AppShell) */}
       <Route
         path="/grids/:id"
         element={

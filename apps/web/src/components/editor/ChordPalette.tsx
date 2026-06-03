@@ -4,7 +4,6 @@ import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 
 const ROOT_NOTES = ['C', 'C#', 'D', 'Db', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'] as const;
-
 type RootNote = (typeof ROOT_NOTES)[number];
 
 const CHORD_TYPES = {
@@ -43,10 +42,11 @@ const CHORD_TYPES = {
 type Category = keyof typeof CHORD_TYPES;
 
 interface ChordPaletteProps {
+  selectedBarId: string | null;
   onAddChord: (symbol: string) => void;
 }
 
-export function ChordPalette({ onAddChord }: ChordPaletteProps) {
+export function ChordPalette({ selectedBarId, onAddChord }: ChordPaletteProps) {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState<Category>('Jazz');
   const [root, setRoot] = useState<RootNote>('C');
@@ -143,13 +143,24 @@ export function ChordPalette({ onAddChord }: ChordPaletteProps) {
 
       {/* Chord list */}
       <div className="flex-1 overflow-y-auto px-2 py-2">
+        {!selectedBarId && (
+          <p className="py-1.5 text-[10px] text-muted-foreground">
+            Выберите такт, чтобы добавить аккорд
+          </p>
+        )}
         {filtered.map((chord) => {
           const full = `${root}${chord.symbol}`;
           return (
             <button
               key={chord.symbol}
               onClick={() => onAddChord(full)}
-              className="flex w-full items-center justify-between rounded px-2 py-2 text-left transition-colors hover:bg-accent hover:text-accent-foreground"
+              disabled={!selectedBarId}
+              className={cn(
+                'flex w-full items-center justify-between rounded px-2 py-2 text-left transition-colors',
+                selectedBarId
+                  ? 'cursor-pointer hover:bg-accent hover:text-accent-foreground'
+                  : 'cursor-not-allowed opacity-50',
+              )}
             >
               <span className="text-sm font-medium">{full}</span>
               <span className="text-xs text-muted-foreground">{chord.label}</span>

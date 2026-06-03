@@ -31,11 +31,11 @@ docs/             проектные документы (Phase 0)
 ```bash
 npm install          # установить зависимости всех workspaces
 cp .env.example .env # настроить окружение (значения по умолчанию рабочие для dev)
-npm run dev          # поднять web (Vite :5173) и api (Fastify :3000) параллельно
+npm run dev          # поднять web (Vite :5173) и api (Fastify :3999) параллельно
 ```
 
 - Web: http://localhost:5173
-- API health: http://localhost:3000/api/health → `{ "status": "ok" }`
+- API health: http://localhost:3999/api/health → `{ "status": "ok" }`
 
 ## Скрипты
 
