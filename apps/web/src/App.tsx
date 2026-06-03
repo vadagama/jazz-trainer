@@ -29,14 +29,6 @@ export function App() {
           }
         />
         <Route
-          path="/grids/:id"
-          element={
-            <ProtectedRoute>
-              <EditorPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
           path="/settings"
           element={
             <ProtectedRoute>
@@ -55,6 +47,16 @@ export function App() {
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
+
+      {/* Editor has its own full-screen layout (no AppShell) */}
+      <Route
+        path="/grids/:id"
+        element={
+          <ProtectedRoute>
+            <EditorPage />
+          </ProtectedRoute>
+        }
+      />
     </Routes>
   );
 }
