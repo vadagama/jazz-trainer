@@ -1,9 +1,10 @@
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { UserSettingsDTOSchema, type UserSettingsDTO, CLICK_SOUNDS } from '@jazz/shared';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface Props {
   defaultValues: UserSettingsDTO;
@@ -56,28 +57,42 @@ export function SettingsForm({ defaultValues, onSave, isSaving }: Props) {
 
       <div className="space-y-1">
         <Label htmlFor="clickStrong">Сильная доля</Label>
-        <select
-          id="clickStrong"
-          {...form.register('clickStrong')}
-          className="h-9 rounded-md border border-border bg-transparent px-3 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-        >
-          {CLICK_SOUNDS.map((s) => (
-            <option key={s} value={s}>{CLICK_LABELS[s]}</option>
-          ))}
-        </select>
+        <Controller
+          control={form.control}
+          name="clickStrong"
+          render={({ field }) => (
+            <Select value={field.value} onValueChange={field.onChange}>
+              <SelectTrigger id="clickStrong" className="w-40">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {CLICK_SOUNDS.map((s) => (
+                  <SelectItem key={s} value={s}>{CLICK_LABELS[s]}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        />
       </div>
 
       <div className="space-y-1">
         <Label htmlFor="clickWeak">Слабая доля</Label>
-        <select
-          id="clickWeak"
-          {...form.register('clickWeak')}
-          className="h-9 rounded-md border border-border bg-transparent px-3 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-        >
-          {CLICK_SOUNDS.map((s) => (
-            <option key={s} value={s}>{CLICK_LABELS[s]}</option>
-          ))}
-        </select>
+        <Controller
+          control={form.control}
+          name="clickWeak"
+          render={({ field }) => (
+            <Select value={field.value} onValueChange={field.onChange}>
+              <SelectTrigger id="clickWeak" className="w-40">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {CLICK_SOUNDS.map((s) => (
+                  <SelectItem key={s} value={s}>{CLICK_LABELS[s]}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        />
       </div>
 
       <div className="space-y-1">

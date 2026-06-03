@@ -1,10 +1,21 @@
 import { z } from 'zod';
+import { TIME_SIGNATURES } from './constants.js';
 
 /**
  * Chord + harmony-grid contracts shared by music-core, api and web.
  * Zod schemas are the single source of truth; TS types are inferred from them.
  * See docs/06-dsl.md §2 and docs/03-data-model.md §3.
  */
+
+export const TimeSignatureSchema = z.enum(TIME_SIGNATURES);
+
+// ── Repeat end marker (bar-level) ──────────────────────────────────────────
+
+export const RepeatEndSchema = z.object({
+  /** null = infinite loop; positive integer = N repetitions */
+  count: z.number().int().positive().nullable(),
+});
+export type RepeatEnd = z.infer<typeof RepeatEndSchema>;
 
 // ── Chord primitives ───────────────────────────────────────────
 
@@ -74,13 +85,28 @@ export const BarSchema = z.object({
   /** stable id for DnD/selection */
   id: z.string().min(1),
   chords: z.array(ChordSlotSchema),
+  /** when set, renders a repeat barline (||) at the right edge of this bar */
+  repeatEnd: RepeatEndSchema.optional(),
 });
 export type Bar = z.infer<typeof BarSchema>;
+
+// ── Section ────────────────────────────────────────────────────────────────
+
+export const SectionSchema = z.object({
+  id: z.string().min(1),
+  name: z.string(),
+  timeSignature: TimeSignatureSchema,
+  bars: z.array(BarSchema),
+});
+export type Section = z.infer<typeof SectionSchema>;
 
 export const GridContentSchema = z.object({
   /** content format version (for JSON migrations) */
   version: z.literal(1),
+  /** legacy flat bar list — kept for backward-compat with existing API barsCount */
   bars: z.array(BarSchema),
+  /** when present, sections are the primary structure; bars is a derived flat view */
+  sections: z.array(SectionSchema).optional(),
 });
 export type GridContent = z.infer<typeof GridContentSchema>;
 

@@ -1,15 +1,24 @@
-import { useState, useCallback, useEffect } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 
 export type Theme = 'dark' | 'light';
 
-export function useTheme() {
-  const [theme, setTheme] = useState<Theme>(() => {
-    try {
-      const saved = localStorage.getItem('jazz-theme') as Theme | null;
-      if (saved === 'light' || saved === 'dark') return saved;
-    } catch {}
-    return document.documentElement.classList.contains('dark') ? 'dark' : 'light';
-  });
+interface ThemeContextValue {
+  theme: Theme;
+  toggle: () => void;
+}
+
+export const ThemeContext = createContext<ThemeContextValue | null>(null);
+
+function getInitialTheme(): Theme {
+  try {
+    const saved = localStorage.getItem('jazz-theme') as Theme | null;
+    if (saved === 'light' || saved === 'dark') return saved;
+  } catch {}
+  return document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+}
+
+export function useThemeState(): ThemeContextValue {
+  const [theme, setTheme] = useState<Theme>(getInitialTheme);
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark');
@@ -26,4 +35,10 @@ export function useTheme() {
   }, []);
 
   return { theme, toggle };
+}
+
+export function useTheme(): ThemeContextValue {
+  const ctx = useContext(ThemeContext);
+  if (!ctx) throw new Error('useTheme must be used inside ThemeProvider');
+  return ctx;
 }

@@ -1,17 +1,71 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Loader2, AlertCircle } from 'lucide-react';
-import type { UpdateGridInput } from '@jazz/shared';
+import { Loader2, AlertCircle, Pencil } from 'lucide-react';
+import type { TimeSignatureString, UpdateGridInput, Key } from '@jazz/shared';
 import { useGrid, useUpdateGrid } from '@/queries/useGrid';
 import { useEditorStore } from '@/stores/useEditorStore';
-import { useTheme } from '@/hooks/useTheme';
 import { EditorTopBar } from '@/components/editor/EditorTopBar';
 import { HarmonyGrid } from '@/components/editor/HarmonyGrid';
-import { BarEditor } from '@/components/editor/BarEditor';
 import { ChordPalette } from '@/components/editor/ChordPalette';
+import { PlayerToolbar } from '@/components/editor/PlayerToolbar';
+import type { PlaybackState } from '@/components/editor/PlayerToolbar';
 import { DslModal } from '@/components/editor/DslModal';
 import { GeneratorModal } from '@/components/editor/GeneratorModal';
 import { Button } from '@/components/ui/button';
+
+// ── Inline composition title editor ──────────────────────────────────────────
+
+function CompositionTitle({
+  name,
+  onSave,
+}: {
+  name: string;
+  onSave: (name: string) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(name);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (editing) inputRef.current?.select();
+  }, [editing]);
+
+  function commit() {
+    const trimmed = draft.trim();
+    if (trimmed && trimmed !== name) onSave(trimmed);
+    else setDraft(name);
+    setEditing(false);
+  }
+
+  if (editing) {
+    return (
+      <input
+        ref={inputRef}
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') commit();
+          if (e.key === 'Escape') { setDraft(name); setEditing(false); }
+        }}
+        className="w-full rounded border border-primary bg-background px-2 py-0.5 text-xl font-bold outline-none"
+      />
+    );
+  }
+
+  return (
+    <div
+      className="group flex cursor-default items-center gap-2"
+      onDoubleClick={() => { setDraft(name); setEditing(true); }}
+      title="Двойной клик для переименования"
+    >
+      <h1 className="text-xl font-bold text-foreground">{name}</h1>
+      <Pencil className="size-3.5 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+    </div>
+  );
+}
+
+// ── EditorPage ────────────────────────────────────────────────────────────────
 
 export function EditorPage() {
   const { id } = useParams<{ id: string }>();
@@ -19,8 +73,6 @@ export function EditorPage() {
 
   const { data: grid, isLoading, isError } = useGrid(gridId);
   const updateMutation = useUpdateGrid(gridId);
-  const { theme, toggle: toggleTheme } = useTheme();
-
   const {
     localContent,
     selectedBarId,
@@ -31,21 +83,28 @@ export function EditorPage() {
     selectBar,
     addBar,
     removeBar,
+    addBarToSection,
     addChordToBar,
-    removeChordFromBar,
-    updateChordInBar,
-    updateChordBeats,
+    setBarRepeatEnd,
+    addSection,
+    renameSection,
+    setSectionTimeSignature,
   } = useEditorStore();
 
   const [dslOpen, setDslOpen] = useState(false);
   const [generatorOpen, setGeneratorOpen] = useState(false);
-  const [rightPanelOpen, setRightPanelOpen] = useState(true);
+  const [playbackState, setPlaybackState] = useState<PlaybackState>('stopped');
+  const [playerKey, setPlayerKey] = useState<Key>(grid?.key ?? 'C');
 
   useEffect(() => {
     if (grid?.content) {
-      setContent(grid.content);
+      setContent(grid.content, grid.timeSignature);
     }
   }, [grid?.content, setContent]);
+
+  useEffect(() => {
+    if (grid?.key) setPlayerKey(grid.key);
+  }, [grid?.key]);
 
   if (isLoading) {
     return (
@@ -69,25 +128,23 @@ export function EditorPage() {
   }
 
   const content = localContent ?? grid.content;
-
-  const selectedBar = selectedBarId
-    ? content.bars.find((b) => b.id === selectedBarId) ?? null
-    : null;
-
-  const selectedBarIndex = selectedBarId
-    ? content.bars.findIndex((b) => b.id === selectedBarId)
-    : -1;
+  const sections = content.sections ?? [];
+  const defaultTimeSignature: TimeSignatureString =
+    sections[0]?.timeSignature ?? grid.timeSignature;
 
   async function handleSave(meta: UpdateGridInput) {
     await updateMutation.mutateAsync({ ...meta, content });
     markClean();
   }
 
+  async function handleSaveTitle(name: string) {
+    await updateMutation.mutateAsync({ name });
+  }
+
   function handleRemoveLastBar() {
-    const bars = content.bars;
-    if (bars.length === 0) return;
-    const lastBar = bars[bars.length - 1]!;
-    removeBar(lastBar.id);
+    const allBars = content.bars;
+    if (allBars.length === 0) return;
+    removeBar(allBars[allBars.length - 1]!.id);
   }
 
   function handleAddChordFromPalette(symbol: string) {
@@ -101,14 +158,9 @@ export function EditorPage() {
         grid={grid}
         isDirty={isDirty}
         isSaving={updateMutation.isPending}
-        barsCount={content.bars.length}
-        theme={theme}
-        onAddBar={addBar}
-        onRemoveLastBar={handleRemoveLastBar}
         onSave={handleSave}
         onOpenDsl={() => setDslOpen(true)}
         onOpenGenerator={() => setGeneratorOpen(true)}
-        onToggleTheme={toggleTheme}
       />
 
       <div className="flex flex-1 overflow-hidden">
@@ -118,29 +170,33 @@ export function EditorPage() {
           onAddChord={handleAddChordFromPalette}
         />
 
-        {/* Center: Harmony Grid */}
+        {/* Center: sections + title */}
         <main className="flex-1 overflow-y-auto p-6" data-testid="editor-page">
+          <div className="mb-6">
+            <CompositionTitle name={grid.name} onSave={handleSaveTitle} />
+          </div>
+
           <HarmonyGrid
-            content={content}
+            sections={sections}
             selectedBarId={selectedBarId}
             onSelectBar={(barId) => selectBar(selectedBarId === barId ? null : barId)}
+            onRenameSection={renameSection}
+            onSetSectionTimeSignature={setSectionTimeSignature}
+            onAddBarToSection={addBarToSection}
+            onSetBarRepeatEnd={setBarRepeatEnd}
+            onAddSection={() => addSection(defaultTimeSignature)}
           />
         </main>
-
-        {/* Right: Collapsible Bar Editor */}
-        <BarEditor
-          bar={selectedBar}
-          barIndex={selectedBarIndex}
-          isOpen={rightPanelOpen}
-          onToggle={() => setRightPanelOpen((v) => !v)}
-          onAddChord={(sym) => selectedBarId && addChordToBar(selectedBarId, sym)}
-          onRemoveChord={(i) => selectedBarId && removeChordFromBar(selectedBarId, i)}
-          onUpdateChord={(i, sym) => selectedBarId && updateChordInBar(selectedBarId, i, sym)}
-          onUpdateBeats={(i, beats) => selectedBarId && updateChordBeats(selectedBarId, i, beats)}
-          onRemoveBar={() => selectedBarId && removeBar(selectedBarId)}
-          onClose={() => selectBar(null)}
-        />
       </div>
+
+      <PlayerToolbar
+        playbackState={playbackState}
+        currentKey={playerKey}
+        onPlay={() => setPlaybackState('playing')}
+        onPause={() => setPlaybackState('paused')}
+        onStop={() => setPlaybackState('stopped')}
+        onKeyChange={setPlayerKey}
+      />
 
       <DslModal
         open={dslOpen}
