@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import supertest from 'supertest';
 import type { FastifyInstance } from 'fastify';
 import { buildServer } from '../src/server.js';
+import { createTestDb } from '../src/db/testUtils.js';
 
 describe('GET /api/health', () => {
   let app: FastifyInstance;
@@ -9,6 +10,7 @@ describe('GET /api/health', () => {
   beforeAll(async () => {
     app = await buildServer({
       config: { port: 0, webOrigin: 'http://localhost:5173', authDevMode: true },
+      db: createTestDb(),
     });
     await app.ready();
   });
