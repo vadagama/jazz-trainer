@@ -200,12 +200,14 @@ function BarCard({
   bar,
   index,
   isSelected,
+  isPlaying,
   onSelect,
   onSetRepeatEnd,
 }: {
   bar: Bar;
   index: number;
   isSelected: boolean;
+  isPlaying?: boolean;
   onSelect: () => void;
   onSetRepeatEnd: (r: RepeatEnd | undefined) => void;
 }) {
@@ -224,7 +226,11 @@ function BarCard({
         'group relative min-h-[100px] cursor-pointer rounded-lg border bg-card p-4 pr-6 transition-all',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
         'hover:border-primary/50 hover:shadow-sm',
-        isSelected ? 'border-primary shadow-sm ring-1 ring-primary/30' : 'border-border',
+        isPlaying
+          ? 'border-green-500 ring-1 ring-green-500/30 animate-pulse'
+          : isSelected
+            ? 'border-primary shadow-sm ring-1 ring-primary/30'
+            : 'border-border',
       )}
     >
       <span className="absolute left-2.5 top-2 select-none font-mono text-[10px] text-muted-foreground">
@@ -274,6 +280,7 @@ function SectionView({
   section,
   globalBarIndex,
   selectedBarId,
+  playingBarIndex,
   onSelectBar,
   onRename,
   onSetTimeSignature,
@@ -283,6 +290,7 @@ function SectionView({
   section: Section;
   globalBarIndex: number;
   selectedBarId: string | null;
+  playingBarIndex?: number;
   onSelectBar: (id: string) => void;
   onRename: (name: string) => void;
   onSetTimeSignature: (ts: TimeSignatureString) => void;
@@ -336,6 +344,7 @@ function SectionView({
                 bar={cell.bar}
                 index={cell.absIndex}
                 isSelected={cell.bar.id === selectedBarId}
+                isPlaying={cell.absIndex === playingBarIndex}
                 onSelect={() => onSelectBar(cell.bar.id)}
                 onSetRepeatEnd={(r) => onSetBarRepeatEnd(cell.bar.id, r)}
               />
@@ -352,6 +361,7 @@ function SectionView({
 interface HarmonyGridProps {
   sections: Section[];
   selectedBarId: string | null;
+  playingBarIndex?: number;
   onSelectBar: (barId: string) => void;
   onRenameSection: (sectionId: string, name: string) => void;
   onSetSectionTimeSignature: (sectionId: string, ts: TimeSignatureString) => void;
@@ -363,6 +373,7 @@ interface HarmonyGridProps {
 export function HarmonyGrid({
   sections,
   selectedBarId,
+  playingBarIndex,
   onSelectBar,
   onRenameSection,
   onSetSectionTimeSignature,
@@ -391,6 +402,7 @@ export function HarmonyGrid({
             section={section}
             globalBarIndex={sectionStart}
             selectedBarId={selectedBarId}
+            playingBarIndex={playingBarIndex}
             onSelectBar={onSelectBar}
             onRename={(name) => onRenameSection(section.id, name)}
             onSetTimeSignature={(ts) => onSetSectionTimeSignature(section.id, ts)}

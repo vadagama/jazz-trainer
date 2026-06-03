@@ -4,11 +4,13 @@ import { Loader2, AlertCircle, Pencil } from 'lucide-react';
 import type { TimeSignatureString, UpdateGridInput, Key } from '@jazz/shared';
 import { useGrid, useUpdateGrid } from '@/queries/useGrid';
 import { useEditorStore } from '@/stores/useEditorStore';
+import { usePlaybackStore } from '@/stores/usePlaybackStore';
+import { useEffectiveSettings } from '@/queries/useEffectiveSettings';
+import { useTransport } from '@/engine/useTransport';
 import { EditorTopBar } from '@/components/editor/EditorTopBar';
 import { HarmonyGrid } from '@/components/editor/HarmonyGrid';
 import { ChordPalette } from '@/components/editor/ChordPalette';
 import { PlayerToolbar } from '@/components/editor/PlayerToolbar';
-import type { PlaybackState } from '@/components/editor/PlayerToolbar';
 import { DslModal } from '@/components/editor/DslModal';
 import { GeneratorModal } from '@/components/editor/GeneratorModal';
 import { Button } from '@/components/ui/button';
@@ -89,10 +91,14 @@ export function EditorPage() {
     setSectionTimeSignature,
   } = useEditorStore();
 
+  const settings = useEffectiveSettings();
+  const { status, currentBar, currentBeat } = usePlaybackStore();
+
   const [dslOpen, setDslOpen] = useState(false);
   const [generatorOpen, setGeneratorOpen] = useState(false);
-  const [playbackState, setPlaybackState] = useState<PlaybackState>('stopped');
   const [playerKey, setPlayerKey] = useState<Key>(grid?.key ?? 'C');
+  const [localBpm, setLocalBpm] = useState<number | null>(null);
+  const [localTimeSig, setLocalTimeSig] = useState<TimeSignatureString | null>(null);
 
   useEffect(() => {
     if (grid?.content) {
@@ -129,6 +135,19 @@ export function EditorPage() {
   const sections = content.sections ?? [];
   const defaultTimeSignature: TimeSignatureString =
     sections[0]?.timeSignature ?? grid.timeSignature;
+
+  const effectiveBpm = localBpm ?? settings.bpm;
+  const effectiveTimeSig = localTimeSig ?? defaultTimeSignature;
+  const totalBars = sections.reduce((sum, s) => sum + s.bars.length, 0);
+
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const transport = useTransport({
+    settings: { ...settings, bpm: effectiveBpm },
+    timeSignature: effectiveTimeSig,
+    totalBars,
+  });
+
+  const playingBarIndex = status !== 'idle' ? currentBar : undefined;
 
   async function handleSave(meta: UpdateGridInput) {
     await updateMutation.mutateAsync({ ...meta, content });
@@ -171,6 +190,7 @@ export function EditorPage() {
           <HarmonyGrid
             sections={sections}
             selectedBarId={selectedBarId}
+            playingBarIndex={playingBarIndex}
             onSelectBar={(barId) => selectBar(selectedBarId === barId ? null : barId)}
             onRenameSection={renameSection}
             onSetSectionTimeSignature={setSectionTimeSignature}
@@ -182,11 +202,21 @@ export function EditorPage() {
       </div>
 
       <PlayerToolbar
-        playbackState={playbackState}
+        status={status}
+        currentBeat={currentBeat}
+        currentBar={currentBar}
+        totalBars={totalBars}
+        totalBeats={parseInt(effectiveTimeSig.split('/')[0] ?? '4', 10)}
+        bpm={effectiveBpm}
+        timeSignature={effectiveTimeSig}
         currentKey={playerKey}
-        onPlay={() => setPlaybackState('playing')}
-        onPause={() => setPlaybackState('paused')}
-        onStop={() => setPlaybackState('stopped')}
+        onPlay={transport.play}
+        onPause={transport.pause}
+        onStop={transport.stop}
+        onPrevBar={transport.prevBar}
+        onNextBar={transport.nextBar}
+        onBpmChange={setLocalBpm}
+        onTimeSigChange={setLocalTimeSig}
         onKeyChange={setPlayerKey}
       />
 

@@ -5,10 +5,11 @@ interface BarCardProps {
   bar: Bar;
   barIndex: number;
   isSelected: boolean;
+  isPlaying?: boolean;
   onClick: () => void;
 }
 
-export function BarCard({ bar, barIndex, isSelected, onClick }: BarCardProps) {
+export function BarCard({ bar, barIndex, isSelected, isPlaying, onClick }: BarCardProps) {
   const chords = bar.chords;
 
   return (
@@ -21,9 +22,11 @@ export function BarCard({ bar, barIndex, isSelected, onClick }: BarCardProps) {
         'group relative cursor-pointer rounded-lg border bg-card p-4 transition-all',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
         'hover:border-primary/60 hover:shadow-md',
-        isSelected
-          ? 'border-primary shadow-md ring-1 ring-primary/40'
-          : 'border-border',
+        isPlaying
+          ? 'border-green-500 shadow-md ring-1 ring-green-500/40 animate-pulse'
+          : isSelected
+            ? 'border-primary shadow-md ring-1 ring-primary/40'
+            : 'border-border',
       )}
     >
       {/* Bar number badge */}
