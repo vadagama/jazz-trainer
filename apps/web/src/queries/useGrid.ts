@@ -36,6 +36,9 @@ export function usePatterns() {
 
 export function useGenerateGrid() {
   return useMutation({
-    mutationFn: (input: GenerateInput) => apiClient.post<GridContent>('/api/generate', input),
+    mutationFn: async (input: GenerateInput) => {
+      const data = await apiClient.post<{ content: GridContent }>('/api/generate', input);
+      return data.content;
+    },
   });
 }

@@ -111,7 +111,7 @@ export function GeneratorModal({ open, onApply, onClose }: GeneratorModalProps) 
 
             <div className="w-28 space-y-1.5">
               <Label htmlFor="length-input" className="text-xs">
-                Тактов {selected?.variableLength ? '' : '(фикс.)'}
+                Тактов
               </Label>
               <Input
                 id="length-input"
@@ -121,7 +121,6 @@ export function GeneratorModal({ open, onApply, onClose }: GeneratorModalProps) 
                 value={lengthBars}
                 onChange={(e) => setLengthBars(e.target.value === '' ? '' : Number(e.target.value))}
                 placeholder={selected ? String(selected.defaultBars) : '—'}
-                disabled={selected != null && !selected.variableLength}
                 className="h-9 text-sm"
                 data-testid="length-input"
               />

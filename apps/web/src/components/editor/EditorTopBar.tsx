@@ -1,22 +1,25 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Plus, Minus, Save, Code2, Wand2, Loader2 } from 'lucide-react';
+import { ArrowLeft, Plus, Minus, Save, Code2, Wand2, Loader2, Sun, Moon } from 'lucide-react';
 import type { HarmonyGridDTO, UpdateGridInput } from '@jazz/shared';
 import { TIME_SIGNATURES, KEYS } from '@jazz/shared';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import type { Theme } from '@/hooks/useTheme';
 
 interface EditorTopBarProps {
   grid: HarmonyGridDTO;
   isDirty: boolean;
   isSaving: boolean;
   barsCount: number;
+  theme: Theme;
   onAddBar: () => void;
   onRemoveLastBar: () => void;
   onSave: (data: UpdateGridInput) => void;
   onOpenDsl: () => void;
   onOpenGenerator: () => void;
+  onToggleTheme: () => void;
 }
 
 export function EditorTopBar({
@@ -24,11 +27,13 @@ export function EditorTopBar({
   isDirty,
   isSaving,
   barsCount,
+  theme,
   onAddBar,
   onRemoveLastBar,
   onSave,
   onOpenDsl,
   onOpenGenerator,
+  onToggleTheme,
 }: EditorTopBarProps) {
   const [name, setName] = useState(grid.name);
   const [timeSig, setTimeSig] = useState(grid.timeSignature);
@@ -132,6 +137,16 @@ export function EditorTopBar({
             Сохранить
           </Button>
         )}
+
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-8 text-muted-foreground"
+          onClick={onToggleTheme}
+          title={theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'}
+        >
+          {theme === 'dark' ? <Sun className="size-4" /> : <Moon className="size-4" />}
+        </Button>
       </div>
     </header>
   );

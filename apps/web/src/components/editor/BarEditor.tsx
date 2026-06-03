@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Plus, Trash2 } from 'lucide-react';
+import { X, Plus, Trash2, ChevronRight } from 'lucide-react';
 import { parseChord } from '@jazz/music-core';
 import type { Bar } from '@jazz/shared';
 import { Button } from '@/components/ui/button';
@@ -8,8 +8,10 @@ import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 
 interface BarEditorProps {
-  bar: Bar;
+  bar: Bar | null;
   barIndex: number;
+  isOpen: boolean;
+  onToggle: () => void;
   onAddChord: (symbol: string) => void;
   onRemoveChord: (index: number) => void;
   onUpdateChord: (index: number, symbol: string) => void;
@@ -21,6 +23,8 @@ interface BarEditorProps {
 export function BarEditor({
   bar,
   barIndex,
+  isOpen,
+  onToggle,
   onAddChord,
   onRemoveChord,
   onUpdateChord,
@@ -55,71 +59,125 @@ export function BarEditor({
   }
 
   return (
-    <aside
-      className="flex flex-col gap-4 w-64 shrink-0 border-l border-border bg-card p-4"
-      data-testid="bar-editor"
-    >
-      <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold">Такт {barIndex + 1}</h2>
-        <Button variant="ghost" size="icon" className="size-7" onClick={onClose} aria-label="Закрыть редактор">
-          <X className="size-4" />
-        </Button>
-      </div>
-
-      <div className="space-y-2">
-        <p className="text-xs text-muted-foreground uppercase tracking-wide">Аккорды</p>
-
-        {bar.chords.length === 0 && (
-          <p className="text-xs text-muted-foreground italic">Нет аккордов</p>
+    <div className="relative flex h-full flex-shrink-0">
+      {/* Toggle button — always visible */}
+      <button
+        onClick={onToggle}
+        title={isOpen ? 'Скрыть панель' : 'Показать панель'}
+        className={cn(
+          'absolute -left-3 top-6 z-10 flex size-6 items-center justify-center rounded-full',
+          'border border-border bg-card shadow-sm text-muted-foreground',
+          'transition-colors hover:text-foreground',
         )}
+      >
+        <ChevronRight
+          className={cn('size-3.5 transition-transform', isOpen ? 'rotate-0' : 'rotate-180')}
+        />
+      </button>
 
-        {bar.chords.map((slot, i) => (
-          <ChordRow
-            key={i}
-            index={i}
-            slot={{ symbol: slot.symbol, beats: slot.beats ?? null }}
-            onUpdate={(sym) => onUpdateChord(i, sym)}
-            onUpdateBeats={(beats) => onUpdateBeats(i, beats)}
-            onRemove={() => onRemoveChord(i)}
-          />
-        ))}
-      </div>
+      {/* Panel content */}
+      <aside
+        className={cn(
+          'h-full overflow-hidden border-l border-border bg-card transition-all duration-200',
+          isOpen ? 'w-64' : 'w-0 border-l-0',
+        )}
+        data-testid="bar-editor"
+      >
+        <div className="flex h-full w-64 flex-col gap-4 overflow-y-auto p-4">
+          {bar ? (
+            <>
+              <div className="flex items-center justify-between">
+                <h2 className="text-sm font-semibold">Такт {barIndex + 1}</h2>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-7"
+                  onClick={onClose}
+                  aria-label="Закрыть редактор"
+                >
+                  <X className="size-4" />
+                </Button>
+              </div>
 
-      <div className="space-y-1">
-        <Label htmlFor="new-chord" className="text-xs">
-          Добавить аккорд
-        </Label>
-        <div className="flex gap-1">
-          <Input
-            id="new-chord"
-            value={newChord}
-            onChange={(e) => {
-              setNewChord(e.target.value);
-              setNewChordError('');
-            }}
-            onKeyDown={handleKeyDown}
-            placeholder="Cmaj7"
-            className="h-8 text-sm font-mono"
-            data-testid="new-chord-input"
-          />
-          <Button size="icon" className="size-8 shrink-0" onClick={handleAddChord} aria-label="Добавить аккорд">
-            <Plus className="size-4" />
-          </Button>
+              <div className="space-y-2">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Аккорды
+                </p>
+
+                {bar.chords.length === 0 && (
+                  <p className="text-xs italic text-muted-foreground">Нет аккордов</p>
+                )}
+
+                {bar.chords.map((slot, i) => (
+                  <ChordRow
+                    key={i}
+                    index={i}
+                    slot={{ symbol: slot.symbol, beats: slot.beats ?? null }}
+                    onUpdate={(sym) => onUpdateChord(i, sym)}
+                    onUpdateBeats={(beats) => onUpdateBeats(i, beats)}
+                    onRemove={() => onRemoveChord(i)}
+                  />
+                ))}
+              </div>
+
+              <div className="space-y-1">
+                <Label htmlFor="new-chord" className="text-xs">
+                  Добавить аккорд
+                </Label>
+                <div className="flex gap-1">
+                  <Input
+                    id="new-chord"
+                    value={newChord}
+                    onChange={(e) => {
+                      setNewChord(e.target.value);
+                      setNewChordError('');
+                    }}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Cmaj7"
+                    className="h-8 font-mono text-sm"
+                    data-testid="new-chord-input"
+                  />
+                  <Button
+                    size="icon"
+                    className="size-8 shrink-0"
+                    onClick={handleAddChord}
+                    aria-label="Добавить аккорд"
+                  >
+                    <Plus className="size-4" />
+                  </Button>
+                </div>
+                {newChordError && (
+                  <p className="text-xs text-destructive" data-testid="chord-error">
+                    {newChordError}
+                  </p>
+                )}
+              </div>
+
+              <div className="mt-auto border-t border-border pt-3">
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  className="w-full gap-1"
+                  onClick={onRemoveBar}
+                >
+                  <Trash2 className="size-3.5" />
+                  Удалить такт
+                </Button>
+              </div>
+            </>
+          ) : (
+            <div className="flex flex-col gap-2">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Свойства
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Выберите такт для редактирования
+              </p>
+            </div>
+          )}
         </div>
-        {newChordError && (
-          <p className="text-xs text-destructive" data-testid="chord-error">
-            {newChordError}
-          </p>
-        )}
-      </div>
-
-      <div className="mt-auto pt-2 border-t border-border">
-        <Button variant="destructive" size="sm" className="w-full gap-1" onClick={onRemoveBar}>
-          <Trash2 className="size-3.5" />
-          Удалить такт
-        </Button>
-      </div>
-    </aside>
+      </aside>
+    </div>
   );
 }
 
@@ -175,7 +233,7 @@ function ChordRow({ index, slot, onUpdate, onUpdateBeats, onRemove }: ChordRowPr
               setError('');
             }
           }}
-          className={cn('h-7 text-xs font-mono flex-1', error && 'border-destructive')}
+          className={cn('h-7 flex-1 font-mono text-xs', error && 'border-destructive')}
           title={error || undefined}
         />
       ) : (
@@ -186,7 +244,8 @@ function ChordRow({ index, slot, onUpdate, onUpdateBeats, onRemove }: ChordRowPr
             setEditing(true);
           }}
           className={cn(
-            'flex-1 text-left text-xs font-mono px-2 py-1 rounded border border-transparent hover:border-border hover:bg-accent/30 transition-colors',
+            'flex-1 rounded border border-transparent px-2 py-1 text-left font-mono text-xs',
+            'transition-colors hover:border-border hover:bg-accent/30',
             isInvalid && 'text-destructive',
           )}
           title="Нажмите для редактирования"
@@ -206,7 +265,7 @@ function ChordRow({ index, slot, onUpdate, onUpdateBeats, onRemove }: ChordRowPr
           onUpdateBeats(v === '' ? null : Math.max(1, parseInt(v, 10)));
         }}
         placeholder="—"
-        className="h-7 w-12 text-xs text-center p-1"
+        className="h-7 w-12 p-1 text-center text-xs"
         title="Доли (пусто = авто)"
         aria-label={`Доли аккорда ${index + 1}`}
       />

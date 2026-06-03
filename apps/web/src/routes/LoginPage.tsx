@@ -21,7 +21,7 @@ export function LoginPage() {
 
   const form = useForm<DevLoginInput>({
     resolver: zodResolver(DevLoginSchema),
-    defaultValues: { email: '', name: '' },
+    defaultValues: { email: '', name: undefined },
   });
 
   async function onDevLogin(data: DevLoginInput) {

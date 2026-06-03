@@ -47,7 +47,7 @@ describe('DslModal', () => {
     fireEvent.change(textarea, { target: { value: 'Cmaj7 | Dm7 G7 ||' } });
     fireEvent.click(screen.getByTestId('dsl-import-btn'));
     expect(onImport).toHaveBeenCalledTimes(1);
-    const arg: GridContent = onImport.mock.calls[0][0];
+    const arg: GridContent = onImport.mock.calls[0]![0];
     expect(arg.bars).toHaveLength(2);
   });
 

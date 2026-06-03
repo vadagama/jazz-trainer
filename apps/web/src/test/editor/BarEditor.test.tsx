@@ -10,6 +10,8 @@ function makeBar(chords: Bar['chords'] = []): Bar {
 const baseProps = {
   bar: makeBar(),
   barIndex: 0,
+  isOpen: true,
+  onToggle: vi.fn(),
   onAddChord: vi.fn(),
   onRemoveChord: vi.fn(),
   onUpdateChord: vi.fn(),
