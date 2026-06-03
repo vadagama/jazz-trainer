@@ -9,9 +9,9 @@ import type { UserSettingsDTO } from '@jazz/shared';
 export function SettingsPage() {
   const { user } = useAuth();
   const { data: serverSettings } = useSettings();
+  const { theme, toggle } = useTheme();
   const updateServer = useUpdateSettings();
   const { settings: localSettings, setSettings: setLocalSettings } = useLocalSettingsStore();
-  const { theme, toggle } = useTheme();
 
   const isServer = Boolean(user && serverSettings);
   const effectiveSettings = isServer ? serverSettings! : localSettings;

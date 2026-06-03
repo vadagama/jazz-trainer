@@ -81,8 +81,6 @@ export function EditorPage() {
     loadExternalContent,
     markClean,
     selectBar,
-    addBar,
-    removeBar,
     addBarToSection,
     addChordToBar,
     setBarRepeatEnd,
@@ -139,12 +137,6 @@ export function EditorPage() {
 
   async function handleSaveTitle(name: string) {
     await updateMutation.mutateAsync({ name });
-  }
-
-  function handleRemoveLastBar() {
-    const allBars = content.bars;
-    if (allBars.length === 0) return;
-    removeBar(allBars[allBars.length - 1]!.id);
   }
 
   function handleAddChordFromPalette(symbol: string) {
