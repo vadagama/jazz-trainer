@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Loader2, AlertCircle, Pencil } from 'lucide-react';
-import type { TimeSignatureString, UpdateGridInput } from '@jazz/shared';
+import type { TimeSignatureString, UpdateGridInput, Key } from '@jazz/shared';
 import { useGrid, useUpdateGrid } from '@/queries/useGrid';
 import { useEditorStore } from '@/stores/useEditorStore';
 import { EditorTopBar } from '@/components/editor/EditorTopBar';
 import { HarmonyGrid } from '@/components/editor/HarmonyGrid';
 import { ChordPalette } from '@/components/editor/ChordPalette';
+import { PlayerToolbar } from '@/components/editor/PlayerToolbar';
+import type { PlaybackState } from '@/components/editor/PlayerToolbar';
 import { DslModal } from '@/components/editor/DslModal';
 import { GeneratorModal } from '@/components/editor/GeneratorModal';
 import { Button } from '@/components/ui/button';
@@ -79,8 +81,6 @@ export function EditorPage() {
     loadExternalContent,
     markClean,
     selectBar,
-    addBar,
-    removeBar,
     addBarToSection,
     addChordToBar,
     setBarRepeatEnd,
@@ -91,12 +91,18 @@ export function EditorPage() {
 
   const [dslOpen, setDslOpen] = useState(false);
   const [generatorOpen, setGeneratorOpen] = useState(false);
+  const [playbackState, setPlaybackState] = useState<PlaybackState>('stopped');
+  const [playerKey, setPlayerKey] = useState<Key>(grid?.key ?? 'C');
 
   useEffect(() => {
     if (grid?.content) {
       setContent(grid.content, grid.timeSignature);
     }
   }, [grid?.content, setContent]);
+
+  useEffect(() => {
+    if (grid?.key) setPlayerKey(grid.key);
+  }, [grid?.key]);
 
   if (isLoading) {
     return (
@@ -133,12 +139,6 @@ export function EditorPage() {
     await updateMutation.mutateAsync({ name });
   }
 
-  function handleRemoveLastBar() {
-    const allBars = content.bars;
-    if (allBars.length === 0) return;
-    removeBar(allBars[allBars.length - 1]!.id);
-  }
-
   function handleAddChordFromPalette(symbol: string) {
     if (!selectedBarId) return;
     addChordToBar(selectedBarId, symbol);
@@ -150,9 +150,6 @@ export function EditorPage() {
         grid={grid}
         isDirty={isDirty}
         isSaving={updateMutation.isPending}
-        barsCount={content.bars.length}
-        onAddBar={addBar}
-        onRemoveLastBar={handleRemoveLastBar}
         onSave={handleSave}
         onOpenDsl={() => setDslOpen(true)}
         onOpenGenerator={() => setGeneratorOpen(true)}
@@ -183,6 +180,15 @@ export function EditorPage() {
           />
         </main>
       </div>
+
+      <PlayerToolbar
+        playbackState={playbackState}
+        currentKey={playerKey}
+        onPlay={() => setPlaybackState('playing')}
+        onPause={() => setPlaybackState('paused')}
+        onStop={() => setPlaybackState('stopped')}
+        onKeyChange={setPlayerKey}
+      />
 
       <DslModal
         open={dslOpen}
