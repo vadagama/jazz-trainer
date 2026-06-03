@@ -1,14 +1,12 @@
 import { z } from 'zod';
-import { KEYS, TIME_SIGNATURES, VISIBILITY } from './constants.js';
-import { GridContentSchema } from './music.js';
+import { KEYS, VISIBILITY } from './constants.js';
+import { GridContentSchema, TimeSignatureSchema } from './music.js';
 
 /**
  * DTOs and Zod schemas for the harmony grids layer (F5).
  * Used by apps/api and apps/web.
  * See docs/04-api.md §4.
  */
-
-const TimeSignatureSchema = z.enum(TIME_SIGNATURES);
 const KeySchema = z.enum(KEYS);
 const VisibilitySchema = z.enum(VISIBILITY);
 

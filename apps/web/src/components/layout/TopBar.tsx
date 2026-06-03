@@ -15,7 +15,6 @@ export function TopBar() {
   const { user } = useAuth();
   const logout = useLogout();
   const navigate = useNavigate();
-
   const initials = user?.name
     ? user.name
         .split(' ')

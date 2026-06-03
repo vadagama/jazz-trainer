@@ -1,25 +1,21 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Plus, Minus, Save, Code2, Wand2, Loader2, Sun, Moon } from 'lucide-react';
+import { ArrowLeft, Plus, Minus, Save, Code2, Wand2, Loader2 } from 'lucide-react';
 import type { HarmonyGridDTO, UpdateGridInput } from '@jazz/shared';
 import { TIME_SIGNATURES, KEYS } from '@jazz/shared';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import type { Theme } from '@/hooks/useTheme';
 
 interface EditorTopBarProps {
   grid: HarmonyGridDTO;
   isDirty: boolean;
   isSaving: boolean;
   barsCount: number;
-  theme: Theme;
   onAddBar: () => void;
   onRemoveLastBar: () => void;
   onSave: (data: UpdateGridInput) => void;
   onOpenDsl: () => void;
   onOpenGenerator: () => void;
-  onToggleTheme: () => void;
 }
 
 export function EditorTopBar({
@@ -27,24 +23,20 @@ export function EditorTopBar({
   isDirty,
   isSaving,
   barsCount,
-  theme,
   onAddBar,
   onRemoveLastBar,
   onSave,
   onOpenDsl,
   onOpenGenerator,
-  onToggleTheme,
 }: EditorTopBarProps) {
-  const [name, setName] = useState(grid.name);
   const [timeSig, setTimeSig] = useState(grid.timeSignature);
   const [key, setKey] = useState(grid.key);
 
   function handleSave() {
-    onSave({ name: name.trim() || grid.name, timeSignature: timeSig, key });
+    onSave({ name: grid.name, timeSignature: timeSig, key });
   }
 
-  const hasMetaChanges =
-    name.trim() !== grid.name || timeSig !== grid.timeSignature || key !== grid.key;
+  const hasMetaChanges = timeSig !== grid.timeSignature || key !== grid.key;
 
   return (
     <header className="flex items-center gap-2 px-4 py-2 border-b border-border bg-card flex-wrap">
@@ -53,14 +45,6 @@ export function EditorTopBar({
           <ArrowLeft className="size-4" />
         </Link>
       </Button>
-
-      <Input
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        className="h-8 w-48 text-sm font-medium"
-        aria-label="Название сетки"
-        data-testid="grid-name-input"
-      />
 
       <Select value={timeSig} onValueChange={(v) => setTimeSig(v as typeof timeSig)}>
         <SelectTrigger className="h-8 w-24 text-xs" aria-label="Размер" data-testid="time-sig-select">
@@ -137,16 +121,6 @@ export function EditorTopBar({
             Сохранить
           </Button>
         )}
-
-        <Button
-          variant="ghost"
-          size="icon"
-          className="size-8 text-muted-foreground"
-          onClick={onToggleTheme}
-          title={theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'}
-        >
-          {theme === 'dark' ? <Sun className="size-4" /> : <Moon className="size-4" />}
-        </Button>
       </div>
     </header>
   );
