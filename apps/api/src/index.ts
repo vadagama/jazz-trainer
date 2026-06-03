@@ -2,7 +2,7 @@ import { buildServer } from './server.js';
 import { loadConfig } from './config.js';
 import { createDb } from './db/index.js';
 import { runMigrations } from './db/migrate.js';
-import { seedSystemUser, seedDevUser } from './db/seed.js';
+import { seedSystemUser, seedDevUser, seedDemoGrids } from './db/seed.js';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -17,6 +17,7 @@ async function main(): Promise<void> {
   const { db } = createDb(config.databaseUrl);
   runMigrations(db);
   seedSystemUser(db);
+  seedDemoGrids(db);
   if (config.authDevMode) seedDevUser(db);
 
   const app = await buildServer({ config, db });

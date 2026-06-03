@@ -1,4 +1,12 @@
-import { sqliteTable, text, integer, real, uniqueIndex, index } from 'drizzle-orm/sqlite-core';
+import {
+  sqliteTable,
+  text,
+  integer,
+  real,
+  uniqueIndex,
+  index,
+  primaryKey,
+} from 'drizzle-orm/sqlite-core';
 
 /**
  * Database schema for Jazz Trainer.
@@ -49,7 +57,53 @@ export const sessions = sqliteTable(
   ],
 );
 
+export const harmonyGrids = sqliteTable(
+  'harmony_grids',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    timeSignature: text('time_signature').notNull().default('4/4'),
+    key: text('key').notNull().default('C'),
+    visibility: text('visibility', { enum: ['private', 'public'] }).notNull().default('private'),
+    /** JSON-serialised GridContent */
+    content: text('content').notNull(),
+    /** for copied grids: id of the source grid */
+    sourceGridId: text('source_grid_id'),
+    likeCount: integer('like_count').notNull().default(0),
+    createdAt: integer('created_at').notNull(),
+    updatedAt: integer('updated_at').notNull(),
+  },
+  (t) => [
+    index('grids_user_id_idx').on(t.userId),
+    index('grids_visibility_idx').on(t.visibility),
+    index('grids_updated_at_idx').on(t.updatedAt),
+  ],
+);
+
+export const gridLikes = sqliteTable(
+  'grid_likes',
+  {
+    gridId: text('grid_id')
+      .notNull()
+      .references(() => harmonyGrids.id, { onDelete: 'cascade' }),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    createdAt: integer('created_at').notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.gridId, t.userId] }),
+    index('grid_likes_user_id_idx').on(t.userId),
+  ],
+);
+
 export type UserRecord = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type UserSettingsRecord = typeof userSettings.$inferSelect;
 export type SessionRecord = typeof sessions.$inferSelect;
+export type HarmonyGridRecord = typeof harmonyGrids.$inferSelect;
+export type NewHarmonyGrid = typeof harmonyGrids.$inferInsert;
+export type GridLikeRecord = typeof gridLikes.$inferSelect;
