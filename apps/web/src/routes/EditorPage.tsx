@@ -110,6 +110,23 @@ export function EditorPage() {
     if (grid?.key) setPlayerKey(grid.key);
   }, [grid?.key]);
 
+  // Compute transport params with safe fallbacks (must be before early returns)
+  const content = localContent ?? grid?.content ?? { version: 1 as const, bars: [], sections: [] };
+  const sections = content.sections ?? [];
+  const defaultTimeSignature: TimeSignatureString =
+    sections[0]?.timeSignature ?? grid?.timeSignature ?? '4/4';
+  const effectiveBpm = localBpm ?? settings.bpm;
+  const effectiveTimeSig = localTimeSig ?? defaultTimeSignature;
+  const totalBars = sections.reduce((sum, s) => sum + s.bars.length, 0);
+
+  const transport = useTransport({
+    settings: { ...settings, bpm: effectiveBpm },
+    timeSignature: effectiveTimeSig,
+    totalBars,
+  });
+
+  const playingBarIndex = status !== 'idle' ? currentBar : undefined;
+
   if (isLoading) {
     return (
       <div className="flex h-screen items-center justify-center gap-2 bg-background text-muted-foreground">
@@ -130,24 +147,6 @@ export function EditorPage() {
       </div>
     );
   }
-
-  const content = localContent ?? grid.content;
-  const sections = content.sections ?? [];
-  const defaultTimeSignature: TimeSignatureString =
-    sections[0]?.timeSignature ?? grid.timeSignature;
-
-  const effectiveBpm = localBpm ?? settings.bpm;
-  const effectiveTimeSig = localTimeSig ?? defaultTimeSignature;
-  const totalBars = sections.reduce((sum, s) => sum + s.bars.length, 0);
-
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const transport = useTransport({
-    settings: { ...settings, bpm: effectiveBpm },
-    timeSignature: effectiveTimeSig,
-    totalBars,
-  });
-
-  const playingBarIndex = status !== 'idle' ? currentBar : undefined;
 
   async function handleSave(meta: UpdateGridInput) {
     await updateMutation.mutateAsync({ ...meta, content });
