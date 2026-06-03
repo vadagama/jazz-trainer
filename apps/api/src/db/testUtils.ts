@@ -1,7 +1,7 @@
 import { fileURLToPath } from 'node:url';
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
 import { createDb, type DrizzleDb } from './index.js';
-import { seedSystemUser } from './seed.js';
+import { seedSystemUser, seedDemoGrids } from './seed.js';
 
 const migrationsFolder = fileURLToPath(new URL('../../drizzle', import.meta.url));
 
@@ -13,5 +13,6 @@ export function createTestDb(): DrizzleDb {
   const { db } = createDb(':memory:');
   migrate(db, { migrationsFolder });
   seedSystemUser(db);
+  seedDemoGrids(db);
   return db;
 }
