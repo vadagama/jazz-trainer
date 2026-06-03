@@ -58,9 +58,10 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     synthRef.current = synth;
 
     const sink = (atTicks: number, strong: boolean) => {
+      // Tone.js tick notation: "${N}i" = N ticks from transport start
       tone.scheduleOnce((time: number) => {
         synth.triggerAttackRelease(strong ? 'G4' : 'C4', '32n', time);
-      }, { ticks: atTicks } as Parameters<typeof tone.scheduleOnce>[1]);
+      }, `${atTicks}i`);
     };
 
     const engine = new TransportEngine({
@@ -136,11 +137,17 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
 
     tone.ticks = startTick;
     lastScheduledRef.current = startTick;
+    tone.bpm.value = optsRef.current.settings.bpm;
+
+    // Pre-schedule first lookahead window BEFORE transport starts —
+    // otherwise beat 1 fires before the first interval callback (25 ms later).
+    engine.scheduleWindow({ fromTicks: startTick, toTicks: startTick + LOOKAHEAD_TICKS });
+    lastScheduledRef.current = startTick + LOOKAHEAD_TICKS;
 
     machine.dispatch({ type: 'play' });
     engine.play();
-    tone.bpm.value = optsRef.current.settings.bpm;
-    tone.start();
+    // Small offset gives the WebAudio graph time to process the scheduled events.
+    tone.start('+0.05');
 
     if (intervalRef.current !== null) clearInterval(intervalRef.current);
 
