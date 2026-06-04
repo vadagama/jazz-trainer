@@ -12,8 +12,9 @@ describe('useLocalSettingsStore', () => {
     expect(settings.bpm).toBe(120);
     expect(settings.volume).toBe(0.8);
     expect(settings.countIn).toBe(1);
-    expect(settings.clickStrong).toBe('click_hi');
-    expect(settings.clickWeak).toBe('click_lo');
+    expect(settings.clickStrong).toBe('drum-stick');
+    expect(settings.clickStrong2).toBe('drum-stick');
+    expect(settings.clickWeak).toBe('drum-stick');
   });
 
   it('updates settings partially', () => {

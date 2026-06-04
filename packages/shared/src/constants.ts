@@ -26,8 +26,14 @@ export const KEYS = [
 ] as const;
 export type Key = (typeof KEYS)[number];
 
-/** Metronome click sound identifiers (strong/weak beat voices). */
-export const CLICK_SOUNDS = ['click_hi', 'click_lo', 'wood', 'beep'] as const;
+/** Metronome click sound identifiers — each maps to a sample pair (<id>-strong.wav / <id>-weak.wav). */
+export const CLICK_SOUNDS = [
+  'analog-metronome',
+  'button-click',
+  'drum-stick',
+  'retro-stick',
+  'switch',
+] as const;
 export type ClickSound = (typeof CLICK_SOUNDS)[number];
 
 /** Grid visibility (public-first model, see docs/03-data-model.md). */

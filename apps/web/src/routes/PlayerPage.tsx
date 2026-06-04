@@ -1,22 +1,118 @@
-import { Link, useParams } from 'react-router-dom';
-import { Play } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { useState } from 'react';
+import { useParams } from 'react-router-dom';
+import { Loader2, AlertCircle } from 'lucide-react';
+import type { Key, Section } from '@jazz/shared';
+import { transposeSections } from '@jazz/music-core';
+import { usePublicGrid } from '@/queries/usePublicGrids';
+import { useEffectiveSettings } from '@/queries/useEffectiveSettings';
+import { usePlaybackStore } from '@/stores/usePlaybackStore';
+import { useTransport } from '@/engine/useTransport';
+import { HarmonyGrid } from '@/components/editor/HarmonyGrid';
+import { PlayerToolbar } from '@/components/editor/PlayerToolbar';
+import { Header } from '@/components/layout/Header';
+import { Breadcrumbs } from '@/components/layout/Breadcrumbs';
 
-/** Полный плеер публичных сеток — F8. */
 export function PlayerPage() {
   const { id } = useParams<{ id: string }>();
+  const { data: grid, isLoading, isError } = usePublicGrid(id ?? '');
+  const settings = useEffectiveSettings();
+  const { status, currentBar, currentBeat, countInActive, countInBeat } = usePlaybackStore();
+  const displayBeat = countInActive ? countInBeat : currentBeat;
+  const countingInBarIndex = countInActive ? currentBar : undefined;
+
+  const [localBpm, setLocalBpm] = useState<number | null>(null);
+  const [localKey, setLocalKey] = useState<Key | null>(null);
+  const [localVolume, setLocalVolume] = useState<number | null>(null);
+
+  const effectiveBpm = localBpm ?? settings.bpm;
+  const effectiveVolume = localVolume ?? settings.volume;
+  const effectiveTimeSig = grid?.timeSignature ?? '4/4';
+  const effectiveKey = localKey ?? grid?.key ?? 'C';
+
+  const rawContent = grid?.content ?? { version: 1 as const, bars: [] };
+  const sections: Section[] =
+    rawContent.sections && rawContent.sections.length > 0
+      ? rawContent.sections
+      : rawContent.bars.length > 0
+        ? [{ id: 'section-main', name: 'A', timeSignature: effectiveTimeSig, bars: rawContent.bars }]
+        : [];
+  const displaySections = transposeSections(sections, grid?.key ?? 'C', effectiveKey);
+  const totalBars = sections.length > 0
+    ? sections.reduce((s, sec) => s + sec.bars.length, 0)
+    : (grid?.barsCount ?? 0);
+
+  const transport = useTransport({
+    settings: { ...settings, bpm: effectiveBpm, volume: effectiveVolume },
+    timeSignature: effectiveTimeSig,
+    totalBars,
+    sections,
+  });
+
+  const playingBarIndex = !countInActive && status !== 'idle' ? currentBar : undefined;
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center gap-2 bg-background text-muted-foreground">
+        <Loader2 className="size-5 animate-spin" />
+        Загрузка…
+      </div>
+    );
+  }
+
+  if (isError || !grid) {
+    return (
+      <div className="flex h-screen flex-col items-center justify-center gap-3 bg-background text-center">
+        <AlertCircle className="size-10 text-destructive" />
+        <p className="text-sm text-muted-foreground">Не удалось загрузить сетку</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 text-center">
-      <Play className="size-12 text-muted-foreground" />
-      <h1 className="text-xl font-semibold">Плеер</h1>
-      <p className="text-sm text-muted-foreground max-w-sm">
-        Полный плеер с метрономом, HarmonyGrid и локальными override будет реализован в F8.
-        {id && <> (сетка: <code className="text-primary">{id}</code>)</>}
-      </p>
-      <Button asChild variant="outline">
-        <Link to="/">← В каталог</Link>
-      </Button>
+    <div className="flex h-screen flex-col bg-background text-foreground">
+      <Header />
+      <Breadcrumbs items={[{ label: 'Каталог', href: '/' }, { label: grid.name }]} />
+
+      {/* Grid (read-only) */}
+      <main className="flex-1 overflow-y-auto py-6 pb-24">
+        <div className="mx-auto max-w-6xl px-4">
+          <h1 className="mb-6 text-xl font-bold text-foreground">{grid.name}</h1>
+        {sections.length > 0 && (
+          <HarmonyGrid
+            sections={displaySections}
+            selectedBarId={null}
+            playingBarIndex={playingBarIndex}
+            countingInBarIndex={countingInBarIndex}
+            readonly
+            onSelectBar={() => {}}
+            onRenameSection={() => {}}
+            onSetSectionTimeSignature={() => {}}
+            onAddBarToSection={() => {}}
+            onSetBarRepeatEnd={() => {}}
+            onAddSection={() => {}}
+          />
+        )}
+        </div>
+      </main>
+
+      <PlayerToolbar
+        status={countInActive ? 'playing' : status}
+        currentBeat={displayBeat}
+        currentBar={currentBar}
+        totalBars={totalBars}
+        totalBeats={parseInt(effectiveTimeSig.split('/')[0] ?? '4', 10)}
+        bpm={effectiveBpm}
+        currentKey={effectiveKey}
+        onPlay={transport.play}
+        onPause={transport.pause}
+        onStop={transport.stop}
+        onPrevBar={transport.prevBar}
+        onNextBar={transport.nextBar}
+        onBpmChange={setLocalBpm}
+        onKeyChange={setLocalKey}
+        volume={effectiveVolume}
+        onVolumeChange={setLocalVolume}
+      />
     </div>
   );
 }

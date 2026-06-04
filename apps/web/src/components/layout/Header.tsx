@@ -11,7 +11,13 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 
-export function TopBar() {
+interface HeaderProps {
+  editorMode?: boolean;
+  onOpenDsl?: () => void;
+  onOpenGenerator?: () => void;
+}
+
+export function Header({ editorMode, onOpenDsl, onOpenGenerator }: HeaderProps) {
   const { user } = useAuth();
   const logout = useLogout();
   const navigate = useNavigate();
@@ -25,23 +31,40 @@ export function TopBar() {
     : '?';
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-card/80 backdrop-blur">
+    <header className="sticky top-0 z-40 shrink-0 border-b border-border bg-card/80 backdrop-blur">
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
         <Link to="/" className="flex items-center gap-2 font-semibold">
           <Music4 className="size-5 text-primary" />
           Jazz Trainer
         </Link>
 
-        <nav className="flex items-center gap-4">
-          <Link to="/" className="text-sm text-muted-foreground hover:text-foreground">
-            Каталог
-          </Link>
-          {user && (
-            <Link to="/my" className="text-sm text-muted-foreground hover:text-foreground">
-              Мои сетки
+        <div className="flex items-center gap-4">
+          <nav className="flex items-center gap-4">
+            <Link to="/" className="text-sm text-muted-foreground hover:text-foreground">
+              Каталог
             </Link>
-          )}
-
+            {user && (
+              <Link to="/my" className="text-sm text-muted-foreground hover:text-foreground">
+                Мои сетки
+              </Link>
+            )}
+            {editorMode && (
+              <>
+                <button
+                  className="text-sm text-muted-foreground hover:text-foreground"
+                  onClick={onOpenDsl}
+                >
+                  DSL
+                </button>
+                <button
+                  className="text-sm text-muted-foreground hover:text-foreground"
+                  onClick={onOpenGenerator}
+                >
+                  Генератор
+                </button>
+              </>
+            )}
+          </nav>
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -75,7 +98,7 @@ export function TopBar() {
               <Link to="/login">Войти</Link>
             </Button>
           )}
-        </nav>
+        </div>
       </div>
     </header>
   );

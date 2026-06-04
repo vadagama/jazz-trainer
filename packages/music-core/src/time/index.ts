@@ -4,6 +4,7 @@ export {
   ticksPerBeat,
   ticksPerBar,
   defaultStrongBeats,
+  defaultSecondStrongBeats,
   type TimeSignature,
 } from './timeSignature.js';
 export {

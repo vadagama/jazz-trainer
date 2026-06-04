@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 
@@ -50,7 +50,6 @@ export function ChordPalette({ selectedBarId, onAddChord }: ChordPaletteProps) {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState<Category>('Jazz');
   const [root, setRoot] = useState<RootNote>('C');
-  const [collapsed, setCollapsed] = useState(false);
 
   const chords = CHORD_TYPES[category];
   const filtered = search
@@ -61,36 +60,13 @@ export function ChordPalette({ selectedBarId, onAddChord }: ChordPaletteProps) {
       )
     : chords;
 
-  if (collapsed) {
-    return (
-      <div className="flex h-full w-8 flex-shrink-0 flex-col items-center border-r border-border bg-card pt-2">
-        <button
-          onClick={() => setCollapsed(false)}
-          className="rounded p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-          title="Развернуть палитру"
-        >
-          <ChevronRight className="size-4" />
-        </button>
-      </div>
-    );
-  }
-
   return (
     <div className="flex h-full w-60 flex-shrink-0 flex-col border-r border-border bg-card">
       {/* Header */}
       <div className="border-b border-border px-3 py-3">
-        <div className="mb-2 flex items-center justify-between">
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Chord Palette
-          </p>
-          <button
-            onClick={() => setCollapsed(true)}
-            className="rounded p-0.5 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-            title="Свернуть палитру"
-          >
-            <ChevronLeft className="size-3.5" />
-          </button>
-        </div>
+        <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          Chord Palette
+        </p>
         <div className="relative">
           <Search className="absolute left-2 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -143,24 +119,13 @@ export function ChordPalette({ selectedBarId, onAddChord }: ChordPaletteProps) {
 
       {/* Chord list */}
       <div className="flex-1 overflow-y-auto px-2 py-2">
-        {!selectedBarId && (
-          <p className="py-1.5 text-[10px] text-muted-foreground">
-            Выберите такт, чтобы добавить аккорд
-          </p>
-        )}
         {filtered.map((chord) => {
           const full = `${root}${chord.symbol}`;
           return (
             <button
               key={chord.symbol}
               onClick={() => onAddChord(full)}
-              disabled={!selectedBarId}
-              className={cn(
-                'flex w-full items-center justify-between rounded px-2 py-2 text-left transition-colors',
-                selectedBarId
-                  ? 'cursor-pointer hover:bg-accent hover:text-accent-foreground'
-                  : 'cursor-not-allowed opacity-50',
-              )}
+              className="flex w-full items-center justify-between rounded px-2 py-2 text-left transition-colors hover:bg-accent hover:text-accent-foreground"
             >
               <span className="text-sm font-medium">{full}</span>
               <span className="text-xs text-muted-foreground">{chord.label}</span>

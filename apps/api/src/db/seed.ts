@@ -58,8 +58,8 @@ export function seedDevUser(db: DrizzleDb): void {
     .values({
       userId: id,
       bpm: 120,
-      clickStrong: 'click_hi',
-      clickWeak: 'click_lo',
+      clickStrong: 'drum-stick',
+      clickWeak: 'drum-stick',
       volume: 0.8,
       countIn: 0,
       createdAt: now,

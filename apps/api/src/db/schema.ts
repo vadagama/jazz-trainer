@@ -33,8 +33,9 @@ export const userSettings = sqliteTable('user_settings', {
     .primaryKey()
     .references(() => users.id, { onDelete: 'cascade' }),
   bpm: integer('bpm').notNull().default(120),
-  clickStrong: text('click_strong').notNull().default('click_hi'),
-  clickWeak: text('click_weak').notNull().default('click_lo'),
+  clickStrong: text('click_strong').default('drum-stick'),
+  clickStrong2: text('click_strong_2').default('drum-stick'),
+  clickWeak: text('click_weak').default('drum-stick'),
   volume: real('volume').notNull().default(0.8),
   countIn: integer('count_in').notNull().default(0),
   createdAt: integer('created_at').notNull(),

@@ -7,8 +7,11 @@ import { ticksToPosition, ticksToSeconds, type MusicalPosition } from '../time/p
 import type { PlaybackStatus } from '../playback/stateMachine.js';
 import type { Instrument, ScheduleWindow } from './instrument.js';
 
+/** Three-level beat accent: first downbeat, secondary accent, or ordinary weak beat. */
+export type BeatType = 'strong' | 'strong2' | 'weak';
+
 /** Sink that actually renders a scheduled click (real impl triggers a Tone synth). */
-export type ClickSink = (atTicks: number, strong: boolean) => void;
+export type ClickSink = (atTicks: number, beatType: BeatType) => void;
 
 export interface TransportEngineOptions {
   bpm?: number;
@@ -73,7 +76,7 @@ export class TransportEngine {
     const ctx = {
       bpm: this.bpm,
       timeSignature: this.timeSignature,
-      scheduleClick: (atTicks: number, strong: boolean) => this.sink(atTicks, strong),
+      scheduleClick: (atTicks: number, beatType: BeatType) => this.sink(atTicks, beatType),
     };
     for (const instrument of this.instruments) {
       instrument.schedule(window, ctx);

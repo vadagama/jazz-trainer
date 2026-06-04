@@ -46,6 +46,7 @@ export async function settingsRoutes(
     const data = parsed.data;
     if (data.bpm !== undefined) patch.bpm = data.bpm;
     if (data.clickStrong !== undefined) patch.clickStrong = data.clickStrong;
+    if (data.clickStrong2 !== undefined) patch.clickStrong2 = data.clickStrong2;
     if (data.clickWeak !== undefined) patch.clickWeak = data.clickWeak;
     if (data.volume !== undefined) patch.volume = data.volume;
     if (data.countIn !== undefined) patch.countIn = data.countIn;

@@ -15,8 +15,6 @@ export function App() {
       <Route element={<AppShell />}>
         {/* Public */}
         <Route path="/" element={<PublicDashboardPage />} />
-        <Route path="/play" element={<PlayerPage />} />
-        <Route path="/play/:id" element={<PlayerPage />} />
         <Route path="/login" element={<LoginPage />} />
 
         {/* Protected */}
@@ -48,7 +46,9 @@ export function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
 
-      {/* Editor has its own full-screen layout (outside AppShell) */}
+      {/* Full-screen layouts outside AppShell */}
+      <Route path="/play" element={<PlayerPage />} />
+      <Route path="/play/:id" element={<PlayerPage />} />
       <Route
         path="/grids/:id"
         element={

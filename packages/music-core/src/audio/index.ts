@@ -9,4 +9,5 @@ export {
   TransportEngine,
   type TransportEngineOptions,
   type ClickSink,
+  type BeatType,
 } from './transportEngine.js';

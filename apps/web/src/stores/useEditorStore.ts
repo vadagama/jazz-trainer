@@ -21,6 +21,7 @@ interface EditorState {
   removeChordFromBar: (barId: string, index: number) => void;
   updateChordInBar: (barId: string, index: number, symbol: string) => void;
   updateChordBeats: (barId: string, index: number, beats: number | null) => void;
+  clearBarChords: (barId: string) => void;
   setBarRepeatEnd: (barId: string, repeatEnd: RepeatEnd | undefined) => void;
 
   addSection: (timeSignature: TimeSignatureString) => void;
@@ -168,6 +169,16 @@ export const useEditorStore = create<EditorState>((set) => ({
       const newSections = updateBarInSections(state.localContent.sections, barId, (bar) => ({
         ...bar,
         chords: bar.chords.map((slot, i) => (i === index ? { ...slot, beats } : slot)),
+      }));
+      return { localContent: syncBars({ ...state.localContent, sections: newSections }), isDirty: true };
+    }),
+
+  clearBarChords: (barId) =>
+    set((state) => {
+      if (!state.localContent?.sections) return state;
+      const newSections = updateBarInSections(state.localContent.sections, barId, (bar) => ({
+        ...bar,
+        chords: [],
       }));
       return { localContent: syncBars({ ...state.localContent, sections: newSections }), isDirty: true };
     }),

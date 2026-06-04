@@ -14,12 +14,24 @@ import {
 function TimeSigDisplay({
   ts,
   onChange,
+  readonly,
 }: {
   ts: TimeSignatureString;
   onChange: (ts: TimeSignatureString) => void;
+  readonly?: boolean;
 }) {
   const [num, den] = ts.split('/');
   const [open, setOpen] = useState(false);
+
+  if (readonly) {
+    return (
+      <div className="flex w-10 flex-shrink-0 flex-col items-center justify-center self-stretch py-1 select-none">
+        <span className="font-serif text-xl font-bold leading-none text-foreground">{num}</span>
+        <div className="my-0.5 w-4 border-t border-foreground/40" />
+        <span className="font-serif text-xl font-bold leading-none text-foreground">{den}</span>
+      </div>
+    );
+  }
 
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
@@ -200,12 +212,18 @@ function BarCard({
   bar,
   index,
   isSelected,
+  isPlaying,
+  isCountingIn,
+  readonly,
   onSelect,
   onSetRepeatEnd,
 }: {
   bar: Bar;
   index: number;
   isSelected: boolean;
+  isPlaying?: boolean;
+  isCountingIn?: boolean;
+  readonly?: boolean;
   onSelect: () => void;
   onSetRepeatEnd: (r: RepeatEnd | undefined) => void;
 }) {
@@ -215,25 +233,34 @@ function BarCard({
     <div
       role="button"
       tabIndex={0}
-      onClick={onSelect}
+      onClick={(e) => { e.stopPropagation(); onSelect(); }}
       onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onSelect()}
       data-testid={`bar-cell-${bar.id}`}
       aria-label={`Такт ${index + 1}${isSelected ? ', выбран' : ''}`}
       aria-pressed={isSelected}
       className={cn(
-        'group relative min-h-[100px] cursor-pointer rounded-lg border bg-card p-4 pr-6 transition-all',
+        'group relative flex min-h-[130px] flex-col justify-center cursor-pointer rounded-lg border bg-card p-4 pr-6 transition-all',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
         'hover:border-primary/50 hover:shadow-sm',
-        isSelected ? 'border-primary shadow-sm ring-1 ring-primary/30' : 'border-border',
+        isCountingIn
+          ? 'border-border'
+          : isPlaying
+            ? 'border-green-500 ring-1 ring-green-500/30 animate-pulse'
+            : isSelected
+              ? 'border-primary shadow-sm ring-1 ring-primary/30'
+              : 'border-border',
       )}
     >
+      {isCountingIn && (
+        <div className="absolute left-0 top-0 h-full w-1 animate-pulse rounded-l-lg bg-red-500" />
+      )}
       <span className="absolute left-2.5 top-2 select-none font-mono text-[10px] text-muted-foreground">
         {index + 1}
       </span>
 
       <div
         className={cn(
-          'mt-3 flex min-h-[52px] items-center gap-1.5',
+          'flex min-h-[52px] items-center gap-1.5',
           chordCount === 1 ? 'justify-center' : 'justify-around',
         )}
       >
@@ -258,7 +285,7 @@ function BarCard({
         )}
       </div>
 
-      <RepeatEndDropdown repeatEnd={bar.repeatEnd} onChange={onSetRepeatEnd} />
+      {!readonly && <RepeatEndDropdown repeatEnd={bar.repeatEnd} onChange={onSetRepeatEnd} />}
     </div>
   );
 }
@@ -274,6 +301,9 @@ function SectionView({
   section,
   globalBarIndex,
   selectedBarId,
+  playingBarIndex,
+  countingInBarIndex,
+  readonly,
   onSelectBar,
   onRename,
   onSetTimeSignature,
@@ -283,6 +313,9 @@ function SectionView({
   section: Section;
   globalBarIndex: number;
   selectedBarId: string | null;
+  playingBarIndex?: number;
+  countingInBarIndex?: number;
+  readonly?: boolean;
   onSelectBar: (id: string) => void;
   onRename: (name: string) => void;
   onSetTimeSignature: (ts: TimeSignatureString) => void;
@@ -306,14 +339,19 @@ function SectionView({
     <div className="flex flex-col gap-2">
       {/* Section header */}
       <div className="flex items-center gap-2 pl-12">
-        <SectionNameEditor name={section.name} onChange={onRename} />
-        <button
-          onClick={onAddBar}
-          className="ml-auto flex items-center gap-1 rounded px-2 py-0.5 text-xs text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-          title="Добавить такт"
-        >
-          <Plus className="size-3" /> Такт
-        </button>
+        {readonly
+          ? <span className="text-sm font-semibold text-foreground select-none">{section.name}</span>
+          : <SectionNameEditor name={section.name} onChange={onRename} />
+        }
+        {!readonly && (
+          <button
+            onClick={onAddBar}
+            className="ml-auto flex items-center gap-1 rounded px-2 py-0.5 text-xs text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+            title="Добавить такт"
+          >
+            <Plus className="size-3" /> Такт
+          </button>
+        )}
       </div>
 
       {/* Bars grid */}
@@ -328,7 +366,7 @@ function SectionView({
           data-testid={`section-grid-${section.id}`}
         >
           {cells.map((cell) => {
-            if (cell.type === 'timesig') return <TimeSigDisplay key="timesig" ts={section.timeSignature} onChange={onSetTimeSignature} />;
+            if (cell.type === 'timesig') return <TimeSigDisplay key="timesig" ts={section.timeSignature} onChange={onSetTimeSignature} readonly={readonly} />;
             if (cell.type === 'spacer') return <div key={cell.key} />;
             return (
               <BarCard
@@ -336,6 +374,9 @@ function SectionView({
                 bar={cell.bar}
                 index={cell.absIndex}
                 isSelected={cell.bar.id === selectedBarId}
+                isPlaying={cell.absIndex === playingBarIndex}
+                isCountingIn={cell.absIndex === countingInBarIndex}
+                readonly={readonly}
                 onSelect={() => onSelectBar(cell.bar.id)}
                 onSetRepeatEnd={(r) => onSetBarRepeatEnd(cell.bar.id, r)}
               />
@@ -352,6 +393,9 @@ function SectionView({
 interface HarmonyGridProps {
   sections: Section[];
   selectedBarId: string | null;
+  playingBarIndex?: number;
+  countingInBarIndex?: number;
+  readonly?: boolean;
   onSelectBar: (barId: string) => void;
   onRenameSection: (sectionId: string, name: string) => void;
   onSetSectionTimeSignature: (sectionId: string, ts: TimeSignatureString) => void;
@@ -363,6 +407,9 @@ interface HarmonyGridProps {
 export function HarmonyGrid({
   sections,
   selectedBarId,
+  playingBarIndex,
+  countingInBarIndex,
+  readonly,
   onSelectBar,
   onRenameSection,
   onSetSectionTimeSignature,
@@ -391,6 +438,9 @@ export function HarmonyGrid({
             section={section}
             globalBarIndex={sectionStart}
             selectedBarId={selectedBarId}
+            playingBarIndex={playingBarIndex}
+            countingInBarIndex={countingInBarIndex}
+            readonly={readonly}
             onSelectBar={onSelectBar}
             onRename={(name) => onRenameSection(section.id, name)}
             onSetTimeSignature={(ts) => onSetSectionTimeSignature(section.id, ts)}
@@ -400,13 +450,15 @@ export function HarmonyGrid({
         );
       })}
 
-      <button
-        onClick={onAddSection}
-        className="flex items-center gap-2 rounded-lg border border-dashed border-border px-4 py-3 text-sm text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground"
-      >
-        <Plus className="size-4" />
-        Добавить секцию
-      </button>
+      {!readonly && (
+        <button
+          onClick={onAddSection}
+          className="flex items-center gap-2 rounded-lg border border-dashed border-border px-4 py-3 text-sm text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground"
+        >
+          <Plus className="size-4" />
+          Добавить секцию
+        </button>
+      )}
     </div>
   );
 }

@@ -1,4 +1,5 @@
-import { ticksPerBeat, defaultStrongBeats, type TimeSignature } from '../time/timeSignature.js';
+import { ticksPerBeat, defaultStrongBeats, defaultSecondStrongBeats, type TimeSignature } from '../time/timeSignature.js';
+import type { BeatType } from './transportEngine.js';
 
 /** A half-open tick window `[fromTicks, toTicks)` to schedule events into. */
 export interface ScheduleWindow {
@@ -11,7 +12,7 @@ export interface ScheduleContext {
   bpm: number;
   timeSignature: TimeSignature;
   /** Schedule a metronome click at an absolute tick from the start of the form. */
-  scheduleClick(atTicks: number, strong: boolean): void;
+  scheduleClick(atTicks: number, beatType: BeatType): void;
 }
 
 /**
@@ -27,8 +28,10 @@ export interface Instrument {
 export interface MetronomeOptions {
   /** Per-beat mask; index = beat-in-bar. Missing/undefined entries default to active. */
   activeBeats?: boolean[];
-  /** Beat indices that get the accented (strong) click; default from the meter. */
+  /** Beat indices that get the first strong click; default from the meter. */
   strongBeats?: number[];
+  /** Beat indices that get the secondary strong click; default from the meter. */
+  secondStrongBeats?: number[];
 }
 
 /**
@@ -47,6 +50,7 @@ export class MetronomeInstrument implements Instrument {
     const sig = ctx.timeSignature;
     const tpBeat = ticksPerBeat(sig);
     const strongBeats = this.opts.strongBeats ?? defaultStrongBeats(sig);
+    const secondStrongBeats = this.opts.secondStrongBeats ?? defaultSecondStrongBeats(sig);
 
     // First beat on or after the window start, aligned to the beat grid.
     const firstBeat = Math.ceil(window.fromTicks / tpBeat);
@@ -55,7 +59,10 @@ export class MetronomeInstrument implements Instrument {
       const beatInBar = ((beat % sig.beatsPerBar) + sig.beatsPerBar) % sig.beatsPerBar;
       const active = this.opts.activeBeats ? (this.opts.activeBeats[beatInBar] ?? true) : true;
       if (!active) continue;
-      ctx.scheduleClick(atTicks, strongBeats.includes(beatInBar));
+      let beatType: BeatType = 'weak';
+      if (strongBeats.includes(beatInBar)) beatType = 'strong';
+      else if (secondStrongBeats.includes(beatInBar)) beatType = 'strong2';
+      ctx.scheduleClick(atTicks, beatType);
     }
   }
 }
