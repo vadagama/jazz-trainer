@@ -2,34 +2,36 @@ import { describe, it, expect } from 'vitest';
 import { MetronomeInstrument, type ScheduleContext } from './instrument.js';
 import { parseTimeSignature } from '../time/timeSignature.js';
 
+import type { BeatType } from './transportEngine.js';
+
 function collect(
   instrument: MetronomeInstrument,
   window: { fromTicks: number; toTicks: number },
   timeSignature: ReturnType<typeof parseTimeSignature>,
   bpm = 120,
-): Array<{ at: number; strong: boolean }> {
-  const clicks: Array<{ at: number; strong: boolean }> = [];
+): Array<{ at: number; beatType: BeatType }> {
+  const clicks: Array<{ at: number; beatType: BeatType }> = [];
   const ctx: ScheduleContext = {
     bpm,
     timeSignature,
-    scheduleClick: (at, strong) => clicks.push({ at, strong }),
+    scheduleClick: (at, beatType) => clicks.push({ at, beatType }),
   };
   instrument.schedule(window, ctx);
   return clicks;
 }
 
 describe('MetronomeInstrument', () => {
-  it('clicks every beat in 4/4, accenting the downbeat', () => {
+  it('clicks every beat in 4/4, accenting downbeat and beat 3', () => {
     const clicks = collect(
       new MetronomeInstrument(),
       { fromTicks: 0, toTicks: 1920 },
       parseTimeSignature('4/4'),
     );
     expect(clicks).toEqual([
-      { at: 0, strong: true },
-      { at: 480, strong: false },
-      { at: 960, strong: false },
-      { at: 1440, strong: false },
+      { at: 0, beatType: 'strong' },
+      { at: 480, beatType: 'weak' },
+      { at: 960, beatType: 'strong2' },
+      { at: 1440, beatType: 'weak' },
     ]);
   });
 
@@ -42,19 +44,19 @@ describe('MetronomeInstrument', () => {
     expect(clicks.map((c) => c.at)).toEqual([0, 960]);
   });
 
-  it('accents beats 0 and 3 in 6/8 (3+3 grouping)', () => {
+  it('accents beat 0 as strong and beat 3 as strong2 in 6/8 (3+3 grouping)', () => {
     const clicks = collect(
       new MetronomeInstrument(),
       { fromTicks: 0, toTicks: 1440 },
       parseTimeSignature('6/8'),
     );
     expect(clicks).toEqual([
-      { at: 0, strong: true },
-      { at: 240, strong: false },
-      { at: 480, strong: false },
-      { at: 720, strong: true },
-      { at: 960, strong: false },
-      { at: 1200, strong: false },
+      { at: 0, beatType: 'strong' },
+      { at: 240, beatType: 'weak' },
+      { at: 480, beatType: 'weak' },
+      { at: 720, beatType: 'strong2' },
+      { at: 960, beatType: 'weak' },
+      { at: 1200, beatType: 'weak' },
     ]);
   });
 

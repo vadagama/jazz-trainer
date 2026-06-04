@@ -21,11 +21,12 @@ export type UserDTO = z.infer<typeof UserDTOSchema>;
 
 // ── User settings ─────────────────────────────────────────────────────────
 
-const ClickSoundSchema = z.enum(CLICK_SOUNDS);
+const ClickSoundSchema = z.enum(CLICK_SOUNDS).nullable();
 
 export const UserSettingsDTOSchema = z.object({
   bpm: z.number().int().min(20).max(400),
   clickStrong: ClickSoundSchema,
+  clickStrong2: ClickSoundSchema,
   clickWeak: ClickSoundSchema,
   volume: z.number().min(0).max(1),
   countIn: z.number().int().min(0),

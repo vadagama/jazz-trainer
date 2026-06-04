@@ -7,8 +7,9 @@ import type { UserSettingsDTO } from '@jazz/shared';
 
 const DEFAULT: UserSettingsDTO = {
   bpm: 120,
-  clickStrong: 'click_hi',
-  clickWeak: 'click_lo',
+  clickStrong: 'drum-stick',
+  clickStrong2: 'drum-stick',
+  clickWeak: 'drum-stick',
   volume: 0.8,
   countIn: 1,
 };

@@ -18,8 +18,8 @@ import { useSettings } from '@/queries/useSettings';
 const mockUseAuth = vi.mocked(useAuth);
 const mockUseSettings = vi.mocked(useSettings);
 
-const SERVER_SETTINGS = { bpm: 90, clickStrong: 'wood' as const, clickWeak: 'beep' as const, volume: 0.5, countIn: 2 };
-const LOCAL_DEFAULTS = { bpm: 120, clickStrong: 'click_hi' as const, clickWeak: 'click_lo' as const, volume: 0.8, countIn: 1 };
+const SERVER_SETTINGS = { bpm: 90, clickStrong: 'retro-stick' as const, clickWeak: 'switch' as const, volume: 0.5, countIn: 2 };
+const LOCAL_DEFAULTS = { bpm: 120, clickStrong: 'drum-stick' as const, clickWeak: 'drum-stick' as const, volume: 0.8, countIn: 1 };
 
 function makeWrapper() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });

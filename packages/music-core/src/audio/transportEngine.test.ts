@@ -11,8 +11,8 @@ describe('TransportEngine', () => {
     engine.scheduleWindow({ fromTicks: 0, toTicks: 1920 });
 
     expect(sink).toHaveBeenCalledTimes(4);
-    expect(sink).toHaveBeenNthCalledWith(1, 0, true);
-    expect(sink).toHaveBeenNthCalledWith(2, 480, false);
+    expect(sink).toHaveBeenNthCalledWith(1, 0, 'strong');
+    expect(sink).toHaveBeenNthCalledWith(2, 480, 'weak');
   });
 
   it('honors the metronome mask through the engine', () => {
@@ -21,7 +21,7 @@ describe('TransportEngine', () => {
     engine.addInstrument(new MetronomeInstrument({ activeBeats: [true, false, false, false] }));
     engine.scheduleWindow({ fromTicks: 0, toTicks: 1920 });
     expect(sink).toHaveBeenCalledTimes(1);
-    expect(sink).toHaveBeenCalledWith(0, true);
+    expect(sink).toHaveBeenCalledWith(0, 'strong');
   });
 
   it('transitions play / pause / stop and resets position on stop', () => {

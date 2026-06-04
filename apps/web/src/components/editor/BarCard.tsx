@@ -16,7 +16,7 @@ export function BarCard({ bar, barIndex, isSelected, isPlaying, onClick }: BarCa
     <div
       role="button"
       tabIndex={0}
-      onClick={onClick}
+      onClick={(e) => { e.stopPropagation(); onClick(); }}
       onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onClick()}
       className={cn(
         'group relative cursor-pointer rounded-lg border bg-card p-4 transition-all',

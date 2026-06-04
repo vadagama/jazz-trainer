@@ -20,8 +20,9 @@ export function toUserDTO(u: UserRecord): UserDTO {
 export function toSettingsDTO(s: UserSettingsRecord): UserSettingsDTO {
   return {
     bpm: s.bpm,
-    clickStrong: s.clickStrong as UserSettingsDTO['clickStrong'],
-    clickWeak: s.clickWeak as UserSettingsDTO['clickWeak'],
+    clickStrong: (s.clickStrong ?? null) as UserSettingsDTO['clickStrong'],
+    clickStrong2: (s.clickStrong2 ?? null) as UserSettingsDTO['clickStrong2'],
+    clickWeak: (s.clickWeak ?? null) as UserSettingsDTO['clickWeak'],
     volume: s.volume,
     countIn: s.countIn,
   };
@@ -89,8 +90,9 @@ export function ensureUserSettings(db: DrizzleDb, userId: string): void {
     .values({
       userId,
       bpm: 120,
-      clickStrong: 'click_hi',
-      clickWeak: 'click_lo',
+      clickStrong: 'drum-stick',
+      clickStrong2: 'drum-stick',
+      clickWeak: 'drum-stick',
       volume: 0.8,
       countIn: 0,
       createdAt: now,

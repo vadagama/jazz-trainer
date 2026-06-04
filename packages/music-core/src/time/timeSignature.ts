@@ -34,10 +34,22 @@ export function ticksPerBar(sig: TimeSignature): number {
 }
 
 /**
- * Default strong (accented) beats. Compound 6/8 is grouped 3+3, so beats 0 and 3
- * are strong; everything else accents the downbeat only.
+ * Default first-strong (beat 1) beats — always just beat 0.
  */
 export function defaultStrongBeats(sig: TimeSignature): number[] {
-  if (sig.beatUnit === 8 && sig.beatsPerBar === 6) return [0, 3];
   return [0];
+}
+
+/**
+ * Default second-strong beats (mid-bar accent):
+ * - 4/4 → beat 2
+ * - 5/4 → beat 3
+ * - 6/8 → beat 3
+ * - 2/4, 3/4 → none
+ */
+export function defaultSecondStrongBeats(sig: TimeSignature): number[] {
+  if (sig.beatUnit === 8 && sig.beatsPerBar === 6) return [3];
+  if (sig.beatsPerBar === 4) return [2];
+  if (sig.beatsPerBar === 5) return [3];
+  return [];
 }

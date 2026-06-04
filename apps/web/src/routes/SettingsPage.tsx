@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import { useSettings, useUpdateSettings } from '@/queries/useSettings';
 import { useLocalSettingsStore } from '@/stores/useLocalSettingsStore';
 import { useAuth } from '@/queries/useAuth';
@@ -13,6 +14,7 @@ export function SettingsPage() {
   const updateServer = useUpdateSettings();
   const { settings: localSettings, setSettings: setLocalSettings } = useLocalSettingsStore();
 
+  const navigate = useNavigate();
   const isServer = Boolean(user && serverSettings);
   const effectiveSettings = isServer ? serverSettings! : localSettings;
 
@@ -22,6 +24,7 @@ export function SettingsPage() {
     } else {
       setLocalSettings(data);
     }
+    navigate('/');
   }
 
   return (
@@ -35,19 +38,24 @@ export function SettingsPage() {
         </p>
       </div>
 
-      <div className="space-y-1">
-        <p className="text-sm font-medium">Тема интерфейса</p>
-        <div className="flex gap-2">
+      <div className="flex items-center justify-between gap-4">
+        <p className="text-sm text-foreground">Тема интерфейса</p>
+        <div className="flex overflow-hidden rounded-lg border border-border">
           <Button
-            variant={theme === 'light' ? 'default' : 'outline'}
+            type="button"
+            variant={theme === 'light' ? 'default' : 'ghost'}
             size="sm"
+            className="rounded-none"
             onClick={() => theme !== 'light' && toggle()}
           >
             Светлая
           </Button>
+          <div className="w-px bg-border" />
           <Button
-            variant={theme === 'dark' ? 'default' : 'outline'}
+            type="button"
+            variant={theme === 'dark' ? 'default' : 'ghost'}
             size="sm"
+            className="rounded-none"
             onClick={() => theme !== 'dark' && toggle()}
           >
             Тёмная

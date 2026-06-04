@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Slider } from '@/components/ui/slider';
 
 interface Props {
   defaultValues: UserSettingsDTO;
@@ -13,11 +14,20 @@ interface Props {
 }
 
 const CLICK_LABELS: Record<string, string> = {
-  click_hi: 'Click Hi',
-  click_lo: 'Click Lo',
-  wood: 'Wood',
-  beep: 'Beep',
+  'analog-metronome': 'Analog Metronome',
+  'button-click': 'Button Click',
+  'drum-stick': 'Drum Stick',
+  'retro-stick': 'Retro Stick',
+  'switch': 'Switch',
 };
+
+const NONE_VALUE = '__none__';
+
+const BEAT_ROWS = [
+  { name: 'clickStrong' as const, label: 'Первая сильная доля' },
+  { name: 'clickStrong2' as const, label: 'Вторая сильная доля' },
+  { name: 'clickWeak' as const, label: 'Слабая доля' },
+];
 
 export function SettingsForm({ defaultValues, onSave, isSaving }: Props) {
   const form = useForm<UserSettingsDTO>({
@@ -25,88 +35,97 @@ export function SettingsForm({ defaultValues, onSave, isSaving }: Props) {
     defaultValues,
   });
 
+  const volumePct = Math.round((form.watch('volume') ?? 0.8) * 100);
+
   return (
-    <form onSubmit={form.handleSubmit(onSave)} className="space-y-5">
-      <div className="space-y-1">
-        <Label htmlFor="bpm">BPM</Label>
-        <Input
-          id="bpm"
-          type="number"
-          min={20}
-          max={400}
-          {...form.register('bpm', { valueAsNumber: true })}
-          className="max-w-[120px]"
-        />
-        {form.formState.errors.bpm && (
-          <p className="text-xs text-destructive">{form.formState.errors.bpm.message}</p>
-        )}
+    <form onSubmit={form.handleSubmit(onSave)} className="space-y-8">
+
+      {/* Воспроизведение */}
+      <div className="space-y-4">
+        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Воспроизведение</p>
+
+        <div className="flex items-start justify-between gap-4">
+          <Label htmlFor="bpm" className="pt-2 text-sm text-foreground">BPM</Label>
+          <div className="flex flex-col items-end gap-1">
+            <Input
+              id="bpm"
+              type="number"
+              min={20}
+              max={400}
+              {...form.register('bpm', { valueAsNumber: true })}
+              className="w-24 text-right"
+            />
+            {form.formState.errors.bpm && (
+              <p className="text-xs text-destructive">{form.formState.errors.bpm.message}</p>
+            )}
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label className="text-sm text-foreground">Громкость</Label>
+            <span className="text-sm tabular-nums text-muted-foreground">{volumePct}%</span>
+          </div>
+          <Controller
+            control={form.control}
+            name="volume"
+            render={({ field }) => (
+              <Slider
+                min={0}
+                max={100}
+                step={5}
+                value={[Math.round((field.value ?? 0.8) * 100)]}
+                onValueChange={(vals) => field.onChange((vals[0] ?? 80) / 100)}
+              />
+            )}
+          />
+        </div>
+
+        <div className="flex items-start justify-between gap-4">
+          <Label htmlFor="countIn" className="pt-2 text-sm text-foreground">Count-in (тактов)</Label>
+          <div className="flex flex-col items-end gap-1">
+            <Input
+              id="countIn"
+              type="number"
+              min={0}
+              {...form.register('countIn', { valueAsNumber: true })}
+              className="w-24 text-right"
+            />
+            {form.formState.errors.countIn && (
+              <p className="text-xs text-destructive">{form.formState.errors.countIn.message}</p>
+            )}
+          </div>
+        </div>
       </div>
 
-      <div className="space-y-1">
-        <Label htmlFor="volume">Громкость ({Math.round((form.watch('volume') ?? 0.8) * 100)}%)</Label>
-        <input
-          id="volume"
-          type="range"
-          min={0}
-          max={1}
-          step={0.05}
-          {...form.register('volume', { valueAsNumber: true })}
-          className="w-full max-w-xs"
-        />
-      </div>
-
-      <div className="space-y-1">
-        <Label htmlFor="clickStrong">Сильная доля</Label>
-        <Controller
-          control={form.control}
-          name="clickStrong"
-          render={({ field }) => (
-            <Select value={field.value} onValueChange={field.onChange}>
-              <SelectTrigger id="clickStrong" className="w-40">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {CLICK_SOUNDS.map((s) => (
-                  <SelectItem key={s} value={s}>{CLICK_LABELS[s]}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-        />
-      </div>
-
-      <div className="space-y-1">
-        <Label htmlFor="clickWeak">Слабая доля</Label>
-        <Controller
-          control={form.control}
-          name="clickWeak"
-          render={({ field }) => (
-            <Select value={field.value} onValueChange={field.onChange}>
-              <SelectTrigger id="clickWeak" className="w-40">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {CLICK_SOUNDS.map((s) => (
-                  <SelectItem key={s} value={s}>{CLICK_LABELS[s]}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-        />
-      </div>
-
-      <div className="space-y-1">
-        <Label htmlFor="countIn">Count-in (тактов)</Label>
-        <Input
-          id="countIn"
-          type="number"
-          min={0}
-          {...form.register('countIn', { valueAsNumber: true })}
-          className="max-w-[100px]"
-        />
-        {form.formState.errors.countIn && (
-          <p className="text-xs text-destructive">{form.formState.errors.countIn.message}</p>
-        )}
+      {/* Метроном */}
+      <div className="space-y-4">
+        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Метроном</p>
+        {BEAT_ROWS.map(({ name, label }) => (
+          <div key={name} className="flex items-center justify-between gap-4">
+            <span className="text-sm text-foreground">{label}</span>
+            <Controller
+              control={form.control}
+              name={name}
+              render={({ field }) => (
+                <Select
+                  value={field.value ?? NONE_VALUE}
+                  onValueChange={(v) => field.onChange(v === NONE_VALUE ? null : v)}
+                >
+                  <SelectTrigger className="w-44">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={NONE_VALUE}>—</SelectItem>
+                    {CLICK_SOUNDS.map((s) => (
+                      <SelectItem key={s} value={s}>{CLICK_LABELS[s]}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+          </div>
+        ))}
       </div>
 
       <Button type="submit" disabled={isSaving}>

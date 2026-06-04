@@ -1,5 +1,12 @@
 import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface Props {
   value: string;
@@ -20,15 +27,16 @@ export function SearchBar({ value, onChange, sort, onSortChange }: Props) {
           className="pl-9"
         />
       </div>
-      <select
-        value={sort}
-        onChange={(e) => onSortChange(e.target.value as 'updated' | 'likes' | 'name')}
-        className="h-9 rounded-md border border-border bg-transparent px-3 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-      >
-        <option value="updated">По дате</option>
-        <option value="likes">По лайкам</option>
-        <option value="name">По названию</option>
-      </select>
+      <Select value={sort} onValueChange={(v) => onSortChange(v as 'updated' | 'likes' | 'name')}>
+        <SelectTrigger className="w-full sm:w-40">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="updated">По дате</SelectItem>
+          <SelectItem value="likes">По лайкам</SelectItem>
+          <SelectItem value="name">По названию</SelectItem>
+        </SelectContent>
+      </Select>
     </div>
   );
 }
