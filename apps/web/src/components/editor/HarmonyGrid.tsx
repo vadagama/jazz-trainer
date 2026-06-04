@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Plus, Infinity, Pencil } from 'lucide-react';
+import { Plus, Infinity, Pencil, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Bar, Section, RepeatEnd, TimeSignatureString } from '@jazz/shared';
 import { TIME_SIGNATURES } from '@jazz/shared';
@@ -217,6 +217,7 @@ function BarCard({
   readonly,
   onSelect,
   onSetRepeatEnd,
+  onMouseEnter,
 }: {
   bar: Bar;
   index: number;
@@ -226,6 +227,7 @@ function BarCard({
   readonly?: boolean;
   onSelect: () => void;
   onSetRepeatEnd: (r: RepeatEnd | undefined) => void;
+  onMouseEnter?: () => void;
 }) {
   const chordCount = bar.chords.length;
 
@@ -235,6 +237,7 @@ function BarCard({
       tabIndex={0}
       onClick={(e) => { e.stopPropagation(); onSelect(); }}
       onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onSelect()}
+      onMouseEnter={onMouseEnter}
       data-testid={`bar-cell-${bar.id}`}
       aria-label={`Такт ${index + 1}${isSelected ? ', выбран' : ''}`}
       aria-pressed={isSelected}
@@ -308,7 +311,9 @@ function SectionView({
   onRename,
   onSetTimeSignature,
   onAddBar,
+  onDeleteSection,
   onSetBarRepeatEnd,
+  onHoverBar,
 }: {
   section: Section;
   globalBarIndex: number;
@@ -320,20 +325,27 @@ function SectionView({
   onRename: (name: string) => void;
   onSetTimeSignature: (ts: TimeSignatureString) => void;
   onAddBar: () => void;
+  onDeleteSection: () => void;
   onSetBarRepeatEnd: (barId: string, r: RepeatEnd | undefined) => void;
+  onHoverBar?: (barId: string | null) => void;
 }) {
   const cols = colsFromTimeSignature(section.timeSignature);
+  const lastRowFull = section.bars.length > 0 && section.bars.length % cols === 0;
 
   type Cell =
     | { type: 'timesig' }
     | { type: 'spacer'; key: string }
-    | { type: 'bar'; bar: Bar; absIndex: number };
+    | { type: 'bar'; bar: Bar; absIndex: number }
+    | { type: 'ghost' };
 
   const cells: Cell[] = [{ type: 'timesig' }];
   section.bars.forEach((bar, i) => {
     if (i > 0 && i % cols === 0) cells.push({ type: 'spacer', key: `sp-${i}` });
     cells.push({ type: 'bar', bar, absIndex: globalBarIndex + i });
   });
+  if (!readonly && section.bars.length > 0 && !lastRowFull) {
+    cells.push({ type: 'ghost' });
+  }
 
   return (
     <div className="flex flex-col gap-2">
@@ -345,29 +357,43 @@ function SectionView({
         }
         {!readonly && (
           <button
-            onClick={onAddBar}
-            className="ml-auto flex items-center gap-1 rounded px-2 py-0.5 text-xs text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-            title="Добавить такт"
+            onClick={(e) => { e.stopPropagation(); onDeleteSection(); }}
+            className="group ml-auto flex items-center gap-1 rounded px-1.5 py-1 text-muted-foreground/40 transition-colors hover:text-primary"
+            title="Удалить секцию"
           >
-            <Plus className="size-3" /> Такт
+            <span className="text-xs">Удалить</span>
+            <Trash2 className="size-3.5" />
           </button>
         )}
       </div>
 
       {/* Bars grid */}
       {section.bars.length === 0 ? (
-        <div className="ml-12 flex h-24 items-center justify-center rounded-lg border border-dashed border-border text-xs text-muted-foreground">
-          Нет тактов — нажмите «Такт» чтобы добавить
+        <div
+          onClick={(e) => { e.stopPropagation(); onAddBar(); }}
+          className="ml-12 flex h-24 cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-dashed border-border text-xs text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground"
+        >
+          <Plus className="size-3" /> Добавить такт
         </div>
       ) : (
         <div
           className="grid gap-2"
           style={{ gridTemplateColumns: `40px repeat(${cols}, 1fr)` }}
           data-testid={`section-grid-${section.id}`}
+          onMouseLeave={() => onHoverBar?.(null)}
         >
           {cells.map((cell) => {
             if (cell.type === 'timesig') return <TimeSigDisplay key="timesig" ts={section.timeSignature} onChange={onSetTimeSignature} readonly={readonly} />;
             if (cell.type === 'spacer') return <div key={cell.key} />;
+            if (cell.type === 'ghost') return (
+              <button
+                key="ghost"
+                onClick={(e) => { e.stopPropagation(); onAddBar(); }}
+                className="flex min-h-[130px] items-center justify-center rounded-lg border border-dashed border-muted-foreground/20 text-muted-foreground/25 transition-colors hover:border-muted-foreground/40 hover:text-muted-foreground/50"
+              >
+                <Plus className="size-10" />
+              </button>
+            );
             return (
               <BarCard
                 key={cell.bar.id}
@@ -379,10 +405,21 @@ function SectionView({
                 readonly={readonly}
                 onSelect={() => onSelectBar(cell.bar.id)}
                 onSetRepeatEnd={(r) => onSetBarRepeatEnd(cell.bar.id, r)}
+                onMouseEnter={() => onHoverBar?.(cell.bar.id)}
               />
             );
           })}
         </div>
+      )}
+
+      {/* "+ Такт" below — shown when last row is full */}
+      {!readonly && lastRowFull && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onAddBar(); }}
+          className="ml-12 flex w-fit items-center gap-1 rounded px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+        >
+          <Plus className="size-3" /> Такт
+        </button>
       )}
     </div>
   );
@@ -400,8 +437,10 @@ interface HarmonyGridProps {
   onRenameSection: (sectionId: string, name: string) => void;
   onSetSectionTimeSignature: (sectionId: string, ts: TimeSignatureString) => void;
   onAddBarToSection: (sectionId: string) => void;
+  onDeleteSection: (sectionId: string) => void;
   onSetBarRepeatEnd: (barId: string, r: RepeatEnd | undefined) => void;
   onAddSection: () => void;
+  onHoverBar?: (barId: string | null) => void;
 }
 
 export function HarmonyGrid({
@@ -414,13 +453,23 @@ export function HarmonyGrid({
   onRenameSection,
   onSetSectionTimeSignature,
   onAddBarToSection,
+  onDeleteSection,
   onSetBarRepeatEnd,
   onAddSection,
+  onHoverBar,
 }: HarmonyGridProps) {
   if (sections.length === 0) {
     return (
-      <div className="flex h-48 items-center justify-center rounded-lg border border-dashed border-border text-sm text-muted-foreground">
-        Нет секций — нажмите «Добавить секцию»
+      <div className="flex flex-col gap-8" data-testid="harmony-grid">
+        {!readonly && (
+          <button
+            onClick={onAddSection}
+            className="flex items-center gap-2 rounded-lg border border-dashed border-border px-4 py-3 text-sm text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground"
+          >
+            <Plus className="size-4" />
+            Добавить секцию
+          </button>
+        )}
       </div>
     );
   }
@@ -445,7 +494,9 @@ export function HarmonyGrid({
             onRename={(name) => onRenameSection(section.id, name)}
             onSetTimeSignature={(ts) => onSetSectionTimeSignature(section.id, ts)}
             onAddBar={() => onAddBarToSection(section.id)}
+            onDeleteSection={() => onDeleteSection(section.id)}
             onSetBarRepeatEnd={onSetBarRepeatEnd}
+            onHoverBar={onHoverBar}
           />
         );
       })}

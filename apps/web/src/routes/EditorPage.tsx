@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Loader2, AlertCircle, Pencil, Save } from 'lucide-react';
 import type { TimeSignatureString, Key } from '@jazz/shared';
@@ -88,18 +88,28 @@ export function EditorPage() {
     markClean,
     selectBar,
     addBarToSection,
+    removeBar,
     addChordToBar,
     clearBarChords,
     setBarRepeatEnd,
     addSection,
+    deleteSection,
     renameSection,
     setSectionTimeSignature,
+    insertBarAfter,
   } = useEditorStore();
 
   const settings = useEffectiveSettings();
   const { status, currentBar, currentBeat, countInActive, countInBeat } = usePlaybackStore();
   const displayBeat = countInActive ? countInBeat : currentBeat;
   const countingInBarIndex = countInActive ? currentBar : undefined;
+
+  const hoveredBarRef = useRef<string | null>(null);
+  const handleHoverBar = useCallback((barId: string | null) => { hoveredBarRef.current = barId; }, []);
+
+  // Compute content/sections early — needed by keyboard handler useEffect below
+  const content = localContent ?? grid?.content ?? { version: 1 as const, bars: [], sections: [] };
+  const sections = content.sections ?? [];
 
   const [dslOpen, setDslOpen] = useState(false);
   const [generatorOpen, setGeneratorOpen] = useState(false);
@@ -114,22 +124,82 @@ export function EditorPage() {
   }, [grid?.content, setContent]);
 
   useEffect(() => {
+    function colsForSection(ts: string): number {
+      if (ts === '6/8') return 3;
+      return parseInt(ts.split('/')[0] ?? '4', 10);
+    }
+
     function handleKeyDown(e: KeyboardEvent) {
-      if (e.key !== 'Escape' || !selectedBarId) return;
       if ((e.target as HTMLElement).closest('input, textarea, [contenteditable]')) return;
-      clearBarChords(selectedBarId);
+      if (e.key === 'Insert') {
+        const targetId = hoveredBarRef.current ?? selectedBarId;
+        if (targetId) { insertBarAfter(targetId); return; }
+      }
+      if (!selectedBarId) return;
+      if (e.key === 'Escape') { clearBarChords(selectedBarId); return; }
+      if (e.key === 'Delete') { removeBar(selectedBarId); return; }
+
+      if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) return;
+      e.preventDefault();
+
+      const allMeta = sections.flatMap((s) => {
+        const cols = colsForSection(s.timeSignature);
+        return s.bars.map((b, i) => ({ barId: b.id, sectionId: s.id, indexInSection: i, cols }));
+      });
+      const flatIdx = allMeta.findIndex((m) => m.barId === selectedBarId);
+      if (flatIdx === -1) return;
+      const cur = allMeta[flatIdx];
+      if (!cur) return;
+
+      let targetId: string | null = null;
+
+      if (e.key === 'ArrowLeft') {
+        targetId = allMeta[flatIdx - 1]?.barId ?? null;
+      } else if (e.key === 'ArrowRight') {
+        targetId = allMeta[flatIdx + 1]?.barId ?? null;
+      } else {
+        const col = cur.indexInSection % cur.cols;
+        const row = Math.floor(cur.indexInSection / cur.cols);
+        const sectionIdx = sections.findIndex((s) => s.id === cur.sectionId);
+
+        if (e.key === 'ArrowUp') {
+          if (row > 0) {
+            const targetInSection = (row - 1) * cur.cols + col;
+            targetId = allMeta.find((m) => m.sectionId === cur.sectionId && m.indexInSection === targetInSection)?.barId ?? null;
+          } else if (sectionIdx > 0) {
+            const prev = sections[sectionIdx - 1]!;
+            const prevCols = colsForSection(prev.timeSignature);
+            const prevLastRow = Math.ceil(prev.bars.length / prevCols) - 1;
+            const clampedCol = Math.min(col, prevCols - 1);
+            const idx = Math.min(prevLastRow * prevCols + clampedCol, prev.bars.length - 1);
+            targetId = prev.bars[idx]?.id ?? null;
+          }
+        } else { // ArrowDown
+          const nextRow = row + 1;
+          const targetInSection = nextRow * cur.cols + col;
+          const sectionBarCount = sections.find((s) => s.id === cur.sectionId)?.bars.length ?? 0;
+          if (targetInSection < sectionBarCount) {
+            targetId = allMeta.find((m) => m.sectionId === cur.sectionId && m.indexInSection === targetInSection)?.barId ?? null;
+          } else if (nextRow * cur.cols >= sectionBarCount && sectionIdx < sections.length - 1) {
+            const next = sections[sectionIdx + 1]!;
+            const nextCols = colsForSection(next.timeSignature);
+            const clampedCol = Math.min(col, nextCols - 1);
+            targetId = next.bars[clampedCol]?.id ?? null;
+          }
+        }
+      }
+
+      if (targetId) selectBar(targetId);
     }
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [selectedBarId, clearBarChords]);
+  }, [selectedBarId, clearBarChords, removeBar, insertBarAfter, sections, selectBar]);
 
   useEffect(() => {
     if (grid?.key) setPlayerKey(grid.key);
   }, [grid?.key]);
 
   // Compute transport params with safe fallbacks (must be before early returns)
-  const content = localContent ?? grid?.content ?? { version: 1 as const, bars: [], sections: [] };
-  const sections = content.sections ?? [];
   const originalKey: Key = grid?.key ?? 'C';
   const displaySections = transposeSections(sections, originalKey, playerKey);
   const defaultTimeSignature: TimeSignatureString =
@@ -147,6 +217,9 @@ export function EditorPage() {
   });
 
   const playingBarIndex = !countInActive && status !== 'idle' ? currentBar : undefined;
+  const selectedBarFlatIndex = selectedBarId != null
+    ? sections.flatMap((s) => s.bars).findIndex((b) => b.id === selectedBarId)
+    : undefined;
 
   if (isLoading) {
     return (
@@ -195,8 +268,6 @@ export function EditorPage() {
         onOpenDsl={() => setDslOpen(true)}
         onOpenGenerator={() => setGeneratorOpen(true)}
       />
-      <Breadcrumbs items={[{ label: 'Мои сетки', href: '/my' }, { label: grid.name }]} />
-
       <div className="flex flex-1 overflow-hidden">
         {/* Left: Chord Palette — slides in when a bar is selected */}
         <div
@@ -208,15 +279,19 @@ export function EditorPage() {
           <ChordPalette
             selectedBarId={selectedBarId}
             onAddChord={handleAddChordFromPalette}
+            onDeleteBar={() => selectedBarId && removeBar(selectedBarId)}
+            onClearBar={() => selectedBarId && clearBarChords(selectedBarId)}
           />
         </div>
 
         {/* Center: sections + title */}
         <main
-          className="flex-1 overflow-y-auto py-6 pb-24"
+          className="flex-1 overflow-y-auto pb-24"
           data-testid="editor-page"
           onClick={() => selectBar(null)}
         >
+          <Breadcrumbs items={[{ label: 'Мои сетки', href: '/my' }, { label: grid.name }]} />
+          <div className="py-6">
           <GridContainer>
             <div className="mb-6">
               <CompositionTitle name={grid.name} onSave={handleSaveTitle} />
@@ -231,7 +306,9 @@ export function EditorPage() {
               onRenameSection={renameSection}
               onSetSectionTimeSignature={setSectionTimeSignature}
               onAddBarToSection={addBarToSection}
+              onDeleteSection={deleteSection}
               onSetBarRepeatEnd={setBarRepeatEnd}
+              onHoverBar={handleHoverBar}
               onAddSection={() => addSection(defaultTimeSignature)}
             />
 
@@ -254,6 +331,7 @@ export function EditorPage() {
               </div>
             )}
           </GridContainer>
+          </div>
         </main>
       </div>
 
@@ -262,6 +340,7 @@ export function EditorPage() {
         currentBeat={displayBeat}
         currentBar={currentBar}
         totalBars={totalBars}
+        selectedBarIndex={selectedBarFlatIndex !== undefined && selectedBarFlatIndex >= 0 ? selectedBarFlatIndex : undefined}
         totalBeats={parseInt(effectiveTimeSig.split('/')[0] ?? '4', 10)}
         bpm={effectiveBpm}
         currentKey={playerKey}

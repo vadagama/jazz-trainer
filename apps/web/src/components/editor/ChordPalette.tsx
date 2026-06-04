@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Search } from 'lucide-react';
+import { Eraser, Search, Trash2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 const ROOT_NOTES = ['C', 'C#', 'D', 'Db', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'] as const;
@@ -44,9 +45,11 @@ type Category = keyof typeof CHORD_TYPES;
 interface ChordPaletteProps {
   selectedBarId: string | null;
   onAddChord: (symbol: string) => void;
+  onDeleteBar: () => void;
+  onClearBar: () => void;
 }
 
-export function ChordPalette({ selectedBarId, onAddChord }: ChordPaletteProps) {
+export function ChordPalette({ selectedBarId, onAddChord, onDeleteBar, onClearBar }: ChordPaletteProps) {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState<Category>('Jazz');
   const [root, setRoot] = useState<RootNote>('C');
@@ -62,6 +65,33 @@ export function ChordPalette({ selectedBarId, onAddChord }: ChordPaletteProps) {
 
   return (
     <div className="flex h-full w-60 flex-shrink-0 flex-col border-r border-border bg-card">
+      {/* Settings */}
+      <div className="border-b border-border px-3 py-3">
+        <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          Settings
+        </p>
+        <div className="flex gap-1.5">
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex-1 gap-1.5 hover:border-primary hover:text-primary"
+            onClick={onClearBar}
+          >
+            <Eraser className="size-3.5" />
+            Clear
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex-1 gap-1.5 hover:border-destructive hover:text-destructive"
+            onClick={onDeleteBar}
+          >
+            <Trash2 className="size-3.5" />
+            Delete
+          </Button>
+        </div>
+      </div>
+
       {/* Header */}
       <div className="border-b border-border px-3 py-3">
         <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -136,6 +166,7 @@ export function ChordPalette({ selectedBarId, onAddChord }: ChordPaletteProps) {
           <p className="py-4 text-center text-xs text-muted-foreground">Нет совпадений</p>
         )}
       </div>
+
     </div>
   );
 }

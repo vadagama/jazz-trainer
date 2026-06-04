@@ -15,6 +15,7 @@ interface EditorState {
 
   addBar: () => void;
   addBarToSection: (sectionId: string) => void;
+  insertBarAfter: (barId: string) => void;
   removeBar: (barId: string) => void;
 
   addChordToBar: (barId: string, symbol: string) => void;
@@ -25,6 +26,7 @@ interface EditorState {
   setBarRepeatEnd: (barId: string, repeatEnd: RepeatEnd | undefined) => void;
 
   addSection: (timeSignature: TimeSignatureString) => void;
+  deleteSection: (sectionId: string) => void;
   renameSection: (sectionId: string, name: string) => void;
   setSectionTimeSignature: (sectionId: string, ts: TimeSignatureString) => void;
 }
@@ -119,9 +121,30 @@ export const useEditorStore = create<EditorState>((set) => ({
       };
     }),
 
+  insertBarAfter: (barId) =>
+    set((state) => {
+      if (!state.localContent?.sections) return state;
+      const newBar: Bar = { id: nanoid(8), chords: [] };
+      const newSections = state.localContent.sections.map((s) => {
+        const idx = s.bars.findIndex((b) => b.id === barId);
+        if (idx === -1) return s;
+        const newBars = [...s.bars];
+        newBars.splice(idx + 1, 0, newBar);
+        return { ...s, bars: newBars };
+      });
+      return {
+        localContent: syncBars({ ...state.localContent, sections: newSections }),
+        isDirty: true,
+        selectedBarId: newBar.id,
+      };
+    }),
+
   removeBar: (barId) =>
     set((state) => {
       if (!state.localContent?.sections) return state;
+      const allBars = state.localContent.sections.flatMap((s) => s.bars);
+      const idx = allBars.findIndex((b) => b.id === barId);
+      const prevBarId = idx > 0 ? (allBars[idx - 1]?.id ?? null) : (allBars[idx + 1]?.id ?? null);
       const newSections = state.localContent.sections.map((s) => ({
         ...s,
         bars: s.bars.filter((b) => b.id !== barId),
@@ -129,7 +152,7 @@ export const useEditorStore = create<EditorState>((set) => ({
       return {
         localContent: syncBars({ ...state.localContent, sections: newSections }),
         isDirty: true,
-        selectedBarId: state.selectedBarId === barId ? null : state.selectedBarId,
+        selectedBarId: state.selectedBarId === barId ? prevBarId : state.selectedBarId,
       };
     }),
 
@@ -197,16 +220,31 @@ export const useEditorStore = create<EditorState>((set) => ({
     set((state) => {
       if (!state.localContent?.sections) return state;
       const sections = state.localContent.sections;
+      const firstBar: Bar = { id: nanoid(8), chords: [] };
       const newSection: Section = {
         id: nanoid(8),
         name: nextSectionName(sections),
         timeSignature,
-        bars: [],
+        bars: [firstBar],
       };
       const newSections = [...sections, newSection];
       return {
         localContent: syncBars({ ...state.localContent, sections: newSections }),
         isDirty: true,
+        selectedBarId: firstBar.id,
+      };
+    }),
+
+  deleteSection: (sectionId) =>
+    set((state) => {
+      if (!state.localContent?.sections) return state;
+      const deleted = state.localContent.sections.find((s) => s.id === sectionId);
+      const deletedBarIds = new Set(deleted?.bars.map((b) => b.id) ?? []);
+      const newSections = state.localContent.sections.filter((s) => s.id !== sectionId);
+      return {
+        localContent: syncBars({ ...state.localContent, sections: newSections }),
+        isDirty: true,
+        selectedBarId: deletedBarIds.has(state.selectedBarId ?? '') ? null : state.selectedBarId,
       };
     }),
 

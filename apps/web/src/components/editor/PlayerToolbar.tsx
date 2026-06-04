@@ -14,6 +14,7 @@ interface PlayerToolbarProps {
   totalBeats?: number;
   currentBar?: number;
   totalBars?: number;
+  selectedBarIndex?: number;
   bpm?: number;
   volume?: number; // 0–1
   currentKey: Key;
@@ -33,6 +34,7 @@ export function PlayerToolbar({
   totalBeats = 4,
   currentBar,
   totalBars,
+  selectedBarIndex,
   bpm = 120,
   volume: volumeProp = 0.8,
   currentKey,
@@ -177,13 +179,16 @@ export function PlayerToolbar({
             />
           ))}
         </div>
-        {currentBar != null && totalBars != null && (
-          <span className="text-sm tabular-nums text-muted-foreground">
-            <span className="inline-block w-[2ch] text-right">{currentBar + 1}</span>
-            /
-            <span className="inline-block w-[2ch] text-left">{totalBars}</span>
-          </span>
-        )}
+        {totalBars != null && (() => {
+          const displayBar = isIdle && selectedBarIndex != null ? selectedBarIndex : currentBar;
+          return displayBar != null ? (
+            <span className="text-sm tabular-nums text-muted-foreground">
+              <span className="inline-block w-[2ch] text-right">{displayBar + 1}</span>
+              /
+              <span className="inline-block w-[2ch] text-left">{totalBars}</span>
+            </span>
+          ) : null;
+        })()}
       </div>
 
       <div className="h-6 w-px bg-border" />

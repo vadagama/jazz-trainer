@@ -23,6 +23,12 @@ const CLICK_LABELS: Record<string, string> = {
 
 const NONE_VALUE = '__none__';
 
+function allowOnlyDigits(e: React.KeyboardEvent<HTMLInputElement>) {
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  if (['Backspace', 'Delete', 'Tab', 'Enter', 'ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) return;
+  if (!/^\d$/.test(e.key)) e.preventDefault();
+}
+
 const BEAT_ROWS = [
   { name: 'clickStrong' as const, label: 'Первая сильная доля' },
   { name: 'clickStrong2' as const, label: 'Вторая сильная доля' },
@@ -37,6 +43,9 @@ export function SettingsForm({ defaultValues, onSave, isSaving }: Props) {
 
   const volumePct = Math.round((form.watch('volume') ?? 0.8) * 100);
 
+  const bpmField = form.register('bpm', { setValueAs: (v: string) => v === '' ? NaN : parseInt(v, 10) });
+  const countInField = form.register('countIn', { setValueAs: (v: string) => v === '' ? NaN : parseInt(v, 10) });
+
   return (
     <form onSubmit={form.handleSubmit(onSave)} className="space-y-8">
 
@@ -49,10 +58,17 @@ export function SettingsForm({ defaultValues, onSave, isSaving }: Props) {
           <div className="flex flex-col items-end gap-1">
             <Input
               id="bpm"
-              type="number"
-              min={20}
-              max={400}
-              {...form.register('bpm', { valueAsNumber: true })}
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              onKeyDown={allowOnlyDigits}
+              {...bpmField}
+              onChange={(e) => {
+                e.target.value = e.target.value.replace(/\D/g, '');
+                const n = parseInt(e.target.value, 10);
+                if (!isNaN(n) && n > 400) e.target.value = '400';
+                bpmField.onChange(e);
+              }}
               className="w-24 text-right"
             />
             {form.formState.errors.bpm && (
@@ -86,9 +102,17 @@ export function SettingsForm({ defaultValues, onSave, isSaving }: Props) {
           <div className="flex flex-col items-end gap-1">
             <Input
               id="countIn"
-              type="number"
-              min={0}
-              {...form.register('countIn', { valueAsNumber: true })}
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              onKeyDown={allowOnlyDigits}
+              {...countInField}
+              onChange={(e) => {
+                e.target.value = e.target.value.replace(/\D/g, '');
+                const n = parseInt(e.target.value, 10);
+                if (!isNaN(n) && n > 4) e.target.value = '4';
+                countInField.onChange(e);
+              }}
               className="w-24 text-right"
             />
             {form.formState.errors.countIn && (

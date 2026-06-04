@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Trash2, Music, Pencil } from 'lucide-react';
 import type { HarmonyGridSummaryDTO } from '@jazz/shared';
@@ -5,6 +6,17 @@ import { useDeleteGrid } from '@/queries/useMyGrids';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 interface Props {
   grid: HarmonyGridSummaryDTO;
@@ -12,6 +24,7 @@ interface Props {
 
 export function MyGridCard({ grid }: Props) {
   const deleteGrid = useDeleteGrid();
+  const [open, setOpen] = useState(false);
 
   return (
     <Card className="flex flex-col">
@@ -35,20 +48,34 @@ export function MyGridCard({ grid }: Props) {
             <Pencil className="size-4" /> Редактировать
           </Link>
         </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="text-muted-foreground hover:text-destructive"
-          disabled={deleteGrid.isPending}
-          onClick={() => {
-            if (confirm(`Удалить «${grid.name}»?`)) {
-              deleteGrid.mutate(grid.id);
-            }
-          }}
-          aria-label="Удалить сетку"
-        >
-          <Trash2 className="size-4" />
-        </Button>
+
+        <AlertDialog open={open} onOpenChange={setOpen}>
+          <AlertDialogTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-muted-foreground hover:text-destructive"
+              disabled={deleteGrid.isPending}
+              aria-label="Удалить сетку"
+            >
+              <Trash2 className="size-4" />
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Удалить сетку?</AlertDialogTitle>
+              <AlertDialogDescription>
+                «{grid.name}» будет удалена без возможности восстановления.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Отмена</AlertDialogCancel>
+              <AlertDialogAction onClick={() => deleteGrid.mutate(grid.id)}>
+                Удалить
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </CardFooter>
     </Card>
   );
