@@ -88,6 +88,7 @@ export function PlayerPage() {
             onRenameSection={() => {}}
             onSetSectionTimeSignature={() => {}}
             onAddBarToSection={() => {}}
+            onDeleteSection={() => {}}
             onSetBarRepeatEnd={() => {}}
             onAddSection={() => {}}
           />

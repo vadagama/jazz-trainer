@@ -19,6 +19,7 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);
+  --color-destructive: var(--destructive);
   --color-border: var(--border);
   --color-ring: var(--ring);
   --radius-lg: var(--radius);
@@ -45,6 +46,7 @@
   --accent-foreground: oklch(0.205 0 0);
   --border: oklch(0.922 0 0);
   --ring: oklch(0.55 0.18 265);
+  --destructive: oklch(0.577 0.245 27);
 }
 
 /* Dark palette (default). */
@@ -65,6 +67,7 @@
   --accent-foreground: oklch(0.95 0 0);
   --border: oklch(0.3 0.012 265);
   --ring: oklch(0.68 0.17 265);
+  --destructive: oklch(0.577 0.245 27);
 }
 
 @layer base {

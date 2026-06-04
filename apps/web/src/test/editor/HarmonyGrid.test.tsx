@@ -18,6 +18,7 @@ const defaultProps = {
   onRenameSection: noop,
   onSetSectionTimeSignature: noop,
   onAddBarToSection: noop,
+  onDeleteSection: noop,
   onSetBarRepeatEnd: noop,
   onAddSection: noop,
 };
