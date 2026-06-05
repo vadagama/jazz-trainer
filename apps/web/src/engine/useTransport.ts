@@ -224,7 +224,7 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
       new Tone.Sampler({
         urls: buildBassFingerUrls(rr),
         baseUrl: BASS_BASE_URL,
-        release: 0.2,
+        release: 0.5,
       }).connect(bassChannel),
     );
     bassRRRef.current = rrSamplers;

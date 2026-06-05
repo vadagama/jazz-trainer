@@ -3,6 +3,18 @@ import { ticksPerBar, ticksPerBeat } from '../time/timeSignature.js';
 import type { Instrument, ScheduleContext, ScheduleWindow } from './instrument.js';
 import type { ChordTimeline } from './chordTimeline.js';
 
+/** How many notes this complexity level places per bar. */
+const NOTES_PER_BAR: Record<1 | 2 | 3 | 4 | 5, number> = {
+  1: 1, // root on beat 1 → whole-note slot
+  2: 4, // root on every beat → quarter-note slots
+  3: 4, // chord tones → quarter-note slots
+  4: 4, // walking + approach → quarter-note slots
+  5: 4, // full walking → quarter-note slots
+};
+
+/** Fraction of the slot actually sounded — leaves a natural gap before the next note. */
+const GATE_RATIO = 0.92;
+
 export class BassInstrument implements Instrument {
   private timeline: ChordTimeline;
   private complexity: 1 | 2 | 3 | 4 | 5 = 1;
@@ -25,8 +37,12 @@ export class BassInstrument implements Instrument {
     const sig = ctx.timeSignature;
     const tpBar = ticksPerBar(sig);
     const tpBeat = ticksPerBeat(sig);
-    // Note lasts 80% of a beat — decays before the next beat hits
-    const durationTicks = Math.floor(tpBeat * 0.8);
+
+    // Note duration = its time slot × GATE_RATIO:
+    //   complexity 1 → whole bar (whole note in 4/4)
+    //   complexity 2+ → one beat (quarter note in 4/4)
+    const slotTicks = Math.floor(tpBar / NOTES_PER_BAR[this.complexity]);
+    const durationTicks = Math.floor(slotTicks * GATE_RATIO);
 
     const firstBar = Math.ceil(window.fromTicks / tpBar);
 
@@ -39,6 +55,8 @@ export class BassInstrument implements Instrument {
       const rootNote = resolveRootNote(chord);
       ctx.scheduleNote(barStartTicks, rootNote, 0.78, durationTicks, 'finger');
     }
+
+    void tpBeat; // referenced by future complexities
   }
 }
 
