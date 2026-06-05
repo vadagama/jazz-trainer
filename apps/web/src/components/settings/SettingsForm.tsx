@@ -227,7 +227,7 @@ export function SettingsForm({ defaultValues, onSave, isSaving }: Props) {
                   <SelectItem value="2">2 — Корень на каждой доле</SelectItem>
                   <SelectItem value="3">3 — Корень + квинта</SelectItem>
                   <SelectItem value="4">4 — Звуки аккорда</SelectItem>
-                  <SelectItem value="5" disabled>5 — Walking + хроматика</SelectItem>
+                  <SelectItem value="5">5 — Walking + хроматика</SelectItem>
                 </SelectContent>
               </Select>
             )}

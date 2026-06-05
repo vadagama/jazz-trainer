@@ -1,6 +1,6 @@
 import type { ChordSymbol } from '@jazz/shared';
 import { ticksPerBar, ticksPerBeat, defaultStrongBeats, defaultSecondStrongBeats } from '../time/timeSignature.js';
-import type { Instrument, ScheduleContext, ScheduleWindow } from './instrument.js';
+import type { BassArticulation, Instrument, ScheduleContext, ScheduleWindow } from './instrument.js';
 import type { ChordTimeline } from './chordTimeline.js';
 
 /** How many notes this complexity level places per bar. */
@@ -116,6 +116,38 @@ export class BassInstrument implements Instrument {
         }
         ctx.scheduleNote(atTicks, note, velocity, durationTicks, articulation);
       }
+    } else if (this.complexity === 5) {
+      // Walking bass: root-third-fifth on inner beats, chromatic approach on last beat of each bar.
+      // Even bars approach from above (descend into downbeat), odd bars from below (ascend).
+      const strongBeats = new Set([...defaultStrongBeats(sig), ...defaultSecondStrongBeats(sig)]);
+      const firstBeat = Math.ceil(window.fromTicks / tpBeat);
+      for (let beat = firstBeat; beat * tpBeat < window.toTicks; beat++) {
+        const atTicks = beat * tpBeat;
+        const beatInBar = beat % sig.beatsPerBar;
+        const barIndex = Math.floor(beat / sig.beatsPerBar);
+        const chord = this.timeline.getChordAtTick(atTicks, sig);
+        if (!chord) continue;
+        const isLastBeat = beatInBar === sig.beatsPerBar - 1;
+        const isStrong = strongBeats.has(beatInBar);
+        const velocity = BEAT_VELOCITY[beatInBar] ?? BEAT_VELOCITY[0];
+        let note: string;
+        let articulation: BassArticulation;
+        if (isLastBeat) {
+          const nextChord = this.timeline.getChordAtTick((barIndex + 1) * tpBar, sig);
+          note = nextChord
+            ? resolveApproachNote(nextChord, barIndex % 2 === 0, 2)
+            : resolveSeventhNote(chord, 2);
+          articulation = 'finger';
+        } else {
+          articulation = isStrong ? 'pluck' : 'finger';
+          switch (beatInBar) {
+            case 0:  note = resolveRootNote(chord, 2); break;
+            case 1:  note = resolveThirdNote(chord, 2); break;
+            default: note = resolveFifthNote(chord, 2); break;
+          }
+        }
+        ctx.scheduleNote(atTicks, note, velocity, durationTicks, articulation);
+      }
     }
   }
 }
@@ -176,4 +208,27 @@ function resolveThirdNote(chord: ChordSymbol, rootOctave: number): string {
 
 function resolveSeventhNote(chord: ChordSymbol, rootOctave: number): string {
   return resolveIntervalNote(chord, rootOctave, seventhInterval(chord));
+}
+
+/**
+ * Chromatic approach to nextChord's root from one semitone above (fromAbove=true)
+ * or below (fromAbove=false). Octave wraps are handled so the approach note is
+ * always on the correct side of the target pitch. Walking bass ceiling applied.
+ */
+function resolveApproachNote(nextChord: ChordSymbol, fromAbove: boolean, targetOctave: number): string {
+  const accOffset = nextChord.rootAccidental === '#' ? 1 : nextChord.rootAccidental === 'b' ? -1 : 0;
+  const nextRootSemitone = ((NOTE_SEMITONES[nextChord.root] ?? 0) + accOffset + 12) % 12;
+  let approachSemitone: number;
+  let approachOctave: number;
+  if (fromAbove) {
+    approachSemitone = (nextRootSemitone + 1) % 12;
+    // Wrap means approach crossed 12→0 boundary: it lands one octave higher
+    approachOctave = approachSemitone <= nextRootSemitone ? targetOctave + 1 : targetOctave;
+  } else {
+    approachSemitone = (nextRootSemitone + 11) % 12;
+    // Wrap means approach crossed 0→11 boundary: it lands one octave lower
+    approachOctave = approachSemitone >= nextRootSemitone ? targetOctave - 1 : targetOctave;
+  }
+  if (approachOctave > 3 || (approachOctave === 3 && approachSemitone > 7)) approachOctave -= 1;
+  return `${SEMITONE_NAMES[approachSemitone]}${approachOctave}`;
 }
