@@ -13,6 +13,7 @@ import {
   defaultSecondStrongBeats,
   METRONOME_SAMPLE_BY_ID,
   buildBassFingerUrls,
+  buildBassPluckUrls,
   type BeatType,
   type NoteSink,
   type ChordTimelineEntry,
@@ -161,8 +162,9 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
   const strongUrlRef = useRef('');
   const strong2UrlRef = useRef('');
   const weakUrlRef = useRef('');
-  // Bass: 4 Tone.Samplers (one per RR variant) + a Channel for volume
+  // Bass: 4 Tone.Samplers per articulation (finger + pluck) + a Channel for volume
   const bassRRRef = useRef<Tone.Sampler[]>([]);
+  const bassPluckRRRef = useRef<Tone.Sampler[]>([]);
   const bassChannelRef = useRef<Tone.Channel | null>(null);
   const bassInstrumentRef = useRef<BassInstrument | null>(null);
   const rrCounterRef = useRef(new RoundRobinCounter());
@@ -222,7 +224,7 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     }).toDestination();
     bassChannelRef.current = bassChannel;
 
-    // One Sampler per RR variant so we can cycle through real recordings
+    // One Sampler per RR variant per articulation so we can cycle through real recordings
     const rrSamplers = ([1, 2, 3, 4] as const).map((rr) =>
       new Tone.Sampler({
         urls: buildBassFingerUrls(rr),
@@ -232,16 +234,27 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     );
     bassRRRef.current = rrSamplers;
 
+    const pluckSamplers = ([1, 2, 3, 4] as const).map((rr) =>
+      new Tone.Sampler({
+        urls: buildBassPluckUrls(rr),
+        baseUrl: BASS_BASE_URL,
+        release: 0.5,
+      }).connect(bassChannel),
+    );
+    bassPluckRRRef.current = pluckSamplers;
+
     // Pre-warm: start AudioContext on any first user gesture so all OGG/MP3 samples
     // finish decoding before the user clicks Play. Without this, AudioContext stays
     // suspended until play() and Tone.loaded() blocks for the full decode (~200–800 ms).
     const warmAudioContext = () => { void Tone.start(); };
     document.addEventListener('pointerdown', warmAudioContext, { once: true });
 
-    const noteSink: NoteSink = (atTicks, note, velocity, durationTicks, _articulation) => {
+    const noteSink: NoteSink = (atTicks, note, velocity, durationTicks, articulation) => {
       if (!(optsRef.current.settings.bassEnabled ?? true)) return;
-      const rrIndex = rrCounterRef.current.next(note, 'finger') - 1; // 0-based
-      const sampler = bassRRRef.current[rrIndex];
+      const art = articulation === 'pluck' ? 'pluck' : 'finger';
+      const pool = art === 'pluck' ? bassPluckRRRef.current : bassRRRef.current;
+      const rrIndex = rrCounterRef.current.next(note, art) - 1; // 0-based
+      const sampler = pool[rrIndex];
       if (!sampler) return;
       // Convert ticks to seconds: ticks / PPQ * (60 / bpm)
       const durationSecs = (durationTicks * 60) / (480 * optsRef.current.settings.bpm);
@@ -292,6 +305,8 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
       weakPlayerRef.current = null;
       bassRRRef.current.forEach((s) => s.dispose());
       bassRRRef.current = [];
+      bassPluckRRRef.current.forEach((s) => s.dispose());
+      bassPluckRRRef.current = [];
       bassChannelRef.current?.dispose();
       bassChannelRef.current = null;
       bassInstrumentRef.current = null;

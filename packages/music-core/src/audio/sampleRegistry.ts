@@ -46,6 +46,16 @@ export function buildBassFingerUrls(rr: 1 | 2 | 3 | 4): NoteMap {
   );
 }
 
+/** Build a NoteMap for the pluck articulation at the given RR variant (1–4). */
+export function buildBassPluckUrls(rr: 1 | 2 | 3 | 4): NoteMap {
+  return Object.fromEntries(
+    BASS_ANCHOR_NOTES.map((note) => [
+      note,
+      `pluck/sneakybass_${note.toLowerCase()}_pluck_rr${rr}.ogg`,
+    ]),
+  );
+}
+
 export const BASS_SAMPLER: SamplerDef = {
   baseUrl: '/samples/bass/',
   notes: buildBassFingerUrls(1),

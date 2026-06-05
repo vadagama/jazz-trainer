@@ -20,6 +20,7 @@ export {
   PIANO_SAMPLER,
   DRUMS_DRUMKIT,
   buildBassFingerUrls,
+  buildBassPluckUrls,
   type MetronomeSampleDef,
   type SamplerDef,
   type DrumkitDef,
