@@ -17,6 +17,8 @@ const DEFAULT_SETTINGS: LocalSettings = {
   clickWeak: 'drum-stick',
   volume: 0.8,
   countIn: 1,
+  bassEnabled: true,
+  bassVolume: 0.7,
 };
 
 export const useLocalSettingsStore = create<LocalSettingsStore>()(

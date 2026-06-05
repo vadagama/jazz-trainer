@@ -30,6 +30,8 @@ export const UserSettingsDTOSchema = z.object({
   clickWeak: ClickSoundSchema,
   volume: z.number().min(0).max(1),
   countIn: z.number().int().min(0).max(4),
+  bassEnabled: z.boolean().optional(),
+  bassVolume: z.number().min(0).max(1).optional(),
 });
 export type UserSettingsDTO = z.infer<typeof UserSettingsDTOSchema>;
 

@@ -3,13 +3,20 @@ import * as Tone from 'tone';
 import {
   TransportEngine,
   MetronomeInstrument,
+  BassInstrument,
+  ChordTimeline,
+  RoundRobinCounter,
   PlaybackStateMachine,
   ticksPerBar,
   parseTimeSignature,
   defaultSecondStrongBeats,
+  METRONOME_SAMPLE_BY_ID,
+  buildBassFingerUrls,
   type BeatType,
+  type NoteSink,
+  type ChordTimelineEntry,
 } from '@jazz/music-core';
-import type { TimeSignatureString, Section } from '@jazz/shared';
+import type { TimeSignatureString, Section, ClickSound } from '@jazz/shared';
 import type { UserSettingsDTO } from '@jazz/shared';
 import { usePlaybackStore } from '@/stores/usePlaybackStore';
 
@@ -103,6 +110,17 @@ function buildFlatSequence(sections: Section[]): FlatSequence {
   return { bars, infiniteLoopStart };
 }
 
+/** Build ChordTimeline entries from sections + flat bar sequence. */
+function buildChordTimelineEntries(sections: Section[], flatBars: number[]): ChordTimelineEntry[] {
+  const allBars = sections.flatMap((s) => s.bars);
+  return flatBars.map((originalBarIdx) => ({
+    barIndex: originalBarIdx,
+    chord: allBars[originalBarIdx]?.chords[0]?.parsed ?? null,
+  }));
+}
+
+const BASS_BASE_URL = '/samples/bass/';
+
 export interface UseTransportOptions {
   settings: UserSettingsDTO;
   timeSignature: TimeSignatureString;
@@ -131,6 +149,11 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
   const strongUrlRef = useRef('');
   const strong2UrlRef = useRef('');
   const weakUrlRef = useRef('');
+  // Bass: 4 Tone.Samplers (one per RR variant) + a Channel for volume
+  const bassRRRef = useRef<Tone.Sampler[]>([]);
+  const bassChannelRef = useRef<Tone.Channel | null>(null);
+  const bassInstrumentRef = useRef<BassInstrument | null>(null);
+  const rrCounterRef = useRef(new RoundRobinCounter());
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastScheduledRef = useRef(0);
   const prevTicksRef = useRef(0);
@@ -149,9 +172,9 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     const tone = Tone.getTransport();
     tone.PPQ = 480;
 
-    const makePlayer = (sound: string | null, volumeDb: number): Tone.Player | null => {
+    const makePlayer = (sound: ClickSound | null, volumeDb: number): Tone.Player | null => {
       if (!sound) return null;
-      const p = new Tone.Player(`/samples/metronome/${sound}.mp3`).toDestination();
+      const p = new Tone.Player(METRONOME_SAMPLE_BY_ID[sound].url).toDestination();
       p.volume.value = volumeDb;
       return p;
     };
@@ -178,14 +201,48 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
       }, `${atTicks}i`);
     };
 
+    // ── Bass sampler setup ─────────────────────────────────────────────────
+    const bassChannel = new Tone.Channel({
+      volume: Tone.gainToDb(settings.bassVolume ?? 0.7),
+    }).toDestination();
+    bassChannelRef.current = bassChannel;
+
+    // One Sampler per RR variant so we can cycle through real recordings
+    const rrSamplers = ([1, 2, 3, 4] as const).map((rr) =>
+      new Tone.Sampler({
+        urls: buildBassFingerUrls(rr),
+        baseUrl: BASS_BASE_URL,
+        release: 0.2,
+      }).connect(bassChannel),
+    );
+    bassRRRef.current = rrSamplers;
+
+    const noteSink: NoteSink = (atTicks, note, velocity, durationTicks, _articulation) => {
+      if (!(optsRef.current.settings.bassEnabled ?? true)) return;
+      const rrIndex = rrCounterRef.current.next(note, 'finger') - 1; // 0-based
+      const sampler = bassRRRef.current[rrIndex];
+      if (!sampler) return;
+      // Convert ticks to seconds: ticks / PPQ * (60 / bpm)
+      const durationSecs = (durationTicks * 60) / (480 * optsRef.current.settings.bpm);
+      tone.scheduleOnce((time: number) => {
+        if (sampler.loaded) sampler.triggerAttackRelease(note, durationSecs, time, velocity);
+      }, `${atTicks}i`);
+    };
+
+    const bassTimeline = new ChordTimeline();
+    const bassInstrument = new BassInstrument(bassTimeline);
+    bassInstrumentRef.current = bassInstrument;
+
     const engine = new TransportEngine({
       bpm: settings.bpm,
       timeSignature,
       sink,
+      noteSink,
     });
 
     const metronome = new MetronomeInstrument();
     engine.addInstrument(metronome);
+    engine.addInstrument(bassInstrument);
 
     const machine = new PlaybackStateMachine(totalBars);
     machineRef.current = machine;
@@ -211,6 +268,12 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
       strongPlayerRef.current = null;
       strong2PlayerRef.current = null;
       weakPlayerRef.current = null;
+      bassRRRef.current.forEach((s) => s.dispose());
+      bassRRRef.current = [];
+      bassChannelRef.current?.dispose();
+      bassChannelRef.current = null;
+      bassInstrumentRef.current = null;
+      rrCounterRef.current.reset();
       engineRef.current = null;
       machineRef.current = null;
       initializedRef.current = false;
@@ -232,7 +295,7 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     strongUrlRef.current = key;
     strongPlayerRef.current?.dispose();
     if (settings.clickStrong) {
-      const p = new Tone.Player(`/samples/metronome/${settings.clickStrong}.mp3`).toDestination();
+      const p = new Tone.Player(METRONOME_SAMPLE_BY_ID[settings.clickStrong].url).toDestination();
       p.volume.value = Tone.gainToDb(optsRef.current.settings.volume);
       strongPlayerRef.current = p;
     } else {
@@ -247,7 +310,7 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     strong2UrlRef.current = key;
     strong2PlayerRef.current?.dispose();
     if (settings.clickStrong2) {
-      const p = new Tone.Player(`/samples/metronome/${settings.clickStrong2}.mp3`).toDestination();
+      const p = new Tone.Player(METRONOME_SAMPLE_BY_ID[settings.clickStrong2].url).toDestination();
       p.volume.value = Tone.gainToDb(optsRef.current.settings.volume) - 3;
       strong2PlayerRef.current = p;
     } else {
@@ -262,7 +325,7 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     weakUrlRef.current = key;
     weakPlayerRef.current?.dispose();
     if (settings.clickWeak) {
-      const p = new Tone.Player(`/samples/metronome/${settings.clickWeak}.mp3`).toDestination();
+      const p = new Tone.Player(METRONOME_SAMPLE_BY_ID[settings.clickWeak].url).toDestination();
       p.volume.value = Tone.gainToDb(optsRef.current.settings.volume) - 6;
       weakPlayerRef.current = p;
     } else {
@@ -278,6 +341,12 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     if (weakPlayerRef.current) weakPlayerRef.current.volume.value = db - 6;
   }, [settings.volume]);
 
+  // Update bass volume
+  useEffect(() => {
+    if (!bassChannelRef.current) return;
+    bassChannelRef.current.volume.value = Tone.gainToDb(settings.bassVolume ?? 0.7);
+  }, [settings.bassVolume]);
+
   // Update time signature on the engine when it changes
   useEffect(() => {
     if (!engineRef.current) return;
@@ -289,6 +358,16 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     if (!machineRef.current) return;
     machineRef.current.dispatch({ type: 'setTotalBars', totalBars });
   }, [totalBars]);
+
+  // Rebuild chord timeline when sections content changes (e.g., user edits chords)
+  useEffect(() => {
+    const bassInstrument = bassInstrumentRef.current;
+    const seq = flatSeqRef.current;
+    if (!bassInstrument || seq.bars.length === 0) return;
+    const entries = buildChordTimelineEntries(opts.sections ?? [], seq.bars);
+    bassInstrument.setTimeline(new ChordTimeline(entries));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [opts.sections]);
 
   const play = useCallback(async () => {
     const engine = engineRef.current;
@@ -308,6 +387,13 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     const sections = optsRef.current.sections ?? [];
     const seq = buildFlatSequence(sections);
     flatSeqRef.current = seq;
+
+    // Sync chord timeline to bass instrument
+    if (bassInstrumentRef.current) {
+      const entries = buildChordTimelineEntries(sections, seq.bars);
+      bassInstrumentRef.current.setTimeline(new ChordTimeline(entries));
+      rrCounterRef.current.reset();
+    }
 
     // Find virtual start tick for selectedBar (first occurrence in flat sequence)
     let startTick: number;
