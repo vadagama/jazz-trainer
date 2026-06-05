@@ -254,6 +254,96 @@ export function SettingsForm({ defaultValues, onSave, isSaving }: Props) {
         </div>
       </div>
 
+      {/* Rhodes */}
+      <div className="space-y-4">
+        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Rhodes</p>
+
+        <div className="flex items-center justify-between gap-4">
+          <Label htmlFor="rhodesEnabled" className="text-sm text-foreground">Включить Rhodes</Label>
+          <Controller
+            control={form.control}
+            name="rhodesEnabled"
+            render={({ field }) => (
+              <input
+                id="rhodesEnabled"
+                type="checkbox"
+                checked={field.value ?? false}
+                onChange={(e) => field.onChange(e.target.checked)}
+                className="h-4 w-4 cursor-pointer accent-primary"
+              />
+            )}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label className="text-sm text-foreground">Громкость Rhodes</Label>
+            <span className="text-sm tabular-nums text-muted-foreground">
+              {Math.round((form.watch('rhodesVolume') ?? 0.6) * 100)}%
+            </span>
+          </div>
+          <Controller
+            control={form.control}
+            name="rhodesVolume"
+            render={({ field }) => (
+              <Slider
+                min={0}
+                max={100}
+                step={5}
+                value={[Math.round((field.value ?? 0.6) * 100)]}
+                onValueChange={(vals) => field.onChange((vals[0] ?? 60) / 100)}
+              />
+            )}
+          />
+        </div>
+
+        <div className="flex items-center justify-between gap-4">
+          <Label className="text-sm text-foreground">Ритм</Label>
+          <Controller
+            control={form.control}
+            name="rhodesMode"
+            render={({ field }) => (
+              <Select
+                value={field.value ?? 'halfNotes'}
+                onValueChange={field.onChange}
+              >
+                <SelectTrigger className="w-44">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="wholeNotes">Целые</SelectItem>
+                  <SelectItem value="halfNotes">Половинки</SelectItem>
+                  <SelectItem value="quarterNotes">Четверти</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+          />
+        </div>
+
+        <div className="flex items-center justify-between gap-4">
+          <Label className="text-sm text-foreground">Воисинг</Label>
+          <Controller
+            control={form.control}
+            name="rhodesVoicingDensity"
+            render={({ field }) => (
+              <Select
+                value={field.value ?? 'rootless3'}
+                onValueChange={field.onChange}
+              >
+                <SelectTrigger className="w-44">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="shell2">Shell (3 + 7)</SelectItem>
+                  <SelectItem value="rootless3">Rootless 3 ноты</SelectItem>
+                  <SelectItem value="rootless4">Rootless 4 ноты</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+          />
+        </div>
+      </div>
+
       <Button type="submit" disabled={isSaving}>
         {isSaving ? 'Сохраняем...' : 'Сохранить'}
       </Button>
