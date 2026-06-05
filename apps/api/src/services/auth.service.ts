@@ -29,6 +29,7 @@ export function toSettingsDTO(s: UserSettingsRecord): UserSettingsDTO {
     bassEnabled: s.bassEnabled,
     bassVolume: s.bassVolume,
     bassComplexity: s.bassComplexity,
+    bassOctaveUp: s.bassOctaveUp,
   };
 }
 

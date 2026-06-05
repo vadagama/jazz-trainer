@@ -187,6 +187,23 @@ export function SettingsForm({ defaultValues, onSave, isSaving }: Props) {
           />
         </div>
 
+        <div className="flex items-center justify-between gap-4">
+          <Label htmlFor="bassOctaveUp" className="text-sm text-foreground">+1 октава</Label>
+          <Controller
+            control={form.control}
+            name="bassOctaveUp"
+            render={({ field }) => (
+              <input
+                id="bassOctaveUp"
+                type="checkbox"
+                checked={field.value ?? false}
+                onChange={(e) => field.onChange(e.target.checked)}
+                className="h-4 w-4 cursor-pointer accent-primary"
+              />
+            )}
+          />
+        </div>
+
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <Label className="text-sm text-foreground">Громкость баса</Label>
@@ -228,6 +245,8 @@ export function SettingsForm({ defaultValues, onSave, isSaving }: Props) {
                   <SelectItem value="3">3 — Корень + квинта</SelectItem>
                   <SelectItem value="4">4 — Звуки аккорда</SelectItem>
                   <SelectItem value="5">5 — Walking + хроматика</SelectItem>
+                  <SelectItem value="6">6 — Аккорд (1 2 3 4, pluck)</SelectItem>
+                  <SelectItem value="7">7 — Аккорд (1 3, pluck)</SelectItem>
                 </SelectContent>
               </Select>
             )}

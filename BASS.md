@@ -118,8 +118,7 @@ type BassNoteRole =
   | "enclosure"
   | "octave"
   | "neighbor"
-  | "ghost"       // ghost note между долями → артикуляция "ghost"
-  | "slide"       // слайд к ноте → артикуляция "noise" перед основной нотой
+  | "ghost"       // ghost note между долями → артикуляция "mute" (тихий приглушённый удар)
   | "percussive"; // muted удар без питча → артикуляция "mute"
 ```
 
@@ -339,18 +338,19 @@ velocity += random(-0.05, 0.05);
 
 ## Ghost notes
 
-В библиотеке есть отдельная папка `ghost/` с реальными записями ghost notes.
+Ghost notes — приглушённые ноты между долями, создающие живость и swing feel. Используют артикуляцию `mute` с пониженной velocity.
 
 ```ts
 ghostNotes: {
   enabled: true,
   probabilityBeforeBeat: 0.15,
   probabilityAfterBeat: 0.1,
-  // velocity игнорируется — для ghost используется отдельный Sampler с артикуляцией "ghost"
+  articulation: "mute",
+  velocityScale: 0.5,  // ghost note звучит значительно тише основных
 }
 ```
 
-> Ghost notes — это **отдельная артикуляция**, а не тихий finger. Диапазон `ghost/` начинается с A2; ниже Sampler транспонирует вниз с A2, что приемлемо для редко используемых нот.
+> Ghost notes и percussive hits используют одни и те же `mute`-сэмплы. Разница только в velocity: ghost ≈ 0.35–0.45, percussive hit ≈ 0.65+.
 
 ---
 
@@ -368,44 +368,34 @@ sneakybass_{note}{octave}_{articulation}_rr{n}.ogg
 |---|---|
 | `{note}` | `c` · `db` · `d` · `eb` · `e` · `f` · `gb` · `g` · `ab` · `a` · `bb` · `b` |
 | `{octave}` | 2–5 (зависит от артикуляции) |
-| `{articulation}` | `finger` · `ghost` · `mute` · `noise` · `pluck` |
+| `{articulation}` | `pluck` · `mute` |
 | `{n}` | 1–4 (у `noise` — только 1–2) |
 
 > Только бемоли: `ab`, `bb`, `db`, `eb`, `gb`. Диезов в именах нет.
 
-### Пять артикуляций
+### Две артикуляции
 
 | Папка | RR | Описание |
 |---|---|---|
-| `finger/` | 4 | Pizzicato пальцем — основная walking bass артикуляция |
-| `pluck/` | 4 | Щипок с большей атакой — для акцентов, beat 1 |
-| `ghost/` | 4 | Ghost note — приглушённая нота с различимой высотой |
-| `mute/` | 4 | Полностью заглушённый удар без питча |
-| `noise/` | 2 | Шум струн: слайды, переходы, призвуки |
+| `pluck/` | 4 | Щипок с атакой — основная walking bass артикуляция |
+| `mute/` | 4 | Приглушённый удар — для ghost notes и percussive hits |
 
 ### Диапазон по артикуляции
 
 | Артикуляция | Самая низкая нота | Самая высокая нота |
 |---|---|---|
-| `finger` | C2 | C5 |
 | `pluck` | C2 | C5 |
 | `mute` | Db2 | ~G4 |
-| `ghost` | A2 | ~G4 |
-| `noise` | A2 | C5 |
 
-> **Практический диапазон walking bass:** C2–G3. Полностью покрыт `finger` без транспозиции.
-
-> Для `ghost` и `noise` ноты ниже A2 Sampler транспонирует вниз с A2 — приемлемо для редких случаев.
+> **Практический диапазон walking bass:** C2–G3. Полностью покрыт `pluck` без транспозиции.
 
 ### Маппинг артикуляций к музыкальному контексту
 
-| Ситуация | Артикуляция |
-|---|---|
-| Walking bass, все доли | `finger` |
-| Beat 1, акцент, высокая velocity | `pluck` |
-| Ghost note (между долями, тихо) | `ghost` |
-| Percussive muted note | `mute` |
-| Slide между далёкими нотами | `noise` (перед основной нотой, offset –30 ms) |
+| Ситуация | Артикуляция | Velocity |
+|---|---|---|
+| Walking bass, все доли | `pluck` | BEAT_VELOCITY[beat] |
+| Ghost note (между долями) | `mute` | ~0.35–0.45 |
+| Percussive muted hit | `mute` | ~0.65+ |
 
 ---
 
@@ -416,15 +406,14 @@ sneakybass_{note}{octave}_{articulation}_rr{n}.ogg
 В библиотеке каждая нота имеет 4 реальных записи (2 для `noise`) — настоящий round robin. Менять `playbackRate` или `detune` для разнообразия **не нужно**.
 
 ```ts
-type BassArticulation = "finger" | "pluck" | "ghost" | "mute" | "noise";
+type BassArticulation = "pluck" | "mute";
 
 class RoundRobinCounter {
   private counters = new Map<string, number>();
 
   next(note: string, articulation: BassArticulation): string {
     const key = `${note}_${articulation}`;
-    const rrCount = articulation === "noise" ? 2 : 4;
-    const i = (this.counters.get(key) ?? 0) % rrCount;
+    const i = (this.counters.get(key) ?? 0) % 4;
     this.counters.set(key, i + 1);
     // "C2" → "c2", "Db2" → "db2"
     const filename = note.toLowerCase().replace(/([a-g])#/, "$1b");
@@ -438,8 +427,11 @@ class RoundRobinCounter {
 Поскольку каждый полутон записан отдельно, достаточно опорных нот через каждые 3–4 полутона — Tone.js транспонирует не более чем на ±2 полутона.
 
 ```ts
-// Опорные ноты для finger/pluck (C2–C5)
-const FINGER_ANCHORS = ["C2", "Eb2", "Gb2", "A2", "C3", "Eb3", "Gb3", "A3", "C4"];
+// Опорные ноты для pluck (C2–C4)
+const PLUCK_ANCHORS = ["C2", "Eb2", "Gb2", "A2", "C3", "Eb3", "Gb3", "A3", "C4"];
+
+// Опорные ноты для mute (Db2–Bb3) — нижняя граница Db2
+const MUTE_ANCHORS = ["Db2", "E2", "G2", "Bb2", "Db3", "E3", "G3", "Bb3"];
 
 function buildSamplerUrls(anchors: string[], articulation: BassArticulation) {
   return Object.fromEntries(
@@ -450,17 +442,14 @@ function buildSamplerUrls(anchors: string[], articulation: BassArticulation) {
   );
 }
 
-const fingerSampler = new Tone.Sampler({
-  urls: buildSamplerUrls(FINGER_ANCHORS, "finger"),
+const pluckSampler = new Tone.Sampler({
+  urls: buildSamplerUrls(PLUCK_ANCHORS, "pluck"),
   release: 0.2,
 }).toDestination();
 
-// Ghost/noise используют сужённый диапазон — начинать с A2
-const GHOST_ANCHORS = ["A2", "C3", "Eb3", "Gb3", "A3", "C4"];
-
-const ghostSampler = new Tone.Sampler({
-  urls: buildSamplerUrls(GHOST_ANCHORS, "ghost"),
-  release: 0.15,
+const muteSampler = new Tone.Sampler({
+  urls: buildSamplerUrls(MUTE_ANCHORS, "mute"),
+  release: 0.1,
 }).toDestination();
 ```
 

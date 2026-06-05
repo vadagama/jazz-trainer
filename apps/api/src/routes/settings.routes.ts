@@ -54,6 +54,7 @@ export async function settingsRoutes(
     if (data.bassEnabled !== undefined) patch.bassEnabled = data.bassEnabled;
     if (data.bassVolume !== undefined) patch.bassVolume = data.bassVolume;
     if (data.bassComplexity !== undefined) patch.bassComplexity = data.bassComplexity;
+    if (data.bassOctaveUp !== undefined) patch.bassOctaveUp = data.bassOctaveUp;
 
     db.update(userSettings).set(patch).where(eq(userSettings.userId, user.id)).run();
     return reply.send(toSettingsDTO({ ...existing, ...patch }));

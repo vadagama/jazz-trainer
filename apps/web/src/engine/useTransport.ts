@@ -12,8 +12,8 @@ import {
   parseTimeSignature,
   defaultSecondStrongBeats,
   METRONOME_SAMPLE_BY_ID,
-  buildBassFingerUrls,
   buildBassPluckUrls,
+  buildBassMuteUrls,
   type BeatType,
   type NoteSink,
   type ChordTimelineEntry,
@@ -162,8 +162,8 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
   const strongUrlRef = useRef('');
   const strong2UrlRef = useRef('');
   const weakUrlRef = useRef('');
-  // Bass: 4 Tone.Samplers per articulation (finger + pluck) + a Channel for volume
-  const bassRRRef = useRef<Tone.Sampler[]>([]);
+  // Bass: 4 Tone.Samplers per articulation (pluck + mute) + a Channel for volume
+  const bassMuteRRRef = useRef<Tone.Sampler[]>([]);
   const bassPluckRRRef = useRef<Tone.Sampler[]>([]);
   const bassChannelRef = useRef<Tone.Channel | null>(null);
   const bassInstrumentRef = useRef<BassInstrument | null>(null);
@@ -225,15 +225,6 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     bassChannelRef.current = bassChannel;
 
     // One Sampler per RR variant per articulation so we can cycle through real recordings
-    const rrSamplers = ([1, 2, 3, 4] as const).map((rr) =>
-      new Tone.Sampler({
-        urls: buildBassFingerUrls(rr),
-        baseUrl: BASS_BASE_URL,
-        release: 0.5,
-      }).connect(bassChannel),
-    );
-    bassRRRef.current = rrSamplers;
-
     const pluckSamplers = ([1, 2, 3, 4] as const).map((rr) =>
       new Tone.Sampler({
         urls: buildBassPluckUrls(rr),
@@ -243,6 +234,15 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     );
     bassPluckRRRef.current = pluckSamplers;
 
+    const muteSamplers = ([1, 2, 3, 4] as const).map((rr) =>
+      new Tone.Sampler({
+        urls: buildBassMuteUrls(rr),
+        baseUrl: BASS_BASE_URL,
+        release: 0.3,
+      }).connect(bassChannel),
+    );
+    bassMuteRRRef.current = muteSamplers;
+
     // Pre-warm: start AudioContext on any first user gesture so all OGG/MP3 samples
     // finish decoding before the user clicks Play. Without this, AudioContext stays
     // suspended until play() and Tone.loaded() blocks for the full decode (~200–800 ms).
@@ -251,9 +251,8 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
 
     const noteSink: NoteSink = (atTicks, note, velocity, durationTicks, articulation) => {
       if (!(optsRef.current.settings.bassEnabled ?? true)) return;
-      const art = articulation === 'pluck' ? 'pluck' : 'finger';
-      const pool = art === 'pluck' ? bassPluckRRRef.current : bassRRRef.current;
-      const rrIndex = rrCounterRef.current.next(note, art) - 1; // 0-based
+      const pool = articulation === 'mute' ? bassMuteRRRef.current : bassPluckRRRef.current;
+      const rrIndex = rrCounterRef.current.next(note, articulation) - 1; // 0-based
       const sampler = pool[rrIndex];
       if (!sampler) return;
       // Convert ticks to seconds: ticks / PPQ * (60 / bpm)
@@ -303,8 +302,8 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
       strongPlayerRef.current = null;
       strong2PlayerRef.current = null;
       weakPlayerRef.current = null;
-      bassRRRef.current.forEach((s) => s.dispose());
-      bassRRRef.current = [];
+      bassMuteRRRef.current.forEach((s) => s.dispose());
+      bassMuteRRRef.current = [];
       bassPluckRRRef.current.forEach((s) => s.dispose());
       bassPluckRRRef.current = [];
       bassChannelRef.current?.dispose();
@@ -392,9 +391,15 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
   // Update bass complexity
   useEffect(() => {
     if (!bassInstrumentRef.current) return;
-    const level = (settings.bassComplexity ?? 1) as 1 | 2 | 3 | 4 | 5;
+    const level = (settings.bassComplexity ?? 1) as 1 | 2 | 3 | 4 | 5 | 6 | 7;
     bassInstrumentRef.current.setComplexity(level);
   }, [settings.bassComplexity]);
+
+  // Update bass octave shift
+  useEffect(() => {
+    if (!bassInstrumentRef.current) return;
+    bassInstrumentRef.current.setOctaveShift(settings.bassOctaveUp ? 1 : 0);
+  }, [settings.bassOctaveUp]);
 
   // Update time signature on the engine when it changes
   useEffect(() => {
