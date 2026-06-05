@@ -5,7 +5,7 @@ import { METRONOME_SAMPLES } from '@jazz/music-core';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 
 interface Props {
@@ -311,9 +311,25 @@ export function SettingsForm({ defaultValues, onSave, isSaving }: Props) {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="wholeNotes">Целые</SelectItem>
-                  <SelectItem value="halfNotes">Половинки</SelectItem>
-                  <SelectItem value="quarterNotes">Четверти</SelectItem>
+                  <SelectGroup>
+                    <SelectLabel>Базовые</SelectLabel>
+                    <SelectItem value="wholeNotes">Целые ноты</SelectItem>
+                    <SelectItem value="halfNotes">Половинки</SelectItem>
+                    <SelectItem value="quarterNotes">Четверти</SelectItem>
+                  </SelectGroup>
+                  <SelectGroup>
+                    <SelectLabel>Swing паттерны</SelectLabel>
+                    <SelectItem value="charleston">Charleston</SelectItem>
+                    <SelectItem value="reverse-charleston">Reverse Charleston</SelectItem>
+                    <SelectItem value="basie-2-4">Basie 2 и 4</SelectItem>
+                    <SelectItem value="offbeat-2-4">Offbeat 2&amp; / 4&amp;</SelectItem>
+                    <SelectItem value="anticipation-4and">Антиципация 4&amp;</SelectItem>
+                    <SelectItem value="one-twoand-four">1 + 2&amp; + 4</SelectItem>
+                    <SelectItem value="oneand-three">1&amp; + 3</SelectItem>
+                    <SelectItem value="twoand-only">2&amp; only</SelectItem>
+                    <SelectItem value="four-and-sparse">4&amp; (редкий)</SelectItem>
+                    <SelectItem value="two-threeand">2 + 3&amp;</SelectItem>
+                  </SelectGroup>
                 </SelectContent>
               </Select>
             )}

@@ -401,4 +401,148 @@ describe('RhodesInstrument — multi-bar', () => {
     expect(chords[0]?.notes).toEqual(buildVoicing(dm7, 'rootless3', null));
     expect(chords[1]?.notes).not.toEqual(chords[0]?.notes);
   });
+
+  it('setMode accepts swing pattern id without throwing', () => {
+    const inst = makeRhodes([{ chord: dm7 }]);
+    expect(() => inst.setMode('charleston')).not.toThrow();
+    expect(() => inst.setMode('anticipation-4and')).not.toThrow();
+  });
+
+  it('humanize jitter never pushes first note before window.fromTicks', () => {
+    const timeline = new ChordTimeline([{ barIndex: 0, chord: dm7 }]);
+    const inst = new RhodesInstrument(timeline);
+    inst.setMode('wholeNotes');
+    inst.setHumanize(true);
+
+    for (let i = 0; i < 50; i++) {
+      inst.reset();
+      const { ctx, chords } = makeCtx();
+      inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
+      expect(chords[0]?.at).toBeGreaterThanOrEqual(0);
+    }
+  });
+});
+
+// ─── Swing patterns ───────────────────────────────────────────────────────────
+
+describe('RhodesInstrument — swing patterns (subdivision)', () => {
+  it('charleston: beat 1 at tick 0, beat 2& at tick 720', () => {
+    const inst = makeRhodes([{ chord: dm7 }]);
+    inst.setMode('charleston');
+    const { ctx, chords } = makeCtx();
+
+    inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
+
+    expect(chords).toHaveLength(2);
+    expect(chords[0]?.at).toBe(0);
+    expect(chords[1]?.at).toBe(TPB + TPB / 2); // beat 2 & = 720
+  });
+
+  it('charleston: velocities 0.55 and 0.48', () => {
+    const inst = makeRhodes([{ chord: dm7 }]);
+    inst.setMode('charleston');
+    const { ctx, chords } = makeCtx();
+
+    inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
+
+    expect(chords[0]?.velocity).toBeCloseTo(0.55);
+    expect(chords[1]?.velocity).toBeCloseTo(0.48);
+  });
+
+  it('basie-2-4: schedules beats 2 and 4 (no subdivision)', () => {
+    const inst = makeRhodes([{ chord: dm7 }]);
+    inst.setMode('basie-2-4');
+    const { ctx, chords } = makeCtx();
+
+    inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
+
+    expect(chords).toHaveLength(2);
+    expect(chords[0]?.at).toBe(TPB);       // beat 2
+    expect(chords[1]?.at).toBe(3 * TPB);   // beat 4
+  });
+
+  it('offbeat-2-4: beat 2& at 720, beat 4& at 1680', () => {
+    const inst = makeRhodes([{ chord: dm7 }]);
+    inst.setMode('offbeat-2-4');
+    const { ctx, chords } = makeCtx();
+
+    inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
+
+    expect(chords).toHaveLength(2);
+    expect(chords[0]?.at).toBe(TPB + TPB / 2);      // beat 2& = 720
+    expect(chords[1]?.at).toBe(3 * TPB + TPB / 2);  // beat 4& = 1680
+  });
+
+  it('one-twoand-four: schedules 3 events per bar', () => {
+    const inst = makeRhodes([{ chord: dm7 }]);
+    inst.setMode('one-twoand-four');
+    const { ctx, chords } = makeCtx();
+
+    inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
+
+    expect(chords).toHaveLength(3);
+    expect(chords[0]?.at).toBe(0);               // beat 1
+    expect(chords[1]?.at).toBe(TPB + TPB / 2);  // beat 2&
+    expect(chords[2]?.at).toBe(3 * TPB);         // beat 4
+  });
+
+  it('twoand-only: one event per bar at beat 2&', () => {
+    const inst = makeRhodes([{ chord: dm7 }]);
+    inst.setMode('twoand-only');
+    const { ctx, chords } = makeCtx();
+
+    inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
+
+    expect(chords).toHaveLength(1);
+    expect(chords[0]?.at).toBe(TPB + TPB / 2); // beat 2& = 720
+  });
+});
+
+describe('RhodesInstrument — chordRef: next (anticipation)', () => {
+  it('anticipation-4and: voices using next bar chord', () => {
+    const inst = makeRhodes([{ chord: dm7 }, { chord: g7 }]);
+    inst.setMode('anticipation-4and');
+    const { ctx, chords } = makeCtx();
+
+    inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
+
+    expect(chords).toHaveLength(1);
+    expect(chords[0]?.at).toBe(3 * TPB + TPB / 2); // beat 4& = 1680
+    expect(chords[0]?.notes).toEqual(buildVoicing(g7, 'rootless3', null));
+  });
+
+  it('anticipation-4and: skips event when next chord is null', () => {
+    const inst = makeRhodes([{ chord: dm7 }]); // no bar 1
+    inst.setMode('anticipation-4and');
+    const { ctx, chords } = makeCtx();
+
+    inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
+
+    expect(chords).toHaveLength(0);
+  });
+
+  it('four-and-sparse: voices using next bar chord at beat 4&', () => {
+    const inst = makeRhodes([{ chord: dm7 }, { chord: cmaj7 }]);
+    inst.setMode('four-and-sparse');
+    const { ctx, chords } = makeCtx();
+
+    inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
+
+    expect(chords).toHaveLength(1);
+    expect(chords[0]?.at).toBe(3 * TPB + TPB / 2); // beat 4& = 1680
+    expect(chords[0]?.notes).toEqual(buildVoicing(cmaj7, 'rootless3', null));
+  });
+
+  it('anticipation-4and: voice leading carries into next bar after anticipation', () => {
+    const inst = makeRhodes([{ chord: dm7 }, { chord: g7 }, { chord: cmaj7 }]);
+    inst.setMode('anticipation-4and');
+    const { ctx, chords } = makeCtx();
+
+    inst.schedule({ fromTicks: 0, toTicks: TPBAR * 3 }, ctx);
+
+    // 3 bars × 1 event each
+    expect(chords).toHaveLength(2); // bar 2 has no next chord → skips
+    // Bar 0 anticipates G7, bar 1 anticipates Cmaj7
+    expect(chords[0]?.notes).toEqual(buildVoicing(g7, 'rootless3', null));
+  });
 });

@@ -71,12 +71,17 @@ export class RhodesInstrument implements Instrument {
 
     for (let bar = firstBar; bar <= lastBar; bar++) {
       const barStartTicks = bar * tpBar;
-      const chord = this.timeline.getChordAtTick(barStartTicks, sig);
-      if (!chord) continue;
+      const currentChord = this.timeline.getChordAtTick(barStartTicks, sig);
+      if (!currentChord) continue;
 
       for (const event of pattern) {
-        const eventTicks = barStartTicks + (event.beat - 1) * tpBeat;
+        const eventTicks = barStartTicks + (event.beat - 1) * tpBeat + Math.round((event.subdivision ?? 0) * tpBeat);
         if (eventTicks < window.fromTicks || eventTicks >= window.toTicks) continue;
+
+        const chord = event.chordRef === 'next'
+          ? this.timeline.getChordAtTick((bar + 1) * tpBar, sig)
+          : currentChord;
+        if (!chord) continue;
 
         const voicing = buildVoicing(chord, this.density, this.prevVoicing);
         this.prevVoicing = voicing;
@@ -87,7 +92,7 @@ export class RhodesInstrument implements Instrument {
         let velocity = event.velocity * this.baseVelocity;
 
         if (this.humanize) {
-          atTicks += Math.round((Math.random() * 2 - 1) * maxJitterTicks);
+          atTicks = Math.max(window.fromTicks, atTicks + Math.round((Math.random() * 2 - 1) * maxJitterTicks));
           velocity = Math.max(0.01, Math.min(1, velocity + (Math.random() * 2 - 1) * 0.05));
         }
 

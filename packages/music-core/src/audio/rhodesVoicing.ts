@@ -1,12 +1,36 @@
 import type { ChordSymbol } from '@jazz/shared';
 
 export type RhodesVoicingDensity = 'shell2' | 'rootless3' | 'rootless4';
-export type RhodesCompingMode = 'wholeNotes' | 'halfNotes' | 'quarterNotes';
+export type CompChordRef = 'current' | 'next';
+
+export type RhodesCompingMode =
+  | 'wholeNotes'
+  | 'halfNotes'
+  | 'quarterNotes'
+  | 'charleston'
+  | 'reverse-charleston'
+  | 'basie-2-4'
+  | 'offbeat-2-4'
+  | 'anticipation-4and'
+  | 'one-twoand-four'
+  | 'oneand-three'
+  | 'twoand-only'
+  | 'four-and-sparse'
+  | 'two-threeand';
 
 export interface CompEvent {
-  readonly beat: number;
+  readonly beat: 1 | 2 | 3 | 4;
+  readonly subdivision?: 0 | 0.5;
   readonly durationBeats: number;
   readonly velocity: number;
+  readonly chordRef?: CompChordRef;
+}
+
+export interface RhodesRhythmPattern {
+  readonly id: RhodesCompingMode;
+  readonly name: string;
+  readonly complexity: 1 | 2 | 3;
+  readonly hits: readonly CompEvent[];
 }
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -228,9 +252,102 @@ export function buildVoicing(
   return best.map(midiToNote);
 }
 
+// ─── Swing patterns ───────────────────────────────────────────────────────────
+
+export const SWING_PATTERNS: readonly RhodesRhythmPattern[] = [
+  {
+    id: 'charleston',
+    name: 'Charleston',
+    complexity: 1,
+    hits: [
+      { beat: 1, subdivision: 0, durationBeats: 0.75, velocity: 0.55 },
+      { beat: 2, subdivision: 0.5, durationBeats: 1.1, velocity: 0.48 },
+    ],
+  },
+  {
+    id: 'reverse-charleston',
+    name: 'Reverse Charleston',
+    complexity: 1,
+    hits: [
+      { beat: 1, subdivision: 0.5, durationBeats: 0.75, velocity: 0.48 },
+      { beat: 3, subdivision: 0, durationBeats: 1.0, velocity: 0.54 },
+    ],
+  },
+  {
+    id: 'basie-2-4',
+    name: 'Basie 2 и 4',
+    complexity: 1,
+    hits: [
+      { beat: 2, subdivision: 0, durationBeats: 0.45, velocity: 0.45 },
+      { beat: 4, subdivision: 0, durationBeats: 0.45, velocity: 0.48 },
+    ],
+  },
+  {
+    id: 'offbeat-2-4',
+    name: 'Offbeat 2& / 4&',
+    complexity: 2,
+    hits: [
+      { beat: 2, subdivision: 0.5, durationBeats: 0.55, velocity: 0.47 },
+      { beat: 4, subdivision: 0.5, durationBeats: 0.55, velocity: 0.44 },
+    ],
+  },
+  {
+    id: 'anticipation-4and',
+    name: 'Антиципация 4&',
+    complexity: 2,
+    hits: [
+      { beat: 4, subdivision: 0.5, durationBeats: 0.6, velocity: 0.46, chordRef: 'next' },
+    ],
+  },
+  {
+    id: 'one-twoand-four',
+    name: '1 + 2& + 4',
+    complexity: 2,
+    hits: [
+      { beat: 1, subdivision: 0, durationBeats: 0.6, velocity: 0.52 },
+      { beat: 2, subdivision: 0.5, durationBeats: 0.55, velocity: 0.45 },
+      { beat: 4, subdivision: 0, durationBeats: 0.45, velocity: 0.46 },
+    ],
+  },
+  {
+    id: 'oneand-three',
+    name: '1& + 3',
+    complexity: 1,
+    hits: [
+      { beat: 1, subdivision: 0.5, durationBeats: 0.55, velocity: 0.45 },
+      { beat: 3, subdivision: 0, durationBeats: 0.75, velocity: 0.52 },
+    ],
+  },
+  {
+    id: 'twoand-only',
+    name: '2& only',
+    complexity: 1,
+    hits: [
+      { beat: 2, subdivision: 0.5, durationBeats: 0.65, velocity: 0.45 },
+    ],
+  },
+  {
+    id: 'four-and-sparse',
+    name: '4& (редкий)',
+    complexity: 1,
+    hits: [
+      { beat: 4, subdivision: 0.5, durationBeats: 0.55, velocity: 0.43, chordRef: 'next' },
+    ],
+  },
+  {
+    id: 'two-threeand',
+    name: '2 + 3&',
+    complexity: 2,
+    hits: [
+      { beat: 2, subdivision: 0, durationBeats: 0.45, velocity: 0.46 },
+      { beat: 3, subdivision: 0.5, durationBeats: 0.6, velocity: 0.44 },
+    ],
+  },
+];
+
 // ─── Rhythmic patterns ─────────────────────────────────────────────────────────
 
-/** Per-mode comping pattern from RHODES.md §10 and §18. */
+/** Per-mode comping pattern. Basic modes use whole/half/quarter notes; swing modes look up SWING_PATTERNS. */
 export function getCompPattern(mode: RhodesCompingMode): readonly CompEvent[] {
   switch (mode) {
     case 'wholeNotes':
@@ -247,5 +364,8 @@ export function getCompPattern(mode: RhodesCompingMode): readonly CompEvent[] {
         { beat: 3, durationBeats: 0.65, velocity: 0.50 },
         { beat: 4, durationBeats: 0.50, velocity: 0.44 },
       ];
+    default:
+      return SWING_PATTERNS.find(p => p.id === mode)?.hits
+        ?? [{ beat: 1, durationBeats: 3.6, velocity: 0.54 }];
   }
 }

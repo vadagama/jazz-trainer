@@ -42,8 +42,11 @@ export {
   getCompPattern,
   noteToMidi,
   midiToNote,
+  SWING_PATTERNS,
   type RhodesVoicingDensity,
   type RhodesCompingMode,
+  type CompChordRef,
   type CompEvent,
+  type RhodesRhythmPattern,
 } from './rhodesVoicing.js';
 export { type ChordSink } from './transportEngine.js';
