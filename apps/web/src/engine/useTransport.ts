@@ -191,16 +191,19 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
       return p;
     };
 
-    const volumeDb = Tone.gainToDb(settings.volume);
+    // Master volume controls the global audio destination
+    Tone.getDestination().volume.value = Tone.gainToDb(settings.volume);
+
+    const metronomeDb = Tone.gainToDb(settings.metronomeVolume ?? 0.8);
     strongUrlRef.current = settings.clickStrong ?? '';
     strong2UrlRef.current = settings.clickStrong2 ?? '';
     weakUrlRef.current = settings.clickWeak ?? '';
 
-    strongPlayerRef.current = makePlayer(settings.clickStrong, volumeDb);
+    strongPlayerRef.current = makePlayer(settings.clickStrong, metronomeDb);
     // Secondary strong beat is 3 dB quieter than the primary downbeat
-    strong2PlayerRef.current = makePlayer(settings.clickStrong2, volumeDb - 3);
+    strong2PlayerRef.current = makePlayer(settings.clickStrong2, metronomeDb - 3);
     // Weak beat is 6 dB quieter to create a natural accent on beat 1
-    weakPlayerRef.current = makePlayer(settings.clickWeak, volumeDb - 6);
+    weakPlayerRef.current = makePlayer(settings.clickWeak, metronomeDb - 6);
 
     const sink = (atTicks: number, beatType: BeatType) => {
       // Tone.js tick notation: "${N}i" = N ticks from transport start
@@ -228,6 +231,12 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
       }).connect(bassChannel),
     );
     bassRRRef.current = rrSamplers;
+
+    // Pre-warm: start AudioContext on any first user gesture so all OGG/MP3 samples
+    // finish decoding before the user clicks Play. Without this, AudioContext stays
+    // suspended until play() and Tone.loaded() blocks for the full decode (~200–800 ms).
+    const warmAudioContext = () => { void Tone.start(); };
+    document.addEventListener('pointerdown', warmAudioContext, { once: true });
 
     const noteSink: NoteSink = (atTicks, note, velocity, durationTicks, _articulation) => {
       if (!(optsRef.current.settings.bassEnabled ?? true)) return;
@@ -270,6 +279,7 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     tone.bpm.value = settings.bpm;
 
     return () => {
+      document.removeEventListener('pointerdown', warmAudioContext);
       unsub();
       if (intervalRef.current !== null) clearInterval(intervalRef.current);
       tone.stop();
@@ -308,7 +318,7 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     strongPlayerRef.current?.dispose();
     if (settings.clickStrong) {
       const p = new Tone.Player(METRONOME_SAMPLE_BY_ID[settings.clickStrong].url).toDestination();
-      p.volume.value = Tone.gainToDb(optsRef.current.settings.volume);
+      p.volume.value = Tone.gainToDb(optsRef.current.settings.metronomeVolume ?? 0.8);
       strongPlayerRef.current = p;
     } else {
       strongPlayerRef.current = null;
@@ -323,7 +333,7 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     strong2PlayerRef.current?.dispose();
     if (settings.clickStrong2) {
       const p = new Tone.Player(METRONOME_SAMPLE_BY_ID[settings.clickStrong2].url).toDestination();
-      p.volume.value = Tone.gainToDb(optsRef.current.settings.volume) - 3;
+      p.volume.value = Tone.gainToDb(optsRef.current.settings.metronomeVolume ?? 0.8) - 3;
       strong2PlayerRef.current = p;
     } else {
       strong2PlayerRef.current = null;
@@ -338,20 +348,25 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     weakPlayerRef.current?.dispose();
     if (settings.clickWeak) {
       const p = new Tone.Player(METRONOME_SAMPLE_BY_ID[settings.clickWeak].url).toDestination();
-      p.volume.value = Tone.gainToDb(optsRef.current.settings.volume) - 6;
+      p.volume.value = Tone.gainToDb(optsRef.current.settings.metronomeVolume ?? 0.8) - 6;
       weakPlayerRef.current = p;
     } else {
       weakPlayerRef.current = null;
     }
   }, [settings.clickWeak]);
 
-  // Update volume on all players
+  // Update master volume on the global destination
   useEffect(() => {
-    const db = Tone.gainToDb(settings.volume);
+    Tone.getDestination().volume.value = Tone.gainToDb(settings.volume);
+  }, [settings.volume]);
+
+  // Update metronome volume on all players
+  useEffect(() => {
+    const db = Tone.gainToDb(settings.metronomeVolume ?? 0.8);
     if (strongPlayerRef.current) strongPlayerRef.current.volume.value = db;
     if (strong2PlayerRef.current) strong2PlayerRef.current.volume.value = db - 3;
     if (weakPlayerRef.current) weakPlayerRef.current.volume.value = db - 6;
-  }, [settings.volume]);
+  }, [settings.metronomeVolume]);
 
   // Update bass volume
   useEffect(() => {

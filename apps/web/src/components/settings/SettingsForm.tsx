@@ -35,6 +35,7 @@ export function SettingsForm({ defaultValues, onSave, isSaving }: Props) {
   });
 
   const volumePct = Math.round((form.watch('volume') ?? 0.8) * 100);
+  const metronomeVolumePct = Math.round((form.watch('metronomeVolume') ?? 0.8) * 100);
 
   const bpmField = form.register('bpm', { setValueAs: (v: string) => v === '' ? NaN : parseInt(v, 10) });
   const countInField = form.register('countIn', { setValueAs: (v: string) => v === '' ? NaN : parseInt(v, 10) });
@@ -72,7 +73,7 @@ export function SettingsForm({ defaultValues, onSave, isSaving }: Props) {
 
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label className="text-sm text-foreground">Громкость</Label>
+            <Label className="text-sm text-foreground">Общая громкость</Label>
             <span className="text-sm tabular-nums text-muted-foreground">{volumePct}%</span>
           </div>
           <Controller
@@ -118,6 +119,26 @@ export function SettingsForm({ defaultValues, onSave, isSaving }: Props) {
       {/* Метроном */}
       <div className="space-y-4">
         <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Метроном</p>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label className="text-sm text-foreground">Громкость метронома</Label>
+            <span className="text-sm tabular-nums text-muted-foreground">{metronomeVolumePct}%</span>
+          </div>
+          <Controller
+            control={form.control}
+            name="metronomeVolume"
+            render={({ field }) => (
+              <Slider
+                min={0}
+                max={100}
+                step={5}
+                value={[Math.round((field.value ?? 0.8) * 100)]}
+                onValueChange={(vals) => field.onChange((vals[0] ?? 80) / 100)}
+              />
+            )}
+          />
+        </div>
+
         {BEAT_ROWS.map(({ name, label }) => (
           <div key={name} className="flex items-center justify-between gap-4">
             <span className="text-sm text-foreground">{label}</span>
