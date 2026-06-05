@@ -6,14 +6,19 @@ import type { ScheduleContext } from './instrument.js';
 import type { ChordSymbol } from '@jazz/shared';
 
 // Minimal ChordSymbol for testing
-function makeChord(root: ChordSymbol['root'], accidental: ChordSymbol['rootAccidental'] = ''): ChordSymbol {
+function makeChord(
+  root: ChordSymbol['root'],
+  accidental: ChordSymbol['rootAccidental'] = '',
+  quality: ChordSymbol['quality'] = 'minor',
+  alterations: ChordSymbol['alterations'] = [],
+): ChordSymbol {
   return {
-    raw: `${root}${accidental}m7`,
+    raw: `${root}${accidental}`,
     root,
     rootAccidental: accidental,
-    quality: 'minor',
+    quality,
     extensions: ['7'],
-    alterations: [],
+    alterations,
     alt: false,
     bass: null,
   };
@@ -89,14 +94,14 @@ describe('BassInstrument', () => {
     expect(() => bass.schedule({ fromTicks: 0, toTicks: 1920 }, ctx)).not.toThrow();
   });
 
-  it('uses RR articulation "finger"', () => {
+  it('uses pluck articulation on beat 1 (complexity 1)', () => {
     const timeline = new ChordTimeline([{ barIndex: 0, chord: makeChord('D') }]);
     const bass = new BassInstrument(timeline);
     const { ctx, notes } = makeCtx();
 
     bass.schedule({ fromTicks: 0, toTicks: 1920 }, ctx);
 
-    expect(notes[0]?.articulation).toBe('finger');
+    expect(notes[0]?.articulation).toBe('pluck');
   });
 
   it('only schedules within the given window', () => {
@@ -140,6 +145,28 @@ describe('BassInstrument', () => {
       bass.schedule({ fromTicks: 0, toTicks: 1920 }, ctx);
 
       expect(notes.map((n) => n.note)).toEqual(['D2', 'D3', 'D2', 'D3']);
+    });
+
+    it('uses pluck on beats 1 and 3, finger on beats 2 and 4 (4/4)', () => {
+      const timeline = new ChordTimeline([{ barIndex: 0, chord: makeChord('C') }]);
+      const bass = new BassInstrument(timeline);
+      bass.setComplexity(2);
+      const { ctx, notes } = makeCtx();
+
+      bass.schedule({ fromTicks: 0, toTicks: 1920 }, ctx);
+
+      expect(notes.map((n) => n.articulation)).toEqual(['pluck', 'finger', 'pluck', 'finger']);
+    });
+
+    it('uses pluck only on beat 1 in 3/4 (no second strong beat)', () => {
+      const timeline = new ChordTimeline([{ barIndex: 0, chord: makeChord('C') }]);
+      const bass = new BassInstrument(timeline);
+      bass.setComplexity(2);
+      const { ctx, notes } = makeCtx(parseTimeSignature('3/4'));
+
+      bass.schedule({ fromTicks: 0, toTicks: 1440 }, ctx);
+
+      expect(notes.map((n) => n.articulation)).toEqual(['pluck', 'finger', 'finger']);
     });
 
     it('applies beat-specific velocity per BASS.md scheme', () => {
@@ -196,6 +223,113 @@ describe('BassInstrument', () => {
       bass.schedule({ fromTicks: 0, toTicks: 1920 * 3 }, ctx);
 
       // Bar 0 → 4 notes, bar 1 → 0 notes, bar 2 → 4 notes
+      expect(notes).toHaveLength(8);
+      expect(notes[0]?.note).toBe('D2');
+      expect(notes[4]?.note).toBe('C2');
+    });
+  });
+
+  describe('complexity 3 — root + fifth', () => {
+    it('plays root–fifth–root–fifth on beats 1–4 for Dm7', () => {
+      const timeline = new ChordTimeline([{ barIndex: 0, chord: makeChord('D') }]);
+      const bass = new BassInstrument(timeline);
+      bass.setComplexity(3);
+      const { ctx, notes } = makeCtx();
+
+      bass.schedule({ fromTicks: 0, toTicks: 1920 }, ctx);
+
+      expect(notes.map((n) => n.note)).toEqual(['D2', 'A2', 'D2', 'A2']);
+    });
+
+    it('uses pluck on beats 1 and 3, finger on beats 2 and 4 (4/4)', () => {
+      const timeline = new ChordTimeline([{ barIndex: 0, chord: makeChord('D') }]);
+      const bass = new BassInstrument(timeline);
+      bass.setComplexity(3);
+      const { ctx, notes } = makeCtx();
+
+      bass.schedule({ fromTicks: 0, toTicks: 1920 }, ctx);
+
+      expect(notes.map((n) => n.articulation)).toEqual(['pluck', 'finger', 'pluck', 'finger']);
+    });
+
+    it('uses pluck only on beat 1 in 3/4 — weak beats play fifth (finger)', () => {
+      const timeline = new ChordTimeline([{ barIndex: 0, chord: makeChord('D') }]);
+      const bass = new BassInstrument(timeline);
+      bass.setComplexity(3);
+      const { ctx, notes } = makeCtx(parseTimeSignature('3/4'));
+
+      bass.schedule({ fromTicks: 0, toTicks: 1440 }, ctx);
+
+      expect(notes.map((n) => n.articulation)).toEqual(['pluck', 'finger', 'finger']);
+      expect(notes.map((n) => n.note)).toEqual(['D2', 'A2', 'A2']);
+    });
+
+    it('fifth lands above root when interval wraps octave boundary (G dominant → D3)', () => {
+      const timeline = new ChordTimeline([
+        { barIndex: 0, chord: makeChord('G', '', 'dominant') },
+      ]);
+      const bass = new BassInstrument(timeline);
+      bass.setComplexity(3);
+      const { ctx, notes } = makeCtx();
+
+      bass.schedule({ fromTicks: 0, toTicks: 1920 }, ctx);
+
+      expect(notes.map((n) => n.note)).toEqual(['G2', 'D3', 'G2', 'D3']);
+    });
+
+    it('uses b5 for halfDiminished quality (Dm7b5: D → Ab)', () => {
+      const timeline = new ChordTimeline([
+        { barIndex: 0, chord: makeChord('D', '', 'halfDiminished') },
+      ]);
+      const bass = new BassInstrument(timeline);
+      bass.setComplexity(3);
+      const { ctx, notes } = makeCtx();
+
+      bass.schedule({ fromTicks: 0, toTicks: 1920 }, ctx);
+
+      expect(notes.map((n) => n.note)).toEqual(['D2', 'Ab2', 'D2', 'Ab2']);
+    });
+
+    it('uses b5 when alteration "b5" is present (C dominant b5: C → Gb)', () => {
+      const timeline = new ChordTimeline([
+        { barIndex: 0, chord: makeChord('C', '', 'dominant', ['b5']) },
+      ]);
+      const bass = new BassInstrument(timeline);
+      bass.setComplexity(3);
+      const { ctx, notes } = makeCtx();
+
+      bass.schedule({ fromTicks: 0, toTicks: 1920 }, ctx);
+
+      expect(notes.map((n) => n.note)).toEqual(['C2', 'Gb2', 'C2', 'Gb2']);
+    });
+
+    it('beat 3 root alternates to octave 3 on odd bars', () => {
+      const timeline = new ChordTimeline([
+        { barIndex: 0, chord: makeChord('D') },
+        { barIndex: 1, chord: makeChord('D') },
+      ]);
+      const bass = new BassInstrument(timeline);
+      bass.setComplexity(3);
+      const { ctx, notes } = makeCtx();
+
+      bass.schedule({ fromTicks: 0, toTicks: 1920 * 2 }, ctx);
+
+      expect(notes[2]?.note).toBe('D2'); // bar 0 (even), beat 3 → oct 2
+      expect(notes[6]?.note).toBe('D3'); // bar 1 (odd),  beat 3 → oct 3
+    });
+
+    it('skips beats in bars with null chord', () => {
+      const timeline = new ChordTimeline([
+        { barIndex: 0, chord: makeChord('D') },
+        { barIndex: 1, chord: null },
+        { barIndex: 2, chord: makeChord('C') },
+      ]);
+      const bass = new BassInstrument(timeline);
+      bass.setComplexity(3);
+      const { ctx, notes } = makeCtx();
+
+      bass.schedule({ fromTicks: 0, toTicks: 1920 * 3 }, ctx);
+
       expect(notes).toHaveLength(8);
       expect(notes[0]?.note).toBe('D2');
       expect(notes[4]?.note).toBe('C2');

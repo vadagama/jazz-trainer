@@ -13,6 +13,7 @@ import {
   defaultSecondStrongBeats,
   METRONOME_SAMPLE_BY_ID,
   buildBassFingerUrls,
+  buildBassPluckUrls,
   type BeatType,
   type NoteSink,
   type ChordTimelineEntry,
@@ -161,8 +162,9 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
   const strongUrlRef = useRef('');
   const strong2UrlRef = useRef('');
   const weakUrlRef = useRef('');
-  // Bass: 4 Tone.Samplers (one per RR variant) + a Channel for volume
+  // Bass: 4 Tone.Samplers per articulation (finger + pluck) + a Channel for volume
   const bassRRRef = useRef<Tone.Sampler[]>([]);
+  const bassPluckRRRef = useRef<Tone.Sampler[]>([]);
   const bassChannelRef = useRef<Tone.Channel | null>(null);
   const bassInstrumentRef = useRef<BassInstrument | null>(null);
   const rrCounterRef = useRef(new RoundRobinCounter());
@@ -222,7 +224,7 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     }).toDestination();
     bassChannelRef.current = bassChannel;
 
-    // One Sampler per RR variant so we can cycle through real recordings
+    // One Sampler per RR variant per articulation so we can cycle through real recordings
     const rrSamplers = ([1, 2, 3, 4] as const).map((rr) =>
       new Tone.Sampler({
         urls: buildBassFingerUrls(rr),
@@ -232,16 +234,27 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     );
     bassRRRef.current = rrSamplers;
 
+    const pluckSamplers = ([1, 2, 3, 4] as const).map((rr) =>
+      new Tone.Sampler({
+        urls: buildBassPluckUrls(rr),
+        baseUrl: BASS_BASE_URL,
+        release: 0.5,
+      }).connect(bassChannel),
+    );
+    bassPluckRRRef.current = pluckSamplers;
+
     // Pre-warm: start AudioContext on any first user gesture so all OGG/MP3 samples
     // finish decoding before the user clicks Play. Without this, AudioContext stays
     // suspended until play() and Tone.loaded() blocks for the full decode (~200–800 ms).
     const warmAudioContext = () => { void Tone.start(); };
     document.addEventListener('pointerdown', warmAudioContext, { once: true });
 
-    const noteSink: NoteSink = (atTicks, note, velocity, durationTicks, _articulation) => {
+    const noteSink: NoteSink = (atTicks, note, velocity, durationTicks, articulation) => {
       if (!(optsRef.current.settings.bassEnabled ?? true)) return;
-      const rrIndex = rrCounterRef.current.next(note, 'finger') - 1; // 0-based
-      const sampler = bassRRRef.current[rrIndex];
+      const art = articulation === 'pluck' ? 'pluck' : 'finger';
+      const pool = art === 'pluck' ? bassPluckRRRef.current : bassRRRef.current;
+      const rrIndex = rrCounterRef.current.next(note, art) - 1; // 0-based
+      const sampler = pool[rrIndex];
       if (!sampler) return;
       // Convert ticks to seconds: ticks / PPQ * (60 / bpm)
       const durationSecs = (durationTicks * 60) / (480 * optsRef.current.settings.bpm);
@@ -292,6 +305,8 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
       weakPlayerRef.current = null;
       bassRRRef.current.forEach((s) => s.dispose());
       bassRRRef.current = [];
+      bassPluckRRRef.current.forEach((s) => s.dispose());
+      bassPluckRRRef.current = [];
       bassChannelRef.current?.dispose();
       bassChannelRef.current = null;
       bassInstrumentRef.current = null;
@@ -518,8 +533,12 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
 
       // Detect Transport.loop wrap (ticks decreased by more than half a bar)
       if (currentTicks < prevTicksRef.current - tpBar2 / 2 && seq2.infiniteLoopStart !== null) {
-        // Loop wrapped — reset schedule pointer to the loop start tick
-        lastScheduledRef.current = seq2.infiniteLoopStart * tpBar2;
+        const loopEndTick2 = seq2.bars.length * tpBar2;
+        const loopStartTick2 = seq2.infiniteLoopStart * tpBar2;
+        // Virtual positions >= loopEnd mean "loopStart + (pos - loopEnd)" were pre-scheduled.
+        // Convert back to real position; if nothing was pre-scheduled, reset to loopStart.
+        const preAmt = lastScheduledRef.current - loopEndTick2;
+        lastScheduledRef.current = loopStartTick2 + Math.max(preAmt, 0);
       }
       prevTicksRef.current = currentTicks;
 
@@ -549,13 +568,32 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
         return;
       }
 
-      // Schedule look-ahead window (clamped to loop end to avoid scheduling beyond it)
+      // Schedule look-ahead window.
+      // Virtual positions: lastScheduledRef may be stored as loopEnd+X (X = pre-scheduled
+      // amount past loopStart) to prevent the boundary condition from firing more than once.
       const loopEnd = seq2.infiniteLoopStart !== null ? seq2.bars.length * tpBar2 : Infinity;
+      const loopStart = seq2.infiniteLoopStart !== null ? seq2.infiniteLoopStart * tpBar2 : 0;
       const from = lastScheduledRef.current;
-      const to = Math.min(currentTicks + LOOKAHEAD_TICKS, loopEnd);
-      if (to > from) {
-        engine.scheduleWindow({ fromTicks: from, toTicks: to });
-        lastScheduledRef.current = to;
+      const targetTo = currentTicks + LOOKAHEAD_TICKS;
+
+      if (seq2.infiniteLoopStart !== null && from < loopEnd && targetTo >= loopEnd) {
+        // Window crosses loop boundary (fires exactly once per pass because after this
+        // lastScheduledRef is set to a virtual position >= loopEnd).
+        if (loopEnd > from) {
+          engine.scheduleWindow({ fromTicks: from, toTicks: loopEnd });
+        }
+        // Pre-schedule the head of the next loop pass so beat 1 isn't missed during
+        // the ~25 ms interval gap after the transport wraps.
+        const preAmt = Math.min(LOOKAHEAD_TICKS, loopEnd - loopStart);
+        engine.scheduleWindow({ fromTicks: loopStart, toTicks: loopStart + preAmt });
+        // Store virtual position (>= loopEnd) so this block doesn't fire again this pass.
+        lastScheduledRef.current = loopEnd + preAmt;
+      } else {
+        const to = seq2.infiniteLoopStart !== null ? Math.min(targetTo, loopEnd) : targetTo;
+        if (to > from) {
+          engine.scheduleWindow({ fromTicks: from, toTicks: to });
+          lastScheduledRef.current = to;
+        }
       }
     }, 25);
   }, []);
