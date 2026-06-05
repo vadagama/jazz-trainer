@@ -36,3 +36,14 @@ export {
   pickRhodesLayer,
   type RhodesVelocityLayer,
 } from './rhodesSampleRegistry.js';
+export { RhodesInstrument } from './rhodesInstrument.js';
+export {
+  buildVoicing,
+  getCompPattern,
+  noteToMidi,
+  midiToNote,
+  type RhodesVoicingDensity,
+  type RhodesCompingMode,
+  type CompEvent,
+} from './rhodesVoicing.js';
+export { type ChordSink } from './transportEngine.js';
