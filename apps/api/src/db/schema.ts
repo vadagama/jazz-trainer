@@ -38,6 +38,9 @@ export const userSettings = sqliteTable('user_settings', {
   clickWeak: text('click_weak').default('drum-stick'),
   volume: real('volume').notNull().default(0.8),
   countIn: integer('count_in').notNull().default(0),
+  metronomeVolume: real('metronome_volume').notNull().default(0.8),
+  bassEnabled: integer('bass_enabled', { mode: 'boolean' }).notNull().default(true),
+  bassVolume: real('bass_volume').notNull().default(0.7),
   createdAt: integer('created_at').notNull(),
   updatedAt: integer('updated_at').notNull(),
 });

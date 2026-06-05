@@ -22,6 +22,20 @@
       "when": 1780548251253,
       "tag": "0002_mysterious_senator_kelly",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1780658800000,
+      "tag": "0003_add_bass_settings",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1780720800000,
+      "tag": "0004_add_metronome_volume",
+      "breakpoints": true
     }
   ]
 }

@@ -50,6 +50,9 @@ export async function settingsRoutes(
     if (data.clickWeak !== undefined) patch.clickWeak = data.clickWeak;
     if (data.volume !== undefined) patch.volume = data.volume;
     if (data.countIn !== undefined) patch.countIn = data.countIn;
+    if (data.metronomeVolume !== undefined) patch.metronomeVolume = data.metronomeVolume;
+    if (data.bassEnabled !== undefined) patch.bassEnabled = data.bassEnabled;
+    if (data.bassVolume !== undefined) patch.bassVolume = data.bassVolume;
 
     db.update(userSettings).set(patch).where(eq(userSettings.userId, user.id)).run();
     return reply.send(toSettingsDTO({ ...existing, ...patch }));

@@ -7,12 +7,23 @@ export interface ScheduleWindow {
   toTicks: number;
 }
 
+/** Articulation types available in the bass sample library. */
+export type BassArticulation = 'finger' | 'pluck' | 'ghost' | 'mute' | 'noise';
+
 /** Context passed to instruments while scheduling a look-ahead window. */
 export interface ScheduleContext {
   bpm: number;
   timeSignature: TimeSignature;
   /** Schedule a metronome click at an absolute tick from the start of the form. */
   scheduleClick(atTicks: number, beatType: BeatType): void;
+  /** Schedule a pitched bass note. Present only when a bass sampler is wired in. */
+  scheduleNote?(
+    atTicks: number,
+    note: string,
+    velocity: number,
+    durationTicks: number,
+    articulation: BassArticulation,
+  ): void;
 }
 
 /**

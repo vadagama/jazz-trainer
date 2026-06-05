@@ -1,6 +1,7 @@
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { UserSettingsDTOSchema, type UserSettingsDTO, CLICK_SOUNDS } from '@jazz/shared';
+import { UserSettingsDTOSchema, type UserSettingsDTO } from '@jazz/shared';
+import { METRONOME_SAMPLES } from '@jazz/music-core';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,14 +13,6 @@ interface Props {
   onSave: (data: UserSettingsDTO) => void | Promise<void>;
   isSaving?: boolean;
 }
-
-const CLICK_LABELS: Record<string, string> = {
-  'analog-metronome': 'Analog Metronome',
-  'button-click': 'Button Click',
-  'drum-stick': 'Drum Stick',
-  'retro-stick': 'Retro Stick',
-  'switch': 'Switch',
-};
 
 const NONE_VALUE = '__none__';
 
@@ -42,6 +35,7 @@ export function SettingsForm({ defaultValues, onSave, isSaving }: Props) {
   });
 
   const volumePct = Math.round((form.watch('volume') ?? 0.8) * 100);
+  const metronomeVolumePct = Math.round((form.watch('metronomeVolume') ?? 0.8) * 100);
 
   const bpmField = form.register('bpm', { setValueAs: (v: string) => v === '' ? NaN : parseInt(v, 10) });
   const countInField = form.register('countIn', { setValueAs: (v: string) => v === '' ? NaN : parseInt(v, 10) });
@@ -79,7 +73,7 @@ export function SettingsForm({ defaultValues, onSave, isSaving }: Props) {
 
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label className="text-sm text-foreground">Громкость</Label>
+            <Label className="text-sm text-foreground">Общая громкость</Label>
             <span className="text-sm tabular-nums text-muted-foreground">{volumePct}%</span>
           </div>
           <Controller
@@ -125,6 +119,26 @@ export function SettingsForm({ defaultValues, onSave, isSaving }: Props) {
       {/* Метроном */}
       <div className="space-y-4">
         <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Метроном</p>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label className="text-sm text-foreground">Громкость метронома</Label>
+            <span className="text-sm tabular-nums text-muted-foreground">{metronomeVolumePct}%</span>
+          </div>
+          <Controller
+            control={form.control}
+            name="metronomeVolume"
+            render={({ field }) => (
+              <Slider
+                min={0}
+                max={100}
+                step={5}
+                value={[Math.round((field.value ?? 0.8) * 100)]}
+                onValueChange={(vals) => field.onChange((vals[0] ?? 80) / 100)}
+              />
+            )}
+          />
+        </div>
+
         {BEAT_ROWS.map(({ name, label }) => (
           <div key={name} className="flex items-center justify-between gap-4">
             <span className="text-sm text-foreground">{label}</span>
@@ -141,8 +155,8 @@ export function SettingsForm({ defaultValues, onSave, isSaving }: Props) {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value={NONE_VALUE}>—</SelectItem>
-                    {CLICK_SOUNDS.map((s) => (
-                      <SelectItem key={s} value={s}>{CLICK_LABELS[s]}</SelectItem>
+                    {METRONOME_SAMPLES.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -150,6 +164,50 @@ export function SettingsForm({ defaultValues, onSave, isSaving }: Props) {
             />
           </div>
         ))}
+      </div>
+
+      {/* Бас */}
+      <div className="space-y-4">
+        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Бас</p>
+
+        <div className="flex items-center justify-between gap-4">
+          <Label htmlFor="bassEnabled" className="text-sm text-foreground">Включить бас</Label>
+          <Controller
+            control={form.control}
+            name="bassEnabled"
+            render={({ field }) => (
+              <input
+                id="bassEnabled"
+                type="checkbox"
+                checked={field.value ?? true}
+                onChange={(e) => field.onChange(e.target.checked)}
+                className="h-4 w-4 cursor-pointer accent-primary"
+              />
+            )}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label className="text-sm text-foreground">Громкость баса</Label>
+            <span className="text-sm tabular-nums text-muted-foreground">
+              {Math.round((form.watch('bassVolume') ?? 0.7) * 100)}%
+            </span>
+          </div>
+          <Controller
+            control={form.control}
+            name="bassVolume"
+            render={({ field }) => (
+              <Slider
+                min={0}
+                max={100}
+                step={5}
+                value={[Math.round((field.value ?? 0.7) * 100)]}
+                onValueChange={(vals) => field.onChange((vals[0] ?? 70) / 100)}
+              />
+            )}
+          />
+        </div>
       </div>
 
       <Button type="submit" disabled={isSaving}>

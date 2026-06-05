@@ -5,7 +5,7 @@ import {
 } from '../time/timeSignature.js';
 import { ticksToPosition, ticksToSeconds, type MusicalPosition } from '../time/position.js';
 import type { PlaybackStatus } from '../playback/stateMachine.js';
-import type { Instrument, ScheduleWindow } from './instrument.js';
+import type { BassArticulation, Instrument, ScheduleWindow } from './instrument.js';
 
 /** Three-level beat accent: first downbeat, secondary accent, or ordinary weak beat. */
 export type BeatType = 'strong' | 'strong2' | 'weak';
@@ -13,10 +13,21 @@ export type BeatType = 'strong' | 'strong2' | 'weak';
 /** Sink that actually renders a scheduled click (real impl triggers a Tone synth). */
 export type ClickSink = (atTicks: number, beatType: BeatType) => void;
 
+/** Sink that renders a scheduled bass note via Tone.Sampler. */
+export type NoteSink = (
+  atTicks: number,
+  note: string,
+  velocity: number,
+  durationTicks: number,
+  articulation: BassArticulation,
+) => void;
+
 export interface TransportEngineOptions {
   bpm?: number;
   timeSignature?: TimeSignature | string;
   sink: ClickSink;
+  /** Optional — wire a Tone.Sampler-backed sink to enable bass scheduling. */
+  noteSink?: NoteSink;
 }
 
 /**
@@ -35,6 +46,7 @@ export class TransportEngine {
   positionTicks = 0;
 
   private readonly sink: ClickSink;
+  private readonly noteSink?: NoteSink;
   private readonly instruments: Instrument[] = [];
   private readonly tickListeners = new Set<(pos: MusicalPosition) => void>();
 
@@ -45,6 +57,7 @@ export class TransportEngine {
         ? parseTimeSignature(opts.timeSignature)
         : (opts.timeSignature ?? { beatsPerBar: 4, beatUnit: 4 });
     this.sink = opts.sink;
+    this.noteSink = opts.noteSink;
   }
 
   addInstrument(instrument: Instrument): void {
@@ -73,10 +86,15 @@ export class TransportEngine {
 
   /** Ask every instrument to schedule its events into the given tick window. */
   scheduleWindow(window: ScheduleWindow): void {
+    const noteSink = this.noteSink;
     const ctx = {
       bpm: this.bpm,
       timeSignature: this.timeSignature,
       scheduleClick: (atTicks: number, beatType: BeatType) => this.sink(atTicks, beatType),
+      scheduleNote: noteSink
+        ? (atTicks: number, note: string, velocity: number, durationTicks: number, articulation: BassArticulation) =>
+            noteSink(atTicks, note, velocity, durationTicks, articulation)
+        : undefined,
     };
     for (const instrument of this.instruments) {
       instrument.schedule(window, ctx);

@@ -25,6 +25,9 @@ export function toSettingsDTO(s: UserSettingsRecord): UserSettingsDTO {
     clickWeak: (s.clickWeak ?? null) as UserSettingsDTO['clickWeak'],
     volume: s.volume,
     countIn: s.countIn,
+    metronomeVolume: s.metronomeVolume,
+    bassEnabled: s.bassEnabled,
+    bassVolume: s.bassVolume,
   };
 }
 
@@ -95,6 +98,7 @@ export function ensureUserSettings(db: DrizzleDb, userId: string): void {
       clickWeak: 'drum-stick',
       volume: 0.8,
       countIn: 0,
+      metronomeVolume: 0.8,
       createdAt: now,
       updatedAt: now,
     })
