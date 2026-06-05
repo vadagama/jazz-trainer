@@ -597,10 +597,10 @@ avoidSameNoteMoreThan = 2;
 | Режим | Описание |
 | ----- | -------- |
 | 1 | Roots only |
-| 2 | Root + fifth |
-| 3 | Chord tones |
-| 4 | Walking bass |
-| 5 | Walking bass with chromatic approaches |
+| 2 | Root on every beat (octave alternation) |
+| 3 | Root + fifth |
+| 4 | Chord tones |
+| 5 | Walking bass with approach notes |
 
 ### Управление громкостью
 
