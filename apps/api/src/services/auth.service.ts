@@ -28,6 +28,7 @@ export function toSettingsDTO(s: UserSettingsRecord): UserSettingsDTO {
     metronomeVolume: s.metronomeVolume,
     bassEnabled: s.bassEnabled,
     bassVolume: s.bassVolume,
+    bassComplexity: s.bassComplexity,
   };
 }
 
@@ -99,6 +100,7 @@ export function ensureUserSettings(db: DrizzleDb, userId: string): void {
       volume: 0.8,
       countIn: 0,
       metronomeVolume: 0.8,
+      bassComplexity: 1,
       createdAt: now,
       updatedAt: now,
     })

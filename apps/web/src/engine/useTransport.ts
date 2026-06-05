@@ -374,6 +374,13 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     bassChannelRef.current.volume.value = Tone.gainToDb(settings.bassVolume ?? 0.7);
   }, [settings.bassVolume]);
 
+  // Update bass complexity
+  useEffect(() => {
+    if (!bassInstrumentRef.current) return;
+    const level = (settings.bassComplexity ?? 1) as 1 | 2 | 3 | 4 | 5;
+    bassInstrumentRef.current.setComplexity(level);
+  }, [settings.bassComplexity]);
+
   // Update time signature on the engine when it changes
   useEffect(() => {
     if (!engineRef.current) return;

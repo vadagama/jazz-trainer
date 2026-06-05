@@ -208,6 +208,31 @@ export function SettingsForm({ defaultValues, onSave, isSaving }: Props) {
             )}
           />
         </div>
+
+        <div className="flex items-center justify-between gap-4">
+          <Label className="text-sm text-foreground">Сложность паттерна</Label>
+          <Controller
+            control={form.control}
+            name="bassComplexity"
+            render={({ field }) => (
+              <Select
+                value={String(field.value ?? 1)}
+                onValueChange={(v) => field.onChange(Number(v))}
+              >
+                <SelectTrigger className="w-44">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">1 — Корень на доле 1</SelectItem>
+                  <SelectItem value="2">2 — Корень на каждой доле</SelectItem>
+                  <SelectItem value="3" disabled>3 — Chord tones</SelectItem>
+                  <SelectItem value="4" disabled>4 — Walking bass</SelectItem>
+                  <SelectItem value="5" disabled>5 — Walking + хроматика</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+          />
+        </div>
       </div>
 
       <Button type="submit" disabled={isSaving}>

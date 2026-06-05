@@ -1,0 +1,1 @@
+ALTER TABLE `user_settings` ADD `bass_complexity` integer NOT NULL DEFAULT 1;
