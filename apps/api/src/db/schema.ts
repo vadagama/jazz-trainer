@@ -42,6 +42,7 @@ export const userSettings = sqliteTable('user_settings', {
   bassEnabled: integer('bass_enabled', { mode: 'boolean' }).notNull().default(true),
   bassVolume: real('bass_volume').notNull().default(0.7),
   bassComplexity: integer('bass_complexity').notNull().default(1),
+  bassOctaveUp: integer('bass_octave_up', { mode: 'boolean' }).notNull().default(false),
   createdAt: integer('created_at').notNull(),
   updatedAt: integer('updated_at').notNull(),
 });

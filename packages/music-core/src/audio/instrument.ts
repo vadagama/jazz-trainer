@@ -8,7 +8,7 @@ export interface ScheduleWindow {
 }
 
 /** Articulation types available in the bass sample library. */
-export type BassArticulation = 'finger' | 'pluck' | 'ghost' | 'mute' | 'noise';
+export type BassArticulation = 'pluck' | 'mute';
 
 /** Context passed to instruments while scheduling a look-ahead window. */
 export interface ScheduleContext {

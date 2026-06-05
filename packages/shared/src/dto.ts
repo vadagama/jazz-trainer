@@ -33,7 +33,8 @@ export const UserSettingsDTOSchema = z.object({
   metronomeVolume: z.number().min(0).max(1).optional(),
   bassEnabled: z.boolean().optional(),
   bassVolume: z.number().min(0).max(1).optional(),
-  bassComplexity: z.number().int().min(1).max(5).optional(),
+  bassComplexity: z.number().int().min(1).max(7).optional(),
+  bassOctaveUp: z.boolean().optional(),
 });
 export type UserSettingsDTO = z.infer<typeof UserSettingsDTOSchema>;
 

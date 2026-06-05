@@ -21,6 +21,7 @@ const DEFAULT_SETTINGS: LocalSettings = {
   bassEnabled: true,
   bassVolume: 0.7,
   bassComplexity: 1,
+  bassOctaveUp: false,
 };
 
 export const useLocalSettingsStore = create<LocalSettingsStore>()(

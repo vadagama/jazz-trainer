@@ -30,35 +30,41 @@ export interface SamplerDef {
 }
 
 /**
- * Anchor notes for Tone.Sampler: every 3 semitones across C2–C4.
+ * Anchor notes for pluck sampler: every 3 semitones across C2–C4.
  * Tone.js interpolates ≤ ±2 semitones from each anchor.
  * Filenames use lowercase with flats only (ab, bb, db, eb, gb).
  */
-const BASS_ANCHOR_NOTES = ['C2', 'Eb2', 'Gb2', 'A2', 'C3', 'Eb3', 'Gb3', 'A3', 'C4'] as const;
+const BASS_PLUCK_ANCHOR_NOTES = ['C2', 'Eb2', 'Gb2', 'A2', 'C3', 'Eb3', 'Gb3', 'A3', 'C4'] as const;
 
-/** Build a NoteMap for the finger articulation at the given RR variant (1–4). */
-export function buildBassFingerUrls(rr: 1 | 2 | 3 | 4): NoteMap {
-  return Object.fromEntries(
-    BASS_ANCHOR_NOTES.map((note) => [
-      note,
-      `finger/sneakybass_${note.toLowerCase()}_finger_rr${rr}.ogg`,
-    ]),
-  );
-}
+/**
+ * Anchor notes for mute sampler: every 3 semitones starting from Db2
+ * (lowest available mute sample). Covers the full walking bass range Db2–Bb3.
+ */
+const BASS_MUTE_ANCHOR_NOTES = ['Db2', 'E2', 'G2', 'Bb2', 'Db3', 'E3', 'G3', 'Bb3'] as const;
 
 /** Build a NoteMap for the pluck articulation at the given RR variant (1–4). */
 export function buildBassPluckUrls(rr: 1 | 2 | 3 | 4): NoteMap {
   return Object.fromEntries(
-    BASS_ANCHOR_NOTES.map((note) => [
+    BASS_PLUCK_ANCHOR_NOTES.map((note) => [
       note,
       `pluck/sneakybass_${note.toLowerCase()}_pluck_rr${rr}.ogg`,
     ]),
   );
 }
 
+/** Build a NoteMap for the mute articulation at the given RR variant (1–4). */
+export function buildBassMuteUrls(rr: 1 | 2 | 3 | 4): NoteMap {
+  return Object.fromEntries(
+    BASS_MUTE_ANCHOR_NOTES.map((note) => [
+      note,
+      `mute/sneakybass_${note.toLowerCase()}_mute_rr${rr}.ogg`,
+    ]),
+  );
+}
+
 export const BASS_SAMPLER: SamplerDef = {
   baseUrl: '/samples/bass/',
-  notes: buildBassFingerUrls(1),
+  notes: buildBassPluckUrls(1),
 };
 
 export const PIANO_SAMPLER: SamplerDef = {
