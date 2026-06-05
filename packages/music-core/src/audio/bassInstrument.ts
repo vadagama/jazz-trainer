@@ -15,6 +15,9 @@ const NOTES_PER_BAR: Record<1 | 2 | 3 | 4 | 5, number> = {
 /** Fraction of the slot actually sounded — leaves a natural gap before the next note. */
 const GATE_RATIO = 0.92;
 
+/** Velocity per beat index (0-based). Source: BASS.md §Velocity и акценты. */
+const BEAT_VELOCITY = [0.82, 0.68, 0.76, 0.70] as const;
+
 export class BassInstrument implements Instrument {
   private timeline: ChordTimeline;
   private complexity: 1 | 2 | 3 | 4 | 5 = 1;
@@ -38,30 +41,35 @@ export class BassInstrument implements Instrument {
     const tpBar = ticksPerBar(sig);
     const tpBeat = ticksPerBeat(sig);
 
-    // Note duration = its time slot × GATE_RATIO:
-    //   complexity 1 → whole bar (whole note in 4/4)
-    //   complexity 2+ → one beat (quarter note in 4/4)
     const slotTicks = Math.floor(tpBar / NOTES_PER_BAR[this.complexity]);
     const durationTicks = Math.floor(slotTicks * GATE_RATIO);
 
-    const firstBar = Math.ceil(window.fromTicks / tpBar);
-
-    for (let bar = firstBar; bar * tpBar < window.toTicks; bar++) {
-      const barStartTicks = bar * tpBar;
-      const chord = this.timeline.getChordAtTick(barStartTicks, sig);
-      if (!chord) continue;
-
-      // Complexity 1: root on beat 1 only
-      const rootNote = resolveRootNote(chord);
-      ctx.scheduleNote(barStartTicks, rootNote, 0.78, durationTicks, 'finger');
+    if (this.complexity === 1) {
+      // Root on beat 1 only — whole-note slot
+      const firstBar = Math.ceil(window.fromTicks / tpBar);
+      for (let bar = firstBar; bar * tpBar < window.toTicks; bar++) {
+        const barStartTicks = bar * tpBar;
+        const chord = this.timeline.getChordAtTick(barStartTicks, sig);
+        if (!chord) continue;
+        ctx.scheduleNote(barStartTicks, resolveRootNote(chord, 2), BEAT_VELOCITY[0], durationTicks, 'finger');
+      }
+    } else if (this.complexity === 2) {
+      // Root on every beat, alternating octaves 2/3 (odd beats low, even beats high)
+      const firstBeat = Math.ceil(window.fromTicks / tpBeat);
+      for (let beat = firstBeat; beat * tpBeat < window.toTicks; beat++) {
+        const atTicks = beat * tpBeat;
+        const beatInBar = beat % sig.beatsPerBar;
+        const chord = this.timeline.getChordAtTick(atTicks, sig);
+        if (!chord) continue;
+        const octave = beatInBar % 2 === 0 ? 2 : 3;
+        const velocity = BEAT_VELOCITY[beatInBar] ?? BEAT_VELOCITY[0];
+        ctx.scheduleNote(atTicks, resolveRootNote(chord, octave), velocity, durationTicks, 'finger');
+      }
     }
-
-    void tpBeat; // referenced by future complexities
   }
 }
 
-/** Convert ChordSymbol root to a scientific pitch string in octave 2. */
-function resolveRootNote(chord: ChordSymbol): string {
-  // chord.root = 'C'|'D'|...'B', chord.rootAccidental = '#'|'b'|''
-  return `${chord.root}${chord.rootAccidental}2`;
+/** Convert ChordSymbol root to a scientific pitch string at the given octave. */
+function resolveRootNote(chord: ChordSymbol, octave: number): string {
+  return `${chord.root}${chord.rootAccidental}${octave}`;
 }

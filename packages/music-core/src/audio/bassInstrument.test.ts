@@ -113,4 +113,92 @@ describe('BassInstrument', () => {
 
     expect(notes.map((n) => n.at)).toEqual([1920, 3840]);
   });
+
+  describe('complexity 2 — root on every beat', () => {
+    it('plays root on all 4 beats per bar', () => {
+      const timeline = new ChordTimeline([
+        { barIndex: 0, chord: makeChord('D') },
+        { barIndex: 1, chord: makeChord('G') },
+      ]);
+      const bass = new BassInstrument(timeline);
+      bass.setComplexity(2);
+      const { ctx, notes } = makeCtx();
+
+      bass.schedule({ fromTicks: 0, toTicks: 1920 * 2 }, ctx);
+
+      // 8 notes total (4 per bar)
+      expect(notes).toHaveLength(8);
+      expect(notes.map((n) => n.at)).toEqual([0, 480, 960, 1440, 1920, 2400, 2880, 3360]);
+    });
+
+    it('alternates octaves 2 and 3 on beats 1–4', () => {
+      const timeline = new ChordTimeline([{ barIndex: 0, chord: makeChord('D') }]);
+      const bass = new BassInstrument(timeline);
+      bass.setComplexity(2);
+      const { ctx, notes } = makeCtx();
+
+      bass.schedule({ fromTicks: 0, toTicks: 1920 }, ctx);
+
+      expect(notes.map((n) => n.note)).toEqual(['D2', 'D3', 'D2', 'D3']);
+    });
+
+    it('applies beat-specific velocity per BASS.md scheme', () => {
+      const timeline = new ChordTimeline([{ barIndex: 0, chord: makeChord('C') }]);
+      const bass = new BassInstrument(timeline);
+      bass.setComplexity(2);
+      const { ctx, notes } = makeCtx();
+
+      bass.schedule({ fromTicks: 0, toTicks: 1920 }, ctx);
+
+      expect(notes.map((n) => n.velocity)).toEqual([0.82, 0.68, 0.76, 0.70]);
+    });
+
+    it('follows chord changes per beat (chord change mid-bar)', () => {
+      // Two chords in one bar via separate bars in timeline
+      const timeline = new ChordTimeline([
+        { barIndex: 0, chord: makeChord('D') },
+        { barIndex: 1, chord: makeChord('G') },
+      ]);
+      const bass = new BassInstrument(timeline);
+      bass.setComplexity(2);
+      const { ctx, notes } = makeCtx();
+
+      bass.schedule({ fromTicks: 0, toTicks: 1920 * 2 }, ctx);
+
+      // Bar 0 → D on all 4 beats; bar 1 → G on all 4 beats
+      expect(notes.slice(0, 4).map((n) => n.note)).toEqual(['D2', 'D3', 'D2', 'D3']);
+      expect(notes.slice(4, 8).map((n) => n.note)).toEqual(['G2', 'G3', 'G2', 'G3']);
+    });
+
+    it('resolves flat accidentals correctly (Bb, Ab)', () => {
+      const timeline = new ChordTimeline([
+        { barIndex: 0, chord: makeChord('B', 'b') },
+      ]);
+      const bass = new BassInstrument(timeline);
+      bass.setComplexity(2);
+      const { ctx, notes } = makeCtx();
+
+      bass.schedule({ fromTicks: 0, toTicks: 1920 }, ctx);
+
+      expect(notes.map((n) => n.note)).toEqual(['Bb2', 'Bb3', 'Bb2', 'Bb3']);
+    });
+
+    it('skips beats in bars with null chord', () => {
+      const timeline = new ChordTimeline([
+        { barIndex: 0, chord: makeChord('D') },
+        { barIndex: 1, chord: null },
+        { barIndex: 2, chord: makeChord('C') },
+      ]);
+      const bass = new BassInstrument(timeline);
+      bass.setComplexity(2);
+      const { ctx, notes } = makeCtx();
+
+      bass.schedule({ fromTicks: 0, toTicks: 1920 * 3 }, ctx);
+
+      // Bar 0 → 4 notes, bar 1 → 0 notes, bar 2 → 4 notes
+      expect(notes).toHaveLength(8);
+      expect(notes[0]?.note).toBe('D2');
+      expect(notes[4]?.note).toBe('C2');
+    });
+  });
 });

@@ -36,6 +36,13 @@
       "when": 1780720800000,
       "tag": "0004_add_metronome_volume",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1780724400000,
+      "tag": "0005_add_bass_complexity",
+      "breakpoints": true
     }
   ]
 }

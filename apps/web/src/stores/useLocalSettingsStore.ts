@@ -20,6 +20,7 @@ const DEFAULT_SETTINGS: LocalSettings = {
   metronomeVolume: 0.8,
   bassEnabled: true,
   bassVolume: 0.7,
+  bassComplexity: 1,
 };
 
 export const useLocalSettingsStore = create<LocalSettingsStore>()(
