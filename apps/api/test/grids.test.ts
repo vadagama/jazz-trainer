@@ -203,11 +203,12 @@ describe('GET + PATCH /api/settings', () => {
   });
 
   it('PATCH updates partial settings', async () => {
+    await agent.patch('/api/settings').send({ clickStrong: 'button-click' });
     const res = await agent.patch('/api/settings').send({ bpm: 140, volume: 0.5 });
     expect(res.status).toBe(200);
     expect(res.body.bpm).toBe(140);
     expect(res.body.volume).toBe(0.5);
-    expect(res.body.clickStrong).toBe('click_hi'); // unchanged
+    expect(res.body.clickStrong).toBe('button-click'); // unchanged
   });
 
   it('PATCH rejects invalid bpm', async () => {

@@ -13,42 +13,42 @@
 
 ### Фаза 2 — Движок (пакет `instruments`)
 
-- [ ] Создать класс `RhodesInstrument` (аналог `BassInstrument`)
-- [ ] Реализовать 4 Tone.js Sampler по velocity-слоям (soft / medium / hard / bark) и `pickRhodesLayer(velocity)`
-- [ ] Реализовать цепочку эффектов: EQ3 → Tremolo → Chorus → Reverb → Channel
-- [ ] Voicing engine:
-  - [ ] `shell2` — 3rd + 7th
-  - [ ] `rootless3` — 3rd + 7th + color (9th)
-  - [ ] `rootless4` — 3rd + 7th + 9th + 13th
-  - [ ] Voicings для всех типов аккордов: maj7, m7, dom7, m7b5, dim7
-- [ ] Voice leading: алгоритм минимального движения голосов между аккордами
-- [ ] Ритмические паттерны: `wholeNotes`, `halfNotes`, `quarterNotes`
-- [ ] Humanization (±6 ms timing, ±0.05 velocity)
+- [x] Создать класс `RhodesInstrument` (аналог `BassInstrument`)
+- [x] Реализовать 4 Tone.js Sampler по velocity-слоям (soft / medium / hard / bark) и `pickRhodesLayer(velocity)`
+- [x] Реализовать цепочку эффектов: EQ3 → Tremolo → Chorus → Reverb → Channel
+- [x] Voicing engine:
+  - [x] `shell2` — 3rd + 7th
+  - [x] `rootless3` — 3rd + 7th + color (9th)
+  - [x] `rootless4` — 3rd + 7th + 9th + 13th
+  - [x] Voicings для всех типов аккордов: maj7, m7, dom7, m7b5, dim7
+- [x] Voice leading: алгоритм минимального движения голосов между аккордами
+- [x] Ритмические паттерны: `wholeNotes`, `halfNotes`, `quarterNotes`
+- [x] Humanization (±6 ms timing, ±0.05 velocity)
 
 ### Фаза 3 — Transport / Scheduling
 
-- [ ] Интегрировать `RhodesInstrument` в transport engine (аналог Bass)
-- [ ] Реализовать `scheduleRhodesComp(events)` через `Tone.Transport.schedule`
-- [ ] Правила взаимодействия с басом: минимальный интервал, запрет root ниже C4
+- [x] Интегрировать `RhodesInstrument` в transport engine (аналог Bass)
+- [x] Реализовать `scheduleRhodesComp(events)` через `Tone.Transport.schedule`
+- [x] Правила взаимодействия с басом: минимальный интервал, запрет root ниже C4
 
 ### Фаза 4 — Настройки и API
 
-- [ ] Добавить поля `rhodesEnabled`, `rhodesMode`, `rhodesVoicingDensity`, `rhodesVolume` в DB schema
-- [ ] Обновить Zod-схему `UserSettingsDTOSchema`
-- [ ] Обновить `toSettingsDTO` и PATCH `/api/settings`
+- [x] Добавить поля `rhodesEnabled`, `rhodesMode`, `rhodesVoicingDensity`, `rhodesVolume` в DB schema
+- [x] Обновить Zod-схему `UserSettingsDTOSchema`
+- [x] Обновить `toSettingsDTO` и PATCH `/api/settings`
 
 ### Фаза 5 — Frontend
 
-- [ ] Добавить поля Rhodes в `useLocalSettingsStore`
-- [ ] Добавить `useEffect` хук для синхронизации с audio engine
-- [ ] Добавить секцию Rhodes в `SettingsForm` (enabled, mode, voicingDensity)
+- [x] Добавить поля Rhodes в `useLocalSettingsStore`
+- [x] Добавить `useEffect` хук для синхронизации с audio engine
+- [x] Добавить секцию Rhodes в `SettingsForm` (enabled, mode, voicingDensity)
 
 ### Фаза 6 — Тесты
 
-- [ ] Unit тесты для voicing engine (все типы аккордов, все плотности)
-- [ ] Unit тесты для voice leading (ii–V–I, проверка минимального движения)
-- [ ] Unit тесты для ритмических паттернов
-- [ ] TypeScript compilation check (`tsc --noEmit`)
+- [x] Unit тесты для voicing engine (все типы аккордов, все плотности)
+- [x] Unit тесты для voice leading (ii–V–I, проверка минимального движения)
+- [x] Unit тесты для ритмических паттернов
+- [x] TypeScript compilation check (`tsc --noEmit`)
 
 ---
 
