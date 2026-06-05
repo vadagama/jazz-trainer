@@ -147,7 +147,7 @@ describe('BassInstrument', () => {
       expect(notes.map((n) => n.note)).toEqual(['D2', 'D3', 'D2', 'D3']);
     });
 
-    it('uses pluck on beats 1 and 3, finger on beats 2 and 4', () => {
+    it('uses pluck on beats 1 and 3, finger on beats 2 and 4 (4/4)', () => {
       const timeline = new ChordTimeline([{ barIndex: 0, chord: makeChord('C') }]);
       const bass = new BassInstrument(timeline);
       bass.setComplexity(2);
@@ -156,6 +156,17 @@ describe('BassInstrument', () => {
       bass.schedule({ fromTicks: 0, toTicks: 1920 }, ctx);
 
       expect(notes.map((n) => n.articulation)).toEqual(['pluck', 'finger', 'pluck', 'finger']);
+    });
+
+    it('uses pluck only on beat 1 in 3/4 (no second strong beat)', () => {
+      const timeline = new ChordTimeline([{ barIndex: 0, chord: makeChord('C') }]);
+      const bass = new BassInstrument(timeline);
+      bass.setComplexity(2);
+      const { ctx, notes } = makeCtx(parseTimeSignature('3/4'));
+
+      bass.schedule({ fromTicks: 0, toTicks: 1440 }, ctx);
+
+      expect(notes.map((n) => n.articulation)).toEqual(['pluck', 'finger', 'finger']);
     });
 
     it('applies beat-specific velocity per BASS.md scheme', () => {
@@ -230,7 +241,7 @@ describe('BassInstrument', () => {
       expect(notes.map((n) => n.note)).toEqual(['D2', 'A2', 'D2', 'A2']);
     });
 
-    it('uses pluck on beats 1 and 3, finger on beats 2 and 4', () => {
+    it('uses pluck on beats 1 and 3, finger on beats 2 and 4 (4/4)', () => {
       const timeline = new ChordTimeline([{ barIndex: 0, chord: makeChord('D') }]);
       const bass = new BassInstrument(timeline);
       bass.setComplexity(3);
@@ -239,6 +250,18 @@ describe('BassInstrument', () => {
       bass.schedule({ fromTicks: 0, toTicks: 1920 }, ctx);
 
       expect(notes.map((n) => n.articulation)).toEqual(['pluck', 'finger', 'pluck', 'finger']);
+    });
+
+    it('uses pluck only on beat 1 in 3/4 — weak beats play fifth (finger)', () => {
+      const timeline = new ChordTimeline([{ barIndex: 0, chord: makeChord('D') }]);
+      const bass = new BassInstrument(timeline);
+      bass.setComplexity(3);
+      const { ctx, notes } = makeCtx(parseTimeSignature('3/4'));
+
+      bass.schedule({ fromTicks: 0, toTicks: 1440 }, ctx);
+
+      expect(notes.map((n) => n.articulation)).toEqual(['pluck', 'finger', 'finger']);
+      expect(notes.map((n) => n.note)).toEqual(['D2', 'A2', 'A2']);
     });
 
     it('fifth lands above root when interval wraps octave boundary (G dominant → D3)', () => {

@@ -1,5 +1,5 @@
 import type { ChordSymbol } from '@jazz/shared';
-import { ticksPerBar, ticksPerBeat } from '../time/timeSignature.js';
+import { ticksPerBar, ticksPerBeat, defaultStrongBeats, defaultSecondStrongBeats } from '../time/timeSignature.js';
 import type { Instrument, ScheduleContext, ScheduleWindow } from './instrument.js';
 import type { ChordTimeline } from './chordTimeline.js';
 
@@ -62,21 +62,23 @@ export class BassInstrument implements Instrument {
         ctx.scheduleNote(barStartTicks, resolveRootNote(chord, 2), BEAT_VELOCITY[0], durationTicks, 'pluck');
       }
     } else if (this.complexity === 2) {
-      // Root on every beat, alternating octaves 2/3; strong beats (1,3) = pluck, weak = finger
+      // Root on every beat, alternating octaves 2/3; strong beats = pluck, weak = finger
+      const strongBeats = new Set([...defaultStrongBeats(sig), ...defaultSecondStrongBeats(sig)]);
       const firstBeat = Math.ceil(window.fromTicks / tpBeat);
       for (let beat = firstBeat; beat * tpBeat < window.toTicks; beat++) {
         const atTicks = beat * tpBeat;
         const beatInBar = beat % sig.beatsPerBar;
         const chord = this.timeline.getChordAtTick(atTicks, sig);
         if (!chord) continue;
-        const octave = beatInBar % 2 === 0 ? 2 : 3;
+        const isStrong = strongBeats.has(beatInBar);
+        const octave = isStrong ? 2 : 3;
         const velocity = BEAT_VELOCITY[beatInBar] ?? BEAT_VELOCITY[0];
-        const articulation = beatInBar % 2 === 0 ? 'pluck' : 'finger';
-        ctx.scheduleNote(atTicks, resolveRootNote(chord, octave), velocity, durationTicks, articulation);
+        ctx.scheduleNote(atTicks, resolveRootNote(chord, octave), velocity, durationTicks, isStrong ? 'pluck' : 'finger');
       }
     } else if (this.complexity === 3) {
-      // Root + fifth alternating: beats 1,3 = root (pluck), beats 2,4 = fifth (finger)
-      // Beat 3 root octave alternates between bars (even bar → oct 2, odd bar → oct 3)
+      // Root on strong beats (pluck), fifth on weak beats (finger)
+      // Strong beat root octave alternates between bars for subtle variation
+      const strongBeats = new Set([...defaultStrongBeats(sig), ...defaultSecondStrongBeats(sig)]);
       const firstBeat = Math.ceil(window.fromTicks / tpBeat);
       for (let beat = firstBeat; beat * tpBeat < window.toTicks; beat++) {
         const atTicks = beat * tpBeat;
@@ -84,9 +86,10 @@ export class BassInstrument implements Instrument {
         const barIndex = Math.floor(beat / sig.beatsPerBar);
         const chord = this.timeline.getChordAtTick(atTicks, sig);
         if (!chord) continue;
+        const isStrong = strongBeats.has(beatInBar);
         const velocity = BEAT_VELOCITY[beatInBar] ?? BEAT_VELOCITY[0];
-        if (beatInBar % 2 === 0) {
-          const octave = beatInBar === 2 && barIndex % 2 === 1 ? 3 : 2;
+        if (isStrong) {
+          const octave = beatInBar !== 0 && barIndex % 2 === 1 ? 3 : 2;
           ctx.scheduleNote(atTicks, resolveRootNote(chord, octave), velocity, durationTicks, 'pluck');
         } else {
           ctx.scheduleNote(atTicks, resolveFifthNote(chord, 2), velocity, durationTicks, 'finger');
