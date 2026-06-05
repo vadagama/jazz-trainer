@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { Loader2, AlertCircle } from 'lucide-react';
 import type { Key, Section } from '@jazz/shared';
@@ -36,7 +36,11 @@ export function PlayerPage() {
       : rawContent.bars.length > 0
         ? [{ id: 'section-main', name: 'A', timeSignature: effectiveTimeSig, bars: rawContent.bars }]
         : [];
-  const displaySections = transposeSections(sections, grid?.key ?? 'C', effectiveKey);
+  const originalKey = grid?.key ?? 'C';
+  const displaySections = useMemo(
+    () => transposeSections(sections, originalKey, effectiveKey),
+    [sections, originalKey, effectiveKey],
+  );
   const totalBars = sections.length > 0
     ? sections.reduce((s, sec) => s + sec.bars.length, 0)
     : (grid?.barsCount ?? 0);
@@ -45,7 +49,7 @@ export function PlayerPage() {
     settings: { ...settings, bpm: effectiveBpm, volume: effectiveVolume },
     timeSignature: effectiveTimeSig,
     totalBars,
-    sections,
+    sections: displaySections,
   });
 
   const playingBarIndex = !countInActive && status !== 'idle' ? currentBar : undefined;

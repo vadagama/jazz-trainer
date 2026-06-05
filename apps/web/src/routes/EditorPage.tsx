@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Loader2, AlertCircle, Pencil, Save } from 'lucide-react';
 import type { TimeSignatureString, Key } from '@jazz/shared';
@@ -201,7 +201,10 @@ export function EditorPage() {
 
   // Compute transport params with safe fallbacks (must be before early returns)
   const originalKey: Key = grid?.key ?? 'C';
-  const displaySections = transposeSections(sections, originalKey, playerKey);
+  const displaySections = useMemo(
+    () => transposeSections(sections, originalKey, playerKey),
+    [sections, originalKey, playerKey],
+  );
   const defaultTimeSignature: TimeSignatureString =
     sections[0]?.timeSignature ?? grid?.timeSignature ?? '4/4';
   const effectiveBpm = localBpm ?? settings.bpm;
@@ -213,7 +216,7 @@ export function EditorPage() {
     settings: { ...settings, bpm: effectiveBpm, volume: effectiveVolume },
     timeSignature: effectiveTimeSig,
     totalBars,
-    sections,
+    sections: displaySections,
   });
 
   const playingBarIndex = !countInActive && status !== 'idle' ? currentBar : undefined;
