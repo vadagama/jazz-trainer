@@ -95,6 +95,27 @@ export class BassInstrument implements Instrument {
           ctx.scheduleNote(atTicks, resolveFifthNote(chord, 2), velocity, durationTicks, 'finger');
         }
       }
+    } else if (this.complexity === 4) {
+      // Chord tones in ascending order: beat 1=root, 2=third, 3=fifth, 4=seventh
+      const strongBeats = new Set([...defaultStrongBeats(sig), ...defaultSecondStrongBeats(sig)]);
+      const firstBeat = Math.ceil(window.fromTicks / tpBeat);
+      for (let beat = firstBeat; beat * tpBeat < window.toTicks; beat++) {
+        const atTicks = beat * tpBeat;
+        const beatInBar = beat % sig.beatsPerBar;
+        const chord = this.timeline.getChordAtTick(atTicks, sig);
+        if (!chord) continue;
+        const isStrong = strongBeats.has(beatInBar);
+        const velocity = BEAT_VELOCITY[beatInBar] ?? BEAT_VELOCITY[0];
+        const articulation = isStrong ? 'pluck' : 'finger';
+        let note: string;
+        switch (beatInBar) {
+          case 0:  note = resolveRootNote(chord, 2); break;
+          case 1:  note = resolveThirdNote(chord, 2); break;
+          case 2:  note = resolveFifthNote(chord, 2); break;
+          default: note = resolveSeventhNote(chord, 2); break;
+        }
+        ctx.scheduleNote(atTicks, note, velocity, durationTicks, articulation);
+      }
     }
   }
 }
@@ -102,6 +123,16 @@ export class BassInstrument implements Instrument {
 /** Convert ChordSymbol root to a scientific pitch string at the given octave. */
 function resolveRootNote(chord: ChordSymbol, octave: number): string {
   return `${chord.root}${chord.rootAccidental}${octave}`;
+}
+
+/** Interval in semitones from root to third based on chord quality. */
+function thirdInterval(chord: ChordSymbol): number {
+  switch (chord.quality) {
+    case 'major': return 4;
+    case 'dominant': return 4;
+    case 'augmented': return 4;
+    default: return 3; // minor, halfDiminished, diminished
+  }
 }
 
 /** Interval in semitones from root to fifth based on chord quality/alterations. */
@@ -112,15 +143,37 @@ function fifthInterval(chord: ChordSymbol): number {
   return 7;
 }
 
+/** Interval in semitones from root to seventh based on chord quality. */
+function seventhInterval(chord: ChordSymbol): number {
+  if (chord.quality === 'major') return 11;    // major 7th
+  if (chord.quality === 'diminished') return 9; // diminished 7th (bb7)
+  return 10;                                    // minor 7th (dominant, minor, halfDiminished, augmented)
+}
+
 /**
- * Resolve the fifth of a chord as a scientific pitch string.
- * The fifth is always placed above the root: if the interval wraps the
- * octave boundary the octave number is incremented automatically.
+ * Resolve a chord interval (semitones above root) to a scientific pitch string.
+ * Placed above the root in rootOctave; octave is incremented when the interval
+ * wraps the chromatic boundary. Notes above G3 are clamped down one octave to
+ * stay within the practical walking bass range (E1–G3).
  */
-function resolveFifthNote(chord: ChordSymbol, rootOctave: number): string {
+function resolveIntervalNote(chord: ChordSymbol, rootOctave: number, intervalSemitones: number): string {
   const accOffset = chord.rootAccidental === '#' ? 1 : chord.rootAccidental === 'b' ? -1 : 0;
-  const rootSemitone = (NOTE_SEMITONES[chord.root] ?? 0) + accOffset;
-  const fifthSemitone = (rootSemitone + fifthInterval(chord)) % 12;
-  const octave = rootOctave + (fifthSemitone <= rootSemitone ? 1 : 0);
-  return `${SEMITONE_NAMES[fifthSemitone]}${octave}`;
+  const rootSemitone = ((NOTE_SEMITONES[chord.root] ?? 0) + accOffset + 12) % 12;
+  const targetSemitone = (rootSemitone + intervalSemitones) % 12;
+  let octave = rootOctave + (targetSemitone < rootSemitone ? 1 : 0);
+  // Clamp notes above G3 (index 7) to one octave lower — walking bass ceiling
+  if (octave > 3 || (octave === 3 && targetSemitone > 7)) octave -= 1;
+  return `${SEMITONE_NAMES[targetSemitone]}${octave}`;
+}
+
+function resolveFifthNote(chord: ChordSymbol, rootOctave: number): string {
+  return resolveIntervalNote(chord, rootOctave, fifthInterval(chord));
+}
+
+function resolveThirdNote(chord: ChordSymbol, rootOctave: number): string {
+  return resolveIntervalNote(chord, rootOctave, thirdInterval(chord));
+}
+
+function resolveSeventhNote(chord: ChordSymbol, rootOctave: number): string {
+  return resolveIntervalNote(chord, rootOctave, seventhInterval(chord));
 }
