@@ -55,6 +55,10 @@ export async function settingsRoutes(
     if (data.bassVolume !== undefined) patch.bassVolume = data.bassVolume;
     if (data.bassComplexity !== undefined) patch.bassComplexity = data.bassComplexity;
     if (data.bassOctaveUp !== undefined) patch.bassOctaveUp = data.bassOctaveUp;
+    if (data.rhodesEnabled !== undefined) patch.rhodesEnabled = data.rhodesEnabled;
+    if (data.rhodesVolume !== undefined) patch.rhodesVolume = data.rhodesVolume;
+    if (data.rhodesMode !== undefined) patch.rhodesMode = data.rhodesMode;
+    if (data.rhodesVoicingDensity !== undefined) patch.rhodesVoicingDensity = data.rhodesVoicingDensity;
 
     db.update(userSettings).set(patch).where(eq(userSettings.userId, user.id)).run();
     return reply.send(toSettingsDTO({ ...existing, ...patch }));

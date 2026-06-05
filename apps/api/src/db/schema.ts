@@ -43,6 +43,10 @@ export const userSettings = sqliteTable('user_settings', {
   bassVolume: real('bass_volume').notNull().default(0.7),
   bassComplexity: integer('bass_complexity').notNull().default(1),
   bassOctaveUp: integer('bass_octave_up', { mode: 'boolean' }).notNull().default(false),
+  rhodesEnabled: integer('rhodes_enabled', { mode: 'boolean' }).notNull().default(false),
+  rhodesVolume: real('rhodes_volume').notNull().default(0.6),
+  rhodesMode: text('rhodes_mode').notNull().default('halfNotes'),
+  rhodesVoicingDensity: text('rhodes_voicing_density').notNull().default('rootless3'),
   createdAt: integer('created_at').notNull(),
   updatedAt: integer('updated_at').notNull(),
 });
