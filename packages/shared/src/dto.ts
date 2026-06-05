@@ -35,6 +35,15 @@ export const UserSettingsDTOSchema = z.object({
   bassVolume: z.number().min(0).max(1).optional(),
   bassComplexity: z.number().int().min(1).max(7).optional(),
   bassOctaveUp: z.boolean().optional(),
+  rhodesEnabled: z.boolean().optional(),
+  rhodesVolume: z.number().min(0).max(1).optional(),
+  rhodesMode: z.enum([
+    'wholeNotes', 'halfNotes', 'quarterNotes',
+    'charleston', 'reverse-charleston', 'basie-2-4', 'offbeat-2-4',
+    'anticipation-4and', 'one-twoand-four', 'oneand-three',
+    'twoand-only', 'four-and-sparse', 'two-threeand',
+  ]).optional(),
+  rhodesVoicingDensity: z.enum(['shell2', 'rootless3', 'rootless4']).optional(),
 });
 export type UserSettingsDTO = z.infer<typeof UserSettingsDTOSchema>;
 

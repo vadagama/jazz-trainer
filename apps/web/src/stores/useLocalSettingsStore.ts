@@ -22,6 +22,10 @@ const DEFAULT_SETTINGS: LocalSettings = {
   bassVolume: 0.7,
   bassComplexity: 1,
   bassOctaveUp: false,
+  rhodesEnabled: false,
+  rhodesVolume: 0.6,
+  rhodesMode: 'halfNotes' as const,
+  rhodesVoicingDensity: 'rootless3' as const,
 };
 
 export const useLocalSettingsStore = create<LocalSettingsStore>()(

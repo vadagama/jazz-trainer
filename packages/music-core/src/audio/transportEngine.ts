@@ -22,12 +22,22 @@ export type NoteSink = (
   articulation: BassArticulation,
 ) => void;
 
+/** Sink that renders a scheduled Rhodes chord via Tone.Sampler. */
+export type ChordSink = (
+  atTicks: number,
+  notes: string[],
+  velocity: number,
+  durationTicks: number,
+) => void;
+
 export interface TransportEngineOptions {
   bpm?: number;
   timeSignature?: TimeSignature | string;
   sink: ClickSink;
   /** Optional — wire a Tone.Sampler-backed sink to enable bass scheduling. */
   noteSink?: NoteSink;
+  /** Optional — wire a Tone.Sampler-backed sink to enable Rhodes chord scheduling. */
+  chordSink?: ChordSink;
 }
 
 /**
@@ -47,6 +57,7 @@ export class TransportEngine {
 
   private readonly sink: ClickSink;
   private readonly noteSink?: NoteSink;
+  private readonly chordSink?: ChordSink;
   private readonly instruments: Instrument[] = [];
   private readonly tickListeners = new Set<(pos: MusicalPosition) => void>();
 
@@ -58,6 +69,7 @@ export class TransportEngine {
         : (opts.timeSignature ?? { beatsPerBar: 4, beatUnit: 4 });
     this.sink = opts.sink;
     this.noteSink = opts.noteSink;
+    this.chordSink = opts.chordSink;
   }
 
   addInstrument(instrument: Instrument): void {
@@ -87,6 +99,7 @@ export class TransportEngine {
   /** Ask every instrument to schedule its events into the given tick window. */
   scheduleWindow(window: ScheduleWindow): void {
     const noteSink = this.noteSink;
+    const chordSink = this.chordSink;
     const ctx = {
       bpm: this.bpm,
       timeSignature: this.timeSignature,
@@ -94,6 +107,10 @@ export class TransportEngine {
       scheduleNote: noteSink
         ? (atTicks: number, note: string, velocity: number, durationTicks: number, articulation: BassArticulation) =>
             noteSink(atTicks, note, velocity, durationTicks, articulation)
+        : undefined,
+      scheduleChord: chordSink
+        ? (atTicks: number, notes: string[], velocity: number, durationTicks: number) =>
+            chordSink(atTicks, notes, velocity, durationTicks)
         : undefined,
     };
     for (const instrument of this.instruments) {

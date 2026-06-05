@@ -30,3 +30,23 @@ export {
 export { RoundRobinCounter } from './rrCounter.js';
 export { ChordTimeline, type ChordTimelineEntry } from './chordTimeline.js';
 export { BassInstrument } from './bassInstrument.js';
+export {
+  RHODES_LAYERS,
+  RHODES_SAMPLER_BASE_URL,
+  pickRhodesLayer,
+  type RhodesVelocityLayer,
+} from './rhodesSampleRegistry.js';
+export { RhodesInstrument } from './rhodesInstrument.js';
+export {
+  buildVoicing,
+  getCompPattern,
+  noteToMidi,
+  midiToNote,
+  SWING_PATTERNS,
+  type RhodesVoicingDensity,
+  type RhodesCompingMode,
+  type CompChordRef,
+  type CompEvent,
+  type RhodesRhythmPattern,
+} from './rhodesVoicing.js';
+export { type ChordSink } from './transportEngine.js';

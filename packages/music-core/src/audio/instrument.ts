@@ -24,6 +24,13 @@ export interface ScheduleContext {
     durationTicks: number,
     articulation: BassArticulation,
   ): void;
+  /** Schedule a multi-note chord (Rhodes comping). Present only when a chord sampler is wired in. */
+  scheduleChord?(
+    atTicks: number,
+    notes: string[],
+    velocity: number,
+    durationTicks: number,
+  ): void;
 }
 
 /**

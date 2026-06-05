@@ -30,6 +30,10 @@ export function toSettingsDTO(s: UserSettingsRecord): UserSettingsDTO {
     bassVolume: s.bassVolume,
     bassComplexity: s.bassComplexity,
     bassOctaveUp: s.bassOctaveUp,
+    rhodesEnabled: s.rhodesEnabled,
+    rhodesVolume: s.rhodesVolume,
+    rhodesMode: s.rhodesMode as UserSettingsDTO['rhodesMode'],
+    rhodesVoicingDensity: s.rhodesVoicingDensity as UserSettingsDTO['rhodesVoicingDensity'],
   };
 }
 

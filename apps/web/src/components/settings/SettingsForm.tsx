@@ -5,7 +5,7 @@ import { METRONOME_SAMPLES } from '@jazz/music-core';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 
 interface Props {
@@ -247,6 +247,112 @@ export function SettingsForm({ defaultValues, onSave, isSaving }: Props) {
                   <SelectItem value="5">5 — Walking + хроматика</SelectItem>
                   <SelectItem value="6">6 — Аккорд (1 2 3 4, pluck)</SelectItem>
                   <SelectItem value="7">7 — Аккорд (1 3, pluck)</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+          />
+        </div>
+      </div>
+
+      {/* Rhodes */}
+      <div className="space-y-4">
+        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Rhodes</p>
+
+        <div className="flex items-center justify-between gap-4">
+          <Label htmlFor="rhodesEnabled" className="text-sm text-foreground">Включить Rhodes</Label>
+          <Controller
+            control={form.control}
+            name="rhodesEnabled"
+            render={({ field }) => (
+              <input
+                id="rhodesEnabled"
+                type="checkbox"
+                checked={field.value ?? false}
+                onChange={(e) => field.onChange(e.target.checked)}
+                className="h-4 w-4 cursor-pointer accent-primary"
+              />
+            )}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label className="text-sm text-foreground">Громкость Rhodes</Label>
+            <span className="text-sm tabular-nums text-muted-foreground">
+              {Math.round((form.watch('rhodesVolume') ?? 0.6) * 100)}%
+            </span>
+          </div>
+          <Controller
+            control={form.control}
+            name="rhodesVolume"
+            render={({ field }) => (
+              <Slider
+                min={0}
+                max={100}
+                step={5}
+                value={[Math.round((field.value ?? 0.6) * 100)]}
+                onValueChange={(vals) => field.onChange((vals[0] ?? 60) / 100)}
+              />
+            )}
+          />
+        </div>
+
+        <div className="flex items-center justify-between gap-4">
+          <Label className="text-sm text-foreground">Ритм</Label>
+          <Controller
+            control={form.control}
+            name="rhodesMode"
+            render={({ field }) => (
+              <Select
+                value={field.value ?? 'halfNotes'}
+                onValueChange={field.onChange}
+              >
+                <SelectTrigger className="w-44">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectLabel>Базовые</SelectLabel>
+                    <SelectItem value="wholeNotes">Целые ноты</SelectItem>
+                    <SelectItem value="halfNotes">Половинки</SelectItem>
+                    <SelectItem value="quarterNotes">Четверти</SelectItem>
+                  </SelectGroup>
+                  <SelectGroup>
+                    <SelectLabel>Swing паттерны</SelectLabel>
+                    <SelectItem value="charleston">Charleston</SelectItem>
+                    <SelectItem value="reverse-charleston">Reverse Charleston</SelectItem>
+                    <SelectItem value="basie-2-4">Basie 2 и 4</SelectItem>
+                    <SelectItem value="offbeat-2-4">Offbeat 2&amp; / 4&amp;</SelectItem>
+                    <SelectItem value="anticipation-4and">Антиципация 4&amp;</SelectItem>
+                    <SelectItem value="one-twoand-four">1 + 2&amp; + 4</SelectItem>
+                    <SelectItem value="oneand-three">1&amp; + 3</SelectItem>
+                    <SelectItem value="twoand-only">2&amp; only</SelectItem>
+                    <SelectItem value="four-and-sparse">4&amp; (редкий)</SelectItem>
+                    <SelectItem value="two-threeand">2 + 3&amp;</SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            )}
+          />
+        </div>
+
+        <div className="flex items-center justify-between gap-4">
+          <Label className="text-sm text-foreground">Воисинг</Label>
+          <Controller
+            control={form.control}
+            name="rhodesVoicingDensity"
+            render={({ field }) => (
+              <Select
+                value={field.value ?? 'rootless3'}
+                onValueChange={field.onChange}
+              >
+                <SelectTrigger className="w-44">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="shell2">Shell (3 + 7)</SelectItem>
+                  <SelectItem value="rootless3">Rootless 3 ноты</SelectItem>
+                  <SelectItem value="rootless4">Rootless 4 ноты</SelectItem>
                 </SelectContent>
               </Select>
             )}
