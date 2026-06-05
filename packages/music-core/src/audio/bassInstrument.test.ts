@@ -335,4 +335,123 @@ describe('BassInstrument', () => {
       expect(notes[4]?.note).toBe('C2');
     });
   });
+
+  describe('complexity 4 — chord tones', () => {
+    it('plays root-third-fifth-seventh for Dm7 (D F A C)', () => {
+      const timeline = new ChordTimeline([{ barIndex: 0, chord: makeChord('D') }]);
+      const bass = new BassInstrument(timeline);
+      bass.setComplexity(4);
+      const { ctx, notes } = makeCtx();
+
+      bass.schedule({ fromTicks: 0, toTicks: 1920 }, ctx);
+
+      expect(notes.map((n) => n.note)).toEqual(['D2', 'F2', 'A2', 'C3']);
+    });
+
+    it('plays root-third-fifth-seventh for G7 (G B D F)', () => {
+      const timeline = new ChordTimeline([{ barIndex: 0, chord: makeChord('G', '', 'dominant') }]);
+      const bass = new BassInstrument(timeline);
+      bass.setComplexity(4);
+      const { ctx, notes } = makeCtx();
+
+      bass.schedule({ fromTicks: 0, toTicks: 1920 }, ctx);
+
+      expect(notes.map((n) => n.note)).toEqual(['G2', 'B2', 'D3', 'F3']);
+    });
+
+    it('plays root-third-fifth-seventh for Cmaj7 (C E G B)', () => {
+      const timeline = new ChordTimeline([{ barIndex: 0, chord: makeChord('C', '', 'major') }]);
+      const bass = new BassInstrument(timeline);
+      bass.setComplexity(4);
+      const { ctx, notes } = makeCtx();
+
+      bass.schedule({ fromTicks: 0, toTicks: 1920 }, ctx);
+
+      expect(notes.map((n) => n.note)).toEqual(['C2', 'E2', 'G2', 'B2']);
+    });
+
+    it('uses pluck on beats 1 and 3, finger on beats 2 and 4 (4/4)', () => {
+      const timeline = new ChordTimeline([{ barIndex: 0, chord: makeChord('D') }]);
+      const bass = new BassInstrument(timeline);
+      bass.setComplexity(4);
+      const { ctx, notes } = makeCtx();
+
+      bass.schedule({ fromTicks: 0, toTicks: 1920 }, ctx);
+
+      expect(notes.map((n) => n.articulation)).toEqual(['pluck', 'finger', 'pluck', 'finger']);
+    });
+
+    it('uses pluck only on beat 1 in 3/4', () => {
+      const timeline = new ChordTimeline([{ barIndex: 0, chord: makeChord('D') }]);
+      const bass = new BassInstrument(timeline);
+      bass.setComplexity(4);
+      const { ctx, notes } = makeCtx(parseTimeSignature('3/4'));
+
+      bass.schedule({ fromTicks: 0, toTicks: 1440 }, ctx);
+
+      expect(notes.map((n) => n.articulation)).toEqual(['pluck', 'finger', 'finger']);
+    });
+
+    it('plays root-third-fifth in 3/4 (no seventh slot)', () => {
+      const timeline = new ChordTimeline([{ barIndex: 0, chord: makeChord('D') }]);
+      const bass = new BassInstrument(timeline);
+      bass.setComplexity(4);
+      const { ctx, notes } = makeCtx(parseTimeSignature('3/4'));
+
+      bass.schedule({ fromTicks: 0, toTicks: 1440 }, ctx);
+
+      expect(notes.map((n) => n.note)).toEqual(['D2', 'F2', 'A2']);
+    });
+
+    it('applies beat-specific velocity per BASS.md scheme', () => {
+      const timeline = new ChordTimeline([{ barIndex: 0, chord: makeChord('D') }]);
+      const bass = new BassInstrument(timeline);
+      bass.setComplexity(4);
+      const { ctx, notes } = makeCtx();
+
+      bass.schedule({ fromTicks: 0, toTicks: 1920 }, ctx);
+
+      expect(notes.map((n) => n.velocity)).toEqual([0.82, 0.68, 0.76, 0.70]);
+    });
+
+    it('resolves major seventh interval correctly (Cmaj7: C E G B)', () => {
+      const timeline = new ChordTimeline([{ barIndex: 0, chord: makeChord('C', '', 'major') }]);
+      const bass = new BassInstrument(timeline);
+      bass.setComplexity(4);
+      const { ctx, notes } = makeCtx();
+
+      bass.schedule({ fromTicks: 0, toTicks: 1920 }, ctx);
+
+      expect(notes[3]?.note).toBe('B2');
+    });
+
+    it('resolves diminished seventh correctly (Bdim7: B D F Ab) — Ab clamped to oct 2', () => {
+      const timeline = new ChordTimeline([{ barIndex: 0, chord: makeChord('B', '', 'diminished') }]);
+      const bass = new BassInstrument(timeline);
+      bass.setComplexity(4);
+      const { ctx, notes } = makeCtx();
+
+      bass.schedule({ fromTicks: 0, toTicks: 1920 }, ctx);
+
+      // B2, D3, F3, Ab2 — Ab3 is clamped down because index 8 > 7 (G3 ceiling)
+      expect(notes.map((n) => n.note)).toEqual(['B2', 'D3', 'F3', 'Ab2']);
+    });
+
+    it('skips beats in bars with null chord', () => {
+      const timeline = new ChordTimeline([
+        { barIndex: 0, chord: makeChord('D') },
+        { barIndex: 1, chord: null },
+        { barIndex: 2, chord: makeChord('C', '', 'major') },
+      ]);
+      const bass = new BassInstrument(timeline);
+      bass.setComplexity(4);
+      const { ctx, notes } = makeCtx();
+
+      bass.schedule({ fromTicks: 0, toTicks: 1920 * 3 }, ctx);
+
+      expect(notes).toHaveLength(8);
+      expect(notes[0]?.note).toBe('D2');
+      expect(notes[4]?.note).toBe('C2');
+    });
+  });
 });
