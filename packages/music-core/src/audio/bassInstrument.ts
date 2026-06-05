@@ -53,7 +53,7 @@ export class BassInstrument implements Instrument {
     const durationTicks = Math.floor(slotTicks * GATE_RATIO);
 
     if (this.complexity === 1) {
-      // Root on beat 1 only — whole-note slot
+      // Root on beat 1 only — pluck for clean attack on the downbeat
       const firstBar = Math.ceil(window.fromTicks / tpBar);
       for (let bar = firstBar; bar * tpBar < window.toTicks; bar++) {
         const barStartTicks = bar * tpBar;
@@ -62,7 +62,7 @@ export class BassInstrument implements Instrument {
         ctx.scheduleNote(barStartTicks, resolveRootNote(chord, 2), BEAT_VELOCITY[0], durationTicks, 'pluck');
       }
     } else if (this.complexity === 2) {
-      // Root on every beat, alternating octaves 2/3 (odd beats low, even beats high)
+      // Root on every beat, alternating octaves 2/3; strong beats (1,3) = pluck, weak = finger
       const firstBeat = Math.ceil(window.fromTicks / tpBeat);
       for (let beat = firstBeat; beat * tpBeat < window.toTicks; beat++) {
         const atTicks = beat * tpBeat;

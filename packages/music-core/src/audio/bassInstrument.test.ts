@@ -94,7 +94,7 @@ describe('BassInstrument', () => {
     expect(() => bass.schedule({ fromTicks: 0, toTicks: 1920 }, ctx)).not.toThrow();
   });
 
-  it('uses pluck articulation on beat 1 (strong beat)', () => {
+  it('uses pluck articulation on beat 1 (complexity 1)', () => {
     const timeline = new ChordTimeline([{ barIndex: 0, chord: makeChord('D') }]);
     const bass = new BassInstrument(timeline);
     const { ctx, notes } = makeCtx();
@@ -148,7 +148,7 @@ describe('BassInstrument', () => {
     });
 
     it('uses pluck on beats 1 and 3, finger on beats 2 and 4', () => {
-      const timeline = new ChordTimeline([{ barIndex: 0, chord: makeChord('D') }]);
+      const timeline = new ChordTimeline([{ barIndex: 0, chord: makeChord('C') }]);
       const bass = new BassInstrument(timeline);
       bass.setComplexity(2);
       const { ctx, notes } = makeCtx();
