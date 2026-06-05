@@ -7,6 +7,7 @@ import {
   ChordTimeline,
   RoundRobinCounter,
   PlaybackStateMachine,
+  parseChord,
   ticksPerBar,
   parseTimeSignature,
   defaultSecondStrongBeats,
@@ -110,13 +111,24 @@ function buildFlatSequence(sections: Section[]): FlatSequence {
   return { bars, infiniteLoopStart };
 }
 
-/** Build ChordTimeline entries from sections + flat bar sequence. */
+/** Build ChordTimeline entries from sections + flat bar sequence.
+ *  Parses `symbol` on-the-fly when `parsed` is missing — this covers:
+ *  - grids freshly loaded from API (parsed never stored server-side)
+ *  - transposed sections (transposeSections sets parsed: null)
+ */
 function buildChordTimelineEntries(sections: Section[], flatBars: number[]): ChordTimelineEntry[] {
   const allBars = sections.flatMap((s) => s.bars);
-  return flatBars.map((originalBarIdx) => ({
-    barIndex: originalBarIdx,
-    chord: allBars[originalBarIdx]?.chords[0]?.parsed ?? null,
-  }));
+  return flatBars.map((originalBarIdx) => {
+    const slot = allBars[originalBarIdx]?.chords[0];
+    if (!slot) return { barIndex: originalBarIdx, chord: null };
+
+    let chord = slot.parsed ?? null;
+    if (!chord && slot.symbol) {
+      const result = parseChord(slot.symbol);
+      chord = result.ok && result.value ? result.value : null;
+    }
+    return { barIndex: originalBarIdx, chord };
+  });
 }
 
 const BASS_BASE_URL = '/samples/bass/';
