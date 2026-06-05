@@ -4,6 +4,7 @@ import {
   TransportEngine,
   MetronomeInstrument,
   BassInstrument,
+  RhodesInstrument,
   ChordTimeline,
   RoundRobinCounter,
   PlaybackStateMachine,
@@ -14,8 +15,12 @@ import {
   METRONOME_SAMPLE_BY_ID,
   buildBassPluckUrls,
   buildBassMuteUrls,
+  RHODES_LAYERS,
+  RHODES_SAMPLER_BASE_URL,
+  pickRhodesLayer,
   type BeatType,
   type NoteSink,
+  type ChordSink,
   type ChordTimelineEntry,
 } from '@jazz/music-core';
 import type { TimeSignatureString, Section, ClickSound } from '@jazz/shared';
@@ -167,6 +172,14 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
   const bassPluckRRRef = useRef<Tone.Sampler[]>([]);
   const bassChannelRef = useRef<Tone.Channel | null>(null);
   const bassInstrumentRef = useRef<BassInstrument | null>(null);
+  // Rhodes: 4 Tone.Samplers (one per velocity layer) + FX chain + instrument
+  const rhodesLayersRef = useRef<Record<string, Tone.Sampler>>({});
+  const rhodesEQ3Ref = useRef<Tone.EQ3 | null>(null);
+  const rhodesTremoloRef = useRef<Tone.Tremolo | null>(null);
+  const rhodesChorusRef = useRef<Tone.Chorus | null>(null);
+  const rhodesReverbRef = useRef<Tone.Reverb | null>(null);
+  const rhodesChannelRef = useRef<Tone.Channel | null>(null);
+  const rhodesInstrumentRef = useRef<RhodesInstrument | null>(null);
   const rrCounterRef = useRef(new RoundRobinCounter());
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastScheduledRef = useRef(0);
@@ -266,16 +279,64 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     const bassInstrument = new BassInstrument(bassTimeline);
     bassInstrumentRef.current = bassInstrument;
 
+    // ── Rhodes sampler setup ───────────────────────────────────────────────
+    const rhodesEQ3 = new Tone.EQ3({ low: -2, mid: 0, high: 1 });
+    const rhodesTremolo = new Tone.Tremolo({ frequency: 5.5, depth: 0.18, wet: 0.25 }).start();
+    const rhodesChorus = new Tone.Chorus({ frequency: 1.4, delayTime: 2.5, depth: 0.25, wet: 0.25 }).start();
+    const rhodesReverb = new Tone.Reverb({ decay: 1.8, wet: 0.12 });
+    const rhodesChannel = new Tone.Channel({
+      volume: Tone.gainToDb(settings.rhodesVolume ?? 0.6),
+      pan: 0.05,
+    }).toDestination();
+    rhodesEQ3.chain(rhodesTremolo, rhodesChorus, rhodesReverb, rhodesChannel);
+
+    rhodesEQ3Ref.current = rhodesEQ3;
+    rhodesTremoloRef.current = rhodesTremolo;
+    rhodesChorusRef.current = rhodesChorus;
+    rhodesReverbRef.current = rhodesReverb;
+    rhodesChannelRef.current = rhodesChannel;
+
+    const rhodesLayers: Record<string, Tone.Sampler> = {};
+    for (const [layerName, noteMap] of Object.entries(RHODES_LAYERS)) {
+      rhodesLayers[layerName] = new Tone.Sampler({
+        urls: noteMap,
+        baseUrl: RHODES_SAMPLER_BASE_URL,
+        release: 1.5,
+      }).connect(rhodesEQ3);
+    }
+    rhodesLayersRef.current = rhodesLayers;
+
+    const chordSink: ChordSink = (atTicks, notes, velocity, durationTicks) => {
+      if (!(optsRef.current.settings.rhodesEnabled ?? false)) return;
+      const layerName = pickRhodesLayer(velocity);
+      const sampler = rhodesLayersRef.current[layerName];
+      if (!sampler) return;
+      const durationSecs = (durationTicks * 60) / (480 * optsRef.current.settings.bpm);
+      tone.scheduleOnce((time: number) => {
+        if (sampler.loaded) {
+          for (const note of notes) {
+            sampler.triggerAttackRelease(note, durationSecs, time, velocity);
+          }
+        }
+      }, `${atTicks}i`);
+    };
+
+    const rhodesTimeline = new ChordTimeline();
+    const rhodesInstrument = new RhodesInstrument(rhodesTimeline);
+    rhodesInstrumentRef.current = rhodesInstrument;
+
     const engine = new TransportEngine({
       bpm: settings.bpm,
       timeSignature,
       sink,
       noteSink,
+      chordSink,
     });
 
     const metronome = new MetronomeInstrument();
     engine.addInstrument(metronome);
     engine.addInstrument(bassInstrument);
+    engine.addInstrument(rhodesInstrument);
 
     const machine = new PlaybackStateMachine(totalBars);
     machineRef.current = machine;
@@ -309,6 +370,19 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
       bassChannelRef.current?.dispose();
       bassChannelRef.current = null;
       bassInstrumentRef.current = null;
+      Object.values(rhodesLayersRef.current).forEach((s) => s.dispose());
+      rhodesLayersRef.current = {};
+      rhodesEQ3Ref.current?.dispose();
+      rhodesEQ3Ref.current = null;
+      rhodesTremoloRef.current?.dispose();
+      rhodesTremoloRef.current = null;
+      rhodesChorusRef.current?.dispose();
+      rhodesChorusRef.current = null;
+      rhodesReverbRef.current?.dispose();
+      rhodesReverbRef.current = null;
+      rhodesChannelRef.current?.dispose();
+      rhodesChannelRef.current = null;
+      rhodesInstrumentRef.current = null;
       rrCounterRef.current.reset();
       engineRef.current = null;
       machineRef.current = null;
@@ -401,6 +475,24 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     bassInstrumentRef.current.setOctaveShift(settings.bassOctaveUp ? 1 : 0);
   }, [settings.bassOctaveUp]);
 
+  // Update Rhodes volume
+  useEffect(() => {
+    if (!rhodesChannelRef.current) return;
+    rhodesChannelRef.current.volume.value = Tone.gainToDb(settings.rhodesVolume ?? 0.6);
+  }, [settings.rhodesVolume]);
+
+  // Update Rhodes comping mode
+  useEffect(() => {
+    if (!rhodesInstrumentRef.current) return;
+    rhodesInstrumentRef.current.setMode(settings.rhodesMode ?? 'halfNotes');
+  }, [settings.rhodesMode]);
+
+  // Update Rhodes voicing density
+  useEffect(() => {
+    if (!rhodesInstrumentRef.current) return;
+    rhodesInstrumentRef.current.setVoicingDensity(settings.rhodesVoicingDensity ?? 'rootless3');
+  }, [settings.rhodesVoicingDensity]);
+
   // Update time signature on the engine when it changes
   useEffect(() => {
     if (!engineRef.current) return;
@@ -415,11 +507,12 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
 
   // Rebuild chord timeline when sections content changes (e.g., user edits chords)
   useEffect(() => {
-    const bassInstrument = bassInstrumentRef.current;
     const seq = flatSeqRef.current;
-    if (!bassInstrument || seq.bars.length === 0) return;
+    if (seq.bars.length === 0) return;
     const entries = buildChordTimelineEntries(opts.sections ?? [], seq.bars);
-    bassInstrument.setTimeline(new ChordTimeline(entries));
+    const timeline = new ChordTimeline(entries);
+    bassInstrumentRef.current?.setTimeline(timeline);
+    rhodesInstrumentRef.current?.setTimeline(new ChordTimeline(entries));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [opts.sections]);
 
@@ -442,11 +535,15 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     const seq = buildFlatSequence(sections);
     flatSeqRef.current = seq;
 
-    // Sync chord timeline to bass instrument
+    // Sync chord timeline to bass and Rhodes instruments
+    const timelineEntries = buildChordTimelineEntries(sections, seq.bars);
     if (bassInstrumentRef.current) {
-      const entries = buildChordTimelineEntries(sections, seq.bars);
-      bassInstrumentRef.current.setTimeline(new ChordTimeline(entries));
+      bassInstrumentRef.current.setTimeline(new ChordTimeline(timelineEntries));
       rrCounterRef.current.reset();
+    }
+    if (rhodesInstrumentRef.current) {
+      rhodesInstrumentRef.current.setTimeline(new ChordTimeline(timelineEntries));
+      rhodesInstrumentRef.current.reset();
     }
 
     // Find virtual start tick for selectedBar (first occurrence in flat sequence)
