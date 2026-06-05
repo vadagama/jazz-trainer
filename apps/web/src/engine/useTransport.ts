@@ -533,8 +533,12 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
 
       // Detect Transport.loop wrap (ticks decreased by more than half a bar)
       if (currentTicks < prevTicksRef.current - tpBar2 / 2 && seq2.infiniteLoopStart !== null) {
-        // Loop wrapped — reset schedule pointer to the loop start tick
-        lastScheduledRef.current = seq2.infiniteLoopStart * tpBar2;
+        const loopEndTick2 = seq2.bars.length * tpBar2;
+        const loopStartTick2 = seq2.infiniteLoopStart * tpBar2;
+        // Virtual positions >= loopEnd mean "loopStart + (pos - loopEnd)" were pre-scheduled.
+        // Convert back to real position; if nothing was pre-scheduled, reset to loopStart.
+        const preAmt = lastScheduledRef.current - loopEndTick2;
+        lastScheduledRef.current = loopStartTick2 + Math.max(preAmt, 0);
       }
       prevTicksRef.current = currentTicks;
 
@@ -564,13 +568,32 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
         return;
       }
 
-      // Schedule look-ahead window (clamped to loop end to avoid scheduling beyond it)
+      // Schedule look-ahead window.
+      // Virtual positions: lastScheduledRef may be stored as loopEnd+X (X = pre-scheduled
+      // amount past loopStart) to prevent the boundary condition from firing more than once.
       const loopEnd = seq2.infiniteLoopStart !== null ? seq2.bars.length * tpBar2 : Infinity;
+      const loopStart = seq2.infiniteLoopStart !== null ? seq2.infiniteLoopStart * tpBar2 : 0;
       const from = lastScheduledRef.current;
-      const to = Math.min(currentTicks + LOOKAHEAD_TICKS, loopEnd);
-      if (to > from) {
-        engine.scheduleWindow({ fromTicks: from, toTicks: to });
-        lastScheduledRef.current = to;
+      const targetTo = currentTicks + LOOKAHEAD_TICKS;
+
+      if (seq2.infiniteLoopStart !== null && from < loopEnd && targetTo >= loopEnd) {
+        // Window crosses loop boundary (fires exactly once per pass because after this
+        // lastScheduledRef is set to a virtual position >= loopEnd).
+        if (loopEnd > from) {
+          engine.scheduleWindow({ fromTicks: from, toTicks: loopEnd });
+        }
+        // Pre-schedule the head of the next loop pass so beat 1 isn't missed during
+        // the ~25 ms interval gap after the transport wraps.
+        const preAmt = Math.min(LOOKAHEAD_TICKS, loopEnd - loopStart);
+        engine.scheduleWindow({ fromTicks: loopStart, toTicks: loopStart + preAmt });
+        // Store virtual position (>= loopEnd) so this block doesn't fire again this pass.
+        lastScheduledRef.current = loopEnd + preAmt;
+      } else {
+        const to = seq2.infiniteLoopStart !== null ? Math.min(targetTo, loopEnd) : targetTo;
+        if (to > from) {
+          engine.scheduleWindow({ fromTicks: from, toTicks: to });
+          lastScheduledRef.current = to;
+        }
       }
     }, 25);
   }, []);
