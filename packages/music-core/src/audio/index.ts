@@ -30,3 +30,9 @@ export {
 export { RoundRobinCounter } from './rrCounter.js';
 export { ChordTimeline, type ChordTimelineEntry } from './chordTimeline.js';
 export { BassInstrument } from './bassInstrument.js';
+export {
+  RHODES_LAYERS,
+  RHODES_SAMPLER_BASE_URL,
+  pickRhodesLayer,
+  type RhodesVelocityLayer,
+} from './rhodesSampleRegistry.js';
