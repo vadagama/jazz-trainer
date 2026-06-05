@@ -59,7 +59,7 @@ export class BassInstrument implements Instrument {
         const barStartTicks = bar * tpBar;
         const chord = this.timeline.getChordAtTick(barStartTicks, sig);
         if (!chord) continue;
-        ctx.scheduleNote(barStartTicks, resolveRootNote(chord, 2), BEAT_VELOCITY[0], durationTicks, 'finger');
+        ctx.scheduleNote(barStartTicks, resolveRootNote(chord, 2), BEAT_VELOCITY[0], durationTicks, 'pluck');
       }
     } else if (this.complexity === 2) {
       // Root on every beat, alternating octaves 2/3 (odd beats low, even beats high)
@@ -71,7 +71,8 @@ export class BassInstrument implements Instrument {
         if (!chord) continue;
         const octave = beatInBar % 2 === 0 ? 2 : 3;
         const velocity = BEAT_VELOCITY[beatInBar] ?? BEAT_VELOCITY[0];
-        ctx.scheduleNote(atTicks, resolveRootNote(chord, octave), velocity, durationTicks, 'finger');
+        const articulation = beatInBar % 2 === 0 ? 'pluck' : 'finger';
+        ctx.scheduleNote(atTicks, resolveRootNote(chord, octave), velocity, durationTicks, articulation);
       }
     } else if (this.complexity === 3) {
       // Root + fifth alternating: beats 1,3 = root (pluck), beats 2,4 = fifth (finger)

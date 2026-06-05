@@ -94,14 +94,14 @@ describe('BassInstrument', () => {
     expect(() => bass.schedule({ fromTicks: 0, toTicks: 1920 }, ctx)).not.toThrow();
   });
 
-  it('uses RR articulation "finger"', () => {
+  it('uses pluck articulation on beat 1 (strong beat)', () => {
     const timeline = new ChordTimeline([{ barIndex: 0, chord: makeChord('D') }]);
     const bass = new BassInstrument(timeline);
     const { ctx, notes } = makeCtx();
 
     bass.schedule({ fromTicks: 0, toTicks: 1920 }, ctx);
 
-    expect(notes[0]?.articulation).toBe('finger');
+    expect(notes[0]?.articulation).toBe('pluck');
   });
 
   it('only schedules within the given window', () => {
@@ -145,6 +145,17 @@ describe('BassInstrument', () => {
       bass.schedule({ fromTicks: 0, toTicks: 1920 }, ctx);
 
       expect(notes.map((n) => n.note)).toEqual(['D2', 'D3', 'D2', 'D3']);
+    });
+
+    it('uses pluck on beats 1 and 3, finger on beats 2 and 4', () => {
+      const timeline = new ChordTimeline([{ barIndex: 0, chord: makeChord('D') }]);
+      const bass = new BassInstrument(timeline);
+      bass.setComplexity(2);
+      const { ctx, notes } = makeCtx();
+
+      bass.schedule({ fromTicks: 0, toTicks: 1920 }, ctx);
+
+      expect(notes.map((n) => n.articulation)).toEqual(['pluck', 'finger', 'pluck', 'finger']);
     });
 
     it('applies beat-specific velocity per BASS.md scheme', () => {
