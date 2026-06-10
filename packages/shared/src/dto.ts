@@ -44,6 +44,15 @@ export const UserSettingsDTOSchema = z.object({
     'twoand-only', 'four-and-sparse', 'two-threeand',
   ]).optional(),
   rhodesVoicingDensity: z.enum(['shell2', 'rootless3', 'rootless4']).optional(),
+  drumsEnabled: z.boolean().optional(),
+  drumsVolume: z.number().min(0).max(1).optional(),
+  drumsRideEnabled: z.boolean().optional(),
+  drumsRideVolume: z.number().min(0).max(1).optional(),
+  drumsStirEnabled: z.boolean().optional(),
+  drumsStirVolume: z.number().min(0).max(1).optional(),
+  drumsHihatEnabled: z.boolean().optional(),
+  drumsHihatVolume: z.number().min(0).max(1).optional(),
+  drumsRidePattern: z.enum(['quarters', 'swingRide']).optional(),
 });
 export type UserSettingsDTO = z.infer<typeof UserSettingsDTOSchema>;
 

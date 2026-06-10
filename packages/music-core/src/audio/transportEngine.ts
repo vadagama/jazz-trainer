@@ -6,6 +6,7 @@ import {
 import { ticksToPosition, ticksToSeconds, type MusicalPosition } from '../time/position.js';
 import type { PlaybackStatus } from '../playback/stateMachine.js';
 import type { BassArticulation, Instrument, ScheduleWindow } from './instrument.js';
+import type { DrumSound } from './drumSampleRegistry.js';
 
 /** Three-level beat accent: first downbeat, secondary accent, or ordinary weak beat. */
 export type BeatType = 'strong' | 'strong2' | 'weak';
@@ -30,6 +31,14 @@ export type ChordSink = (
   durationTicks: number,
 ) => void;
 
+/** Sink that renders a scheduled drum hit via Tone.Player. */
+export type DrumSink = (
+  atTicks: number,
+  sound: DrumSound,
+  velocity: number,
+  durationTicks: number,
+) => void;
+
 export interface TransportEngineOptions {
   bpm?: number;
   timeSignature?: TimeSignature | string;
@@ -38,6 +47,8 @@ export interface TransportEngineOptions {
   noteSink?: NoteSink;
   /** Optional — wire a Tone.Sampler-backed sink to enable Rhodes chord scheduling. */
   chordSink?: ChordSink;
+  /** Optional — wire Tone.Player-backed sink to enable drum scheduling. */
+  drumSink?: DrumSink;
 }
 
 /**
@@ -58,6 +69,7 @@ export class TransportEngine {
   private readonly sink: ClickSink;
   private readonly noteSink?: NoteSink;
   private readonly chordSink?: ChordSink;
+  private readonly drumSink?: DrumSink;
   private readonly instruments: Instrument[] = [];
   private readonly tickListeners = new Set<(pos: MusicalPosition) => void>();
 
@@ -70,6 +82,7 @@ export class TransportEngine {
     this.sink = opts.sink;
     this.noteSink = opts.noteSink;
     this.chordSink = opts.chordSink;
+    this.drumSink = opts.drumSink;
   }
 
   addInstrument(instrument: Instrument): void {
@@ -100,6 +113,7 @@ export class TransportEngine {
   scheduleWindow(window: ScheduleWindow): void {
     const noteSink = this.noteSink;
     const chordSink = this.chordSink;
+    const drumSink = this.drumSink;
     const ctx = {
       bpm: this.bpm,
       timeSignature: this.timeSignature,
@@ -111,6 +125,10 @@ export class TransportEngine {
       scheduleChord: chordSink
         ? (atTicks: number, notes: string[], velocity: number, durationTicks: number) =>
             chordSink(atTicks, notes, velocity, durationTicks)
+        : undefined,
+      scheduleDrum: drumSink
+        ? (atTicks: number, sound: DrumSound, velocity: number, durationTicks: number) =>
+            drumSink(atTicks, sound, velocity, durationTicks)
         : undefined,
     };
     for (const instrument of this.instruments) {

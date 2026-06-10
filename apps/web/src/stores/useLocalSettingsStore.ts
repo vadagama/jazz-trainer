@@ -26,6 +26,15 @@ const DEFAULT_SETTINGS: LocalSettings = {
   rhodesVolume: 0.6,
   rhodesMode: 'halfNotes' as const,
   rhodesVoicingDensity: 'rootless3' as const,
+  drumsEnabled: true,
+  drumsVolume: 0.7,
+  drumsRideEnabled: true,
+  drumsRideVolume: 0.7,
+  drumsStirEnabled: true,
+  drumsStirVolume: 0.6,
+  drumsHihatEnabled: true,
+  drumsHihatVolume: 0.55,
+  drumsRidePattern: 'swingRide' as const,
 };
 
 export const useLocalSettingsStore = create<LocalSettingsStore>()(

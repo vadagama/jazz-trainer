@@ -1,5 +1,6 @@
 import { ticksPerBeat, defaultStrongBeats, defaultSecondStrongBeats, type TimeSignature } from '../time/timeSignature.js';
 import type { BeatType } from './transportEngine.js';
+import type { DrumSound } from './drumSampleRegistry.js';
 
 /** A half-open tick window `[fromTicks, toTicks)` to schedule events into. */
 export interface ScheduleWindow {
@@ -28,6 +29,13 @@ export interface ScheduleContext {
   scheduleChord?(
     atTicks: number,
     notes: string[],
+    velocity: number,
+    durationTicks: number,
+  ): void;
+  /** Schedule a drum hit. Present only when a drum sampler is wired in. */
+  scheduleDrum?(
+    atTicks: number,
+    sound: DrumSound,
     velocity: number,
     durationTicks: number,
   ): void;
