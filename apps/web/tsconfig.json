@@ -8,10 +8,13 @@
     "paths": {
       "@/*": ["src/*"],
       "@jazz/shared": ["../../packages/shared/src/index.ts"],
-      "@jazz/music-core": ["../../packages/music-core/src/index.ts"]
+      "@jazz/music-core": ["../../packages/music-core/src/index.ts"],
+      "@jazz/plugin-sdk": ["../../packages/plugin-sdk/src/index.ts"],
+      "@jazz/plugin-host": ["../../packages/plugin-host/src/index.ts"],
+      "@jazz/plugin-registry": ["../../packages/plugin-registry/src/index.ts"],
     },
-    "noEmit": true
+    "noEmit": true,
   },
   "include": ["src", "e2e", "vite.config.ts"],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules"],
 }

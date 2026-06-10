@@ -23,7 +23,13 @@
       "@jazz/shared": ["packages/shared/src/index.ts"],
       "@jazz/shared/*": ["packages/shared/src/*"],
       "@jazz/music-core": ["packages/music-core/src/index.ts"],
-      "@jazz/music-core/*": ["packages/music-core/src/*"]
-    }
-  }
+      "@jazz/music-core/*": ["packages/music-core/src/*"],
+      "@jazz/plugin-sdk": ["packages/plugin-sdk/src/index.ts"],
+      "@jazz/plugin-sdk/*": ["packages/plugin-sdk/src/*"],
+      "@jazz/plugin-host": ["packages/plugin-host/src/index.ts"],
+      "@jazz/plugin-host/*": ["packages/plugin-host/src/*"],
+      "@jazz/plugin-registry": ["packages/plugin-registry/src/index.ts"],
+      "@jazz/plugin-registry/*": ["packages/plugin-registry/src/*"],
+    },
+  },
 }

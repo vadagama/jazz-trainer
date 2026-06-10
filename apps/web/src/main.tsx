@@ -5,6 +5,8 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { App } from './App.js';
 import { queryClient } from './lib/queryClient.js';
 import { ThemeProvider } from './components/layout/ThemeProvider.js';
+// Фаза 1: инициализация плагинного хоста (сайд-эффект — загрузка builtin-плагинов)
+import './shell/bootstrap.js';
 import './index.css';
 
 const rootElement = document.getElementById('root');
