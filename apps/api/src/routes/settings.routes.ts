@@ -59,6 +59,15 @@ export async function settingsRoutes(
     if (data.rhodesVolume !== undefined) patch.rhodesVolume = data.rhodesVolume;
     if (data.rhodesMode !== undefined) patch.rhodesMode = data.rhodesMode;
     if (data.rhodesVoicingDensity !== undefined) patch.rhodesVoicingDensity = data.rhodesVoicingDensity;
+    if (data.drumsEnabled !== undefined) patch.drumsEnabled = data.drumsEnabled;
+    if (data.drumsVolume !== undefined) patch.drumsVolume = data.drumsVolume;
+    if (data.drumsRideEnabled !== undefined) patch.drumsRideEnabled = data.drumsRideEnabled;
+    if (data.drumsRideVolume !== undefined) patch.drumsRideVolume = data.drumsRideVolume;
+    if (data.drumsStirEnabled !== undefined) patch.drumsStirEnabled = data.drumsStirEnabled;
+    if (data.drumsStirVolume !== undefined) patch.drumsStirVolume = data.drumsStirVolume;
+    if (data.drumsHihatEnabled !== undefined) patch.drumsHihatEnabled = data.drumsHihatEnabled;
+    if (data.drumsHihatVolume !== undefined) patch.drumsHihatVolume = data.drumsHihatVolume;
+    if (data.drumsRidePattern !== undefined) patch.drumsRidePattern = data.drumsRidePattern;
 
     db.update(userSettings).set(patch).where(eq(userSettings.userId, user.id)).run();
     return reply.send(toSettingsDTO({ ...existing, ...patch }));

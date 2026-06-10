@@ -18,9 +18,14 @@ import {
   RHODES_LAYERS,
   RHODES_SAMPLER_BASE_URL,
   pickRhodesLayer,
+  DrumInstrument,
+  DRUM_SAMPLE_FILES,
+  DRUMS_BASE_URL,
   type BeatType,
   type NoteSink,
   type ChordSink,
+  type DrumSink,
+  type DrumSound,
   type ChordTimelineEntry,
 } from '@jazz/music-core';
 import type { TimeSignatureString, Section, ClickSound } from '@jazz/shared';
@@ -180,6 +185,16 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
   const rhodesReverbRef = useRef<Tone.Reverb | null>(null);
   const rhodesChannelRef = useRef<Tone.Channel | null>(null);
   const rhodesInstrumentRef = useRef<RhodesInstrument | null>(null);
+  // Drums: 3 × 4 Tone.Players (one per RR variant per sound) + 3 per-sound Channels + 1 master
+  const drumsRidePlayersRef = useRef<Tone.Player[]>([]);
+  const drumsStirPlayersRef = useRef<Tone.Player[]>([]);
+  const drumsHihatPlayersRef = useRef<Tone.Player[]>([]);
+  const drumsRideChannelRef = useRef<Tone.Channel | null>(null);
+  const drumsStirChannelRef = useRef<Tone.Channel | null>(null);
+  const drumsHihatChannelRef = useRef<Tone.Channel | null>(null);
+  const drumsMasterChannelRef = useRef<Tone.Channel | null>(null);
+  const drumInstrumentRef = useRef<DrumInstrument | null>(null);
+  const drumsRrRef = useRef<Record<DrumSound, number>>({ ride: 0, stir: 0, hihatFoot: 0 });
   const rrCounterRef = useRef(new RoundRobinCounter());
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastScheduledRef = useRef(0);
@@ -325,18 +340,68 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     const rhodesInstrument = new RhodesInstrument(rhodesTimeline);
     rhodesInstrumentRef.current = rhodesInstrument;
 
+    // ── Drums setup ───────────────────────────────────────────────────────────
+    const drumsMasterChannel = new Tone.Channel({
+      volume: Tone.gainToDb(settings.drumsVolume ?? 0.7),
+    }).toDestination();
+    drumsMasterChannelRef.current = drumsMasterChannel;
+
+    const drumsRideChannel = new Tone.Channel({ volume: Tone.gainToDb(settings.drumsRideVolume ?? 0.7) }).connect(drumsMasterChannel);
+    const drumsStirChannel = new Tone.Channel({ volume: Tone.gainToDb(settings.drumsStirVolume ?? 0.6) }).connect(drumsMasterChannel);
+    const drumsHihatChannel = new Tone.Channel({ volume: Tone.gainToDb(settings.drumsHihatVolume ?? 0.55) }).connect(drumsMasterChannel);
+    drumsRideChannelRef.current = drumsRideChannel;
+    drumsStirChannelRef.current = drumsStirChannel;
+    drumsHihatChannelRef.current = drumsHihatChannel;
+
+    const makeDrumPlayers = (sound: DrumSound, channel: Tone.Channel): Tone.Player[] =>
+      DRUM_SAMPLE_FILES[sound].map((file) =>
+        new Tone.Player(`${DRUMS_BASE_URL}${file}`).connect(channel),
+      );
+
+    drumsRidePlayersRef.current = makeDrumPlayers('ride', drumsRideChannel);
+    drumsStirPlayersRef.current = makeDrumPlayers('stir', drumsStirChannel);
+    drumsHihatPlayersRef.current = makeDrumPlayers('hihatFoot', drumsHihatChannel);
+
+    const drumSink: DrumSink = (atTicks, sound, _velocity, _durationTicks) => {
+      const s = optsRef.current.settings;
+      if (!(s.drumsEnabled ?? true)) return;
+      if (sound === 'ride'      && !(s.drumsRideEnabled  ?? true)) return;
+      if (sound === 'stir'      && !(s.drumsStirEnabled  ?? true)) return;
+      if (sound === 'hihatFoot' && !(s.drumsHihatEnabled ?? true)) return;
+
+      const pool =
+        sound === 'ride'      ? drumsRidePlayersRef.current :
+        sound === 'stir'      ? drumsStirPlayersRef.current :
+        drumsHihatPlayersRef.current;
+
+      const rr = drumsRrRef.current[sound] % 4;
+      drumsRrRef.current[sound]++;
+      const player = pool[rr];
+      if (!player) return;
+
+      tone.scheduleOnce((time: number) => {
+        if (player.loaded) player.start(time);
+      }, `${atTicks}i`);
+    };
+
+    const drumInstrument = new DrumInstrument();
+    drumInstrument.setRidePattern((settings.drumsRidePattern ?? 'swingRide') as 'quarters' | 'swingRide');
+    drumInstrumentRef.current = drumInstrument;
+
     const engine = new TransportEngine({
       bpm: settings.bpm,
       timeSignature,
       sink,
       noteSink,
       chordSink,
+      drumSink,
     });
 
     const metronome = new MetronomeInstrument();
     engine.addInstrument(metronome);
     engine.addInstrument(bassInstrument);
     engine.addInstrument(rhodesInstrument);
+    engine.addInstrument(drumInstrument);
 
     const machine = new PlaybackStateMachine(totalBars);
     machineRef.current = machine;
@@ -383,6 +448,22 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
       rhodesChannelRef.current?.dispose();
       rhodesChannelRef.current = null;
       rhodesInstrumentRef.current = null;
+      drumsRidePlayersRef.current.forEach((p) => p.dispose());
+      drumsRidePlayersRef.current = [];
+      drumsStirPlayersRef.current.forEach((p) => p.dispose());
+      drumsStirPlayersRef.current = [];
+      drumsHihatPlayersRef.current.forEach((p) => p.dispose());
+      drumsHihatPlayersRef.current = [];
+      drumsRideChannelRef.current?.dispose();
+      drumsRideChannelRef.current = null;
+      drumsStirChannelRef.current?.dispose();
+      drumsStirChannelRef.current = null;
+      drumsHihatChannelRef.current?.dispose();
+      drumsHihatChannelRef.current = null;
+      drumsMasterChannelRef.current?.dispose();
+      drumsMasterChannelRef.current = null;
+      drumInstrumentRef.current = null;
+      drumsRrRef.current = { ride: 0, stir: 0, hihatFoot: 0 };
       rrCounterRef.current.reset();
       engineRef.current = null;
       machineRef.current = null;
@@ -492,6 +573,29 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     if (!rhodesInstrumentRef.current) return;
     rhodesInstrumentRef.current.setVoicingDensity(settings.rhodesVoicingDensity ?? 'rootless3');
   }, [settings.rhodesVoicingDensity]);
+
+  // Update drums master volume
+  useEffect(() => {
+    if (!drumsMasterChannelRef.current) return;
+    drumsMasterChannelRef.current.volume.value = Tone.gainToDb(settings.drumsVolume ?? 0.7);
+  }, [settings.drumsVolume]);
+
+  // Update per-sound drums volumes
+  useEffect(() => {
+    if (drumsRideChannelRef.current) drumsRideChannelRef.current.volume.value = Tone.gainToDb(settings.drumsRideVolume ?? 0.7);
+  }, [settings.drumsRideVolume]);
+  useEffect(() => {
+    if (drumsStirChannelRef.current) drumsStirChannelRef.current.volume.value = Tone.gainToDb(settings.drumsStirVolume ?? 0.6);
+  }, [settings.drumsStirVolume]);
+  useEffect(() => {
+    if (drumsHihatChannelRef.current) drumsHihatChannelRef.current.volume.value = Tone.gainToDb(settings.drumsHihatVolume ?? 0.55);
+  }, [settings.drumsHihatVolume]);
+
+  // Update ride pattern
+  useEffect(() => {
+    if (!drumInstrumentRef.current) return;
+    drumInstrumentRef.current.setRidePattern((settings.drumsRidePattern ?? 'swingRide') as 'quarters' | 'swingRide');
+  }, [settings.drumsRidePattern]);
 
   // Update time signature on the engine when it changes
   useEffect(() => {

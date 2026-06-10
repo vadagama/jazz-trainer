@@ -360,6 +360,125 @@ export function SettingsForm({ defaultValues, onSave, isSaving }: Props) {
         </div>
       </div>
 
+      {/* Drums */}
+      <div className="space-y-4">
+        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Drums</p>
+
+        <div className="flex items-center justify-between gap-4">
+          <Label htmlFor="drumsEnabled" className="text-sm text-foreground">Включить Drums</Label>
+          <Controller
+            control={form.control}
+            name="drumsEnabled"
+            render={({ field }) => (
+              <input
+                id="drumsEnabled"
+                type="checkbox"
+                checked={field.value ?? true}
+                onChange={(e) => field.onChange(e.target.checked)}
+                className="h-4 w-4 cursor-pointer accent-primary"
+              />
+            )}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label className="text-sm text-foreground">Громкость Drums</Label>
+            <span className="text-sm tabular-nums text-muted-foreground">
+              {Math.round((form.watch('drumsVolume') ?? 0.7) * 100)}%
+            </span>
+          </div>
+          <Controller
+            control={form.control}
+            name="drumsVolume"
+            render={({ field }) => (
+              <Slider
+                min={0} max={100} step={5}
+                value={[Math.round((field.value ?? 0.7) * 100)]}
+                onValueChange={(vals) => field.onChange((vals[0] ?? 70) / 100)}
+              />
+            )}
+          />
+        </div>
+
+        <div className="flex items-center justify-between gap-4">
+          <Label className="text-sm text-foreground">Ride pattern</Label>
+          <Controller
+            control={form.control}
+            name="drumsRidePattern"
+            render={({ field }) => (
+              <Select value={field.value ?? 'swingRide'} onValueChange={field.onChange}>
+                <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="swingRide">Swing ride</SelectItem>
+                  <SelectItem value="quarters">Четверти</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+          />
+        </div>
+
+        {/* Ride */}
+        <div className="space-y-2 pl-3 border-l border-border">
+          <p className="text-xs text-muted-foreground">Ride cymbal</p>
+          <div className="flex items-center justify-between gap-4">
+            <Label htmlFor="drumsRideEnabled" className="text-sm text-foreground">Включить</Label>
+            <Controller control={form.control} name="drumsRideEnabled" render={({ field }) => (
+              <input id="drumsRideEnabled" type="checkbox" checked={field.value ?? true}
+                onChange={(e) => field.onChange(e.target.checked)} className="h-4 w-4 cursor-pointer accent-primary" />
+            )} />
+          </div>
+          <div className="flex items-center justify-between">
+            <Label className="text-sm text-foreground">Громкость</Label>
+            <span className="text-sm tabular-nums text-muted-foreground">{Math.round((form.watch('drumsRideVolume') ?? 0.7) * 100)}%</span>
+          </div>
+          <Controller control={form.control} name="drumsRideVolume" render={({ field }) => (
+            <Slider min={0} max={100} step={5} value={[Math.round((field.value ?? 0.7) * 100)]}
+              onValueChange={(vals) => field.onChange((vals[0] ?? 70) / 100)} />
+          )} />
+        </div>
+
+        {/* Stir */}
+        <div className="space-y-2 pl-3 border-l border-border">
+          <p className="text-xs text-muted-foreground">Stir (brushes)</p>
+          <div className="flex items-center justify-between gap-4">
+            <Label htmlFor="drumsStirEnabled" className="text-sm text-foreground">Включить</Label>
+            <Controller control={form.control} name="drumsStirEnabled" render={({ field }) => (
+              <input id="drumsStirEnabled" type="checkbox" checked={field.value ?? true}
+                onChange={(e) => field.onChange(e.target.checked)} className="h-4 w-4 cursor-pointer accent-primary" />
+            )} />
+          </div>
+          <div className="flex items-center justify-between">
+            <Label className="text-sm text-foreground">Громкость</Label>
+            <span className="text-sm tabular-nums text-muted-foreground">{Math.round((form.watch('drumsStirVolume') ?? 0.6) * 100)}%</span>
+          </div>
+          <Controller control={form.control} name="drumsStirVolume" render={({ field }) => (
+            <Slider min={0} max={100} step={5} value={[Math.round((field.value ?? 0.6) * 100)]}
+              onValueChange={(vals) => field.onChange((vals[0] ?? 60) / 100)} />
+          )} />
+        </div>
+
+        {/* Hi-hat */}
+        <div className="space-y-2 pl-3 border-l border-border">
+          <p className="text-xs text-muted-foreground">Hi-hat foot</p>
+          <div className="flex items-center justify-between gap-4">
+            <Label htmlFor="drumsHihatEnabled" className="text-sm text-foreground">Включить</Label>
+            <Controller control={form.control} name="drumsHihatEnabled" render={({ field }) => (
+              <input id="drumsHihatEnabled" type="checkbox" checked={field.value ?? true}
+                onChange={(e) => field.onChange(e.target.checked)} className="h-4 w-4 cursor-pointer accent-primary" />
+            )} />
+          </div>
+          <div className="flex items-center justify-between">
+            <Label className="text-sm text-foreground">Громкость</Label>
+            <span className="text-sm tabular-nums text-muted-foreground">{Math.round((form.watch('drumsHihatVolume') ?? 0.55) * 100)}%</span>
+          </div>
+          <Controller control={form.control} name="drumsHihatVolume" render={({ field }) => (
+            <Slider min={0} max={100} step={5} value={[Math.round((field.value ?? 0.55) * 100)]}
+              onValueChange={(vals) => field.onChange((vals[0] ?? 55) / 100)} />
+          )} />
+        </div>
+      </div>
+
       <Button type="submit" disabled={isSaving}>
         {isSaving ? 'Сохраняем...' : 'Сохранить'}
       </Button>

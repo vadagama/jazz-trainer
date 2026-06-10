@@ -34,6 +34,15 @@ export function toSettingsDTO(s: UserSettingsRecord): UserSettingsDTO {
     rhodesVolume: s.rhodesVolume,
     rhodesMode: s.rhodesMode as UserSettingsDTO['rhodesMode'],
     rhodesVoicingDensity: s.rhodesVoicingDensity as UserSettingsDTO['rhodesVoicingDensity'],
+    drumsEnabled: s.drumsEnabled,
+    drumsVolume: s.drumsVolume,
+    drumsRideEnabled: s.drumsRideEnabled,
+    drumsRideVolume: s.drumsRideVolume,
+    drumsStirEnabled: s.drumsStirEnabled,
+    drumsStirVolume: s.drumsStirVolume,
+    drumsHihatEnabled: s.drumsHihatEnabled,
+    drumsHihatVolume: s.drumsHihatVolume,
+    drumsRidePattern: s.drumsRidePattern as UserSettingsDTO['drumsRidePattern'],
   };
 }
 

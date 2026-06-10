@@ -72,8 +72,8 @@ describe('ticks ↔ seconds', () => {
 });
 
 describe('defaultStrongBeats', () => {
-  it('accents 0 and 3 in 6/8, downbeat otherwise', () => {
-    expect(defaultStrongBeats(parseTimeSignature('6/8'))).toEqual([0, 3]);
+  it('accent 0 only (beat 3 is secondStrong in 6/8)', () => {
+    expect(defaultStrongBeats(parseTimeSignature('6/8'))).toEqual([0]);
     expect(defaultStrongBeats(parseTimeSignature('4/4'))).toEqual([0]);
     expect(defaultStrongBeats(parseTimeSignature('5/4'))).toEqual([0]);
   });

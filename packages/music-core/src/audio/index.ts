@@ -49,4 +49,10 @@ export {
   type CompEvent,
   type RhodesRhythmPattern,
 } from './rhodesVoicing.js';
-export { type ChordSink } from './transportEngine.js';
+export { type ChordSink, type DrumSink } from './transportEngine.js';
+export {
+  DRUM_SAMPLE_FILES,
+  DRUMS_BASE_URL,
+  type DrumSound,
+} from './drumSampleRegistry.js';
+export { DrumInstrument, type DrumRidePattern } from './drumInstrument.js';
