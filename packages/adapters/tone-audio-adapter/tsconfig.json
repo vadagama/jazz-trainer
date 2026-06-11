@@ -1,0 +1,11 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@jazz/music-core": ["../../music-core/src/index.ts"],
+      "@jazz/music-core/*": ["../../music-core/src/*"]
+    }
+  },
+  "include": ["src"]
+}

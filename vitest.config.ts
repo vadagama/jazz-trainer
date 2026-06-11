@@ -8,6 +8,9 @@ export default defineConfig({
     alias: {
       '@jazz/shared': r('./packages/shared/src/index.ts'),
       '@jazz/music-core': r('./packages/music-core/src/index.ts'),
+      '@jazz/music-core/audio': r('./packages/music-core/src/audio/index.ts'),
+      '@jazz/music-core/*': r('./packages/music-core/src/*'),
+      '@jazz/tone-audio-adapter': r('./packages/adapters/tone-audio-adapter/src/index.ts'),
     },
   },
   test: {

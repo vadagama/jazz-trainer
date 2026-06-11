@@ -30,6 +30,8 @@
       "@jazz/plugin-host/*": ["packages/plugin-host/src/*"],
       "@jazz/plugin-registry": ["packages/plugin-registry/src/index.ts"],
       "@jazz/plugin-registry/*": ["packages/plugin-registry/src/*"],
+      "@jazz/tone-audio-adapter": ["packages/adapters/tone-audio-adapter/src/index.ts"],
+      "@jazz/tone-audio-adapter/*": ["packages/adapters/tone-audio-adapter/src/*"],
     },
   },
 }
