@@ -6,6 +6,7 @@
   "description": "Browser-based jazz harmony trainer: harmony grids, precise metronome, DSL, progression generators.",
   "workspaces": [
     "packages/*",
+    "packages/adapters/*",
     "apps/*"
   ],
   "scripts": {

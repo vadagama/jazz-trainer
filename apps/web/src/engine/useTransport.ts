@@ -28,6 +28,7 @@ import {
   type DrumSound,
   type ChordTimelineEntry,
 } from '@jazz/music-core';
+import { ToneAudioAdapter } from '@jazz/tone-audio-adapter';
 import type { TimeSignatureString, Section, ClickSound } from '@jazz/shared';
 import type { UserSettingsDTO } from '@jazz/shared';
 import { usePlaybackStore } from '@/stores/usePlaybackStore';
@@ -73,7 +74,10 @@ function expandRange(
   // Find the LAST repeatEnd in [from..to] — it is the outermost for this range.
   let outerIdx = -1;
   for (let bi = to; bi >= from; bi--) {
-    if (sectionBars[bi]?.repeatEnd) { outerIdx = bi; break; }
+    if (sectionBars[bi]?.repeatEnd) {
+      outerIdx = bi;
+      break;
+    }
   }
 
   if (outerIdx === -1) {
@@ -202,6 +206,7 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
   const flatSeqRef = useRef<FlatSequence>({ bars: [], infiniteLoopStart: null });
   const initializedRef = useRef(false);
   const countInTimeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const adapterRef = useRef<ToneAudioAdapter | null>(null);
 
   // Keep a ref to current opts so callbacks always see latest values
   const optsRef = useRef(opts);
@@ -213,6 +218,10 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
 
     const tone = Tone.getTransport();
     tone.PPQ = 480;
+
+    // Create the audio adapter that wraps Tone.Transport lifecycle
+    const adapter = new ToneAudioAdapter({ bpm: settings.bpm });
+    adapterRef.current = adapter;
 
     const makePlayer = (sound: ClickSound | null, volumeDb: number): Tone.Player | null => {
       if (!sound) return null;
@@ -274,7 +283,9 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     // Pre-warm: start AudioContext on any first user gesture so all OGG/MP3 samples
     // finish decoding before the user clicks Play. Without this, AudioContext stays
     // suspended until play() and Tone.loaded() blocks for the full decode (~200–800 ms).
-    const warmAudioContext = () => { void Tone.start(); };
+    const warmAudioContext = () => {
+      void Tone.start();
+    };
     document.addEventListener('pointerdown', warmAudioContext, { once: true });
 
     const noteSink: NoteSink = (atTicks, note, velocity, durationTicks, articulation) => {
@@ -297,7 +308,12 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     // ── Rhodes sampler setup ───────────────────────────────────────────────
     const rhodesEQ3 = new Tone.EQ3({ low: -2, mid: 0, high: 1 });
     const rhodesTremolo = new Tone.Tremolo({ frequency: 5.5, depth: 0.18, wet: 0.25 }).start();
-    const rhodesChorus = new Tone.Chorus({ frequency: 1.4, delayTime: 2.5, depth: 0.25, wet: 0.25 }).start();
+    const rhodesChorus = new Tone.Chorus({
+      frequency: 1.4,
+      delayTime: 2.5,
+      depth: 0.25,
+      wet: 0.25,
+    }).start();
     const rhodesReverb = new Tone.Reverb({ decay: 1.8, wet: 0.12 });
     const rhodesChannel = new Tone.Channel({
       volume: Tone.gainToDb(settings.rhodesVolume ?? 0.6),
@@ -346,9 +362,15 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     }).toDestination();
     drumsMasterChannelRef.current = drumsMasterChannel;
 
-    const drumsRideChannel = new Tone.Channel({ volume: Tone.gainToDb(settings.drumsRideVolume ?? 0.7) }).connect(drumsMasterChannel);
-    const drumsStirChannel = new Tone.Channel({ volume: Tone.gainToDb(settings.drumsStirVolume ?? 0.6) }).connect(drumsMasterChannel);
-    const drumsHihatChannel = new Tone.Channel({ volume: Tone.gainToDb(settings.drumsHihatVolume ?? 0.55) }).connect(drumsMasterChannel);
+    const drumsRideChannel = new Tone.Channel({
+      volume: Tone.gainToDb(settings.drumsRideVolume ?? 0.7),
+    }).connect(drumsMasterChannel);
+    const drumsStirChannel = new Tone.Channel({
+      volume: Tone.gainToDb(settings.drumsStirVolume ?? 0.6),
+    }).connect(drumsMasterChannel);
+    const drumsHihatChannel = new Tone.Channel({
+      volume: Tone.gainToDb(settings.drumsHihatVolume ?? 0.55),
+    }).connect(drumsMasterChannel);
     drumsRideChannelRef.current = drumsRideChannel;
     drumsStirChannelRef.current = drumsStirChannel;
     drumsHihatChannelRef.current = drumsHihatChannel;
@@ -365,14 +387,16 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     const drumSink: DrumSink = (atTicks, sound, _velocity, _durationTicks) => {
       const s = optsRef.current.settings;
       if (!(s.drumsEnabled ?? true)) return;
-      if (sound === 'ride'      && !(s.drumsRideEnabled  ?? true)) return;
-      if (sound === 'stir'      && !(s.drumsStirEnabled  ?? true)) return;
+      if (sound === 'ride' && !(s.drumsRideEnabled ?? true)) return;
+      if (sound === 'stir' && !(s.drumsStirEnabled ?? true)) return;
       if (sound === 'hihatFoot' && !(s.drumsHihatEnabled ?? true)) return;
 
       const pool =
-        sound === 'ride'      ? drumsRidePlayersRef.current :
-        sound === 'stir'      ? drumsStirPlayersRef.current :
-        drumsHihatPlayersRef.current;
+        sound === 'ride'
+          ? drumsRidePlayersRef.current
+          : sound === 'stir'
+            ? drumsStirPlayersRef.current
+            : drumsHihatPlayersRef.current;
 
       const rr = drumsRrRef.current[sound] % 4;
       drumsRrRef.current[sound]++;
@@ -385,7 +409,9 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     };
 
     const drumInstrument = new DrumInstrument();
-    drumInstrument.setRidePattern((settings.drumsRidePattern ?? 'swingRide') as 'quarters' | 'swingRide');
+    drumInstrument.setRidePattern(
+      (settings.drumsRidePattern ?? 'swingRide') as 'quarters' | 'swingRide',
+    );
     drumInstrumentRef.current = drumInstrument;
 
     const engine = new TransportEngine({
@@ -414,14 +440,13 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     // Sync initial state
     usePlaybackStore.getState()._setState(machine.getState());
 
-    tone.bpm.value = settings.bpm;
+    adapter.setBpm(settings.bpm);
 
     return () => {
       document.removeEventListener('pointerdown', warmAudioContext);
       unsub();
       if (intervalRef.current !== null) clearInterval(intervalRef.current);
-      tone.stop();
-      tone.cancel();
+      adapter.stop();
       strongPlayerRef.current?.dispose();
       strong2PlayerRef.current?.dispose();
       weakPlayerRef.current?.dispose();
@@ -476,7 +501,7 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
   useEffect(() => {
     if (!engineRef.current) return;
     engineRef.current.setBpm(settings.bpm);
-    Tone.getTransport().bpm.value = settings.bpm;
+    adapterRef.current?.setBpm(settings.bpm);
   }, [settings.bpm]);
 
   // Reload strong player when sound selection changes
@@ -582,19 +607,24 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
 
   // Update per-sound drums volumes
   useEffect(() => {
-    if (drumsRideChannelRef.current) drumsRideChannelRef.current.volume.value = Tone.gainToDb(settings.drumsRideVolume ?? 0.7);
+    if (drumsRideChannelRef.current)
+      drumsRideChannelRef.current.volume.value = Tone.gainToDb(settings.drumsRideVolume ?? 0.7);
   }, [settings.drumsRideVolume]);
   useEffect(() => {
-    if (drumsStirChannelRef.current) drumsStirChannelRef.current.volume.value = Tone.gainToDb(settings.drumsStirVolume ?? 0.6);
+    if (drumsStirChannelRef.current)
+      drumsStirChannelRef.current.volume.value = Tone.gainToDb(settings.drumsStirVolume ?? 0.6);
   }, [settings.drumsStirVolume]);
   useEffect(() => {
-    if (drumsHihatChannelRef.current) drumsHihatChannelRef.current.volume.value = Tone.gainToDb(settings.drumsHihatVolume ?? 0.55);
+    if (drumsHihatChannelRef.current)
+      drumsHihatChannelRef.current.volume.value = Tone.gainToDb(settings.drumsHihatVolume ?? 0.55);
   }, [settings.drumsHihatVolume]);
 
   // Update ride pattern
   useEffect(() => {
     if (!drumInstrumentRef.current) return;
-    drumInstrumentRef.current.setRidePattern((settings.drumsRidePattern ?? 'swingRide') as 'quarters' | 'swingRide');
+    drumInstrumentRef.current.setRidePattern(
+      (settings.drumsRidePattern ?? 'swingRide') as 'quarters' | 'swingRide',
+    );
   }, [settings.drumsRidePattern]);
 
   // Update time signature on the engine when it changes
@@ -629,7 +659,7 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     // Wait for samples to finish loading before scheduling
     await Tone.loaded();
 
-    const tone = Tone.getTransport();
+    const adapter = adapterRef.current!;
     const currentState = machine.getState();
     const sig = parseTimeSignature(optsRef.current.timeSignature);
     const tpBar = ticksPerBar(sig);
@@ -653,7 +683,7 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     // Find virtual start tick for selectedBar (first occurrence in flat sequence)
     let startTick: number;
     if (currentState.status === 'paused') {
-      startTick = tone.ticks;
+      startTick = adapter.ticks;
     } else if (seq.bars.length > 0) {
       const idx = seq.bars.indexOf(currentState.selectedBar);
       startTick = (idx >= 0 ? idx : 0) * tpBar;
@@ -661,19 +691,17 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
       startTick = currentState.selectedBar * tpBar;
     }
 
-    // Configure Tone.Transport loop for infinite last section
+    // Configure loop for infinite last section
     if (seq.infiniteLoopStart !== null) {
-      tone.loop = true;
-      tone.loopStart = `${seq.infiniteLoopStart * tpBar}i`;
-      tone.loopEnd = `${seq.bars.length * tpBar}i`;
+      adapter.setLoop(true, `${seq.infiniteLoopStart * tpBar}i`, `${seq.bars.length * tpBar}i`);
     } else {
-      tone.loop = false;
+      adapter.setLoop(false);
     }
 
-    tone.ticks = startTick;
+    adapter.ticks = startTick;
     prevTicksRef.current = startTick;
     lastScheduledRef.current = startTick;
-    tone.bpm.value = optsRef.current.settings.bpm;
+    adapter.setBpm(optsRef.current.settings.bpm);
 
     // Pre-schedule first lookahead window BEFORE transport starts —
     // otherwise beat 1 fires before the first interval callback (25 ms later).
@@ -683,7 +711,8 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     lastScheduledRef.current = firstWindowEnd;
 
     const countInBars = optsRef.current.settings.countIn ?? 0;
-    const secondsPerBeat = 60 / tone.bpm.value;
+    const bpmForCalc = optsRef.current.settings.bpm;
+    const secondsPerBeat = 60 / bpmForCalc;
     const countInSeconds = countInBars * sig.beatsPerBar * secondsPerBeat;
 
     // Clear any leftover count-in timeouts from previous play
@@ -711,28 +740,34 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
         if (player?.loaded) player.start(firstBeatAt + beatOffset);
 
         // Update UI beat indicator in sync with audio
-        const t = setTimeout(() => {
-          usePlaybackStore.getState()._setCountIn(true, b % sig.beatsPerBar);
-        }, Math.round(50 + beatOffset * 1000));
+        const t = setTimeout(
+          () => {
+            usePlaybackStore.getState()._setCountIn(true, b % sig.beatsPerBar);
+          },
+          Math.round(50 + beatOffset * 1000),
+        );
         countInTimeoutsRef.current.push(t);
       }
 
       // Clear count-in state when transport actually starts
-      const clearT = setTimeout(() => {
-        usePlaybackStore.getState()._setCountIn(false, 0);
-        countInTimeoutsRef.current = [];
-      }, Math.round((0.05 + countInSeconds) * 1000));
+      const clearT = setTimeout(
+        () => {
+          usePlaybackStore.getState()._setCountIn(false, 0);
+          countInTimeoutsRef.current = [];
+        },
+        Math.round((0.05 + countInSeconds) * 1000),
+      );
       countInTimeoutsRef.current.push(clearT);
     }
 
     machine.dispatch({ type: 'play' });
     engine.play();
-    tone.start(`+${(0.05 + countInSeconds).toFixed(3)}`);
+    adapter.start(0.05 + countInSeconds);
 
     if (intervalRef.current !== null) clearInterval(intervalRef.current);
 
     intervalRef.current = setInterval(() => {
-      const currentTicks = Tone.getTransport().ticks;
+      const currentTicks = adapterRef.current!.ticks;
       const seq2 = flatSeqRef.current;
       const sig2 = parseTimeSignature(optsRef.current.timeSignature);
       const tpBar2 = ticksPerBar(sig2);
@@ -750,9 +785,10 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
 
       // Map virtual position to original bar index for UI highlighting
       const virtualBar = Math.floor(currentTicks / tpBar2);
-      const originalBar = seq2.bars.length > 0
-        ? (seq2.bars[Math.min(virtualBar, seq2.bars.length - 1)] ?? 0)
-        : virtualBar;
+      const originalBar =
+        seq2.bars.length > 0
+          ? (seq2.bars[Math.min(virtualBar, seq2.bars.length - 1)] ?? 0)
+          : virtualBar;
 
       const beatTicks = currentTicks % tpBar2;
       const tpBeat = tpBar2 / sig2.beatsPerBar;
@@ -760,14 +796,17 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
       machine.dispatch({ type: 'tick', bar: originalBar, beat });
 
       // Auto-stop at end of finite sequence
-      if (seq2.infiniteLoopStart === null && seq2.bars.length > 0 && currentTicks >= seq2.bars.length * tpBar2) {
+      if (
+        seq2.infiniteLoopStart === null &&
+        seq2.bars.length > 0 &&
+        currentTicks >= seq2.bars.length * tpBar2
+      ) {
         if (intervalRef.current !== null) clearInterval(intervalRef.current);
         intervalRef.current = null;
-        const t = Tone.getTransport();
-        t.stop();
-        t.cancel();
-        t.loop = false;
-        t.ticks = 0;
+        const a = adapterRef.current!;
+        a.stop();
+        a.setLoop(false);
+        a.ticks = 0;
         lastScheduledRef.current = 0;
         engineRef.current?.stop();
         machine.dispatch({ type: 'stop' });
@@ -818,7 +857,7 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
       intervalRef.current = null;
     }
 
-    Tone.getTransport().pause();
+    adapterRef.current?.pause();
     engine.pause();
     machine.dispatch({ type: 'pause' });
   }, []);
@@ -837,11 +876,10 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
       intervalRef.current = null;
     }
 
-    const tone = Tone.getTransport();
-    tone.stop();
-    tone.cancel();
-    tone.loop = false;
-    tone.ticks = 0;
+    const adapter = adapterRef.current!;
+    adapter.stop();
+    adapter.setLoop(false);
+    adapter.ticks = 0;
     lastScheduledRef.current = 0;
     prevTicksRef.current = 0;
 
@@ -856,7 +894,7 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     if (state.status === 'idle') {
       const sig = parseTimeSignature(optsRef.current.timeSignature);
       const tpBar = ticksPerBar(sig);
-      Tone.getTransport().ticks = state.currentBar * tpBar;
+      adapterRef.current!.ticks = state.currentBar * tpBar;
     }
   }, []);
 
@@ -867,7 +905,7 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     if (state.status === 'idle') {
       const sig = parseTimeSignature(optsRef.current.timeSignature);
       const tpBar = ticksPerBar(sig);
-      Tone.getTransport().ticks = state.currentBar * tpBar;
+      adapterRef.current!.ticks = state.currentBar * tpBar;
     }
   }, []);
 
