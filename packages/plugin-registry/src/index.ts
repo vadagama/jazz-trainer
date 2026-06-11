@@ -1,4 +1,6 @@
 import type { PluginDefinition } from '@jazz/plugin-sdk';
+import coreEditor from '@jazz/plugin-core-editor';
+import corePlayer from '@jazz/plugin-core-player';
+import catalog from '@jazz/plugin-catalog';
 
-// Псевдоплагины для существующих фич (будут заменены в фазе 3)
-export const PLUGINS: PluginDefinition[] = [];
+export const PLUGINS: PluginDefinition[] = [coreEditor, corePlayer, catalog];

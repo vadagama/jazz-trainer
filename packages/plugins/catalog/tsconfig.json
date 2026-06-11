@@ -1,0 +1,17 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "jsx": "react-jsx",
+    "noEmit": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["../../../apps/web/src/*"],
+      "@jazz/shared": ["../../shared/src/index.ts"],
+      "@jazz/music-core": ["../../music-core/src/index.ts"],
+      "@jazz/music-core/*": ["../../music-core/src/*"],
+      "@jazz/plugin-sdk": ["../../plugin-sdk/src/index.ts"],
+    },
+  },
+  "include": ["src"],
+}

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { HarmonyGrid } from '@/components/editor/HarmonyGrid';
+import { HarmonyGrid } from '@jazz/plugin-core-editor';
 import type { Section } from '@jazz/shared';
 
 const makeSection = (bars: Section['bars'], id = 's1', name = 'Section A'): Section => ({
@@ -48,7 +48,10 @@ describe('HarmonyGrid', () => {
   });
 
   it('marks selected bar with aria-pressed', () => {
-    const bars = [{ id: 'b1', chords: [] }, { id: 'b2', chords: [] }];
+    const bars = [
+      { id: 'b1', chords: [] },
+      { id: 'b2', chords: [] },
+    ];
     render(<HarmonyGrid {...defaultProps} sections={[makeSection(bars)]} selectedBarId="b1" />);
     expect(screen.getByTestId('bar-cell-b1').getAttribute('aria-pressed')).toBe('true');
     expect(screen.getByTestId('bar-cell-b2').getAttribute('aria-pressed')).toBe('false');
@@ -56,7 +59,13 @@ describe('HarmonyGrid', () => {
 
   it('shows chord symbols inside bar cells', () => {
     const bars = [
-      { id: 'b1', chords: [{ symbol: 'Dm7', parsed: null }, { symbol: 'G7', parsed: null }] },
+      {
+        id: 'b1',
+        chords: [
+          { symbol: 'Dm7', parsed: null },
+          { symbol: 'G7', parsed: null },
+        ],
+      },
     ];
     render(<HarmonyGrid {...defaultProps} sections={[makeSection(bars)]} />);
     expect(screen.getByText('Dm7')).toBeTruthy();

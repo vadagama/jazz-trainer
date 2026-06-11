@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
-import { LikeButton } from '@/components/catalog/LikeButton';
-import { CopyToMineButton } from '@/components/catalog/CopyToMineButton';
+import { LikeButton, CopyToMineButton } from '@jazz/plugin-catalog';
 import { renderWithProviders } from './renderWithProviders';
 
 vi.mock('@/queries/useAuth', () => ({

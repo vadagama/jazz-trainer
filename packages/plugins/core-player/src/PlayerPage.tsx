@@ -7,8 +7,8 @@ import { usePublicGrid } from '@/queries/usePublicGrids';
 import { useEffectiveSettings } from '@/queries/useEffectiveSettings';
 import { usePlaybackStore } from '@/stores/usePlaybackStore';
 import { useTransport } from '@/engine/useTransport';
-import { HarmonyGrid } from '@/components/editor/HarmonyGrid';
-import { PlayerToolbar } from '@/components/editor/PlayerToolbar';
+import { HarmonyGrid } from '@jazz/plugin-core-editor';
+import { PlayerToolbar } from '@jazz/plugin-core-editor';
 import { Header } from '@/components/layout/Header';
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs';
 
@@ -34,16 +34,24 @@ export function PlayerPage() {
     rawContent.sections && rawContent.sections.length > 0
       ? rawContent.sections
       : rawContent.bars.length > 0
-        ? [{ id: 'section-main', name: 'A', timeSignature: effectiveTimeSig, bars: rawContent.bars }]
+        ? [
+            {
+              id: 'section-main',
+              name: 'A',
+              timeSignature: effectiveTimeSig,
+              bars: rawContent.bars,
+            },
+          ]
         : [];
   const originalKey = grid?.key ?? 'C';
   const displaySections = useMemo(
     () => transposeSections(sections, originalKey, effectiveKey),
     [sections, originalKey, effectiveKey],
   );
-  const totalBars = sections.length > 0
-    ? sections.reduce((s, sec) => s + sec.bars.length, 0)
-    : (grid?.barsCount ?? 0);
+  const totalBars =
+    sections.length > 0
+      ? sections.reduce((s, sec) => s + sec.bars.length, 0)
+      : (grid?.barsCount ?? 0);
 
   const transport = useTransport({
     settings: { ...settings, bpm: effectiveBpm, volume: effectiveVolume },
@@ -81,22 +89,22 @@ export function PlayerPage() {
       <main className="flex-1 overflow-y-auto py-6 pb-24">
         <div className="mx-auto max-w-6xl px-4">
           <h1 className="mb-6 text-xl font-bold text-foreground">{grid.name}</h1>
-        {sections.length > 0 && (
-          <HarmonyGrid
-            sections={displaySections}
-            selectedBarId={null}
-            playingBarIndex={playingBarIndex}
-            countingInBarIndex={countingInBarIndex}
-            readonly
-            onSelectBar={() => {}}
-            onRenameSection={() => {}}
-            onSetSectionTimeSignature={() => {}}
-            onAddBarToSection={() => {}}
-            onDeleteSection={() => {}}
-            onSetBarRepeatEnd={() => {}}
-            onAddSection={() => {}}
-          />
-        )}
+          {sections.length > 0 && (
+            <HarmonyGrid
+              sections={displaySections}
+              selectedBarId={null}
+              playingBarIndex={playingBarIndex}
+              countingInBarIndex={countingInBarIndex}
+              readonly
+              onSelectBar={() => {}}
+              onRenameSection={() => {}}
+              onSetSectionTimeSignature={() => {}}
+              onAddBarToSection={() => {}}
+              onDeleteSection={() => {}}
+              onSetBarRepeatEnd={() => {}}
+              onAddSection={() => {}}
+            />
+          )}
         </div>
       </main>
 
@@ -121,3 +129,5 @@ export function PlayerPage() {
     </div>
   );
 }
+
+export default PlayerPage;

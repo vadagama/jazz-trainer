@@ -1,15 +1,19 @@
 import { useState, useCallback } from 'react';
 import { useDebounce } from '@/lib/useDebounce';
 import { usePublicGrids } from '@/queries/usePublicGrids';
-import { SearchBar } from '@/components/catalog/SearchBar';
-import { PublicGridCard } from '@/components/catalog/PublicGridCard';
+import { SearchBar } from './components/SearchBar';
+import { PublicGridCard } from './components/PublicGridCard';
 
-export function PublicDashboardPage() {
+export function CatalogPage() {
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState<'updated' | 'likes' | 'name'>('updated');
   const debouncedQuery = useDebounce(query, 300);
 
-  const { data: grids, isLoading, isError } = usePublicGrids({
+  const {
+    data: grids,
+    isLoading,
+    isError,
+  } = usePublicGrids({
     q: debouncedQuery || undefined,
     sort,
   });
@@ -41,7 +45,9 @@ export function PublicDashboardPage() {
 
       {grids && grids.length === 0 && (
         <div className="py-12 text-center text-muted-foreground">
-          {debouncedQuery ? `Ничего не найдено по запросу «${debouncedQuery}»` : 'Каталог пока пуст'}
+          {debouncedQuery
+            ? `Ничего не найдено по запросу «${debouncedQuery}»`
+            : 'Каталог пока пуст'}
         </div>
       )}
 
@@ -55,3 +61,5 @@ export function PublicDashboardPage() {
     </div>
   );
 }
+
+export default CatalogPage;

@@ -1,5 +1,5 @@
 {
-  "name": "@jazz/plugin-registry",
+  "name": "@jazz/plugin-core-editor",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -12,9 +12,12 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@jazz/plugin-catalog": "*",
-    "@jazz/plugin-core-editor": "*",
-    "@jazz/plugin-core-player": "*",
-    "@jazz/plugin-sdk": "*"
+    "@jazz/music-core": "*",
+    "@jazz/plugin-sdk": "*",
+    "@jazz/shared": "*",
+    "lucide-react": "^0.468.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-router-dom": "^7.1.1"
   }
 }

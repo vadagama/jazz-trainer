@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { BarEditor } from '@/components/editor/BarEditor';
+import { BarEditor } from '@jazz/plugin-core-editor';
 import type { Bar } from '@jazz/shared';
 
 function makeBar(chords: Bar['chords'] = []): Bar {
