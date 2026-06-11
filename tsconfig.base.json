@@ -32,6 +32,9 @@
       "@jazz/plugin-registry/*": ["packages/plugin-registry/src/*"],
       "@jazz/tone-audio-adapter": ["packages/adapters/tone-audio-adapter/src/index.ts"],
       "@jazz/tone-audio-adapter/*": ["packages/adapters/tone-audio-adapter/src/*"],
+      "@jazz/plugin-core-editor": ["packages/plugins/core-editor/src/index.ts"],
+      "@jazz/plugin-core-player": ["packages/plugins/core-player/src/index.ts"],
+      "@jazz/plugin-catalog": ["packages/plugins/catalog/src/index.ts"],
     },
   },
 }

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { PlayerToolbar } from '@/components/editor/PlayerToolbar';
+import { PlayerToolbar } from '@jazz/plugin-core-editor';
 
 const defaultProps = {
   currentKey: 'C' as const,

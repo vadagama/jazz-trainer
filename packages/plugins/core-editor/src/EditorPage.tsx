@@ -11,23 +11,17 @@ import { useTransport } from '@/engine/useTransport';
 import { Header } from '@/components/layout/Header';
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs';
 import { GridContainer } from '@/components/layout/GridContainer';
-import { HarmonyGrid } from '@/components/editor/HarmonyGrid';
-import { ChordPalette } from '@/components/editor/ChordPalette';
-import { PlayerToolbar } from '@/components/editor/PlayerToolbar';
-import { DslModal } from '@/components/editor/DslModal';
-import { GeneratorModal } from '@/components/editor/GeneratorModal';
+import { HarmonyGrid } from './components/HarmonyGrid';
+import { ChordPalette } from './components/ChordPalette';
+import { PlayerToolbar } from './components/PlayerToolbar';
+import { DslModal } from './components/DslModal';
+import { GeneratorModal } from './components/GeneratorModal';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 // ── Inline composition title editor ──────────────────────────────────────────
 
-function CompositionTitle({
-  name,
-  onSave,
-}: {
-  name: string;
-  onSave: (name: string) => void;
-}) {
+function CompositionTitle({ name, onSave }: { name: string; onSave: (name: string) => void }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(name);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -52,7 +46,10 @@ function CompositionTitle({
         onBlur={commit}
         onKeyDown={(e) => {
           if (e.key === 'Enter') commit();
-          if (e.key === 'Escape') { setDraft(name); setEditing(false); }
+          if (e.key === 'Escape') {
+            setDraft(name);
+            setEditing(false);
+          }
         }}
         className="w-full rounded border border-primary bg-background px-2 py-0.5 text-xl font-bold outline-none"
       />
@@ -62,7 +59,10 @@ function CompositionTitle({
   return (
     <div
       className="group flex cursor-default items-center gap-2"
-      onDoubleClick={() => { setDraft(name); setEditing(true); }}
+      onDoubleClick={() => {
+        setDraft(name);
+        setEditing(true);
+      }}
       title="Двойной клик для переименования"
     >
       <h1 className="text-xl font-bold text-foreground">{name}</h1>
@@ -105,7 +105,9 @@ export function EditorPage() {
   const countingInBarIndex = countInActive ? currentBar : undefined;
 
   const hoveredBarRef = useRef<string | null>(null);
-  const handleHoverBar = useCallback((barId: string | null) => { hoveredBarRef.current = barId; }, []);
+  const handleHoverBar = useCallback((barId: string | null) => {
+    hoveredBarRef.current = barId;
+  }, []);
 
   // Compute content/sections early — needed by keyboard handler useEffect below
   const content = localContent ?? grid?.content ?? { version: 1 as const, bars: [], sections: [] };
@@ -133,11 +135,20 @@ export function EditorPage() {
       if ((e.target as HTMLElement).closest('input, textarea, [contenteditable]')) return;
       if (e.key === 'Insert') {
         const targetId = hoveredBarRef.current ?? selectedBarId;
-        if (targetId) { insertBarAfter(targetId); return; }
+        if (targetId) {
+          insertBarAfter(targetId);
+          return;
+        }
       }
       if (!selectedBarId) return;
-      if (e.key === 'Escape') { clearBarChords(selectedBarId); return; }
-      if (e.key === 'Delete') { removeBar(selectedBarId); return; }
+      if (e.key === 'Escape') {
+        clearBarChords(selectedBarId);
+        return;
+      }
+      if (e.key === 'Delete') {
+        removeBar(selectedBarId);
+        return;
+      }
 
       if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) return;
       e.preventDefault();
@@ -165,7 +176,10 @@ export function EditorPage() {
         if (e.key === 'ArrowUp') {
           if (row > 0) {
             const targetInSection = (row - 1) * cur.cols + col;
-            targetId = allMeta.find((m) => m.sectionId === cur.sectionId && m.indexInSection === targetInSection)?.barId ?? null;
+            targetId =
+              allMeta.find(
+                (m) => m.sectionId === cur.sectionId && m.indexInSection === targetInSection,
+              )?.barId ?? null;
           } else if (sectionIdx > 0) {
             const prev = sections[sectionIdx - 1]!;
             const prevCols = colsForSection(prev.timeSignature);
@@ -174,12 +188,16 @@ export function EditorPage() {
             const idx = Math.min(prevLastRow * prevCols + clampedCol, prev.bars.length - 1);
             targetId = prev.bars[idx]?.id ?? null;
           }
-        } else { // ArrowDown
+        } else {
+          // ArrowDown
           const nextRow = row + 1;
           const targetInSection = nextRow * cur.cols + col;
           const sectionBarCount = sections.find((s) => s.id === cur.sectionId)?.bars.length ?? 0;
           if (targetInSection < sectionBarCount) {
-            targetId = allMeta.find((m) => m.sectionId === cur.sectionId && m.indexInSection === targetInSection)?.barId ?? null;
+            targetId =
+              allMeta.find(
+                (m) => m.sectionId === cur.sectionId && m.indexInSection === targetInSection,
+              )?.barId ?? null;
           } else if (nextRow * cur.cols >= sectionBarCount && sectionIdx < sections.length - 1) {
             const next = sections[sectionIdx + 1]!;
             const nextCols = colsForSection(next.timeSignature);
@@ -220,9 +238,10 @@ export function EditorPage() {
   });
 
   const playingBarIndex = !countInActive && status !== 'idle' ? currentBar : undefined;
-  const selectedBarFlatIndex = selectedBarId != null
-    ? sections.flatMap((s) => s.bars).findIndex((b) => b.id === selectedBarId)
-    : undefined;
+  const selectedBarFlatIndex =
+    selectedBarId != null
+      ? sections.flatMap((s) => s.bars).findIndex((b) => b.id === selectedBarId)
+      : undefined;
 
   if (isLoading) {
     return (
@@ -295,45 +314,45 @@ export function EditorPage() {
         >
           <Breadcrumbs items={[{ label: 'Мои сетки', href: '/my' }, { label: grid.name }]} />
           <div className="py-6">
-          <GridContainer>
-            <div className="mb-6">
-              <CompositionTitle name={grid.name} onSave={handleSaveTitle} />
-            </div>
-
-            <HarmonyGrid
-              sections={displaySections}
-              selectedBarId={selectedBarId}
-              playingBarIndex={playingBarIndex}
-              countingInBarIndex={countingInBarIndex}
-              onSelectBar={(barId) => selectBar(selectedBarId === barId ? null : barId)}
-              onRenameSection={renameSection}
-              onSetSectionTimeSignature={setSectionTimeSignature}
-              onAddBarToSection={addBarToSection}
-              onDeleteSection={deleteSection}
-              onSetBarRepeatEnd={setBarRepeatEnd}
-              onHoverBar={handleHoverBar}
-              onAddSection={() => addSection(defaultTimeSignature)}
-            />
-
-            {isDirty && (
-              <div className="mt-4 flex justify-end">
-                <Button
-                  size="sm"
-                  className="gap-1.5"
-                  onClick={handleSave}
-                  disabled={updateMutation.isPending}
-                  data-testid="save-button"
-                >
-                  {updateMutation.isPending ? (
-                    <Loader2 className="size-3.5 animate-spin" />
-                  ) : (
-                    <Save className="size-3.5" />
-                  )}
-                  Сохранить
-                </Button>
+            <GridContainer>
+              <div className="mb-6">
+                <CompositionTitle name={grid.name} onSave={handleSaveTitle} />
               </div>
-            )}
-          </GridContainer>
+
+              <HarmonyGrid
+                sections={displaySections}
+                selectedBarId={selectedBarId}
+                playingBarIndex={playingBarIndex}
+                countingInBarIndex={countingInBarIndex}
+                onSelectBar={(barId) => selectBar(selectedBarId === barId ? null : barId)}
+                onRenameSection={renameSection}
+                onSetSectionTimeSignature={setSectionTimeSignature}
+                onAddBarToSection={addBarToSection}
+                onDeleteSection={deleteSection}
+                onSetBarRepeatEnd={setBarRepeatEnd}
+                onHoverBar={handleHoverBar}
+                onAddSection={() => addSection(defaultTimeSignature)}
+              />
+
+              {isDirty && (
+                <div className="mt-4 flex justify-end">
+                  <Button
+                    size="sm"
+                    className="gap-1.5"
+                    onClick={handleSave}
+                    disabled={updateMutation.isPending}
+                    data-testid="save-button"
+                  >
+                    {updateMutation.isPending ? (
+                      <Loader2 className="size-3.5 animate-spin" />
+                    ) : (
+                      <Save className="size-3.5" />
+                    )}
+                    Сохранить
+                  </Button>
+                </div>
+              )}
+            </GridContainer>
           </div>
         </main>
       </div>
@@ -343,7 +362,11 @@ export function EditorPage() {
         currentBeat={displayBeat}
         currentBar={currentBar}
         totalBars={totalBars}
-        selectedBarIndex={selectedBarFlatIndex !== undefined && selectedBarFlatIndex >= 0 ? selectedBarFlatIndex : undefined}
+        selectedBarIndex={
+          selectedBarFlatIndex !== undefined && selectedBarFlatIndex >= 0
+            ? selectedBarFlatIndex
+            : undefined
+        }
         totalBeats={parseInt(effectiveTimeSig.split('/')[0] ?? '4', 10)}
         bpm={effectiveBpm}
         currentKey={playerKey}
@@ -373,3 +396,5 @@ export function EditorPage() {
     </div>
   );
 }
+
+export default EditorPage;

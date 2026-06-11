@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
-import { PublicDashboardPage } from '@/routes/PublicDashboardPage';
+import { CatalogPage } from '@jazz/plugin-catalog';
 import { renderWithProviders } from './renderWithProviders';
 
 vi.mock('@/queries/usePublicGrids', () => ({
@@ -28,15 +28,17 @@ const MOCK_GRIDS = [
   },
 ];
 
-describe('PublicDashboardPage', () => {
+describe('CatalogPage', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('renders without auth (guest)', async () => {
-    mockUsePublicGrids.mockReturnValue(
-      { data: MOCK_GRIDS, isLoading: false, isError: false } as unknown as ReturnType<typeof usePublicGrids>,
-    );
+    mockUsePublicGrids.mockReturnValue({
+      data: MOCK_GRIDS,
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof usePublicGrids>);
 
-    renderWithProviders(<PublicDashboardPage />);
+    renderWithProviders(<CatalogPage />);
 
     await waitFor(() => {
       expect(screen.getByText('Каталог сеток')).toBeTruthy();
@@ -45,20 +47,24 @@ describe('PublicDashboardPage', () => {
   });
 
   it('shows spinner while loading', () => {
-    mockUsePublicGrids.mockReturnValue(
-      { data: undefined, isLoading: true, isError: false } as unknown as ReturnType<typeof usePublicGrids>,
-    );
+    mockUsePublicGrids.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+      isError: false,
+    } as unknown as ReturnType<typeof usePublicGrids>);
 
-    renderWithProviders(<PublicDashboardPage />);
+    renderWithProviders(<CatalogPage />);
     expect(document.querySelector('.animate-spin')).toBeTruthy();
   });
 
   it('shows empty state when no grids', async () => {
-    mockUsePublicGrids.mockReturnValue(
-      { data: [], isLoading: false, isError: false } as unknown as ReturnType<typeof usePublicGrids>,
-    );
+    mockUsePublicGrids.mockReturnValue({
+      data: [],
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof usePublicGrids>);
 
-    renderWithProviders(<PublicDashboardPage />);
+    renderWithProviders(<CatalogPage />);
     await waitFor(() => {
       expect(screen.getByText('Каталог пока пуст')).toBeTruthy();
     });
