@@ -4,6 +4,7 @@ import cookie from '@fastify/cookie';
 import { loadConfig, type ApiConfig } from './config.js';
 import { createDb, type DrizzleDb } from './db/index.js';
 import { authPlugin } from './plugins/auth.plugin.js';
+import { rbacPlugin } from './plugins/rbac.plugin.js';
 import { authRoutes, type AuthRoutesOptions } from './routes/auth.routes.js';
 import { settingsRoutes } from './routes/settings.routes.js';
 import { gridsRoutes } from './routes/grids.routes.js';
@@ -48,6 +49,8 @@ export async function buildServer(opts: BuildServerOptions = {}): Promise<Fastif
 
   // optional-auth: sets request.user on every request
   await app.register(authPlugin, { db });
+  // RBAC: permission-check decorator + admin-route guard
+  await app.register(rbacPlugin, { db });
 
   // Routes
   app.get('/api/health', async () => ({ status: 'ok' }));

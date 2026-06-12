@@ -71,6 +71,13 @@
       "when": 1780850000000,
       "tag": "0009_add_swing_ratio",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1781228290491,
+      "tag": "0010_0010_add_rbac_audit_flags",
+      "breakpoints": true
     }
   ]
 }

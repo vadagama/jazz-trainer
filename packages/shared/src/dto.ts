@@ -14,7 +14,9 @@ export const UserDTOSchema = z.object({
   email: z.string().email(),
   name: z.string(),
   avatarUrl: z.string().url().nullable(),
-  provider: z.enum(['google', 'dev']),
+  provider: z.enum(['google', 'dev', 'system']),
+  role: z.string(),
+  status: z.enum(['active', 'disabled']),
   createdAt: z.number().int(),
 });
 export type UserDTO = z.infer<typeof UserDTOSchema>;
@@ -37,12 +39,23 @@ export const UserSettingsDTOSchema = z.object({
   bassOctaveUp: z.boolean().optional(),
   rhodesEnabled: z.boolean().optional(),
   rhodesVolume: z.number().min(0).max(1).optional(),
-  rhodesMode: z.enum([
-    'wholeNotes', 'halfNotes', 'quarterNotes',
-    'charleston', 'reverse-charleston', 'basie-2-4', 'offbeat-2-4',
-    'anticipation-4and', 'one-twoand-four', 'oneand-three',
-    'twoand-only', 'four-and-sparse', 'two-threeand',
-  ]).optional(),
+  rhodesMode: z
+    .enum([
+      'wholeNotes',
+      'halfNotes',
+      'quarterNotes',
+      'charleston',
+      'reverse-charleston',
+      'basie-2-4',
+      'offbeat-2-4',
+      'anticipation-4and',
+      'one-twoand-four',
+      'oneand-three',
+      'twoand-only',
+      'four-and-sparse',
+      'two-threeand',
+    ])
+    .optional(),
   rhodesVoicingDensity: z.enum(['shell2', 'rootless3', 'rootless4']).optional(),
   drumsEnabled: z.boolean().optional(),
   drumsVolume: z.number().min(0).max(1).optional(),
@@ -53,7 +66,7 @@ export const UserSettingsDTOSchema = z.object({
   drumsHihatEnabled: z.boolean().optional(),
   drumsHihatVolume: z.number().min(0).max(1).optional(),
   drumsRidePattern: z.enum(['quarters', 'swingRide']).optional(),
-  swingRatio: z.number().min(0.50).max(0.75).optional(),
+  swingRatio: z.number().min(0.5).max(0.75).optional(),
 });
 export type UserSettingsDTO = z.infer<typeof UserSettingsDTOSchema>;
 
@@ -72,5 +85,7 @@ export type DevLoginInput = z.infer<typeof DevLoginSchema>;
 
 export const MeResponseSchema = z.object({
   user: UserDTOSchema.nullable(),
+  permissions: z.array(z.string()),
+  flags: z.record(z.boolean()),
 });
 export type MeResponse = z.infer<typeof MeResponseSchema>;

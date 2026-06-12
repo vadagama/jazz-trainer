@@ -1,7 +1,15 @@
 import { eq } from 'drizzle-orm';
-import { users, userSettings, harmonyGrids } from './schema.js';
+import {
+  users,
+  userSettings,
+  harmonyGrids,
+  roles,
+  permissions,
+  rolePermissions,
+} from './schema.js';
 import type { DrizzleDb } from './index.js';
 import type { GridContent } from '@jazz/shared';
+import { RBAC_PERMISSIONS, RBAC_ROLES } from '../services/rbac.service.js';
 
 const SYSTEM_USER_ID = 'system';
 
@@ -9,7 +17,6 @@ const SYSTEM_USER_ID = 'system';
  * Idempotent: create the system user if it doesn't exist.
  * The system user owns the public catalog seed-grids (visibility='public').
  * It cannot log in (provider='system' is rejected by all auth paths).
- * See docs/03-data-model.md §2.1.
  */
 export function seedSystemUser(db: DrizzleDb): void {
   const now = Date.now();
@@ -23,6 +30,8 @@ export function seedSystemUser(db: DrizzleDb): void {
         avatarUrl: null,
         provider: 'system',
         providerId: 'system',
+        role: 'system',
+        status: 'active',
         createdAt: now,
         updatedAt: now,
       })
@@ -33,6 +42,7 @@ export function seedSystemUser(db: DrizzleDb): void {
 /**
  * Idempotent: create a dev test user + default settings.
  * Only called when AUTH_DEV_MODE=true. Used by e2e tests and local dev.
+ * Dev user gets super_admin role for full local access.
  */
 export function seedDevUser(db: DrizzleDb): void {
   const now = Date.now();
@@ -49,6 +59,8 @@ export function seedDevUser(db: DrizzleDb): void {
       avatarUrl: null,
       provider: 'dev',
       providerId: email,
+      role: RBAC_ROLES.SUPER_ADMIN,
+      status: 'active',
       createdAt: now,
       updatedAt: now,
     })
@@ -66,6 +78,98 @@ export function seedDevUser(db: DrizzleDb): void {
       updatedAt: now,
     })
     .run();
+}
+
+// ── RBAC seed (Phase R) ─────────────────────────────────────────────────────
+
+const SEED_PERMISSIONS = [
+  RBAC_PERMISSIONS.ADMIN,
+  RBAC_PERMISSIONS.USERS_READ,
+  RBAC_PERMISSIONS.USERS_WRITE,
+  RBAC_PERMISSIONS.CONTENT_READ,
+  RBAC_PERMISSIONS.CONTENT_WRITE,
+  RBAC_PERMISSIONS.FLAGS_READ,
+  RBAC_PERMISSIONS.FLAGS_WRITE,
+  RBAC_PERMISSIONS.ASSETS_READ,
+  RBAC_PERMISSIONS.ASSETS_WRITE,
+  RBAC_PERMISSIONS.DIAGNOSTICS_READ,
+  RBAC_PERMISSIONS.AUDIT_READ,
+];
+
+interface SeedRole {
+  id: string;
+  name: string;
+  permissions: string[];
+}
+
+const SEED_ROLES: SeedRole[] = [
+  {
+    id: 'role-super-admin',
+    name: RBAC_ROLES.SUPER_ADMIN,
+    permissions: SEED_PERMISSIONS,
+  },
+  {
+    id: 'role-admin',
+    name: RBAC_ROLES.ADMIN,
+    permissions: [
+      RBAC_PERMISSIONS.ADMIN,
+      RBAC_PERMISSIONS.USERS_READ,
+      RBAC_PERMISSIONS.CONTENT_READ,
+      RBAC_PERMISSIONS.CONTENT_WRITE,
+      RBAC_PERMISSIONS.FLAGS_READ,
+      RBAC_PERMISSIONS.FLAGS_WRITE,
+      RBAC_PERMISSIONS.AUDIT_READ,
+      RBAC_PERMISSIONS.DIAGNOSTICS_READ,
+    ],
+  },
+  {
+    id: 'role-user',
+    name: RBAC_ROLES.USER,
+    permissions: [],
+  },
+];
+
+/**
+ * Idempotent: seed RBAC roles and permissions.
+ */
+export function seedRbac(db: DrizzleDb): void {
+  const now = Date.now();
+
+  // Seed permissions
+  for (const code of SEED_PERMISSIONS) {
+    const existing = db
+      .select({ id: permissions.id })
+      .from(permissions)
+      .where(eq(permissions.code, code))
+      .get();
+    if (existing) continue;
+    db.insert(permissions).values({ id: crypto.randomUUID(), code }).run();
+  }
+
+  // Seed roles and role_permissions
+  for (const roleDef of SEED_ROLES) {
+    const existingRole = db
+      .select({ id: roles.id })
+      .from(roles)
+      .where(eq(roles.id, roleDef.id))
+      .get();
+    if (!existingRole) {
+      db.insert(roles)
+        .values({ id: roleDef.id, name: roleDef.name, createdAt: new Date(now) })
+        .run();
+    }
+
+    for (const permCode of roleDef.permissions) {
+      const allRps = db
+        .select()
+        .from(rolePermissions)
+        .where(eq(rolePermissions.roleId, roleDef.id))
+        .all();
+      const hasPerm = allRps.some((rp) => rp.permissionCode === permCode);
+      if (hasPerm) continue;
+      db.insert(rolePermissions).values({ roleId: roleDef.id, permissionCode: permCode }).run();
+    }
+  }
 }
 
 // ── Demo grids ─────────────────────────────────────────────────────────────
@@ -170,7 +274,6 @@ const DEMO_GRIDS: DemoGrid[] = [
 
 /**
  * Idempotent: seed 5 public demo grids owned by the system user.
- * Each grid is identified by a stable ID — safe to call on every startup.
  */
 export function seedDemoGrids(db: DrizzleDb): void {
   const now = Date.now();
@@ -209,6 +312,7 @@ if (process.argv[1] && import.meta.url.endsWith(process.argv[1].replace(/\\/g, '
   const { db } = createDb(config.databaseUrl);
   runMigrations(db);
   seedSystemUser(db);
+  seedRbac(db);
   if (config.authDevMode) seedDevUser(db);
   console.log('[db] seed complete');
 }

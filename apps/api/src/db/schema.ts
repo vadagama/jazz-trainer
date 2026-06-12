@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm';
 import {
   sqliteTable,
   text,
@@ -22,6 +23,10 @@ export const users = sqliteTable(
     avatarUrl: text('avatar_url'),
     provider: text('provider', { enum: ['google', 'dev', 'system'] }).notNull(),
     providerId: text('provider_id').notNull(),
+    role: text('role').notNull().default('user'),
+    status: text('status', { enum: ['active', 'disabled'] })
+      .notNull()
+      .default('active'),
     createdAt: integer('created_at').notNull(),
     updatedAt: integer('updated_at').notNull(),
   },
@@ -56,7 +61,7 @@ export const userSettings = sqliteTable('user_settings', {
   drumsHihatEnabled: integer('drums_hihat_enabled', { mode: 'boolean' }).notNull().default(true),
   drumsHihatVolume: real('drums_hihat_volume').notNull().default(0.55),
   drumsRidePattern: text('drums_ride_pattern').notNull().default('swingRide'),
-  swingRatio: real('swing_ratio').notNull().default(0.50),
+  swingRatio: real('swing_ratio').notNull().default(0.5),
   createdAt: integer('created_at').notNull(),
   updatedAt: integer('updated_at').notNull(),
 });
@@ -87,7 +92,9 @@ export const harmonyGrids = sqliteTable(
     name: text('name').notNull(),
     timeSignature: text('time_signature').notNull().default('4/4'),
     key: text('key').notNull().default('C'),
-    visibility: text('visibility', { enum: ['private', 'public'] }).notNull().default('private'),
+    visibility: text('visibility', { enum: ['private', 'public'] })
+      .notNull()
+      .default('private'),
     /** JSON-serialised GridContent */
     content: text('content').notNull(),
     /** for copied grids: id of the source grid */
@@ -120,6 +127,80 @@ export const gridLikes = sqliteTable(
   ],
 );
 
+// ── RBAC tables (Phase R) ────────────────────────────────────────────────
+
+export const roles = sqliteTable('roles', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull().unique(),
+  createdAt: integer('created_at', { mode: 'timestamp' })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+export const permissions = sqliteTable('permissions', {
+  id: text('id').primaryKey(),
+  code: text('code').notNull().unique(),
+});
+
+export const rolePermissions = sqliteTable(
+  'role_permissions',
+  {
+    roleId: text('role_id')
+      .references(() => roles.id)
+      .notNull(),
+    permissionCode: text('permission_code')
+      .references(() => permissions.code)
+      .notNull(),
+  },
+  (t) => ({ pk: primaryKey(t.roleId, t.permissionCode) }),
+);
+
+export const userPermissions = sqliteTable(
+  'user_permissions',
+  {
+    userId: text('user_id')
+      .references(() => users.id)
+      .notNull(),
+    permissionCode: text('permission_code')
+      .references(() => permissions.code)
+      .notNull(),
+    granted: integer('granted', { mode: 'boolean' }).notNull(),
+  },
+  (t) => ({ pk: primaryKey(t.userId, t.permissionCode) }),
+);
+
+// ── Audit log (Phase R) ──────────────────────────────────────────────────
+
+export const auditLog = sqliteTable('audit_log', {
+  id: text('id').primaryKey(),
+  actorUserId: text('actor_user_id').notNull(),
+  action: text('action').notNull(),
+  targetType: text('target_type').notNull(),
+  targetId: text('target_id').notNull(),
+  before: text('before'),
+  after: text('after'),
+  timestamp: integer('timestamp', { mode: 'timestamp' })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  ip: text('ip'),
+  userAgent: text('user_agent'),
+  reason: text('reason'),
+});
+
+// ── Feature flags (Phase R) ──────────────────────────────────────────────
+
+export const featureFlags = sqliteTable('feature_flags', {
+  key: text('key').primaryKey(),
+  enabled: integer('enabled', { mode: 'boolean' }).notNull().default(false),
+  roles: text('roles'), // JSON array of role names
+  userIds: text('user_ids'), // JSON array of user IDs
+  createdAt: integer('created_at', { mode: 'timestamp' })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// ── Type exports ──────────────────────────────────────────────────────────
+
 export type UserRecord = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type UserSettingsRecord = typeof userSettings.$inferSelect;
@@ -127,3 +208,7 @@ export type SessionRecord = typeof sessions.$inferSelect;
 export type HarmonyGridRecord = typeof harmonyGrids.$inferSelect;
 export type NewHarmonyGrid = typeof harmonyGrids.$inferInsert;
 export type GridLikeRecord = typeof gridLikes.$inferSelect;
+export type RoleRecord = typeof roles.$inferSelect;
+export type PermissionRecord = typeof permissions.$inferSelect;
+export type AuditLogRecord = typeof auditLog.$inferSelect;
+export type FeatureFlagRecord = typeof featureFlags.$inferSelect;

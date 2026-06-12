@@ -36,3 +36,6 @@ export type { ActivityType, ActivityState, ActivityResult, ActivityDefinition } 
 
 export { definePlugin } from './definePlugin';
 export type { PluginDefinition } from './definePlugin';
+
+export { usePermission } from './hooks/usePermission';
+export { useFlag } from './hooks/useFlag';

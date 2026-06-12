@@ -39,13 +39,13 @@ describe('ProtectedRoute', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('shows spinner while loading', () => {
-    mockUseAuth.mockReturnValue({ user: null, isLoading: true });
+    mockUseAuth.mockReturnValue({ user: null, permissions: [], flags: {}, isLoading: true });
     renderWithProviders(<TestApp />, { routerProps: { initialEntries: ['/protected'] } });
     expect(document.querySelector('.animate-spin')).toBeTruthy();
   });
 
   it('redirects guest to /login', async () => {
-    mockUseAuth.mockReturnValue({ user: null, isLoading: false });
+    mockUseAuth.mockReturnValue({ user: null, permissions: [], flags: {}, isLoading: false });
     renderWithProviders(<TestApp />, { routerProps: { initialEntries: ['/protected'] } });
     await waitFor(() => {
       expect(screen.getByText('Login Page')).toBeTruthy();
@@ -54,7 +54,18 @@ describe('ProtectedRoute', () => {
 
   it('renders children for authenticated user', async () => {
     mockUseAuth.mockReturnValue({
-      user: { id: '1', email: 'a@b.com', name: 'Alice', avatarUrl: null, provider: 'dev', createdAt: 0 },
+      user: {
+        id: '1',
+        email: 'a@b.com',
+        name: 'Alice',
+        avatarUrl: null,
+        provider: 'dev',
+        role: 'user',
+        status: 'active' as const,
+        createdAt: 0,
+      },
+      permissions: [],
+      flags: {},
       isLoading: false,
     });
     renderWithProviders(<TestApp />, { routerProps: { initialEntries: ['/protected'] } });
