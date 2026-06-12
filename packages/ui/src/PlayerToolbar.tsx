@@ -3,10 +3,10 @@ import { useState, useEffect } from 'react';
 import { KEYS } from '@jazz/shared';
 import type { Key } from '@jazz/shared';
 import type { PlaybackStatus } from '@jazz/music-core';
-import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Slider } from '@/components/ui/slider';
-import { cn } from '@/lib/utils';
+import { Button } from './button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './select';
+import { Slider } from './slider';
+import { cn } from './utils';
 
 interface PlayerToolbarProps {
   status?: PlaybackStatus;
@@ -16,7 +16,7 @@ interface PlayerToolbarProps {
   totalBars?: number;
   selectedBarIndex?: number;
   bpm?: number;
-  volume?: number; // 0–1
+  volume?: number;
   currentKey: Key;
   onPlay?: () => void;
   onPause?: () => void;
@@ -25,7 +25,7 @@ interface PlayerToolbarProps {
   onNextBar?: () => void;
   onBpmChange?: (bpm: number) => void;
   onKeyChange?: (key: Key) => void;
-  onVolumeChange?: (volume: number) => void; // 0–1
+  onVolumeChange?: (volume: number) => void;
 }
 
 export function PlayerToolbar({
@@ -39,7 +39,7 @@ export function PlayerToolbar({
   volume: volumeProp = 0.8,
   currentKey,
   onPlay,
-  onPause,
+  onPause: _onPause,
   onStop,
   onPrevBar,
   onNextBar,
@@ -109,7 +109,6 @@ export function PlayerToolbar({
 
   return (
     <footer className="fixed bottom-0 left-0 right-0 z-50 flex h-24 items-center justify-center gap-4 border-t border-border bg-card px-4 flex-wrap">
-      {/* Prev bar */}
       <Button
         variant="ghost"
         size="icon"
@@ -122,7 +121,6 @@ export function PlayerToolbar({
         <SkipBack className="size-5" />
       </Button>
 
-      {/* Transport controls */}
       <div className="flex items-center gap-2">
         <Button
           variant="ghost"
@@ -149,7 +147,6 @@ export function PlayerToolbar({
         </Button>
       </div>
 
-      {/* Next bar */}
       <Button
         variant="ghost"
         size="icon"
@@ -164,7 +161,6 @@ export function PlayerToolbar({
 
       <div className="h-6 w-px bg-border" />
 
-      {/* Beat indicator */}
       <div className="flex items-center gap-2">
         <div className="flex items-center gap-1.5">
           {Array.from({ length: totalBeats }, (_, i) => (
@@ -193,7 +189,6 @@ export function PlayerToolbar({
 
       <div className="h-6 w-px bg-border" />
 
-      {/* BPM */}
       <div className="flex items-center gap-1.5">
         <Button
           variant="ghost"
@@ -230,7 +225,6 @@ export function PlayerToolbar({
 
       <div className="h-6 w-px bg-border" />
 
-      {/* Key selector */}
       <div className="flex items-center gap-2">
         <span className="text-sm text-muted-foreground">Тональность</span>
         <Select value={currentKey} onValueChange={(v) => onKeyChange?.(v as Key)}>
@@ -249,7 +243,6 @@ export function PlayerToolbar({
 
       <div className="h-6 w-px bg-border" />
 
-      {/* Volume control */}
       <div className="flex items-center gap-2">
         <Button
           variant="ghost"

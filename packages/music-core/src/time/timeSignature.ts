@@ -36,7 +36,7 @@ export function ticksPerBar(sig: TimeSignature): number {
 /**
  * Default first-strong (beat 1) beats — always just beat 0.
  */
-export function defaultStrongBeats(sig: TimeSignature): number[] {
+export function defaultStrongBeats(_sig: TimeSignature): number[] {
   return [0];
 }
 

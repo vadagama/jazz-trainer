@@ -6,11 +6,12 @@
     "noEmit": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["../../../apps/web/src/*"],
       "@jazz/shared": ["../../shared/src/index.ts"],
       "@jazz/music-core": ["../../music-core/src/index.ts"],
       "@jazz/music-core/*": ["../../music-core/src/*"],
       "@jazz/plugin-sdk": ["../../plugin-sdk/src/index.ts"],
+      "@jazz/ui": ["../../ui/src/index.ts"],
+      "@jazz/ui/*": ["../../ui/src/*"],
     },
   },
   "include": ["src"],

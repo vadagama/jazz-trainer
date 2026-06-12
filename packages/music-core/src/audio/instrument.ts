@@ -15,6 +15,8 @@ export type BassArticulation = 'pluck' | 'mute';
 export interface ScheduleContext {
   bpm: number;
   timeSignature: TimeSignature;
+  /** Swing ratio for offbeat eighth notes: 0.50 = straight, 0.66 = classic swing, 0.75 = heavy shuffle. */
+  swingRatio: number;
   /** Schedule a metronome click at an absolute tick from the start of the form. */
   scheduleClick(atTicks: number, beatType: BeatType): void;
   /** Schedule a pitched bass note. Present only when a bass sampler is wired in. */

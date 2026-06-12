@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
-import { useDebounce } from '@/lib/useDebounce';
-import { usePublicGrids } from '@/queries/usePublicGrids';
+import { useDebounce } from '@jazz/ui';
+import { usePublicGrids } from './queries/usePublicGrids';
 import { SearchBar } from './components/SearchBar';
 import { PublicGridCard } from './components/PublicGridCard';
 

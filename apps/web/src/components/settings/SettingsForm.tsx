@@ -479,6 +479,42 @@ export function SettingsForm({ defaultValues, onSave, isSaving }: Props) {
         </div>
       </div>
 
+      {/* Groove */}
+      <div className="space-y-4">
+        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Groove</p>
+
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label className="text-sm text-foreground">Swing feel</Label>
+            <span className="text-sm tabular-nums text-muted-foreground">
+              {(() => {
+                const v = form.watch('swingRatio') ?? 0.50;
+                if (v <= 0.50) return 'Straight';
+                if (v <= 0.57) return 'Light';
+                if (v <= 0.66) return 'Classic';
+                return 'Shuffle';
+              })()}
+            </span>
+          </div>
+          <Controller
+            control={form.control}
+            name="swingRatio"
+            render={({ field }) => (
+              <Slider
+                min={50}
+                max={75}
+                step={1}
+                value={[Math.round((field.value ?? 0.50) * 100)]}
+                onValueChange={(vals) => field.onChange((vals[0] ?? 50) / 100)}
+              />
+            )}
+          />
+          <p className="text-xs text-muted-foreground">
+            Оффбитный feel: Straight (0.50) → Classic swing (0.66) → Heavy shuffle (0.75)
+          </p>
+        </div>
+      </div>
+
       <Button type="submit" disabled={isSaving}>
         {isSaving ? 'Сохраняем...' : 'Сохранить'}
       </Button>

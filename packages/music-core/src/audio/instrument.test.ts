@@ -14,6 +14,7 @@ function collect(
   const ctx: ScheduleContext = {
     bpm,
     timeSignature,
+    swingRatio: 0.50,
     scheduleClick: (at, beatType) => clicks.push({ at, beatType }),
   };
   instrument.schedule(window, ctx);

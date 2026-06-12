@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { screen, fireEvent } from '@testing-library/react';
 import { GeneratorModal } from '@jazz/plugin-core-editor';
 import { renderWithProviders } from '../renderWithProviders';
 import type { GridContent, PatternInfo } from '@jazz/shared';

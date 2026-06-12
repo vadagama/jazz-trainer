@@ -1,8 +1,6 @@
 import { definePlugin } from '@jazz/plugin-sdk';
 
-// Re-export shared components for use by other plugins (e.g. core-player)
-export { HarmonyGrid } from './components/HarmonyGrid';
-export { PlayerToolbar } from './components/PlayerToolbar';
+export { HarmonyGrid, PlayerToolbar } from '@jazz/ui';
 export { BarEditor } from './components/BarEditor';
 export { BarCard } from './components/BarCard';
 export { ChordChip } from './components/ChordChip';

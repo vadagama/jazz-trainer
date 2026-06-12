@@ -2,7 +2,7 @@ import { useMyGrids } from '@/queries/useMyGrids';
 import { MyGridCard } from '@/components/dashboard/MyGridCard';
 import { CreateGridDialog } from '@/components/dashboard/CreateGridDialog';
 
-export function MyGridsPage() {
+export default function MyGridsPage() {
   const { data: grids, isLoading } = useMyGrids();
 
   return (

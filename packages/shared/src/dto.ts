@@ -53,6 +53,7 @@ export const UserSettingsDTOSchema = z.object({
   drumsHihatEnabled: z.boolean().optional(),
   drumsHihatVolume: z.number().min(0).max(1).optional(),
   drumsRidePattern: z.enum(['quarters', 'swingRide']).optional(),
+  swingRatio: z.number().min(0.50).max(0.75).optional(),
 });
 export type UserSettingsDTO = z.infer<typeof UserSettingsDTOSchema>;
 

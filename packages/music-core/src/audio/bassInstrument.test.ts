@@ -32,6 +32,7 @@ function makeCtx(sig = parseTimeSignature('4/4')): {
   const ctx: ScheduleContext = {
     bpm: 120,
     timeSignature: sig,
+    swingRatio: 0.50,
     scheduleClick: () => {},
     scheduleNote: (at, note, velocity, durationTicks, articulation) =>
       notes.push({ at, note, velocity, durationTicks, articulation }),
@@ -88,6 +89,7 @@ describe('BassInstrument', () => {
     const ctx: ScheduleContext = {
       bpm: 120,
       timeSignature: parseTimeSignature('4/4'),
+      swingRatio: 0.50,
       scheduleClick: () => {},
       // scheduleNote intentionally absent
     };

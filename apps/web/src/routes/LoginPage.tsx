@@ -12,7 +12,7 @@ import { useState } from 'react';
 
 const IS_DEV = import.meta.env.DEV;
 
-export function LoginPage() {
+export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const returnTo = (location.state as { returnTo?: string } | null)?.returnTo ?? '/';

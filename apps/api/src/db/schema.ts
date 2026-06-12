@@ -56,6 +56,7 @@ export const userSettings = sqliteTable('user_settings', {
   drumsHihatEnabled: integer('drums_hihat_enabled', { mode: 'boolean' }).notNull().default(true),
   drumsHihatVolume: real('drums_hihat_volume').notNull().default(0.55),
   drumsRidePattern: text('drums_ride_pattern').notNull().default('swingRide'),
+  swingRatio: real('swing_ratio').notNull().default(0.50),
   createdAt: integer('created_at').notNull(),
   updatedAt: integer('updated_at').notNull(),
 });

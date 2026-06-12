@@ -40,6 +40,7 @@ function makeCtx(sig = parseTimeSignature('4/4')): {
   const ctx: ScheduleContext = {
     bpm: 120,
     timeSignature: sig,
+    swingRatio: 0.50,
     scheduleClick: () => {},
     scheduleChord: (at, notes, velocity, durationTicks) =>
       chords.push({ at, notes: [...notes], velocity, durationTicks }),
@@ -233,6 +234,7 @@ describe('RhodesInstrument — null chord and missing callback', () => {
     const ctx: ScheduleContext = {
       bpm: 120,
       timeSignature: parseTimeSignature('4/4'),
+      swingRatio: 0.50,
       scheduleClick: () => {},
       // scheduleChord intentionally absent
     };

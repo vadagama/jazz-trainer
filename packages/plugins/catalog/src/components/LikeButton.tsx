@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Heart } from 'lucide-react';
-import { useAuth } from '@/queries/useAuth';
-import { useLikes } from '@/queries/useLikes';
-import { Button } from '@/components/ui/button';
+import { useAuth } from '@jazz/plugin-sdk';
+import { useLikes } from '../queries/useLikes';
+import { Button } from '@jazz/ui';
 
 interface Props {
   gridId: string;
@@ -53,6 +53,7 @@ export function LikeButton({ gridId, likeCount, likedByMe }: Props) {
       size="sm"
       className={`gap-1.5 ${localLiked ? 'hover:bg-red-50 dark:hover:bg-red-950/30' : ''}`}
       onClick={handleToggle}
+      disabled={like.isPending || unlike.isPending}
       aria-label={localLiked ? 'Убрать лайк' : 'Поставить лайк'}
     >
       <Heart className={`size-4 ${localLiked ? 'fill-red-500 text-red-500' : 'text-muted-foreground'}`} />

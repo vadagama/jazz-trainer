@@ -13,9 +13,10 @@
   },
   "dependencies": {
     "@jazz/music-core": "*",
-    "@jazz/plugin-core-editor": "*",
     "@jazz/plugin-sdk": "*",
     "@jazz/shared": "*",
+    "@jazz/ui": "*",
+    "@tanstack/react-query": "^5.62.7",
     "lucide-react": "^0.468.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

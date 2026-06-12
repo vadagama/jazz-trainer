@@ -1,15 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
-import { Plus, Infinity, Pencil, Trash2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Plus, Infinity as InfinityIcon, Pencil, Trash2 } from 'lucide-react';
+import { cn } from './utils';
 import type { Bar, Section, RepeatEnd, TimeSignatureString } from '@jazz/shared';
 import { TIME_SIGNATURES } from '@jazz/shared';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-
-// ── Time signature fraction display ─────────────────────────────────────────
+} from './dropdown-menu';
 
 function TimeSigDisplay({
   ts,
@@ -65,8 +63,6 @@ function TimeSigDisplay({
   );
 }
 
-// ── Section name inline editor ───────────────────────────────────────────────
-
 function SectionNameEditor({
   name,
   onChange,
@@ -117,8 +113,6 @@ function SectionNameEditor({
     </div>
   );
 }
-
-// ── Repeat end dropdown ──────────────────────────────────────────────────────
 
 const REPEAT_COUNTS = [2, 3, 4, 8] as const;
 
@@ -190,7 +184,7 @@ function RepeatEndDropdown({
                 : 'bg-secondary text-secondary-foreground hover:bg-accent',
             )}
           >
-            <Infinity className="size-3" />
+            <InfinityIcon className="size-3" />
           </button>
           {repeatEnd && (
             <button
@@ -205,8 +199,6 @@ function RepeatEndDropdown({
     </DropdownMenu>
   );
 }
-
-// ── Bar card ─────────────────────────────────────────────────────────────────
 
 function BarCard({
   bar,
@@ -271,7 +263,7 @@ function BarCard({
           <span className="text-sm text-muted-foreground/30">—</span>
         ) : (
           bar.chords.map((slot, i) => (
-            <div key={i} className="text-center">
+            <div key={slot.id ?? `${bar.id}-chord-${i}`} className="text-center">
               <span
                 className={cn(
                   'block font-bold leading-none tracking-tight text-foreground',
@@ -292,8 +284,6 @@ function BarCard({
     </div>
   );
 }
-
-// ── Section view ──────────────────────────────────────────────────────────────
 
 function colsFromTimeSignature(ts: TimeSignatureString): number {
   if (ts === '6/8') return 3;
@@ -349,7 +339,6 @@ function SectionView({
 
   return (
     <div className="flex flex-col gap-2">
-      {/* Section header */}
       <div className="flex items-center gap-2 pl-12">
         {readonly
           ? <span className="text-sm font-semibold text-foreground select-none">{section.name}</span>
@@ -367,7 +356,6 @@ function SectionView({
         )}
       </div>
 
-      {/* Bars grid */}
       {section.bars.length === 0 ? (
         <div
           onClick={(e) => { e.stopPropagation(); onAddBar(); }}
@@ -412,7 +400,6 @@ function SectionView({
         </div>
       )}
 
-      {/* "+ Такт" below — shown when last row is full */}
       {!readonly && lastRowFull && (
         <button
           onClick={(e) => { e.stopPropagation(); onAddBar(); }}
@@ -424,8 +411,6 @@ function SectionView({
     </div>
   );
 }
-
-// ── HarmonyGrid ───────────────────────────────────────────────────────────────
 
 interface HarmonyGridProps {
   sections: Section[];

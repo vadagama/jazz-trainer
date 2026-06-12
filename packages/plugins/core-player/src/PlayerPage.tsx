@@ -1,16 +1,15 @@
 import { useState, useMemo } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { Loader2, AlertCircle } from 'lucide-react';
 import type { Key, Section } from '@jazz/shared';
 import { transposeSections } from '@jazz/music-core';
-import { usePublicGrid } from '@/queries/usePublicGrids';
-import { useEffectiveSettings } from '@/queries/useEffectiveSettings';
-import { usePlaybackStore } from '@/stores/usePlaybackStore';
-import { useTransport } from '@/engine/useTransport';
-import { HarmonyGrid } from '@jazz/plugin-core-editor';
-import { PlayerToolbar } from '@jazz/plugin-core-editor';
-import { Header } from '@/components/layout/Header';
-import { Breadcrumbs } from '@/components/layout/Breadcrumbs';
+import { usePublicGrid } from './queries/usePublicGrids';
+import {
+  useEffectiveSettings,
+  usePlaybackStore,
+  usePluginTransport,
+} from '@jazz/plugin-sdk';
+import { HarmonyGrid, PlayerToolbar } from '@jazz/ui';
 
 export function PlayerPage() {
   const { id } = useParams<{ id: string }>();
@@ -53,7 +52,7 @@ export function PlayerPage() {
       ? sections.reduce((s, sec) => s + sec.bars.length, 0)
       : (grid?.barsCount ?? 0);
 
-  const transport = useTransport({
+  const transport = usePluginTransport({
     settings: { ...settings, bpm: effectiveBpm, volume: effectiveVolume },
     timeSignature: effectiveTimeSig,
     totalBars,
@@ -82,8 +81,16 @@ export function PlayerPage() {
 
   return (
     <div className="flex h-screen flex-col bg-background text-foreground">
-      <Header />
-      <Breadcrumbs items={[{ label: 'Каталог', href: '/' }, { label: grid.name }]} />
+      {/* Player navigation bar */}
+      <div className="flex shrink-0 items-center border-b border-border bg-card/80 px-4 py-2">
+        <nav className="flex items-center gap-1.5 text-sm">
+          <Link to="/" className="text-muted-foreground transition-colors hover:text-foreground">
+            Каталог
+          </Link>
+          <span className="text-muted-foreground/50">/</span>
+          <span className="truncate font-medium text-foreground">{grid.name}</span>
+        </nav>
+      </div>
 
       {/* Grid (read-only) */}
       <main className="flex-1 overflow-y-auto py-6 pb-24">
