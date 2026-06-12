@@ -17,6 +17,11 @@ export default defineConfig({
       '@jazz/plugin-core-editor': r('../../packages/plugins/core-editor/src/index.ts'),
       '@jazz/plugin-core-player': r('../../packages/plugins/core-player/src/index.ts'),
       '@jazz/plugin-catalog': r('../../packages/plugins/catalog/src/index.ts'),
+      '@jazz/plugin-admin-users': r('../../packages/plugins/admin-users/src/index.ts'),
+      '@jazz/plugin-admin-content': r('../../packages/plugins/admin-content/src/index.ts'),
+      '@jazz/plugin-admin-flags': r('../../packages/plugins/admin-flags/src/index.ts'),
+      '@jazz/plugin-admin-assets': r('../../packages/plugins/admin-assets/src/index.ts'),
+      '@jazz/plugin-admin-diagnostics': r('../../packages/plugins/admin-diagnostics/src/index.ts'),
     },
   },
   server: {

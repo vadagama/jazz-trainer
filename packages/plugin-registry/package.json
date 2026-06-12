@@ -12,6 +12,11 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@jazz/plugin-admin-assets": "*",
+    "@jazz/plugin-admin-content": "*",
+    "@jazz/plugin-admin-diagnostics": "*",
+    "@jazz/plugin-admin-flags": "*",
+    "@jazz/plugin-admin-users": "*",
     "@jazz/plugin-catalog": "*",
     "@jazz/plugin-core-editor": "*",
     "@jazz/plugin-core-player": "*",

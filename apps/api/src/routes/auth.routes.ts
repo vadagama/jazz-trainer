@@ -10,6 +10,7 @@ import {
   toUserDTO,
 } from '../services/auth.service.js';
 import { requireAuth } from '../plugins/auth.plugin.js';
+import { resolvePermissions, resolveFlags } from '../services/rbac.service.js';
 
 const COOKIE_OPTS = { httpOnly: true, sameSite: 'lax', path: '/' } as const;
 
@@ -66,10 +67,20 @@ export async function authRoutes(app: FastifyInstance, opts: AuthRoutesOptions):
   const exchangeCode = opts.exchangeGoogleCode ?? realGoogleExchange;
 
   // ── GET /api/auth/me ─────────────────────────────────────────────────────
-  // Public: returns { user } or { user: null } — never 401.
-  app.get('/api/auth/me', async (request) => ({
-    user: request.user ? toUserDTO(request.user) : null,
-  }));
+  // Public: returns { user, permissions, flags } or { user: null } — never 401.
+  app.get('/api/auth/me', async (request) => {
+    const user = request.user;
+    if (!user) {
+      return { user: null, permissions: [], flags: {} };
+    }
+    const permSet = resolvePermissions(db, user.id);
+    const flags = resolveFlags(db, user.role, user.id);
+    return {
+      user: toUserDTO(user),
+      permissions: [...permSet],
+      flags,
+    };
+  });
 
   // ── POST /api/auth/logout ────────────────────────────────────────────────
   app.post('/api/auth/logout', async (request, reply) => {
@@ -86,7 +97,11 @@ export async function authRoutes(app: FastifyInstance, opts: AuthRoutesOptions):
       const parsed = DevLoginSchema.safeParse(request.body);
       if (!parsed.success) {
         return reply.status(400).send({
-          error: { code: 'VALIDATION_ERROR', message: 'Invalid body', details: parsed.error.errors },
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Invalid body',
+            details: parsed.error.errors,
+          },
         });
       }
       const { email, name } = parsed.data;
@@ -101,7 +116,9 @@ export async function authRoutes(app: FastifyInstance, opts: AuthRoutesOptions):
         });
       } catch (err) {
         if (isSqliteUniqueError(err)) {
-          return reply.status(409).send({ error: { code: 'CONFLICT', message: 'Email already in use' } });
+          return reply
+            .status(409)
+            .send({ error: { code: 'CONFLICT', message: 'Email already in use' } });
         }
         throw err;
       }

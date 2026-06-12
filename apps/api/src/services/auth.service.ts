@@ -12,7 +12,9 @@ export function toUserDTO(u: UserRecord): UserDTO {
     email: u.email,
     name: u.name,
     avatarUrl: u.avatarUrl ?? null,
-    provider: u.provider as 'google' | 'dev',
+    provider: u.provider as 'google' | 'dev' | 'system',
+    role: u.role,
+    status: u.status as 'active' | 'disabled',
     createdAt: u.createdAt,
   };
 }
@@ -47,7 +49,7 @@ export function toSettingsDTO(s: UserSettingsRecord): UserSettingsDTO {
     drumsHihatEnabled: s.drumsHihatEnabled,
     drumsHihatVolume: clampVolume(s.drumsHihatVolume),
     drumsRidePattern: s.drumsRidePattern as UserSettingsDTO['drumsRidePattern'],
-    swingRatio: Math.max(0.50, Math.min(0.75, s.swingRatio)),
+    swingRatio: Math.max(0.5, Math.min(0.75, s.swingRatio)),
   };
 }
 
@@ -87,13 +89,15 @@ export function upsertUser(db: DrizzleDb, input: UpsertUserInput): UserRecord {
   }
 
   const id = crypto.randomUUID();
-  const newUser = {
+  const newUser: UserRecord = {
     id,
     email: input.email,
     name: input.name,
     avatarUrl: input.avatarUrl ?? null,
     provider: input.provider,
     providerId: input.providerId,
+    role: 'user',
+    status: 'active',
     createdAt: now,
     updatedAt: now,
   };

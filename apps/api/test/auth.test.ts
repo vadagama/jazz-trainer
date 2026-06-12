@@ -91,7 +91,7 @@ describe('anonymous access', () => {
   it('GET /api/auth/me returns { user: null } with 200 (not 401)', async () => {
     const res = await supertest(app.server).get('/api/auth/me');
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ user: null });
+    expect(res.body).toMatchObject({ user: null });
   });
 
   it('require-auth route returns 401 for anonymous', async () => {
@@ -116,9 +116,7 @@ describe('dev-login not available outside AUTH_DEV_MODE', () => {
       db: createTestDb(),
     });
     await app.ready();
-    const res = await supertest(app.server)
-      .post('/api/auth/dev-login')
-      .send({ email: 'x@x.com' });
+    const res = await supertest(app.server).post('/api/auth/dev-login').send({ email: 'x@x.com' });
     expect(res.status).toBe(404);
     await app.close();
   });
