@@ -1,7 +1,7 @@
-import { Link, useNavigate } from 'react-router-dom';
-import { Music4, LogOut, Settings, User } from 'lucide-react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Music4, LogOut, Settings, User, Sun, Moon } from 'lucide-react';
 import { useAuth, useLogout } from '@/queries/useAuth';
-import { Button } from '@/components/ui/button';
+import { useTheme } from '@/hooks/useTheme';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import {
   DropdownMenu,
@@ -11,16 +11,13 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 
-interface HeaderProps {
-  editorMode?: boolean;
-  onOpenDsl?: () => void;
-  onOpenGenerator?: () => void;
-}
-
-export function Header({ editorMode, onOpenDsl, onOpenGenerator }: HeaderProps) {
+export function Header() {
   const { user } = useAuth();
   const logout = useLogout();
   const navigate = useNavigate();
+  const { theme, toggle } = useTheme();
+  const location = useLocation();
+
   const initials = user?.name
     ? user.name
         .split(' ')
@@ -31,74 +28,96 @@ export function Header({ editorMode, onOpenDsl, onOpenGenerator }: HeaderProps) 
     : '?';
 
   return (
-    <header className="sticky top-0 z-40 shrink-0 border-b border-border bg-card/80 backdrop-blur">
-      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
-        <Link to="/" className="flex items-center gap-2 font-semibold">
-          <Music4 className="size-5 text-primary" />
-          Jazz Trainer
-        </Link>
+    <header className="flex h-24 shrink-0 items-center justify-between border-b border-border bg-card px-5">
+      {/* Logo + name */}
+      <Link to="/" className="flex items-center gap-3 text-foreground hover:opacity-80 transition-opacity">
+        <Music4 className="size-8 shrink-0 text-primary" />
+        <span className="text-2xl font-semibold tracking-tight">Jazz Trainer</span>
+      </Link>
 
-        <div className="flex items-center gap-4">
-          <nav className="flex items-center gap-4">
-            <Link to="/" className="text-sm text-muted-foreground hover:text-foreground">
-              Каталог
-            </Link>
-            {user && (
-              <Link to="/my" className="text-sm text-muted-foreground hover:text-foreground">
-                Мои сетки
-              </Link>
-            )}
-            {editorMode && (
-              <>
-                <button
-                  className="text-sm text-muted-foreground hover:text-foreground"
-                  onClick={onOpenDsl}
+      {/* Right: nav + theme toggle + profile */}
+      <div className="flex items-center gap-1">
+        <nav className="flex items-center gap-1 mr-2">
+          {[
+            { to: '/', label: 'Каталог', auth: false },
+            { to: '/my', label: 'Мои сетки', auth: true },
+          ]
+            .filter(({ auth }) => !auth || !!user)
+            .map(({ to, label }) => {
+              const isActive = location.pathname === to;
+              return (
+                <Link
+                  key={to}
+                  to={to}
+                  className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                    isActive
+                      ? 'bg-accent text-foreground'
+                      : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                  }`}
                 >
-                  DSL
-                </button>
-                <button
-                  className="text-sm text-muted-foreground hover:text-foreground"
-                  onClick={onOpenGenerator}
-                >
-                  Генератор
-                </button>
-              </>
-            )}
-          </nav>
-          {user ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                  <Avatar>
-                    {user.avatarUrl && <AvatarImage src={user.avatarUrl} alt={user.name} />}
-                    <AvatarFallback>{initials}</AvatarFallback>
-                  </Avatar>
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <div className="px-2 py-1.5 text-xs text-muted-foreground">{user.email}</div>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => navigate('/profile')}>
-                  <User className="size-4" /> Профиль
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate('/settings')}>
-                  <Settings className="size-4" /> Настройки
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={() => logout.mutate()}
-                  className="text-destructive focus:text-destructive"
-                >
-                  <LogOut className="size-4" /> Выйти
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : (
-            <Button asChild size="sm">
-              <Link to="/login">Войти</Link>
-            </Button>
-          )}
-        </div>
+                  {label}
+                </Link>
+              );
+            })}
+        </nav>
+        <button
+          onClick={toggle}
+          className="flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          aria-label="Сменить тему"
+        >
+          {theme === 'dark' ? <Sun className="size-4" /> : <Moon className="size-4" />}
+        </button>
+
+        {user ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                className="flex size-8 items-center justify-center rounded-md transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                aria-label="Меню профиля"
+              >
+                <Avatar className="size-6">
+                  {user.avatarUrl && <AvatarImage src={user.avatarUrl} alt={user.name} />}
+                  <AvatarFallback className="text-[10px]">{initials}</AvatarFallback>
+                </Avatar>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-44">
+              <div className="px-2 py-1.5">
+                <p className="truncate text-sm font-medium leading-none">
+                  {user.name || user.email}
+                </p>
+                {user.name && (
+                  <p className="mt-0.5 truncate text-xs text-muted-foreground">{user.email}</p>
+                )}
+              </div>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => navigate('/profile')}>
+                <User className="mr-2 size-4" />
+                Профиль
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate('/settings')}>
+                <Settings className="mr-2 size-4" />
+                Настройки
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => logout.mutate()}
+                className="text-destructive focus:text-destructive"
+              >
+                <LogOut className="mr-2 size-4" />
+                Выйти
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : (
+          <Link
+            to="/login"
+            className="flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            aria-label="Войти"
+          >
+            <User className="size-4" />
+          </Link>
+        )}
       </div>
     </header>
   );

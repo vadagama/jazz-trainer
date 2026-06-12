@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Loader2, AlertCircle, Pencil, Save, Code2, Wand2 } from 'lucide-react';
+import { Loader2, AlertCircle, Pencil, Save } from 'lucide-react';
 import type { TimeSignatureString, Key } from '@jazz/shared';
 import { transposeSections } from '@jazz/music-core';
 import { useGrid, useUpdateGrid } from './queries/useGrid';
@@ -12,8 +12,6 @@ import {
 } from '@jazz/plugin-sdk';
 import { HarmonyGrid, PlayerToolbar, Button, cn } from '@jazz/ui';
 import { ChordPalette } from './components/ChordPalette';
-import { DslModal } from './components/DslModal';
-import { GeneratorModal } from './components/GeneratorModal';
 
 // ── Inline composition title editor ──────────────────────────────────────────
 
@@ -109,8 +107,6 @@ export function EditorPage() {
   const content = localContent ?? grid?.content ?? { version: 1 as const, bars: [], sections: [] };
   const sections = content.sections ?? [];
 
-  const [dslOpen, setDslOpen] = useState(false);
-  const [generatorOpen, setGeneratorOpen] = useState(false);
   const [playerKey, setPlayerKey] = useState<Key>(grid?.key ?? 'C');
   const [localBpm, setLocalBpm] = useState<number | null>(null);
   const [localVolume, setLocalVolume] = useState<number | null>(null);
@@ -234,10 +230,31 @@ export function EditorPage() {
   });
 
   const playingBarIndex = !countInActive && status !== 'idle' ? currentBar : undefined;
+  const allBars = useMemo(() => sections.flatMap((s) => s.bars), [sections]);
   const selectedBarFlatIndex =
-    selectedBarId != null
-      ? sections.flatMap((s) => s.bars).findIndex((b) => b.id === selectedBarId)
-      : undefined;
+    selectedBarId != null ? allBars.findIndex((b) => b.id === selectedBarId) : undefined;
+
+  const handlePrevBar = useCallback(() => {
+    const effectiveIndex =
+      selectedBarFlatIndex !== undefined && selectedBarFlatIndex >= 0
+        ? selectedBarFlatIndex
+        : currentBar;
+    const newIndex = Math.max(0, effectiveIndex - 1);
+    const bar = allBars[newIndex];
+    if (bar) selectBar(bar.id);
+    transport.prevBar();
+  }, [allBars, selectedBarFlatIndex, currentBar, selectBar, transport]);
+
+  const handleNextBar = useCallback(() => {
+    const effectiveIndex =
+      selectedBarFlatIndex !== undefined && selectedBarFlatIndex >= 0
+        ? selectedBarFlatIndex
+        : currentBar;
+    const newIndex = Math.min(allBars.length - 1, effectiveIndex + 1);
+    const bar = allBars[newIndex];
+    if (bar) selectBar(bar.id);
+    transport.nextBar();
+  }, [allBars, selectedBarFlatIndex, currentBar, selectBar, transport]);
 
   if (isLoading) {
     return (
@@ -280,34 +297,13 @@ export function EditorPage() {
   }
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-background text-foreground">
-      {/* Editor action bar — replaces app Header for this full-screen route */}
-      <div className="flex shrink-0 items-center justify-between border-b border-border bg-card/80 px-4 py-2">
-        <nav className="flex items-center gap-1.5 text-sm">
-          <Link to="/my" className="text-muted-foreground transition-colors hover:text-foreground">
-            Мои сетки
-          </Link>
-          <span className="text-muted-foreground/50">/</span>
-          <span className="truncate font-medium text-foreground">{grid.name}</span>
-        </nav>
-        <div className="flex items-center gap-1">
-          <Button variant="ghost" size="sm" className="gap-1.5" onClick={() => setDslOpen(true)}>
-            <Code2 className="size-3.5" />
-            DSL
-          </Button>
-          <Button variant="ghost" size="sm" className="gap-1.5" onClick={() => setGeneratorOpen(true)}>
-            <Wand2 className="size-3.5" />
-            Генератор
-          </Button>
-        </div>
-      </div>
-
+    <div className="flex h-full flex-col overflow-hidden bg-background text-foreground">
       <div className="flex flex-1 overflow-hidden">
         {/* Left: Chord Palette — slides in when a bar is selected */}
         <div
           className={cn(
-            'overflow-hidden transition-all duration-300 ease-in-out',
-            selectedBarId ? 'w-60' : 'w-0',
+            'min-w-0 overflow-hidden transition-all duration-300 ease-in-out',
+            selectedBarId && status === 'idle' && !countInActive ? 'w-60' : 'w-0',
           )}
         >
           <ChordPalette
@@ -320,14 +316,50 @@ export function EditorPage() {
 
         {/* Center: sections + title */}
         <main
-          className="flex-1 overflow-y-auto pb-24"
+          className="flex-1 overflow-y-auto"
           data-testid="editor-page"
           onClick={() => selectBar(null)}
         >
-          <div className="py-6">
+          {/* Breadcrumbs */}
+          <nav className="flex items-center gap-1.5 px-6 py-2 text-sm">
+            <Link to="/my" className="text-muted-foreground transition-colors hover:text-foreground">
+              Мои сетки
+            </Link>
+            <span className="text-muted-foreground/40">/</span>
+            <span className="truncate font-medium text-foreground">{grid.name}</span>
+          </nav>
+
+          <div className="py-4">
             <div className="mx-auto max-w-6xl px-4">
+              {/* CURRENTLY EDITING header */}
               <div className="mb-6">
-                <CompositionTitle name={grid.name} onSave={handleSaveTitle} />
+                <div className="mb-2 flex items-center gap-1.5">
+                  <Pencil className="size-3.5 text-primary" />
+                  <span className="text-xs font-semibold uppercase tracking-widest text-primary">
+                    Currently Editing
+                  </span>
+                </div>
+                <div className="flex items-start justify-between gap-4">
+                  <CompositionTitle name={grid.name} onSave={handleSaveTitle} />
+                  <div className="flex shrink-0 items-center gap-2">
+                    {(isDirty || updateMutation.isPending) && (
+                      <Button
+                        size="sm"
+                        className="gap-1.5"
+                        onClick={handleSave}
+                        disabled={updateMutation.isPending}
+                        data-testid="save-button"
+                      >
+                        {updateMutation.isPending ? (
+                          <Loader2 className="size-3.5 animate-spin" />
+                        ) : (
+                          <Save className="size-3.5" />
+                        )}
+                        Save
+                      </Button>
+                    )}
+                  </div>
+                </div>
               </div>
 
               <HarmonyGrid
@@ -335,7 +367,14 @@ export function EditorPage() {
                 selectedBarId={selectedBarId}
                 playingBarIndex={playingBarIndex}
                 countingInBarIndex={countingInBarIndex}
-                onSelectBar={(barId) => selectBar(selectedBarId === barId ? null : barId)}
+                onSelectBar={(barId) => {
+                  const newBarId = selectedBarId === barId ? null : barId;
+                  selectBar(newBarId);
+                  if (newBarId !== null) {
+                    const idx = allBars.findIndex((b) => b.id === newBarId);
+                    if (idx >= 0) transport.selectBar(idx);
+                  }
+                }}
                 onRenameSection={renameSection}
                 onSetSectionTimeSignature={setSectionTimeSignature}
                 onAddBarToSection={addBarToSection}
@@ -345,24 +384,6 @@ export function EditorPage() {
                 onAddSection={() => addSection(defaultTimeSignature)}
               />
 
-              {isDirty && (
-                <div className="mt-4 flex justify-end">
-                  <Button
-                    size="sm"
-                    className="gap-1.5"
-                    onClick={handleSave}
-                    disabled={updateMutation.isPending}
-                    data-testid="save-button"
-                  >
-                    {updateMutation.isPending ? (
-                      <Loader2 className="size-3.5 animate-spin" />
-                    ) : (
-                      <Save className="size-3.5" />
-                    )}
-                    Сохранить
-                  </Button>
-                </div>
-              )}
             </div>
           </div>
         </main>
@@ -384,26 +405,15 @@ export function EditorPage() {
         onPlay={transport.play}
         onPause={transport.pause}
         onStop={transport.stop}
-        onPrevBar={transport.prevBar}
-        onNextBar={transport.nextBar}
+        onPrevBar={handlePrevBar}
+        onNextBar={handleNextBar}
         onBpmChange={setLocalBpm}
         onKeyChange={setPlayerKey}
         volume={effectiveVolume}
         onVolumeChange={setLocalVolume}
       />
 
-      <DslModal
-        open={dslOpen}
-        content={content}
-        onImport={(imported) => loadExternalContent(imported)}
-        onClose={() => setDslOpen(false)}
-      />
 
-      <GeneratorModal
-        open={generatorOpen}
-        onApply={(generated) => loadExternalContent(generated)}
-        onClose={() => setGeneratorOpen(false)}
-      />
     </div>
   );
 }

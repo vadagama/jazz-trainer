@@ -28,6 +28,18 @@ interface PlayerToolbarProps {
   onVolumeChange?: (volume: number) => void;
 }
 
+function ToolbarLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="block text-center text-[9px] font-semibold uppercase tracking-widest text-muted-foreground">
+      {children}
+    </span>
+  );
+}
+
+function Divider() {
+  return <div className="mx-1 h-8 w-px shrink-0 bg-border" />;
+}
+
 export function PlayerToolbar({
   status = 'idle',
   currentBeat = 0,
@@ -49,15 +61,12 @@ export function PlayerToolbar({
 }: PlayerToolbarProps) {
   const volumePct = Math.round(volumeProp * 100);
   const isMuted = volumeProp === 0;
-
   const isPlaying = status === 'playing';
   const isIdle = status === 'idle';
 
   const [bpmInput, setBpmInput] = useState(String(bpm));
 
-  useEffect(() => {
-    setBpmInput(String(bpm));
-  }, [bpm]);
+  useEffect(() => setBpmInput(String(bpm)), [bpm]);
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -67,192 +76,163 @@ export function PlayerToolbar({
         target.tagName === 'INPUT' ||
         target.tagName === 'TEXTAREA' ||
         target.tagName === 'SELECT' ||
-        (target as HTMLElement).isContentEditable
-      ) return;
+        target.isContentEditable ||
+        target.getAttribute('role') === 'combobox' ||
+        target.getAttribute('role') === 'option' ||
+        target.closest('[role="listbox"]')
+      )
+        return;
       e.preventDefault();
-      if (isPlaying) {
-        onStop?.();
-      } else {
-        onPlay?.();
-      }
+      isPlaying ? onStop?.() : onPlay?.();
     }
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isPlaying, onPlay, onStop]);
 
-  function toggleMute() {
-    onVolumeChange?.(isMuted ? 0.8 : 0);
-  }
-
   function handleBpmChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const raw = e.target.value.replace(/\D/g, '');
-    setBpmInput(raw);
+    setBpmInput(e.target.value.replace(/\D/g, ''));
   }
 
   function commitBpm() {
     const val = parseInt(bpmInput, 10);
-    if (!isNaN(val) && val >= 20 && val <= 400) {
-      onBpmChange?.(val);
-    } else {
-      setBpmInput(String(bpm));
-    }
-  }
-
-  function handleBpmKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+    if (!isNaN(val) && val >= 20 && val <= 400) onBpmChange?.(val);
+    else setBpmInput(String(bpm));
   }
 
   function adjustBpm(delta: number) {
-    const next = Math.min(400, Math.max(20, bpm + delta));
-    onBpmChange?.(next);
+    onBpmChange?.(Math.min(400, Math.max(20, bpm + delta)));
   }
 
+  const displayBar = isIdle && selectedBarIndex != null ? selectedBarIndex : currentBar;
+
   return (
-    <footer className="fixed bottom-0 left-0 right-0 z-50 flex h-24 items-center justify-center gap-4 border-t border-border bg-card px-4 flex-wrap">
-      <Button
-        variant="ghost"
-        size="icon"
-        className="size-10"
-        onClick={onPrevBar}
-        disabled={isPlaying}
-        aria-label="Предыдущий такт"
-        title="Предыдущий такт"
-      >
-        <SkipBack className="size-5" />
-      </Button>
+    <footer className="flex h-24 shrink-0 items-center gap-3 border-t border-border bg-card px-4">
 
-      <div className="flex items-center gap-2">
-        <Button
-          variant="ghost"
-          size="icon"
-          className={cn('size-10', isPlaying && 'text-primary')}
-          onClick={onPlay}
-          disabled={isPlaying}
-          aria-label="Воспроизвести"
-          title="Воспроизвести"
-        >
-          <Play className="size-5" />
-        </Button>
+      {/* Left: BPM / SIG / KEY labeled blocks */}
+      <div className="flex items-stretch gap-1.5">
+        {/* BPM */}
+        <div className="flex items-center gap-1 rounded-md bg-secondary px-2 py-1">
+          <button
+            onClick={() => adjustBpm(-5)}
+            className="flex size-7 items-center justify-center rounded text-base font-medium text-muted-foreground hover:text-foreground active:scale-95"
+            aria-label="BPM -5"
+          >
+            −
+          </button>
+          <div className="flex min-w-[56px] flex-col items-center">
+            <ToolbarLabel>BPM</ToolbarLabel>
+            <input
+              type="text"
+              inputMode="numeric"
+              value={bpmInput}
+              onChange={handleBpmChange}
+              onBlur={commitBpm}
+              onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
+              className="w-12 bg-transparent text-center text-sm font-semibold tabular-nums text-foreground focus:outline-none"
+              aria-label="BPM"
+            />
+          </div>
+          <button
+            onClick={() => adjustBpm(5)}
+            className="flex size-7 items-center justify-center rounded text-base font-medium text-muted-foreground hover:text-foreground active:scale-95"
+            aria-label="BPM +5"
+          >
+            +
+          </button>
+        </div>
 
-        <Button
-          variant="ghost"
-          size="icon"
-          className="size-10"
-          onClick={onStop}
-          disabled={isIdle}
-          aria-label="Стоп"
-          title="Стоп"
-        >
-          <Square className="size-5" />
-        </Button>
+        {/* KEY */}
+        <div className="flex flex-col items-center justify-center rounded-md bg-secondary px-2 py-1">
+          <ToolbarLabel>KEY</ToolbarLabel>
+          <Select value={currentKey} onValueChange={(v) => onKeyChange?.(v as Key)}>
+            <SelectTrigger
+              className="h-5 min-w-[64px] border-none bg-transparent p-0 text-xs font-semibold text-foreground shadow-none focus:ring-0"
+              aria-label="Тональность"
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {KEYS.map((k) => (
+                <SelectItem key={k} value={k}>
+                  {k}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
-      <Button
-        variant="ghost"
-        size="icon"
-        className="size-10"
-        onClick={onNextBar}
-        disabled={isPlaying}
-        aria-label="Следующий такт"
-        title="Следующий такт"
-      >
-        <SkipForward className="size-5" />
-      </Button>
+      <Divider />
 
-      <div className="h-6 w-px bg-border" />
+      {/* Center: Transport */}
+      <div className="flex flex-1 items-center justify-center gap-1">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-11"
+          onClick={onPrevBar}
+          disabled={isPlaying}
+          aria-label="Предыдущий такт"
+        >
+          <SkipBack className="size-6" />
+        </Button>
 
-      <div className="flex items-center gap-2">
-        <div className="flex items-center gap-1.5">
+        <Button
+          size="icon"
+          className={cn(
+            'size-14 rounded-full',
+            isPlaying ? 'bg-primary text-primary-foreground hover:bg-primary/90' : '',
+          )}
+          variant={isPlaying ? 'default' : 'ghost'}
+          onClick={isPlaying ? onStop : onPlay}
+          aria-label={isPlaying ? 'Стоп' : 'Воспроизвести'}
+        >
+          {isPlaying ? <Square className="size-6" /> : <Play className="size-6" />}
+        </Button>
+
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-11"
+          onClick={onNextBar}
+          disabled={isPlaying}
+          aria-label="Следующий такт"
+        >
+          <SkipForward className="size-6" />
+        </Button>
+
+        {/* Beat dots — no background, inline with transport */}
+        <div className="ml-2 flex items-center gap-1.5">
           {Array.from({ length: totalBeats }, (_, i) => (
             <div
               key={i}
               className={cn(
-                'size-3 rounded-full transition-colors',
+                'size-2 rounded-full transition-colors duration-75',
                 isPlaying && i === currentBeat
                   ? 'bg-primary'
-                  : 'bg-border',
+                  : 'bg-muted-foreground/35',
               )}
             />
           ))}
         </div>
-        {totalBars != null && (() => {
-          const displayBar = isIdle && selectedBarIndex != null ? selectedBarIndex : currentBar;
-          return displayBar != null ? (
-            <span className="text-sm tabular-nums text-muted-foreground">
-              <span className="inline-block w-[2ch] text-right">{displayBar + 1}</span>
-              /
-              <span className="inline-block w-[2ch] text-left">{totalBars}</span>
-            </span>
-          ) : null;
-        })()}
+
+        <span className="ml-2 text-sm tabular-nums text-muted-foreground">
+          {currentBeat + 1} / {totalBeats}
+        </span>
       </div>
 
-      <div className="h-6 w-px bg-border" />
+      <Divider />
 
-      <div className="flex items-center gap-1.5">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-8 w-9 px-0 text-sm"
-          onClick={() => adjustBpm(-5)}
-          aria-label="BPM -5"
-          title="BPM -5"
-        >
-          −5
-        </Button>
-        <input
-          type="text"
-          inputMode="numeric"
-          value={bpmInput}
-          onChange={handleBpmChange}
-          onBlur={commitBpm}
-          onKeyDown={handleBpmKeyDown}
-          className="h-9 w-20 rounded border border-border bg-background px-2 text-center text-sm tabular-nums focus:outline-none focus:ring-1 focus:ring-ring"
-          aria-label="BPM"
-          title="Темп (BPM)"
-        />
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-8 w-9 px-0 text-sm"
-          onClick={() => adjustBpm(5)}
-          aria-label="BPM +5"
-          title="BPM +5"
-        >
-          +5
-        </Button>
-      </div>
-
-      <div className="h-6 w-px bg-border" />
-
-      <div className="flex items-center gap-2">
-        <span className="text-sm text-muted-foreground">Тональность</span>
-        <Select value={currentKey} onValueChange={(v) => onKeyChange?.(v as Key)}>
-          <SelectTrigger className="h-9 w-24 text-sm" aria-label="Тональность">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {KEYS.map((k) => (
-              <SelectItem key={k} value={k}>
-                {k}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="h-6 w-px bg-border" />
-
+      {/* Right: Volume */}
       <div className="flex items-center gap-2">
         <Button
           variant="ghost"
           size="icon"
-          className="size-9 shrink-0"
-          onClick={toggleMute}
+          className="size-8 shrink-0"
+          onClick={() => onVolumeChange?.(isMuted ? 0.8 : 0)}
           aria-label={isMuted ? 'Включить звук' : 'Выключить звук'}
-          title={isMuted ? 'Включить звук' : 'Выключить звук'}
         >
-          {isMuted ? <VolumeX className="size-5" /> : <Volume2 className="size-5" />}
+          {isMuted ? <VolumeX className="size-4" /> : <Volume2 className="size-4" />}
         </Button>
         <Slider
           min={0}
@@ -260,10 +240,12 @@ export function PlayerToolbar({
           step={1}
           value={[volumePct]}
           onValueChange={(vals) => onVolumeChange?.((vals[0] ?? volumePct) / 100)}
-          className="w-32"
+          className="w-24"
           aria-label="Громкость"
         />
-        <span className="w-9 text-right text-sm tabular-nums text-muted-foreground">{volumePct}%</span>
+        <span className="w-8 text-right text-xs tabular-nums text-muted-foreground">
+          {volumePct}%
+        </span>
       </div>
     </footer>
   );

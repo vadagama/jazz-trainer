@@ -4,12 +4,14 @@ import { GridContainer } from './GridContainer';
 
 export function AppShell() {
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="flex h-screen flex-col overflow-hidden bg-background text-foreground">
       <Header />
-      <main className="py-6">
-        <GridContainer>
-          <Outlet />
-        </GridContainer>
+      <main className="flex-1 overflow-y-auto">
+        <div className="py-8">
+          <GridContainer>
+            <Outlet />
+          </GridContainer>
+        </div>
       </main>
     </div>
   );

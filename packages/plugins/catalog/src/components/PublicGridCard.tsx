@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
-import { Play, Music } from 'lucide-react';
+import { Play, Music2 } from 'lucide-react';
 import type { PublicGridSummaryDTO } from '@jazz/shared';
-import { Card, CardContent, CardFooter, Button, Badge } from '@jazz/ui';
+import { Button } from '@jazz/ui';
 import { LikeButton } from './LikeButton';
 import { CopyToMineButton } from './CopyToMineButton';
 
@@ -9,36 +9,40 @@ interface Props {
   grid: PublicGridSummaryDTO;
 }
 
+function GridTag({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="rounded-sm bg-secondary px-1.5 py-0.5 text-[11px] font-medium uppercase tracking-wide text-secondary-foreground">
+      {children}
+    </span>
+  );
+}
+
 export function PublicGridCard({ grid }: Props) {
   return (
-    <Card className="flex flex-col">
-      <CardContent className="flex-1 p-4">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <h3 className="truncate font-medium leading-tight">{grid.name}</h3>
-            <div className="mt-1 flex flex-wrap items-center gap-1.5">
-              <Badge variant="secondary">{grid.key}</Badge>
-              <Badge variant="outline">{grid.timeSignature}</Badge>
-              <span className="text-xs text-muted-foreground flex items-center gap-0.5">
-                <Music className="size-3" /> {grid.barsCount} тактов
-              </span>
-            </div>
-          </div>
+    <div className="group flex flex-col rounded-lg border border-border bg-card transition-colors hover:border-primary/40">
+      <div className="flex-1 p-5">
+        <h3 className="truncate font-semibold leading-snug">{grid.name}</h3>
+        <div className="mt-3 flex flex-wrap items-center gap-1.5">
+          <GridTag>{grid.key}</GridTag>
+          <GridTag>{grid.timeSignature}</GridTag>
+          <GridTag>
+            <Music2 className="mr-0.5 inline size-2.5" />
+            {grid.barsCount} тактов
+          </GridTag>
         </div>
-      </CardContent>
+      </div>
 
-      <CardFooter className="flex flex-wrap items-center justify-between gap-2 px-4 pb-4 pt-0">
+      <div className="flex items-center justify-between border-t border-border px-5 py-3">
         <LikeButton gridId={grid.id} likeCount={grid.likeCount} likedByMe={grid.likedByMe} />
-
         <div className="flex items-center gap-2">
           <CopyToMineButton gridId={grid.id} gridName={grid.name} />
           <Button asChild size="sm" className="gap-1.5">
             <Link to={`/play/${grid.id}`}>
-              <Play className="size-4" /> Играть
+              <Play className="size-3.5" /> Играть
             </Link>
           </Button>
         </div>
-      </CardFooter>
-    </Card>
+      </div>
+    </div>
   );
 }

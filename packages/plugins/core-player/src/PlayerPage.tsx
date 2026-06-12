@@ -80,20 +80,18 @@ export function PlayerPage() {
   }
 
   return (
-    <div className="flex h-screen flex-col bg-background text-foreground">
-      {/* Player navigation bar */}
-      <div className="flex shrink-0 items-center border-b border-border bg-card/80 px-4 py-2">
-        <nav className="flex items-center gap-1.5 text-sm">
-          <Link to="/" className="text-muted-foreground transition-colors hover:text-foreground">
-            Каталог
-          </Link>
-          <span className="text-muted-foreground/50">/</span>
-          <span className="truncate font-medium text-foreground">{grid.name}</span>
-        </nav>
-      </div>
+    <div className="flex h-full flex-col bg-background text-foreground">
+      {/* Breadcrumbs */}
+      <nav className="flex shrink-0 items-center gap-1.5 px-6 py-2 text-sm">
+        <Link to="/" className="text-muted-foreground transition-colors hover:text-foreground">
+          Каталог
+        </Link>
+        <span className="text-muted-foreground/40">/</span>
+        <span className="truncate font-medium text-foreground">{grid.name}</span>
+      </nav>
 
       {/* Grid (read-only) */}
-      <main className="flex-1 overflow-y-auto py-6 pb-24">
+      <main className="flex-1 overflow-y-auto py-4">
         <div className="mx-auto max-w-6xl px-4">
           <h1 className="mb-6 text-xl font-bold text-foreground">{grid.name}</h1>
           {sections.length > 0 && (

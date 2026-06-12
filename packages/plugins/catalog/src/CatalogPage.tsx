@@ -9,11 +9,7 @@ export function CatalogPage() {
   const [sort, setSort] = useState<'updated' | 'likes' | 'name'>('updated');
   const debouncedQuery = useDebounce(query, 300);
 
-  const {
-    data: grids,
-    isLoading,
-    isError,
-  } = usePublicGrids({
+  const { data: grids, isLoading, isError } = usePublicGrids({
     q: debouncedQuery || undefined,
     sort,
   });
@@ -22,11 +18,18 @@ export function CatalogPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Каталог сеток</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Публичные гармонические сетки для изучения и практики
-        </p>
+      <div className="flex items-end justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Каталог сеток</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Публичные гармонические сетки для изучения и практики
+          </p>
+        </div>
+        {grids && (
+          <span className="shrink-0 text-sm text-muted-foreground">
+            {grids.length} {grids.length === 1 ? 'сетка' : grids.length < 5 ? 'сетки' : 'сеток'}
+          </span>
+        )}
       </div>
 
       <SearchBar value={query} onChange={handleQueryChange} sort={sort} onSortChange={setSort} />
@@ -44,7 +47,7 @@ export function CatalogPage() {
       )}
 
       {grids && grids.length === 0 && (
-        <div className="py-12 text-center text-muted-foreground">
+        <div className="rounded-lg border border-dashed border-border py-16 text-center text-sm text-muted-foreground">
           {debouncedQuery
             ? `Ничего не найдено по запросу «${debouncedQuery}»`
             : 'Каталог пока пуст'}

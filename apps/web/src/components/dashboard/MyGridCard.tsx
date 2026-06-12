@@ -1,11 +1,9 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Trash2, Music, Pencil } from 'lucide-react';
+import { Trash2, Music2, Pencil, Globe } from 'lucide-react';
 import type { HarmonyGridSummaryDTO } from '@jazz/shared';
 import { useDeleteGrid } from '@/queries/useMyGrids';
-import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,30 +20,41 @@ interface Props {
   grid: HarmonyGridSummaryDTO;
 }
 
+function GridTag({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="rounded-sm bg-secondary px-1.5 py-0.5 text-[11px] font-medium uppercase tracking-wide text-secondary-foreground">
+      {children}
+    </span>
+  );
+}
+
 export function MyGridCard({ grid }: Props) {
   const deleteGrid = useDeleteGrid();
   const [open, setOpen] = useState(false);
 
   return (
-    <Card className="flex flex-col">
-      <CardContent className="flex-1 p-4">
-        <h3 className="truncate font-medium leading-tight">{grid.name}</h3>
-        <div className="mt-1 flex flex-wrap items-center gap-1.5">
-          <Badge variant="secondary">{grid.key}</Badge>
-          <Badge variant="outline">{grid.timeSignature}</Badge>
-          <span className="text-xs text-muted-foreground flex items-center gap-0.5">
-            <Music className="size-3" /> {grid.barsCount} тактов
-          </span>
+    <div className="group flex flex-col rounded-lg border border-border bg-card transition-colors hover:border-primary/40">
+      <div className="flex-1 p-5">
+        <div className="flex items-start justify-between gap-2">
+          <h3 className="truncate font-semibold leading-snug">{grid.name}</h3>
           {grid.visibility === 'public' && (
-            <Badge variant="default" className="text-[10px]">публичная</Badge>
+            <Globe className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" aria-label="Публичная" />
           )}
         </div>
-      </CardContent>
+        <div className="mt-3 flex flex-wrap items-center gap-1.5">
+          <GridTag>{grid.key}</GridTag>
+          <GridTag>{grid.timeSignature}</GridTag>
+          <GridTag>
+            <Music2 className="mr-0.5 inline size-2.5" />
+            {grid.barsCount} тактов
+          </GridTag>
+        </div>
+      </div>
 
-      <CardFooter className="flex items-center justify-between px-4 pb-4 pt-0">
-        <Button asChild variant="outline" size="sm" className="gap-1.5">
+      <div className="flex items-center justify-between border-t border-border px-5 py-3">
+        <Button asChild variant="ghost" size="sm" className="gap-1.5 text-muted-foreground hover:text-foreground">
           <Link to={`/grids/${grid.id}`}>
-            <Pencil className="size-4" /> Редактировать
+            <Pencil className="size-3.5" /> Редактировать
           </Link>
         </Button>
 
@@ -54,11 +63,11 @@ export function MyGridCard({ grid }: Props) {
             <Button
               variant="ghost"
               size="icon"
-              className="text-muted-foreground hover:text-destructive"
+              className="size-8 text-muted-foreground hover:text-destructive"
               disabled={deleteGrid.isPending}
               aria-label="Удалить сетку"
             >
-              <Trash2 className="size-4" />
+              <Trash2 className="size-3.5" />
             </Button>
           </AlertDialogTrigger>
           <AlertDialogContent>
@@ -76,7 +85,7 @@ export function MyGridCard({ grid }: Props) {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-      </CardFooter>
-    </Card>
+      </div>
+    </div>
   );
 }

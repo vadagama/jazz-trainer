@@ -1,5 +1,8 @@
 @import 'tailwindcss';
 
+/* Scan all monorepo packages for Tailwind classes */
+@source '../../../packages/**/*.{ts,tsx}';
+
 /* Class-based dark mode (we ship dark-first: <html class="dark">). */
 @custom-variant dark (&:is(.dark *));
 
@@ -73,6 +76,10 @@
 @layer base {
   * {
     border-color: var(--color-border);
+    scrollbar-width: none;
+    &::-webkit-scrollbar {
+      display: none;
+    }
   }
   body {
     background-color: var(--color-background);
