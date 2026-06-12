@@ -6,7 +6,7 @@ describe('rhythm-drills — contract', () => {
   it('has a valid manifest', () => {
     expect(() => validateManifest(plugin.manifest)).not.toThrow();
     const m = validateManifest(plugin.manifest);
-    expect(m.id).toBe('rhythm.drills');
+    expect(m.id).toBe('practice.rhythm-drills');
     expect(m.apiVersion).toBe(1);
   });
   it('defines at least one route', () => {

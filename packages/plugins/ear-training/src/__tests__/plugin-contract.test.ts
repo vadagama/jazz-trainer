@@ -6,7 +6,7 @@ describe('ear-training — contract', () => {
   it('has a valid manifest', () => {
     expect(() => validateManifest(plugin.manifest)).not.toThrow();
     const m = validateManifest(plugin.manifest);
-    expect(m.id).toBe('ear.training');
+    expect(m.id).toBe('practice.ear-training');
     expect(m.apiVersion).toBe(1);
   });
   it('defines at least one route', () => {

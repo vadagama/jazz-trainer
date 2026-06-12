@@ -1,6 +1,8 @@
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface AudioService {
-  // порт к звуку (будет заполнен в фазе 2)
+  /** Audio playback port (Tone.js, MIDI, etc.). */
+  audioPort?: unknown;
+  /** MIDI input port (Web MIDI, native, etc.). */
+  inputPort?: unknown;
 }
 
 export interface StorageService {

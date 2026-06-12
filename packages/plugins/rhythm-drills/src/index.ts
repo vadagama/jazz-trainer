@@ -1,19 +1,25 @@
 import { definePlugin } from '@jazz/plugin-sdk';
 
+export { RhythmDrillsPage } from './RhythmDrillsPage';
+export { useMidiInput, useMidiEventBuffer } from './hooks/useMidiInput';
+export {
+  createRhythmMatchActivity,
+  type RhythmMatchState,
+  type RhythmMatchOptions,
+} from './activities/rhythmMatch';
+
 export default definePlugin({
   manifest: {
-    id: 'rhythm.drills',
+    id: 'practice.rhythm-drills',
     name: 'Rhythm Drills',
-    apiVersion: 1 as const,
-    category: 'technique' as const,
-    description: 'Rhythmic exercises with playback and metronome.',
+    apiVersion: 1,
+    category: 'practice',
+    description: 'Rhythm training exercises with MIDI tap input.',
   },
   contributes: {
-    routes: [
-      { path: '/rhythm', element: () => import('./RhythmPage') },
-    ],
+    routes: [{ path: '/rhythm-drills', element: () => import('./RhythmDrillsPage') }],
     navItems: [
-      { section: 'practice', label: 'Rhythm', to: '/rhythm', icon: 'clock' },
+      { section: 'practice', label: 'Rhythm Drills', to: '/rhythm-drills', icon: 'drum' },
     ],
   },
 });
