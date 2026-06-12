@@ -44,8 +44,16 @@
       "@jazz/plugin-admin-flags": ["packages/plugins/admin-flags/src/index.ts"],
       "@jazz/plugin-admin-assets": ["packages/plugins/admin-assets/src/index.ts"],
       "@jazz/plugin-admin-diagnostics": ["packages/plugins/admin-diagnostics/src/index.ts"],
+      "@jazz/plugin-template": ["packages/plugins/_template/src/index.ts"],
+      "@jazz/plugin-theory-scales": ["packages/plugins/theory-scales/src/index.ts"],
+      "@jazz/plugin-theory-chords": ["packages/plugins/theory-chords/src/index.ts"],
+      "@jazz/plugin-theory-intervals": ["packages/plugins/theory-intervals/src/index.ts"],
       "@jazz/plugin-ear-training": ["packages/plugins/ear-training/src/index.ts"],
       "@jazz/plugin-rhythm-drills": ["packages/plugins/rhythm-drills/src/index.ts"],
+      "@jazz/plugin-chord-quiz": ["packages/plugins/chord-quiz/src/index.ts"],
+      "@jazz/plugin-progression-recognition": [
+        "packages/plugins/progression-recognition/src/index.ts",
+      ],
     },
   },
 }
