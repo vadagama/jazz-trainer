@@ -7,6 +7,13 @@ import adminContent from '@jazz/plugin-admin-content';
 import adminFlags from '@jazz/plugin-admin-flags';
 import adminAssets from '@jazz/plugin-admin-assets';
 import adminDiagnostics from '@jazz/plugin-admin-diagnostics';
+import theoryScales from '@jazz/plugin-theory-scales';
+import theoryChords from '@jazz/plugin-theory-chords';
+import theoryIntervals from '@jazz/plugin-theory-intervals';
+import earTraining from '@jazz/plugin-ear-training';
+import rhythmDrills from '@jazz/plugin-rhythm-drills';
+import chordQuiz from '@jazz/plugin-chord-quiz';
+import progressionRecognition from '@jazz/plugin-progression-recognition';
 
 export const PLUGINS: PluginDefinition[] = [
   coreEditor,
@@ -17,4 +24,11 @@ export const PLUGINS: PluginDefinition[] = [
   adminFlags,
   adminAssets,
   adminDiagnostics,
+  theoryScales,
+  theoryChords,
+  theoryIntervals,
+  earTraining,
+  rhythmDrills,
+  chordQuiz,
+  progressionRecognition,
 ];
