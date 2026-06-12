@@ -32,6 +32,8 @@
       "@jazz/plugin-registry/*": ["packages/plugin-registry/src/*"],
       "@jazz/tone-audio-adapter": ["packages/adapters/tone-audio-adapter/src/index.ts"],
       "@jazz/tone-audio-adapter/*": ["packages/adapters/tone-audio-adapter/src/*"],
+      "@jazz/webmidi-adapter": ["packages/adapters/webmidi-adapter/src/index.ts"],
+      "@jazz/webmidi-adapter/*": ["packages/adapters/webmidi-adapter/src/*"],
       "@jazz/ui": ["packages/ui/src/index.ts"],
       "@jazz/ui/*": ["packages/ui/src/*"],
       "@jazz/plugin-core-editor": ["packages/plugins/core-editor/src/index.ts"],
@@ -42,6 +44,8 @@
       "@jazz/plugin-admin-flags": ["packages/plugins/admin-flags/src/index.ts"],
       "@jazz/plugin-admin-assets": ["packages/plugins/admin-assets/src/index.ts"],
       "@jazz/plugin-admin-diagnostics": ["packages/plugins/admin-diagnostics/src/index.ts"],
+      "@jazz/plugin-ear-training": ["packages/plugins/ear-training/src/index.ts"],
+      "@jazz/plugin-rhythm-drills": ["packages/plugins/rhythm-drills/src/index.ts"],
     },
   },
 }

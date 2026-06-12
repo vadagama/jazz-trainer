@@ -12,6 +12,7 @@ export default defineConfig({
       '@jazz/music-core/audio': r('./packages/music-core/src/audio/index.ts'),
       '@jazz/music-core/*': r('./packages/music-core/src/*'),
       '@jazz/tone-audio-adapter': r('./packages/adapters/tone-audio-adapter/src/index.ts'),
+      '@jazz/webmidi-adapter': r('./packages/adapters/webmidi-adapter/src/index.ts'),
       '@jazz/plugin-sdk': r('./packages/plugin-sdk/src/index.ts'),
       '@jazz/ui': r('./packages/ui/src/index.ts'),
       '@jazz/plugin-core-editor': r('./packages/plugins/core-editor/src/index.ts'),

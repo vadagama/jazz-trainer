@@ -4,7 +4,7 @@ export const manifestSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
   apiVersion: z.literal(1),
-  category: z.enum(['theory', 'technique', 'play', 'assess', 'core', 'admin']),
+  category: z.enum(['theory', 'technique', 'play', 'assess', 'practice', 'core', 'admin']),
   description: z.string(),
   enabled: z.boolean().default(true),
 });

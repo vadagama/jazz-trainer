@@ -23,7 +23,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     let code = 'INTERNAL';
     let message = res.statusText;
     try {
-      const body = await res.json();
+      const body = (await res.json()) as { error?: { code?: string; message?: string } } | null;
       code = body?.error?.code ?? code;
       message = body?.error?.message ?? message;
     } catch {

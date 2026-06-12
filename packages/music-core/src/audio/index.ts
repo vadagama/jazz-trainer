@@ -60,3 +60,15 @@ export {
 export { testAudioPortContract } from './ports.contract.js';
 export { DRUM_SAMPLE_FILES, DRUMS_BASE_URL, type DrumSound } from './drumSampleRegistry.js';
 export { DrumInstrument, type DrumRidePattern } from './drumInstrument.js';
+export {
+  evaluateNote,
+  evaluateNoteSequence,
+  evaluateRhythm,
+  scoreNoteEval,
+  scoreRhythmEval,
+  type MidiEvalScore,
+  type MidiEvalOptions,
+  type NoteEvalResult,
+  type RhythmEvalResult,
+  type BeatEval,
+} from './midiEval.js';
