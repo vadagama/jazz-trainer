@@ -7,7 +7,7 @@ import { SettingsForm } from '@/components/settings/SettingsForm';
 import { Button } from '@/components/ui/button';
 import type { UserSettingsDTO } from '@jazz/shared';
 
-export function SettingsPage() {
+export default function SettingsPage() {
   const { user } = useAuth();
   const { data: serverSettings } = useSettings();
   const { theme, toggle } = useTheme();

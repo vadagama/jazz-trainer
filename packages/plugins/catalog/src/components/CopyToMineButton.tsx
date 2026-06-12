@@ -1,8 +1,8 @@
 import { Copy } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/queries/useAuth';
-import { useCopyToMine } from '@/queries/useCopyToMine';
-import { Button } from '@/components/ui/button';
+import { useAuth } from '@jazz/plugin-sdk';
+import { useCopyToMine } from '../queries/useCopyToMine';
+import { Button } from '@jazz/ui';
 
 interface Props {
   gridId: string;

@@ -1,8 +1,6 @@
 import { useState } from 'react';
 import { Eraser, Search, Trash2 } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
+import { Input, Button, cn } from '@jazz/ui';
 
 const ROOT_NOTES = ['C', 'C#', 'D', 'Db', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'] as const;
 type RootNote = (typeof ROOT_NOTES)[number];
@@ -49,7 +47,7 @@ interface ChordPaletteProps {
   onClearBar: () => void;
 }
 
-export function ChordPalette({ selectedBarId, onAddChord, onDeleteBar, onClearBar }: ChordPaletteProps) {
+export function ChordPalette({ selectedBarId: _selectedBarId, onAddChord, onDeleteBar, onClearBar }: ChordPaletteProps) {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState<Category>('Jazz');
   const [root, setRoot] = useState<RootNote>('C');

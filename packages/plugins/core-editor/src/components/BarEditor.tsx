@@ -2,10 +2,7 @@ import { useState } from 'react';
 import { X, Plus, Trash2, ChevronRight } from 'lucide-react';
 import { parseChord } from '@jazz/music-core';
 import type { Bar } from '@jazz/shared';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { cn } from '@/lib/utils';
+import { Button, Input, Label, cn } from '@jazz/ui';
 
 interface BarEditorProps {
   bar: Bar | null;
@@ -110,7 +107,7 @@ export function BarEditor({
 
                 {bar.chords.map((slot, i) => (
                   <ChordRow
-                    key={i}
+                    key={slot.id ?? `${bar.id}-chord-${i}`}
                     index={i}
                     slot={{ symbol: slot.symbol, beats: slot.beats ?? null }}
                     onUpdate={(sym) => onUpdateChord(i, sym)}

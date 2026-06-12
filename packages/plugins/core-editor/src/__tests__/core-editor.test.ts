@@ -26,7 +26,7 @@ describe('core-editor plugin definition', () => {
     expect(plugin.contributes.navItems![0]!.icon).toBe('edit');
   });
 
-  it('exports shared components', async () => {
+  it('re-exports UI components', async () => {
     const mod = await import('../index');
     expect(mod.HarmonyGrid).toBeDefined();
     expect(mod.PlayerToolbar).toBeDefined();

@@ -75,7 +75,9 @@ export class RhodesInstrument implements Instrument {
       if (!currentChord) continue;
 
       for (const event of pattern) {
-        const eventTicks = barStartTicks + (event.beat - 1) * tpBeat + Math.round((event.subdivision ?? 0) * tpBeat);
+        const isOffbeat = (event.subdivision ?? 0) > 0;
+        const subdivTicks = isOffbeat ? Math.round(ctx.swingRatio * tpBeat) : 0;
+        const eventTicks = barStartTicks + (event.beat - 1) * tpBeat + subdivTicks;
         if (eventTicks < window.fromTicks || eventTicks >= window.toTicks) continue;
 
         const chord = event.chordRef === 'next'

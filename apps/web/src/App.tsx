@@ -4,6 +4,8 @@ import { AppShell } from './components/layout/AppShell';
 import { ProtectedRoute } from './components/layout/ProtectedRoute';
 import { contributions } from './shell/bootstrap';
 import type { RouteContribution } from '@jazz/plugin-sdk';
+import { PluginProvider } from '@jazz/plugin-sdk';
+import { useTransport } from '@/engine/useTransport';
 
 /**
  * Создаёт ленивый компонент из RouteContribution.element().
@@ -32,6 +34,7 @@ const APP_SHELL_PATHS = new Set(['/', '/login', '/my', '/settings', '/profile'])
 
 export function App() {
   return (
+    <PluginProvider useTransport={useTransport}>
     <Routes>
       <Route element={<AppShell />}>
         {contributions.routes
@@ -68,5 +71,6 @@ export function App() {
           );
         })}
     </Routes>
+    </PluginProvider>
   );
 }

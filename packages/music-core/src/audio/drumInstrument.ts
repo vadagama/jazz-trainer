@@ -47,7 +47,6 @@ function isStirBeat(beatIdx: number, sig: TimeSignature): boolean {
 export class DrumInstrument implements Instrument {
   private ridePattern: DrumRidePattern = 'swingRide';
   private humanize = true;
-  private lastScheduledTick = -1;
 
   setRidePattern(pattern: DrumRidePattern): void {
     this.ridePattern = pattern;
@@ -57,9 +56,7 @@ export class DrumInstrument implements Instrument {
     this.humanize = enabled;
   }
 
-  reset(): void {
-    this.lastScheduledTick = -1;
-  }
+  reset(): void {}
 
   schedule(window: ScheduleWindow, ctx: ScheduleContext): void {
     if (!ctx.scheduleDrum) return;
@@ -88,7 +85,6 @@ export class DrumInstrument implements Instrument {
         const t = Math.max(window.fromTicks, atTicks + jitter);
         const velocity = this.humanize ? 0.6 + (Math.random() - 0.5) * 0.1 : 0.6;
         ctx.scheduleDrum(t, 'stir', velocity, tpBeat);
-        this.lastScheduledTick = atTicks;
       }
 
       // Hi-hat foot — on backbeats only
@@ -97,7 +93,6 @@ export class DrumInstrument implements Instrument {
         const t = Math.max(window.fromTicks, atTicks + jitter);
         const velocity = this.humanize ? 0.72 + (Math.random() - 0.5) * 0.1 : 0.72;
         ctx.scheduleDrum(t, 'hihatFoot', velocity, tpBeat);
-        this.lastScheduledTick = atTicks;
       }
 
       // Ride — quarters (non-swing or non-4/4)
@@ -106,7 +101,6 @@ export class DrumInstrument implements Instrument {
         const t = Math.max(window.fromTicks, atTicks + jitter);
         const velocity = this.humanize ? 0.65 + (Math.random() - 0.5) * 0.1 : 0.65;
         ctx.scheduleDrum(t, 'ride', velocity, 20);
-        this.lastScheduledTick = atTicks;
       }
     }
 
@@ -117,19 +111,18 @@ export class DrumInstrument implements Instrument {
       for (let bar = firstBar; bar <= lastBar; bar++) {
         const barStart = bar * tpBar;
         for (const hit of SWING_RIDE_OFFSETS) {
-          const atTicks = barStart + hit.beatIdx * tpBeat + Math.round(hit.subdivision * tpBeat);
+          const isOffbeat = hit.subdivision > 0;
+          const subdivTicks = isOffbeat ? Math.round(ctx.swingRatio * tpBeat) : 0;
+          const atTicks = barStart + hit.beatIdx * tpBeat + subdivTicks;
           if (atTicks < window.fromTicks || atTicks >= window.toTicks) continue;
           const jitter = this.humanize ? (Math.random() - 0.5) * 2 * maxJitter : 0;
           const t = Math.max(window.fromTicks, atTicks + jitter);
           const velocity = this.humanize ? hit.velocity + (Math.random() - 0.5) * 0.05 : hit.velocity;
           ctx.scheduleDrum(t, 'ride', velocity, 20);
-          this.lastScheduledTick = atTicks;
         }
       }
     }
   }
 
-  dispose(): void {
-    this.lastScheduledTick = -1;
-  }
+  dispose(): void {}
 }

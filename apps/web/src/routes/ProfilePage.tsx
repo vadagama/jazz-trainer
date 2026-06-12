@@ -1,7 +1,7 @@
 import { useAuth } from '@/queries/useAuth';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 
-export function ProfilePage() {
+export default function ProfilePage() {
   const { user } = useAuth();
 
   if (!user) return null;

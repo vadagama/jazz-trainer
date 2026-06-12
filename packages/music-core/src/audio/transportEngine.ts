@@ -42,6 +42,8 @@ export type DrumSink = (
 export interface TransportEngineOptions {
   bpm?: number;
   timeSignature?: TimeSignature | string;
+  /** Swing ratio for offbeat eighth notes: 0.50 = straight, 0.66 = classic swing, 0.75 = heavy shuffle. Default 0.50. */
+  swingRatio?: number;
   sink: ClickSink;
   /** Optional — wire a Tone.Sampler-backed sink to enable bass scheduling. */
   noteSink?: NoteSink;
@@ -65,6 +67,7 @@ export class TransportEngine {
   timeSignature: TimeSignature;
   status: PlaybackStatus = 'idle';
   positionTicks = 0;
+  private swingRatio: number;
 
   private readonly sink: ClickSink;
   private readonly noteSink?: NoteSink;
@@ -74,7 +77,8 @@ export class TransportEngine {
   private readonly tickListeners = new Set<(pos: MusicalPosition) => void>();
 
   constructor(opts: TransportEngineOptions) {
-    this.bpm = opts.bpm ?? 120;
+    this.bpm = Math.max(20, Math.min(400, opts.bpm ?? 120));
+    this.swingRatio = Math.max(0.50, Math.min(0.75, opts.swingRatio ?? 0.50));
     this.timeSignature =
       typeof opts.timeSignature === 'string'
         ? parseTimeSignature(opts.timeSignature)
@@ -90,7 +94,11 @@ export class TransportEngine {
   }
 
   setBpm(bpm: number): void {
-    this.bpm = bpm;
+    this.bpm = Math.max(20, Math.min(400, bpm));
+  }
+
+  setSwingRatio(ratio: number): void {
+    this.swingRatio = Math.max(0.50, Math.min(0.75, ratio));
   }
 
   setTimeSignature(sig: TimeSignature | string): void {
@@ -117,6 +125,7 @@ export class TransportEngine {
     const ctx = {
       bpm: this.bpm,
       timeSignature: this.timeSignature,
+      swingRatio: this.swingRatio,
       scheduleClick: (atTicks: number, beatType: BeatType) => this.sink(atTicks, beatType),
       scheduleNote: noteSink
         ? (atTicks: number, note: string, velocity: number, durationTicks: number, articulation: BassArticulation) =>

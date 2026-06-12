@@ -1,4 +1,4 @@
-import { cn } from '@/lib/utils';
+import { cn } from '@jazz/ui';
 import type { Bar } from '@jazz/shared';
 
 interface BarCardProps {
@@ -42,7 +42,7 @@ export function BarCard({ bar, barIndex, isSelected, isPlaying, onClick }: BarCa
         )}
       >
         {chords.map((slot, i) => (
-          <div key={i} className="text-center">
+          <div key={slot.id ?? `${bar.id}-chord-${i}`} className="text-center">
             <span className="block text-2xl font-bold leading-tight tracking-tight text-foreground">
               {slot.symbol}
             </span>

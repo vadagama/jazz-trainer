@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import { Route, Routes } from 'react-router-dom';
 import { ProtectedRoute } from '@/components/layout/ProtectedRoute';
-import { renderWithProviders, makeQueryClient } from './renderWithProviders';
+import { renderWithProviders } from './renderWithProviders';
 
 vi.mock('@/queries/useAuth', () => ({
   useAuth: vi.fn(),

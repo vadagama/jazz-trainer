@@ -35,6 +35,7 @@ const DEFAULT_SETTINGS: LocalSettings = {
   drumsHihatEnabled: true,
   drumsHihatVolume: 0.55,
   drumsRidePattern: 'swingRide' as const,
+  swingRatio: 0.50,
 };
 
 export const useLocalSettingsStore = create<LocalSettingsStore>()(

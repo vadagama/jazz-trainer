@@ -72,6 +72,8 @@ export type ChordSymbol = z.infer<typeof ChordSymbolSchema>;
 // ── Harmony grid content (stored as JSON, see docs/03-data-model.md §3) ──
 
 export const ChordSlotSchema = z.object({
+  /** stable identity for React keys and optimistic updates */
+  id: z.string().optional(),
   /** source text of the chord — the source of truth */
   symbol: z.string().min(1),
   /** parsed form is derived/cached; null when the symbol failed to parse */

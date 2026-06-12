@@ -1,0 +1,1 @@
+ALTER TABLE `user_settings` ADD `swing_ratio` real NOT NULL DEFAULT 0.50;

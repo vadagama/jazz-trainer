@@ -17,32 +17,37 @@ export function toUserDTO(u: UserRecord): UserDTO {
   };
 }
 
+function clampVolume(v: number): number {
+  return Math.max(0, Math.min(1, v));
+}
+
 export function toSettingsDTO(s: UserSettingsRecord): UserSettingsDTO {
   return {
-    bpm: s.bpm,
+    bpm: Math.max(20, Math.min(400, s.bpm)),
     clickStrong: (s.clickStrong ?? null) as UserSettingsDTO['clickStrong'],
     clickStrong2: (s.clickStrong2 ?? null) as UserSettingsDTO['clickStrong2'],
     clickWeak: (s.clickWeak ?? null) as UserSettingsDTO['clickWeak'],
-    volume: s.volume,
+    volume: clampVolume(s.volume),
     countIn: s.countIn,
-    metronomeVolume: s.metronomeVolume,
+    metronomeVolume: clampVolume(s.metronomeVolume),
     bassEnabled: s.bassEnabled,
-    bassVolume: s.bassVolume,
+    bassVolume: clampVolume(s.bassVolume),
     bassComplexity: s.bassComplexity,
     bassOctaveUp: s.bassOctaveUp,
     rhodesEnabled: s.rhodesEnabled,
-    rhodesVolume: s.rhodesVolume,
+    rhodesVolume: clampVolume(s.rhodesVolume),
     rhodesMode: s.rhodesMode as UserSettingsDTO['rhodesMode'],
     rhodesVoicingDensity: s.rhodesVoicingDensity as UserSettingsDTO['rhodesVoicingDensity'],
     drumsEnabled: s.drumsEnabled,
-    drumsVolume: s.drumsVolume,
+    drumsVolume: clampVolume(s.drumsVolume),
     drumsRideEnabled: s.drumsRideEnabled,
-    drumsRideVolume: s.drumsRideVolume,
+    drumsRideVolume: clampVolume(s.drumsRideVolume),
     drumsStirEnabled: s.drumsStirEnabled,
-    drumsStirVolume: s.drumsStirVolume,
+    drumsStirVolume: clampVolume(s.drumsStirVolume),
     drumsHihatEnabled: s.drumsHihatEnabled,
-    drumsHihatVolume: s.drumsHihatVolume,
+    drumsHihatVolume: clampVolume(s.drumsHihatVolume),
     drumsRidePattern: s.drumsRidePattern as UserSettingsDTO['drumsRidePattern'],
+    swingRatio: Math.max(0.50, Math.min(0.75, s.swingRatio)),
   };
 }
 

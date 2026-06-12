@@ -10,6 +10,7 @@ function makeCtx(sig: ReturnType<typeof parseTimeSignature>, hits: Hit[]): Sched
   return {
     bpm: 120,
     timeSignature: sig,
+    swingRatio: 0.50,
     scheduleClick: () => {},
     scheduleDrum: (atTicks, sound) => { hits.push({ sound, atTicks }); },
   };
@@ -176,7 +177,7 @@ describe('DrumInstrument — sink absent / no crash', () => {
   it('does not throw when scheduleDrum is absent', () => {
     const sig = parseTimeSignature('4/4');
     const drum = new DrumInstrument();
-    const ctx: ScheduleContext = { bpm: 120, timeSignature: sig, scheduleClick: () => {} };
+    const ctx: ScheduleContext = { bpm: 120, timeSignature: sig, swingRatio: 0.50, scheduleClick: () => {} };
     expect(() => drum.schedule(oneBar(sig), ctx)).not.toThrow();
   });
 });

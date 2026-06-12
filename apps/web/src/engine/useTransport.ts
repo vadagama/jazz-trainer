@@ -34,6 +34,11 @@ import type { UserSettingsDTO } from '@jazz/shared';
 import { usePlaybackStore } from '@/stores/usePlaybackStore';
 
 const LOOKAHEAD_TICKS = 480 * 4;
+const PPQ = 480;
+
+function ticksToSeconds(durationTicks: number, bpm: number): number {
+  return (durationTicks * 60) / (PPQ * bpm);
+}
 
 /**
  * Flat playback sequence resolved from sections with repeat markers.
@@ -167,7 +172,6 @@ export interface TransportControls {
 export function useTransport(opts: UseTransportOptions): TransportControls {
   const { settings, timeSignature, totalBars } = opts;
 
-  const storeRef = useRef(usePlaybackStore.getState());
   const engineRef = useRef<TransportEngine | null>(null);
   const machineRef = useRef<PlaybackStateMachine | null>(null);
   const strongPlayerRef = useRef<Tone.Player | null>(null);
@@ -295,7 +299,7 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
       const sampler = pool[rrIndex];
       if (!sampler) return;
       // Convert ticks to seconds: ticks / PPQ * (60 / bpm)
-      const durationSecs = (durationTicks * 60) / (480 * optsRef.current.settings.bpm);
+      const durationSecs = ticksToSeconds(durationTicks, optsRef.current.settings.bpm);
       tone.scheduleOnce((time: number) => {
         if (sampler.loaded) sampler.triggerAttackRelease(note, durationSecs, time, velocity);
       }, `${atTicks}i`);
@@ -342,7 +346,7 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
       const layerName = pickRhodesLayer(velocity);
       const sampler = rhodesLayersRef.current[layerName];
       if (!sampler) return;
-      const durationSecs = (durationTicks * 60) / (480 * optsRef.current.settings.bpm);
+      const durationSecs = ticksToSeconds(durationTicks, optsRef.current.settings.bpm);
       tone.scheduleOnce((time: number) => {
         if (sampler.loaded) {
           for (const note of notes) {
@@ -417,6 +421,7 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     const engine = new TransportEngine({
       bpm: settings.bpm,
       timeSignature,
+      swingRatio: settings.swingRatio ?? 0.50,
       sink,
       noteSink,
       chordSink,
@@ -627,6 +632,12 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     );
   }, [settings.drumsRidePattern]);
 
+  // Update swing ratio
+  useEffect(() => {
+    if (!engineRef.current) return;
+    engineRef.current.setSwingRatio(settings.swingRatio ?? 0.50);
+  }, [settings.swingRatio]);
+
   // Update time signature on the engine when it changes
   useEffect(() => {
     if (!engineRef.current) return;
@@ -647,7 +658,6 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     const timeline = new ChordTimeline(entries);
     bassInstrumentRef.current?.setTimeline(timeline);
     rhodesInstrumentRef.current?.setTimeline(new ChordTimeline(entries));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [opts.sections]);
 
   const play = useCallback(async () => {

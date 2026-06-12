@@ -1,4 +1,4 @@
-import { cn } from '@/lib/utils';
+import { cn } from '@jazz/ui';
 import type { ChordSlot } from '@jazz/shared';
 
 interface ChordChipProps {

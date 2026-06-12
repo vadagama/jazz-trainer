@@ -7,9 +7,9 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
+  Button,
+  Textarea,
+} from '@jazz/ui';
 
 interface DslModalProps {
   open: boolean;
@@ -115,7 +115,7 @@ export function DslModal({ open, content, onImport, onClose }: DslModalProps) {
             {errors.length > 0 && (
               <ul className="space-y-0.5" data-testid="dsl-errors">
                 {errors.map((e, i) => (
-                  <li key={i} className="text-xs text-destructive">
+                  <li key={`${e}-${i}`} className="text-xs text-destructive">
                     {e}
                   </li>
                 ))}

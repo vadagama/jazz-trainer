@@ -1,23 +1,19 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Loader2, AlertCircle, Pencil, Save } from 'lucide-react';
+import { Loader2, AlertCircle, Pencil, Save, Code2, Wand2 } from 'lucide-react';
 import type { TimeSignatureString, Key } from '@jazz/shared';
 import { transposeSections } from '@jazz/music-core';
-import { useGrid, useUpdateGrid } from '@/queries/useGrid';
-import { useEditorStore } from '@/stores/useEditorStore';
-import { usePlaybackStore } from '@/stores/usePlaybackStore';
-import { useEffectiveSettings } from '@/queries/useEffectiveSettings';
-import { useTransport } from '@/engine/useTransport';
-import { Header } from '@/components/layout/Header';
-import { Breadcrumbs } from '@/components/layout/Breadcrumbs';
-import { GridContainer } from '@/components/layout/GridContainer';
-import { HarmonyGrid } from './components/HarmonyGrid';
+import { useGrid, useUpdateGrid } from './queries/useGrid';
+import {
+  useEditorStore,
+  usePlaybackStore,
+  useEffectiveSettings,
+  usePluginTransport,
+} from '@jazz/plugin-sdk';
+import { HarmonyGrid, PlayerToolbar, Button, cn } from '@jazz/ui';
 import { ChordPalette } from './components/ChordPalette';
-import { PlayerToolbar } from './components/PlayerToolbar';
 import { DslModal } from './components/DslModal';
 import { GeneratorModal } from './components/GeneratorModal';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
 
 // ── Inline composition title editor ──────────────────────────────────────────
 
@@ -230,7 +226,7 @@ export function EditorPage() {
   const effectiveTimeSig = defaultTimeSignature;
   const totalBars = sections.reduce((sum, s) => sum + s.bars.length, 0);
 
-  const transport = useTransport({
+  const transport = usePluginTransport({
     settings: { ...settings, bpm: effectiveBpm, volume: effectiveVolume },
     timeSignature: effectiveTimeSig,
     totalBars,
@@ -285,11 +281,27 @@ export function EditorPage() {
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-background text-foreground">
-      <Header
-        editorMode
-        onOpenDsl={() => setDslOpen(true)}
-        onOpenGenerator={() => setGeneratorOpen(true)}
-      />
+      {/* Editor action bar — replaces app Header for this full-screen route */}
+      <div className="flex shrink-0 items-center justify-between border-b border-border bg-card/80 px-4 py-2">
+        <nav className="flex items-center gap-1.5 text-sm">
+          <Link to="/my" className="text-muted-foreground transition-colors hover:text-foreground">
+            Мои сетки
+          </Link>
+          <span className="text-muted-foreground/50">/</span>
+          <span className="truncate font-medium text-foreground">{grid.name}</span>
+        </nav>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="sm" className="gap-1.5" onClick={() => setDslOpen(true)}>
+            <Code2 className="size-3.5" />
+            DSL
+          </Button>
+          <Button variant="ghost" size="sm" className="gap-1.5" onClick={() => setGeneratorOpen(true)}>
+            <Wand2 className="size-3.5" />
+            Генератор
+          </Button>
+        </div>
+      </div>
+
       <div className="flex flex-1 overflow-hidden">
         {/* Left: Chord Palette — slides in when a bar is selected */}
         <div
@@ -312,9 +324,8 @@ export function EditorPage() {
           data-testid="editor-page"
           onClick={() => selectBar(null)}
         >
-          <Breadcrumbs items={[{ label: 'Мои сетки', href: '/my' }, { label: grid.name }]} />
           <div className="py-6">
-            <GridContainer>
+            <div className="mx-auto max-w-6xl px-4">
               <div className="mb-6">
                 <CompositionTitle name={grid.name} onSave={handleSaveTitle} />
               </div>
@@ -352,7 +363,7 @@ export function EditorPage() {
                   </Button>
                 </div>
               )}
-            </GridContainer>
+            </div>
           </div>
         </main>
       </div>
