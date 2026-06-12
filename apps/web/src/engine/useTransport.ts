@@ -31,7 +31,7 @@ import {
 import { ToneAudioAdapter } from '@jazz/tone-audio-adapter';
 import type { TimeSignatureString, Section, ClickSound } from '@jazz/shared';
 import type { UserSettingsDTO } from '@jazz/shared';
-import { usePlaybackStore } from '@/stores/usePlaybackStore';
+import { usePlaybackStore } from '@jazz/plugin-sdk';
 
 const LOOKAHEAD_TICKS = 480 * 4;
 const PPQ = 480;

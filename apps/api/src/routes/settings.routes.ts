@@ -68,6 +68,7 @@ export async function settingsRoutes(
     if (data.drumsHihatEnabled !== undefined) patch.drumsHihatEnabled = data.drumsHihatEnabled;
     if (data.drumsHihatVolume !== undefined) patch.drumsHihatVolume = data.drumsHihatVolume;
     if (data.drumsRidePattern !== undefined) patch.drumsRidePattern = data.drumsRidePattern;
+    if (data.swingRatio !== undefined) patch.swingRatio = data.swingRatio;
 
     db.update(userSettings).set(patch).where(eq(userSettings.userId, user.id)).run();
     return reply.send(toSettingsDTO({ ...existing, ...patch }));

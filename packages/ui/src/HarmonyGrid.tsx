@@ -249,10 +249,8 @@ function BarCard({
       {isCountingIn && (
         <div className="absolute left-0 top-0 h-full w-1 animate-pulse rounded-l-lg bg-red-500" />
       )}
-      <span className="absolute left-2.5 top-2 select-none font-mono text-[10px] text-muted-foreground">
-        {index + 1}
-      </span>
 
+      {/* Chord display — vertically centered */}
       <div
         className={cn(
           'flex min-h-[52px] items-center gap-1.5',
@@ -279,6 +277,11 @@ function BarCard({
           ))
         )}
       </div>
+
+      {/* BAR number — bottom left */}
+      <span className="absolute bottom-2 left-3 select-none font-mono text-[9px] font-medium uppercase tracking-wider text-muted-foreground/60">
+        Bar {String(index + 1).padStart(2, '0')}
+      </span>
 
       {!readonly && <RepeatEndDropdown repeatEnd={bar.repeatEnd} onChange={onSetRepeatEnd} />}
     </div>

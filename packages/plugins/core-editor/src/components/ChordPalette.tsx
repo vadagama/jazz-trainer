@@ -1,44 +1,52 @@
 import { useState } from 'react';
-import { Eraser, Search, Trash2 } from 'lucide-react';
-import { Input, Button, cn } from '@jazz/ui';
+import { Search, Eraser, Trash2 } from 'lucide-react';
+import { Input, cn } from '@jazz/ui';
 
 const ROOT_NOTES = ['C', 'C#', 'D', 'Db', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'] as const;
 type RootNote = (typeof ROOT_NOTES)[number];
 
-const CHORD_TYPES = {
-  Basic: [
-    { symbol: '', label: 'Major' },
-    { symbol: 'm', label: 'Minor' },
-    { symbol: 'dim', label: 'Dim' },
-    { symbol: 'aug', label: 'Aug' },
-    { symbol: 'sus4', label: 'Sus4' },
-    { symbol: 'sus2', label: 'Sus2' },
-    { symbol: '6', label: '6th' },
-    { symbol: 'm6', label: 'Min 6' },
-  ],
-  Jazz: [
-    { symbol: 'maj7', label: 'Maj7' },
-    { symbol: '7', label: 'Dom7' },
-    { symbol: 'm7', label: 'Min7' },
-    { symbol: 'm7b5', label: 'Half Dim' },
-    { symbol: 'dim7', label: 'Dim7' },
-    { symbol: 'maj9', label: 'Maj9' },
-    { symbol: '9', label: 'Dom9' },
-    { symbol: 'm9', label: 'Min9' },
-  ],
-  Extended: [
-    { symbol: 'maj11', label: 'Maj11' },
-    { symbol: '11', label: 'Dom11' },
-    { symbol: 'm11', label: 'Min11' },
-    { symbol: 'maj13', label: 'Maj13' },
-    { symbol: '13', label: 'Dom13' },
-    { symbol: '7#11', label: 'Lyd Dom' },
-    { symbol: '7alt', label: 'Altered' },
-    { symbol: '6/9', label: '6/9' },
-  ],
-} as const;
-
-type Category = keyof typeof CHORD_TYPES;
+const CHORD_GROUPS = [
+  {
+    id: 'major',
+    label: 'MAJOR',
+    chords: [
+      { suffix: 'maj7', label: 'Maj 7' },
+      { suffix: '', label: 'Major' },
+      { suffix: 'maj9', label: 'Maj 9' },
+      { suffix: '6', label: '6th' },
+    ],
+  },
+  {
+    id: 'minor',
+    label: 'MINOR',
+    chords: [
+      { suffix: 'm7', label: 'Min 7' },
+      { suffix: 'm', label: 'Minor' },
+      { suffix: 'm9', label: 'Min 9' },
+      { suffix: 'm6', label: 'Min 6' },
+    ],
+  },
+  {
+    id: 'dominant',
+    label: 'DOMINANT',
+    chords: [
+      { suffix: '7', label: 'Dom 7' },
+      { suffix: '9', label: 'Dom 9' },
+      { suffix: '13', label: 'Dom 13' },
+      { suffix: '7#11', label: 'Lyd Dom' },
+    ],
+  },
+  {
+    id: 'altdim',
+    label: 'ALT / DIM',
+    chords: [
+      { suffix: '7alt', label: 'Altered' },
+      { suffix: 'm7b5', label: 'Half Dim' },
+      { suffix: 'dim7', label: 'Dim 7' },
+      { suffix: '7b9', label: 'Dom ♭9' },
+    ],
+  },
+] as const;
 
 interface ChordPaletteProps {
   selectedBarId: string | null;
@@ -47,96 +55,60 @@ interface ChordPaletteProps {
   onClearBar: () => void;
 }
 
-export function ChordPalette({ selectedBarId: _selectedBarId, onAddChord, onDeleteBar, onClearBar }: ChordPaletteProps) {
+export function ChordPalette({
+  selectedBarId: _selectedBarId,
+  onAddChord,
+  onDeleteBar,
+  onClearBar,
+}: ChordPaletteProps) {
   const [search, setSearch] = useState('');
-  const [category, setCategory] = useState<Category>('Jazz');
   const [root, setRoot] = useState<RootNote>('C');
 
-  const chords = CHORD_TYPES[category];
-  const filtered = search
-    ? chords.filter(
+  const searchLower = search.toLowerCase();
+  const allChords = CHORD_GROUPS.flatMap((g) =>
+    g.chords.map((c) => ({ ...c, group: g.label, full: `${root}${c.suffix}` })),
+  );
+  const searchResults = search
+    ? allChords.filter(
         (c) =>
-          c.label.toLowerCase().includes(search.toLowerCase()) ||
-          `${root}${c.symbol}`.toLowerCase().includes(search.toLowerCase()),
+          c.full.toLowerCase().includes(searchLower) ||
+          c.label.toLowerCase().includes(searchLower),
       )
-    : chords;
+    : null;
 
   return (
-    <div className="flex h-full w-60 flex-shrink-0 flex-col border-r border-border bg-card">
-      {/* Settings */}
-      <div className="border-b border-border px-3 py-3">
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Settings
-        </p>
-        <div className="flex gap-1.5">
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex-1 gap-1.5 hover:border-primary hover:text-primary"
-            onClick={onClearBar}
-          >
-            <Eraser className="size-3.5" />
-            Clear
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex-1 gap-1.5 hover:border-destructive hover:text-destructive"
-            onClick={onDeleteBar}
-          >
-            <Trash2 className="size-3.5" />
-            Delete
-          </Button>
-        </div>
+    <div className="flex h-full w-[220px] flex-shrink-0 flex-col border-r border-border bg-card">
+      {/* Header */}
+      <div className="border-b border-border px-4 py-3">
+        <p className="text-sm font-semibold text-foreground">Chord Palette</p>
+        <p className="text-xs text-muted-foreground">Harmony Tools</p>
       </div>
 
-      {/* Header */}
-      <div className="border-b border-border px-3 py-3">
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Chord Palette
-        </p>
+      {/* Search */}
+      <div className="border-b border-border px-3 py-2.5">
         <div className="relative">
-          <Search className="absolute left-2 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search chords..."
-            className="h-7 pl-7 text-xs"
+            placeholder="Search Chords..."
+            className="h-8 pl-8 text-xs"
           />
         </div>
       </div>
 
-      {/* Category tabs */}
-      <div className="flex border-b border-border px-2 pt-2">
-        {(Object.keys(CHORD_TYPES) as Category[]).map((cat) => (
-          <button
-            key={cat}
-            onClick={() => setCategory(cat)}
-            className={cn(
-              'flex-1 rounded-t px-2 py-1.5 text-xs font-medium transition-colors',
-              category === cat
-                ? 'bg-primary text-primary-foreground'
-                : 'text-muted-foreground hover:text-foreground',
-            )}
-          >
-            {cat}
-          </button>
-        ))}
-      </div>
-
-      {/* Root note selector */}
-      <div className="border-b border-border px-3 py-3">
-        <p className="mb-2 text-xs font-medium text-muted-foreground">Root Note</p>
-        <div className="grid grid-cols-4 gap-1">
+      {/* Root note selector — compact horizontal scroll */}
+      <div className="border-b border-border px-3 py-2">
+        <div className="flex flex-wrap gap-1">
           {ROOT_NOTES.map((note) => (
             <button
               key={note}
               onClick={() => setRoot(note)}
               className={cn(
-                'rounded px-1.5 py-1 text-xs font-medium transition-colors',
+                'rounded px-2 py-0.5 text-xs font-medium transition-colors',
                 root === note
                   ? 'bg-primary text-primary-foreground'
-                  : 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
+                  : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
               )}
             >
               {note}
@@ -145,26 +117,75 @@ export function ChordPalette({ selectedBarId: _selectedBarId, onAddChord, onDele
         </div>
       </div>
 
-      {/* Chord list */}
-      <div className="flex-1 overflow-y-auto px-2 py-2">
-        {filtered.map((chord) => {
-          const full = `${root}${chord.symbol}`;
-          return (
-            <button
-              key={chord.symbol}
-              onClick={() => onAddChord(full)}
-              className="flex w-full items-center justify-between rounded px-2 py-2 text-left transition-colors hover:bg-accent hover:text-accent-foreground"
-            >
-              <span className="text-sm font-medium">{full}</span>
-              <span className="text-xs text-muted-foreground">{chord.label}</span>
-            </button>
-          );
-        })}
-        {filtered.length === 0 && (
-          <p className="py-4 text-center text-xs text-muted-foreground">Нет совпадений</p>
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto">
+        {searchResults ? (
+          /* Search results */
+          <div className="p-2">
+            {searchResults.length === 0 ? (
+              <p className="py-4 text-center text-xs text-muted-foreground">Нет совпадений</p>
+            ) : (
+              <div className="grid grid-cols-2 gap-1">
+                {searchResults.map((c) => (
+                  <button
+                    key={c.suffix}
+                    onClick={() => onAddChord(c.full)}
+                    className="rounded-md border border-border bg-secondary px-2 py-2 text-left text-xs transition-colors hover:border-primary/50 hover:bg-accent"
+                  >
+                    <span className="block font-semibold text-foreground">{c.full}</span>
+                    <span className="text-[10px] text-muted-foreground">{c.label}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
+          /* Grouped view */
+          CHORD_GROUPS.map((group) => (
+              <div key={group.id} className="border-b border-border px-3 py-3">
+                <div className="mb-2">
+                  <span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+                    {group.label}
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {group.chords.map((chord) => {
+                    const full = `${root}${chord.suffix}`;
+                    return (
+                      <button
+                        key={chord.suffix}
+                        onClick={() => onAddChord(full)}
+                        className="rounded-md border border-border bg-secondary px-2 py-2 text-left transition-colors hover:border-primary/50 hover:bg-accent"
+                      >
+                        <span className="block text-sm font-semibold leading-tight text-foreground">
+                          {full}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+          ))
         )}
       </div>
 
+      {/* Bottom actions */}
+      <div className="flex gap-1.5 border-t border-border p-3">
+        <button
+          onClick={onClearBar}
+          className="flex flex-1 items-center justify-center gap-1.5 rounded-md border border-border px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary"
+        >
+          <Eraser className="size-3" />
+          Очистить
+        </button>
+        <button
+          onClick={onDeleteBar}
+          className="flex flex-1 items-center justify-center gap-1.5 rounded-md border border-border px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:border-destructive/50 hover:text-destructive"
+        >
+          <Trash2 className="size-3" />
+          Удалить
+        </button>
+      </div>
     </div>
   );
 }

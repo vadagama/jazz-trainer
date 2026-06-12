@@ -8,10 +8,11 @@ const r = (p: string) => fileURLToPath(new URL(p, import.meta.url));
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   resolve: {
+    dedupe: ['react', 'react-dom'],
     alias: {
       '@': r('./src'),
       '@jazz/shared': r('../../packages/shared/src/index.ts'),
-      '@jazz/music-core': r('../../packages/music-core/src/index.ts'),
+      '@jazz/music-core': r('../../packages/music-core/src'),
       '@jazz/ui': r('../../packages/ui/src/index.ts'),
       '@jazz/plugin-sdk': r('../../packages/plugin-sdk/src/index.ts'),
       '@jazz/plugin-core-editor': r('../../packages/plugins/core-editor/src/index.ts'),

@@ -11,7 +11,7 @@ interface BreadcrumbsProps {
 
 export function Breadcrumbs({ items }: BreadcrumbsProps) {
   return (
-    <div className="shrink-0 bg-background/60">
+    <div className="shrink-0">
       <nav
         aria-label="breadcrumb"
         className="mx-auto flex h-9 max-w-6xl items-center gap-1.5 px-4 text-sm"
