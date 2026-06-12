@@ -18,8 +18,15 @@
     "@jazz/plugin-admin-flags": "*",
     "@jazz/plugin-admin-users": "*",
     "@jazz/plugin-catalog": "*",
+    "@jazz/plugin-chord-quiz": "*",
     "@jazz/plugin-core-editor": "*",
     "@jazz/plugin-core-player": "*",
-    "@jazz/plugin-sdk": "*"
+    "@jazz/plugin-ear-training": "*",
+    "@jazz/plugin-progression-recognition": "*",
+    "@jazz/plugin-rhythm-drills": "*",
+    "@jazz/plugin-sdk": "*",
+    "@jazz/plugin-theory-chords": "*",
+    "@jazz/plugin-theory-intervals": "*",
+    "@jazz/plugin-theory-scales": "*"
   }
 }
