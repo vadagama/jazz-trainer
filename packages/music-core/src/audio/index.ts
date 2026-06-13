@@ -5,11 +5,18 @@ export {
   type ScheduleContext,
   type MetronomeOptions,
   type BassArticulation,
+  type BassEvent,
+  type RhodesEvent,
+  type DrumEvent,
+  type GuitarEvent,
+  type GuitarStrum,
+  type InstrumentEventPayload,
 } from './instrument.js';
 export {
   TransportEngine,
   type TransportEngineOptions,
   type ClickSink,
+  type EventSink,
   type NoteSink,
   type BeatType,
 } from './transportEngine.js';
@@ -72,3 +79,10 @@ export {
   type RhythmEvalResult,
   type BeatEval,
 } from './midiEval.js';
+export { type SampleManifest } from './sampleManifest.js';
+export { type InstrumentManifest } from './instrumentManifest.js';
+export { bassManifest } from './bassManifest.js';
+export { rhodesManifest } from './rhodesManifest.js';
+export { drumsManifest } from './drumsManifest.js';
+export { guitarManifest } from './guitarManifest.js';
+export { GuitarInstrument, type GuitarMode, type GuitarVoicing } from './guitarInstrument.js';

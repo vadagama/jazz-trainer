@@ -1,5 +1,10 @@
 import type { ChordSymbol } from '@jazz/shared';
-import { ticksPerBar, ticksPerBeat, defaultStrongBeats, defaultSecondStrongBeats } from '../time/timeSignature.js';
+import {
+  ticksPerBar,
+  ticksPerBeat,
+  defaultStrongBeats,
+  defaultSecondStrongBeats,
+} from '../time/timeSignature.js';
 import type { Instrument, ScheduleContext, ScheduleWindow } from './instrument.js';
 import type { ChordTimeline } from './chordTimeline.js';
 
@@ -15,18 +20,22 @@ const NOTES_PER_BAR: Record<1 | 2 | 3 | 4 | 5 | 6 | 7, number> = {
 };
 
 const NOTE_SEMITONES: Record<string, number> = {
-  C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11,
+  C: 0,
+  D: 2,
+  E: 4,
+  F: 5,
+  G: 7,
+  A: 9,
+  B: 11,
 };
 
-const SEMITONE_NAMES = [
-  'C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B',
-] as const;
+const SEMITONE_NAMES = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'] as const;
 
 /** Fraction of the slot actually sounded — leaves a natural gap before the next note. */
 const GATE_RATIO = 0.92;
 
 /** Velocity per beat index (0-based). Source: BASS.md §Velocity и акценты. */
-const BEAT_VELOCITY = [0.82, 0.68, 0.76, 0.70] as const;
+const BEAT_VELOCITY = [0.82, 0.68, 0.76, 0.7] as const;
 
 export class BassInstrument implements Instrument {
   private timeline: ChordTimeline;
@@ -50,8 +59,6 @@ export class BassInstrument implements Instrument {
   }
 
   schedule(window: ScheduleWindow, ctx: ScheduleContext): void {
-    if (!ctx.scheduleNote) return;
-
     const sig = ctx.timeSignature;
     const tpBar = ticksPerBar(sig);
     const tpBeat = ticksPerBeat(sig);
@@ -67,7 +74,13 @@ export class BassInstrument implements Instrument {
         const barStartTicks = bar * tpBar;
         const chord = this.timeline.getChordAtTick(barStartTicks, sig);
         if (!chord) continue;
-        ctx.scheduleNote(barStartTicks, resolveRootNote(chord, 2 + os), BEAT_VELOCITY[0], durationTicks, 'pluck');
+        ctx.scheduleEvent(
+          'bass',
+          { note: resolveRootNote(chord, 2 + os), articulation: 'pluck' },
+          barStartTicks,
+          BEAT_VELOCITY[0],
+          durationTicks,
+        );
       }
     } else if (this.complexity === 2) {
       // Root on every beat, alternating octaves 2/3; velocity varies by beat position
@@ -81,7 +94,13 @@ export class BassInstrument implements Instrument {
         const isStrong = strongBeats.has(beatInBar);
         const octave = (isStrong ? 2 : 3) + os;
         const velocity = BEAT_VELOCITY[beatInBar] ?? BEAT_VELOCITY[0];
-        ctx.scheduleNote(atTicks, resolveRootNote(chord, octave), velocity, durationTicks, 'pluck');
+        ctx.scheduleEvent(
+          'bass',
+          { note: resolveRootNote(chord, octave), articulation: 'pluck' },
+          atTicks,
+          velocity,
+          durationTicks,
+        );
       }
     } else if (this.complexity === 3) {
       // Root on strong beats, fifth on weak beats; velocity varies by beat position
@@ -98,9 +117,21 @@ export class BassInstrument implements Instrument {
         const velocity = BEAT_VELOCITY[beatInBar] ?? BEAT_VELOCITY[0];
         if (isStrong) {
           const octave = (beatInBar !== 0 && barIndex % 2 === 1 ? 3 : 2) + os;
-          ctx.scheduleNote(atTicks, resolveRootNote(chord, octave), velocity, durationTicks, 'pluck');
+          ctx.scheduleEvent(
+            'bass',
+            { note: resolveRootNote(chord, octave), articulation: 'pluck' },
+            atTicks,
+            velocity,
+            durationTicks,
+          );
         } else {
-          ctx.scheduleNote(atTicks, resolveFifthNote(chord, 2 + os, os), velocity, durationTicks, 'pluck');
+          ctx.scheduleEvent(
+            'bass',
+            { note: resolveFifthNote(chord, 2 + os, os), articulation: 'pluck' },
+            atTicks,
+            velocity,
+            durationTicks,
+          );
         }
       }
     } else if (this.complexity === 4) {
@@ -114,12 +145,26 @@ export class BassInstrument implements Instrument {
         const velocity = BEAT_VELOCITY[beatInBar] ?? BEAT_VELOCITY[0];
         let note: string;
         switch (beatInBar) {
-          case 0:  note = resolveRootNote(chord, 2 + os); break;
-          case 1:  note = resolveThirdNote(chord, 2 + os, os); break;
-          case 2:  note = resolveFifthNote(chord, 2 + os, os); break;
-          default: note = resolveSeventhNote(chord, 2 + os, os); break;
+          case 0:
+            note = resolveRootNote(chord, 2 + os);
+            break;
+          case 1:
+            note = resolveThirdNote(chord, 2 + os, os);
+            break;
+          case 2:
+            note = resolveFifthNote(chord, 2 + os, os);
+            break;
+          default:
+            note = resolveSeventhNote(chord, 2 + os, os);
+            break;
         }
-        ctx.scheduleNote(atTicks, note, velocity, durationTicks, 'pluck');
+        ctx.scheduleEvent(
+          'bass',
+          { note, articulation: 'pluck' },
+          atTicks,
+          velocity,
+          durationTicks,
+        );
       }
     } else if (this.complexity === 5) {
       // Walking bass: root-third-fifth on inner beats, chromatic approach on last beat of each bar.
@@ -141,12 +186,24 @@ export class BassInstrument implements Instrument {
             : resolveSeventhNote(chord, 2 + os, os);
         } else {
           switch (beatInBar) {
-            case 0:  note = resolveRootNote(chord, 2 + os); break;
-            case 1:  note = resolveThirdNote(chord, 2 + os, os); break;
-            default: note = resolveFifthNote(chord, 2 + os, os); break;
+            case 0:
+              note = resolveRootNote(chord, 2 + os);
+              break;
+            case 1:
+              note = resolveThirdNote(chord, 2 + os, os);
+              break;
+            default:
+              note = resolveFifthNote(chord, 2 + os, os);
+              break;
           }
         }
-        ctx.scheduleNote(atTicks, note, velocity, durationTicks, 'pluck');
+        ctx.scheduleEvent(
+          'bass',
+          { note, articulation: 'pluck' },
+          atTicks,
+          velocity,
+          durationTicks,
+        );
       }
     } else if (this.complexity === 6) {
       // Chord tones on all 4 beats — root/third/fifth/seventh
@@ -159,12 +216,26 @@ export class BassInstrument implements Instrument {
         const velocity = BEAT_VELOCITY[beatInBar] ?? BEAT_VELOCITY[0];
         let note: string;
         switch (beatInBar) {
-          case 0:  note = resolveRootNote(chord, 2 + os); break;
-          case 1:  note = resolveThirdNote(chord, 2 + os, os); break;
-          case 2:  note = resolveFifthNote(chord, 2 + os, os); break;
-          default: note = resolveSeventhNote(chord, 2 + os, os); break;
+          case 0:
+            note = resolveRootNote(chord, 2 + os);
+            break;
+          case 1:
+            note = resolveThirdNote(chord, 2 + os, os);
+            break;
+          case 2:
+            note = resolveFifthNote(chord, 2 + os, os);
+            break;
+          default:
+            note = resolveSeventhNote(chord, 2 + os, os);
+            break;
         }
-        ctx.scheduleNote(atTicks, note, velocity, durationTicks, 'pluck');
+        ctx.scheduleEvent(
+          'bass',
+          { note, articulation: 'pluck' },
+          atTicks,
+          velocity,
+          durationTicks,
+        );
       }
     } else if (this.complexity === 7) {
       // Chord tones on beats 1 and 3 only — root on beat 1, fifth on beat 3, both pluck ("two feel")
@@ -177,10 +248,15 @@ export class BassInstrument implements Instrument {
         const chord = this.timeline.getChordAtTick(atTicks, sig);
         if (!chord) continue;
         const velocity = BEAT_VELOCITY[beatInBar] ?? BEAT_VELOCITY[0];
-        const note = beatInBar === 0
-          ? resolveRootNote(chord, 2 + os)
-          : resolveFifthNote(chord, 2 + os, os);
-        ctx.scheduleNote(atTicks, note, velocity, durationTicks, 'pluck');
+        const note =
+          beatInBar === 0 ? resolveRootNote(chord, 2 + os) : resolveFifthNote(chord, 2 + os, os);
+        ctx.scheduleEvent(
+          'bass',
+          { note, articulation: 'pluck' },
+          atTicks,
+          velocity,
+          durationTicks,
+        );
       }
     }
   }
@@ -194,10 +270,14 @@ function resolveRootNote(chord: ChordSymbol, octave: number): string {
 /** Interval in semitones from root to third based on chord quality. */
 function thirdInterval(chord: ChordSymbol): number {
   switch (chord.quality) {
-    case 'major': return 4;
-    case 'dominant': return 4;
-    case 'augmented': return 4;
-    default: return 3; // minor, halfDiminished, diminished
+    case 'major':
+      return 4;
+    case 'dominant':
+      return 4;
+    case 'augmented':
+      return 4;
+    default:
+      return 3; // minor, halfDiminished, diminished
   }
 }
 
@@ -211,9 +291,9 @@ function fifthInterval(chord: ChordSymbol): number {
 
 /** Interval in semitones from root to seventh based on chord quality. */
 function seventhInterval(chord: ChordSymbol): number {
-  if (chord.quality === 'major') return 11;    // major 7th
+  if (chord.quality === 'major') return 11; // major 7th
   if (chord.quality === 'diminished') return 9; // diminished 7th (bb7)
-  return 10;                                    // minor 7th (dominant, minor, halfDiminished, augmented)
+  return 10; // minor 7th (dominant, minor, halfDiminished, augmented)
 }
 
 /**
@@ -222,7 +302,12 @@ function seventhInterval(chord: ChordSymbol): number {
  * wraps the chromatic boundary. Notes above the walking bass ceiling (G3 + octaveShift)
  * are clamped down one octave.
  */
-function resolveIntervalNote(chord: ChordSymbol, rootOctave: number, intervalSemitones: number, octaveShift = 0): string {
+function resolveIntervalNote(
+  chord: ChordSymbol,
+  rootOctave: number,
+  intervalSemitones: number,
+  octaveShift = 0,
+): string {
   const accOffset = chord.rootAccidental === '#' ? 1 : chord.rootAccidental === 'b' ? -1 : 0;
   const rootSemitone = ((NOTE_SEMITONES[chord.root] ?? 0) + accOffset + 12) % 12;
   const targetSemitone = (rootSemitone + intervalSemitones) % 12;
@@ -249,8 +334,14 @@ function resolveSeventhNote(chord: ChordSymbol, rootOctave: number, octaveShift 
  * or below (fromAbove=false). Octave wraps are handled so the approach note is
  * always on the correct side of the target pitch. Walking bass ceiling applied.
  */
-function resolveApproachNote(nextChord: ChordSymbol, fromAbove: boolean, targetOctave: number, octaveShift = 0): string {
-  const accOffset = nextChord.rootAccidental === '#' ? 1 : nextChord.rootAccidental === 'b' ? -1 : 0;
+function resolveApproachNote(
+  nextChord: ChordSymbol,
+  fromAbove: boolean,
+  targetOctave: number,
+  octaveShift = 0,
+): string {
+  const accOffset =
+    nextChord.rootAccidental === '#' ? 1 : nextChord.rootAccidental === 'b' ? -1 : 0;
   const nextRootSemitone = ((NOTE_SEMITONES[nextChord.root] ?? 0) + accOffset + 12) % 12;
   let approachSemitone: number;
   let approachOctave: number;
@@ -264,6 +355,7 @@ function resolveApproachNote(nextChord: ChordSymbol, fromAbove: boolean, targetO
     approachOctave = approachSemitone >= nextRootSemitone ? targetOctave - 1 : targetOctave;
   }
   const ceilOct = 3 + octaveShift;
-  if (approachOctave > ceilOct || (approachOctave === ceilOct && approachSemitone > 7)) approachOctave -= 1;
+  if (approachOctave > ceilOct || (approachOctave === ceilOct && approachSemitone > 7))
+    approachOctave -= 1;
   return `${SEMITONE_NAMES[approachSemitone]}${approachOctave}`;
 }

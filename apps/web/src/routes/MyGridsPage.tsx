@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, Plus } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { useMyGrids } from '@/queries/useMyGrids';
 import { MyGridCard } from '@/components/dashboard/MyGridCard';
 import { CreateGridDialog } from '@/components/dashboard/CreateGridDialog';
@@ -9,9 +9,10 @@ export default function MyGridsPage() {
   const { data: grids, isLoading } = useMyGrids();
   const [query, setQuery] = useState('');
 
-  const filtered = grids?.filter((g) =>
-    g.name.toLowerCase().includes(query.toLowerCase()) ||
-    g.key.toLowerCase().includes(query.toLowerCase()),
+  const filtered = grids?.filter(
+    (g) =>
+      g.name.toLowerCase().includes(query.toLowerCase()) ||
+      g.key.toLowerCase().includes(query.toLowerCase()),
   );
 
   return (

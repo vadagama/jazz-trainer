@@ -44,9 +44,8 @@ export function PlayerToolbar({
   status = 'idle',
   currentBeat = 0,
   totalBeats = 4,
-  currentBar,
-  totalBars,
-  selectedBarIndex,
+  currentBar: _currentBar,
+  selectedBarIndex: _selectedBarIndex,
   bpm = 120,
   volume: volumeProp = 0.8,
   currentKey,
@@ -62,7 +61,6 @@ export function PlayerToolbar({
   const volumePct = Math.round(volumeProp * 100);
   const isMuted = volumeProp === 0;
   const isPlaying = status === 'playing';
-  const isIdle = status === 'idle';
 
   const [bpmInput, setBpmInput] = useState(String(bpm));
 
@@ -83,7 +81,7 @@ export function PlayerToolbar({
       )
         return;
       e.preventDefault();
-      isPlaying ? onStop?.() : onPlay?.();
+      void (isPlaying ? onStop?.() : onPlay?.());
     }
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
@@ -103,11 +101,8 @@ export function PlayerToolbar({
     onBpmChange?.(Math.min(400, Math.max(20, bpm + delta)));
   }
 
-  const displayBar = isIdle && selectedBarIndex != null ? selectedBarIndex : currentBar;
-
   return (
     <footer className="flex h-24 shrink-0 items-center gap-3 border-t border-border bg-card px-4">
-
       {/* Left: BPM / SIG / KEY labeled blocks */}
       <div className="flex items-stretch gap-1.5">
         {/* BPM */}
@@ -208,9 +203,7 @@ export function PlayerToolbar({
               key={i}
               className={cn(
                 'size-2 rounded-full transition-colors duration-75',
-                isPlaying && i === currentBeat
-                  ? 'bg-primary'
-                  : 'bg-muted-foreground/35',
+                isPlaying && i === currentBeat ? 'bg-primary' : 'bg-muted-foreground/35',
               )}
             />
           ))}

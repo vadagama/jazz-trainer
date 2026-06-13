@@ -1,18 +1,26 @@
 import { describe, it, expect } from 'vitest';
 import { DrumInstrument } from './drumInstrument.js';
 import { parseTimeSignature, ticksPerBeat, ticksPerBar } from '../time/timeSignature.js';
-import type { ScheduleContext, ScheduleWindow } from './instrument.js';
+import type { ScheduleContext, ScheduleWindow, DrumEvent } from './instrument.js';
 import type { DrumSound } from './drumSampleRegistry.js';
 
-interface Hit { sound: DrumSound; atTicks: number }
+interface Hit {
+  sound: DrumSound;
+  atTicks: number;
+}
 
 function makeCtx(sig: ReturnType<typeof parseTimeSignature>, hits: Hit[]): ScheduleContext {
   return {
     bpm: 120,
     timeSignature: sig,
-    swingRatio: 0.50,
+    swingRatio: 0.5,
     scheduleClick: () => {},
-    scheduleDrum: (atTicks, sound) => { hits.push({ sound, atTicks }); },
+    scheduleEvent: (_instrumentId, payload, atTicks) => {
+      if (_instrumentId === 'drums') {
+        const p = payload as DrumEvent;
+        hits.push({ sound: p.sound, atTicks });
+      }
+    },
   };
 }
 
@@ -136,7 +144,7 @@ describe('DrumInstrument — 5/4', () => {
     drum.schedule(oneBar(sig), makeCtx(sig, hits));
     const hhTicks = new Set(hits.filter((h) => h.sound === 'hihatFoot').map((h) => h.atTicks));
     const tpBeat = ticksPerBeat(sig);
-    expect(hhTicks.has(0)).toBe(false);          // beat 1 — strong
+    expect(hhTicks.has(0)).toBe(false); // beat 1 — strong
     expect(hhTicks.has(3 * tpBeat)).toBe(false); // beat 4 — second strong
   });
 });
@@ -174,10 +182,18 @@ describe('DrumInstrument — 6/8', () => {
 });
 
 describe('DrumInstrument — sink absent / no crash', () => {
-  it('does not throw when scheduleDrum is absent', () => {
+  it('does not throw when no drums sink is registered', () => {
     const sig = parseTimeSignature('4/4');
     const drum = new DrumInstrument();
-    const ctx: ScheduleContext = { bpm: 120, timeSignature: sig, swingRatio: 0.50, scheduleClick: () => {} };
+    const ctx: ScheduleContext = {
+      bpm: 120,
+      timeSignature: sig,
+      swingRatio: 0.5,
+      scheduleClick: () => {},
+      scheduleEvent: () => {
+        /* no-op */
+      },
+    };
     expect(() => drum.schedule(oneBar(sig), ctx)).not.toThrow();
   });
 });

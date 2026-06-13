@@ -13,12 +13,12 @@ export type DrumRidePattern = 'quarters' | 'swingRide';
 
 /** Swing ride offsets within a beat (0-indexed). swing triplet ≈ 2/3 of a beat. */
 const SWING_RIDE_OFFSETS: Array<{ beatIdx: number; subdivision: number; velocity: number }> = [
-  { beatIdx: 0, subdivision: 0,    velocity: 0.75 }, // beat 1
-  { beatIdx: 1, subdivision: 0,    velocity: 0.65 }, // beat 2
-  { beatIdx: 1, subdivision: 0.67, velocity: 0.50 }, // &-beat 2
-  { beatIdx: 2, subdivision: 0,    velocity: 0.70 }, // beat 3
-  { beatIdx: 3, subdivision: 0,    velocity: 0.65 }, // beat 4
-  { beatIdx: 3, subdivision: 0.67, velocity: 0.50 }, // &-beat 4
+  { beatIdx: 0, subdivision: 0, velocity: 0.75 }, // beat 1
+  { beatIdx: 1, subdivision: 0, velocity: 0.65 }, // beat 2
+  { beatIdx: 1, subdivision: 0.67, velocity: 0.5 }, // &-beat 2
+  { beatIdx: 2, subdivision: 0, velocity: 0.7 }, // beat 3
+  { beatIdx: 3, subdivision: 0, velocity: 0.65 }, // beat 4
+  { beatIdx: 3, subdivision: 0.67, velocity: 0.5 }, // &-beat 4
 ];
 
 /**
@@ -59,20 +59,15 @@ export class DrumInstrument implements Instrument {
   reset(): void {}
 
   schedule(window: ScheduleWindow, ctx: ScheduleContext): void {
-    if (!ctx.scheduleDrum) return;
-
     const sig = ctx.timeSignature;
     const tpBeat = ticksPerBeat(sig);
     const tpBar = ticksPerBar(sig);
     const backbeats = hihatBeats(sig);
-    const useSwingRide = this.ridePattern === 'swingRide'
-      && sig.beatsPerBar === 4
-      && sig.beatUnit === 4;
+    const useSwingRide =
+      this.ridePattern === 'swingRide' && sig.beatsPerBar === 4 && sig.beatUnit === 4;
 
     // Max jitter in ticks at current tempo (±5 ms)
-    const maxJitter = this.humanize
-      ? Math.round(0.005 * (ctx.bpm / 60) * PPQ)
-      : 0;
+    const maxJitter = this.humanize ? Math.round(0.005 * (ctx.bpm / 60) * PPQ) : 0;
 
     const firstBeat = Math.ceil(window.fromTicks / tpBeat);
     for (let beat = firstBeat; beat * tpBeat < window.toTicks; beat++) {
@@ -84,7 +79,7 @@ export class DrumInstrument implements Instrument {
         const jitter = this.humanize ? (Math.random() - 0.5) * 2 * maxJitter : 0;
         const t = Math.max(window.fromTicks, atTicks + jitter);
         const velocity = this.humanize ? 0.6 + (Math.random() - 0.5) * 0.1 : 0.6;
-        ctx.scheduleDrum(t, 'stir', velocity, tpBeat);
+        ctx.scheduleEvent('drums', { sound: 'stir' }, t, velocity, tpBeat);
       }
 
       // Hi-hat foot — on backbeats only
@@ -92,7 +87,7 @@ export class DrumInstrument implements Instrument {
         const jitter = this.humanize ? (Math.random() - 0.5) * 2 * maxJitter : 0;
         const t = Math.max(window.fromTicks, atTicks + jitter);
         const velocity = this.humanize ? 0.72 + (Math.random() - 0.5) * 0.1 : 0.72;
-        ctx.scheduleDrum(t, 'hihatFoot', velocity, tpBeat);
+        ctx.scheduleEvent('drums', { sound: 'hihatFoot' }, t, velocity, tpBeat);
       }
 
       // Ride — quarters (non-swing or non-4/4)
@@ -100,7 +95,7 @@ export class DrumInstrument implements Instrument {
         const jitter = this.humanize ? (Math.random() - 0.5) * 2 * maxJitter : 0;
         const t = Math.max(window.fromTicks, atTicks + jitter);
         const velocity = this.humanize ? 0.65 + (Math.random() - 0.5) * 0.1 : 0.65;
-        ctx.scheduleDrum(t, 'ride', velocity, 20);
+        ctx.scheduleEvent('drums', { sound: 'ride' }, t, velocity, 20);
       }
     }
 
@@ -117,8 +112,10 @@ export class DrumInstrument implements Instrument {
           if (atTicks < window.fromTicks || atTicks >= window.toTicks) continue;
           const jitter = this.humanize ? (Math.random() - 0.5) * 2 * maxJitter : 0;
           const t = Math.max(window.fromTicks, atTicks + jitter);
-          const velocity = this.humanize ? hit.velocity + (Math.random() - 0.5) * 0.05 : hit.velocity;
-          ctx.scheduleDrum(t, 'ride', velocity, 20);
+          const velocity = this.humanize
+            ? hit.velocity + (Math.random() - 0.5) * 0.05
+            : hit.velocity;
+          ctx.scheduleEvent('drums', { sound: 'ride' }, t, velocity, 20);
         }
       }
     }

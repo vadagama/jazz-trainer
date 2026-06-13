@@ -14,8 +14,11 @@ function collect(
   const ctx: ScheduleContext = {
     bpm,
     timeSignature,
-    swingRatio: 0.50,
+    swingRatio: 0.5,
     scheduleClick: (at, beatType) => clicks.push({ at, beatType }),
+    scheduleEvent: () => {
+      /* metronome doesn't use scheduleEvent */
+    },
   };
   instrument.schedule(window, ctx);
   return clicks;

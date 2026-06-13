@@ -13,24 +13,25 @@ import {
   parseTimeSignature,
   defaultSecondStrongBeats,
   METRONOME_SAMPLE_BY_ID,
-  buildBassPluckUrls,
-  buildBassMuteUrls,
-  RHODES_LAYERS,
-  RHODES_SAMPLER_BASE_URL,
   pickRhodesLayer,
   DrumInstrument,
-  DRUM_SAMPLE_FILES,
-  DRUMS_BASE_URL,
+  bassManifest,
+  rhodesManifest,
+  drumsManifest,
   type BeatType,
-  type NoteSink,
-  type ChordSink,
-  type DrumSink,
+  type EventSink,
+  type BassEvent,
+  type RhodesEvent,
+  type DrumEvent,
   type DrumSound,
   type ChordTimelineEntry,
 } from '@jazz/music-core';
-import { ToneAudioAdapter } from '@jazz/tone-audio-adapter';
-import type { TimeSignatureString, Section, ClickSound } from '@jazz/shared';
-import type { UserSettingsDTO } from '@jazz/shared';
+import {
+  ToneAudioAdapter,
+  createPitchedResources,
+  createOneshotResources,
+} from '@jazz/tone-audio-adapter';
+import type { TimeSignatureString, Section, ClickSound, UserSettingsDTO } from '@jazz/shared';
 import { usePlaybackStore } from '@jazz/plugin-sdk';
 
 const LOOKAHEAD_TICKS = 480 * 4;
@@ -151,8 +152,6 @@ function buildChordTimelineEntries(sections: Section[], flatBars: number[]): Cho
   });
 }
 
-const BASS_BASE_URL = '/samples/bass/';
-
 export interface UseTransportOptions {
   settings: UserSettingsDTO;
   timeSignature: TimeSignatureString;
@@ -180,23 +179,23 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
   const strongUrlRef = useRef('');
   const strong2UrlRef = useRef('');
   const weakUrlRef = useRef('');
-  // Bass: 4 Tone.Samplers per articulation (pluck + mute) + a Channel for volume
-  const bassMuteRRRef = useRef<Tone.Sampler[]>([]);
-  const bassPluckRRRef = useRef<Tone.Sampler[]>([]);
+  // Instrument resources created by factories
+  const bassSamplersRef = useRef<Map<string, Tone.Sampler>>(new Map());
+  const bassDisposeRef = useRef<() => void>(() => {});
   const bassChannelRef = useRef<Tone.Channel | null>(null);
   const bassInstrumentRef = useRef<BassInstrument | null>(null);
-  // Rhodes: 4 Tone.Samplers (one per velocity layer) + FX chain + instrument
-  const rhodesLayersRef = useRef<Record<string, Tone.Sampler>>({});
+  // Rhodes: FX chain + instrument
+  const rhodesSamplersRef = useRef<Map<string, Tone.Sampler>>(new Map());
+  const rhodesDisposeRef = useRef<() => void>(() => {});
   const rhodesEQ3Ref = useRef<Tone.EQ3 | null>(null);
   const rhodesTremoloRef = useRef<Tone.Tremolo | null>(null);
   const rhodesChorusRef = useRef<Tone.Chorus | null>(null);
   const rhodesReverbRef = useRef<Tone.Reverb | null>(null);
   const rhodesChannelRef = useRef<Tone.Channel | null>(null);
   const rhodesInstrumentRef = useRef<RhodesInstrument | null>(null);
-  // Drums: 3 × 4 Tone.Players (one per RR variant per sound) + 3 per-sound Channels + 1 master
-  const drumsRidePlayersRef = useRef<Tone.Player[]>([]);
-  const drumsStirPlayersRef = useRef<Tone.Player[]>([]);
-  const drumsHihatPlayersRef = useRef<Tone.Player[]>([]);
+  // Drums: per-sound players + channels
+  const drumsPlayersRef = useRef<Map<string, Tone.Player[]>>(new Map());
+  const drumsDisposeRef = useRef<() => void>(() => {});
   const drumsRideChannelRef = useRef<Tone.Channel | null>(null);
   const drumsStirChannelRef = useRef<Tone.Channel | null>(null);
   const drumsHihatChannelRef = useRef<Tone.Channel | null>(null);
@@ -259,57 +258,40 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
       }, `${atTicks}i`);
     };
 
-    // ── Bass sampler setup ─────────────────────────────────────────────────
-    const bassChannel = new Tone.Channel({
-      volume: Tone.gainToDb(settings.bassVolume ?? 0.7),
-    }).toDestination();
-    bassChannelRef.current = bassChannel;
-
-    // One Sampler per RR variant per articulation so we can cycle through real recordings
-    const pluckSamplers = ([1, 2, 3, 4] as const).map((rr) =>
-      new Tone.Sampler({
-        urls: buildBassPluckUrls(rr),
-        baseUrl: BASS_BASE_URL,
-        release: 0.5,
-      }).connect(bassChannel),
-    );
-    bassPluckRRRef.current = pluckSamplers;
-
-    const muteSamplers = ([1, 2, 3, 4] as const).map((rr) =>
-      new Tone.Sampler({
-        urls: buildBassMuteUrls(rr),
-        baseUrl: BASS_BASE_URL,
-        release: 0.3,
-      }).connect(bassChannel),
-    );
-    bassMuteRRRef.current = muteSamplers;
-
     // Pre-warm: start AudioContext on any first user gesture so all OGG/MP3 samples
-    // finish decoding before the user clicks Play. Without this, AudioContext stays
-    // suspended until play() and Tone.loaded() blocks for the full decode (~200–800 ms).
+    // finish decoding before the user clicks Play.
     const warmAudioContext = () => {
       void Tone.start();
     };
     document.addEventListener('pointerdown', warmAudioContext, { once: true });
 
-    const noteSink: NoteSink = (atTicks, note, velocity, durationTicks, articulation) => {
+    // ── Bass setup ─────────────────────────────────────────────────────────
+    const bassChannel = new Tone.Channel({
+      volume: Tone.gainToDb(settings.bassVolume ?? 0.7),
+    }).toDestination();
+    bassChannelRef.current = bassChannel;
+
+    const bassRes = createPitchedResources(bassManifest.sampleManifest);
+    for (const s of bassRes.samplers.values()) s.connect(bassChannel);
+    bassSamplersRef.current = bassRes.samplers;
+    bassDisposeRef.current = bassRes.dispose;
+
+    const bassEventSink: EventSink = (payload, atTicks, velocity, durationTicks) => {
       if (!(optsRef.current.settings.bassEnabled ?? true)) return;
-      const pool = articulation === 'mute' ? bassMuteRRRef.current : bassPluckRRRef.current;
-      const rrIndex = rrCounterRef.current.next(note, articulation) - 1; // 0-based
-      const sampler = pool[rrIndex];
+      const p = payload as BassEvent;
+      const layerKey = `${p.articulation}_rr${rrCounterRef.current.next(p.note, p.articulation)}`;
+      const sampler = bassSamplersRef.current.get(layerKey);
       if (!sampler) return;
-      // Convert ticks to seconds: ticks / PPQ * (60 / bpm)
       const durationSecs = ticksToSeconds(durationTicks, optsRef.current.settings.bpm);
       tone.scheduleOnce((time: number) => {
-        if (sampler.loaded) sampler.triggerAttackRelease(note, durationSecs, time, velocity);
+        if (sampler.loaded) sampler.triggerAttackRelease(p.note, durationSecs, time, velocity);
       }, `${atTicks}i`);
     };
 
-    const bassTimeline = new ChordTimeline();
-    const bassInstrument = new BassInstrument(bassTimeline);
+    const bassInstrument = new BassInstrument(new ChordTimeline());
     bassInstrumentRef.current = bassInstrument;
 
-    // ── Rhodes sampler setup ───────────────────────────────────────────────
+    // ── Rhodes setup ───────────────────────────────────────────────────────
     const rhodesEQ3 = new Tone.EQ3({ low: -2, mid: 0, high: 1 });
     const rhodesTremolo = new Tone.Tremolo({ frequency: 5.5, depth: 0.18, wet: 0.25 }).start();
     const rhodesChorus = new Tone.Chorus({
@@ -324,43 +306,37 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
       pan: 0.05,
     }).toDestination();
     rhodesEQ3.chain(rhodesTremolo, rhodesChorus, rhodesReverb, rhodesChannel);
-
     rhodesEQ3Ref.current = rhodesEQ3;
     rhodesTremoloRef.current = rhodesTremolo;
     rhodesChorusRef.current = rhodesChorus;
     rhodesReverbRef.current = rhodesReverb;
     rhodesChannelRef.current = rhodesChannel;
 
-    const rhodesLayers: Record<string, Tone.Sampler> = {};
-    for (const [layerName, noteMap] of Object.entries(RHODES_LAYERS)) {
-      rhodesLayers[layerName] = new Tone.Sampler({
-        urls: noteMap,
-        baseUrl: RHODES_SAMPLER_BASE_URL,
-        release: 1.5,
-      }).connect(rhodesEQ3);
-    }
-    rhodesLayersRef.current = rhodesLayers;
+    const rhodesRes = createPitchedResources(rhodesManifest.sampleManifest);
+    for (const s of rhodesRes.samplers.values()) s.connect(rhodesEQ3);
+    rhodesSamplersRef.current = rhodesRes.samplers;
+    rhodesDisposeRef.current = rhodesRes.dispose;
 
-    const chordSink: ChordSink = (atTicks, notes, velocity, durationTicks) => {
+    const rhodesEventSink: EventSink = (payload, atTicks, velocity, durationTicks) => {
       if (!(optsRef.current.settings.rhodesEnabled ?? false)) return;
+      const p = payload as RhodesEvent;
       const layerName = pickRhodesLayer(velocity);
-      const sampler = rhodesLayersRef.current[layerName];
+      const sampler = rhodesSamplersRef.current.get(layerName);
       if (!sampler) return;
       const durationSecs = ticksToSeconds(durationTicks, optsRef.current.settings.bpm);
       tone.scheduleOnce((time: number) => {
         if (sampler.loaded) {
-          for (const note of notes) {
+          for (const note of p.notes) {
             sampler.triggerAttackRelease(note, durationSecs, time, velocity);
           }
         }
       }, `${atTicks}i`);
     };
 
-    const rhodesTimeline = new ChordTimeline();
-    const rhodesInstrument = new RhodesInstrument(rhodesTimeline);
+    const rhodesInstrument = new RhodesInstrument(new ChordTimeline());
     rhodesInstrumentRef.current = rhodesInstrument;
 
-    // ── Drums setup ───────────────────────────────────────────────────────────
+    // ── Drums setup ─────────────────────────────────────────────────────────
     const drumsMasterChannel = new Tone.Channel({
       volume: Tone.gainToDb(settings.drumsVolume ?? 0.7),
     }).toDestination();
@@ -379,34 +355,32 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     drumsStirChannelRef.current = drumsStirChannel;
     drumsHihatChannelRef.current = drumsHihatChannel;
 
-    const makeDrumPlayers = (sound: DrumSound, channel: Tone.Channel): Tone.Player[] =>
-      DRUM_SAMPLE_FILES[sound].map((file) =>
-        new Tone.Player(`${DRUMS_BASE_URL}${file}`).connect(channel),
-      );
+    const drumsRes = createOneshotResources(drumsManifest.sampleManifest);
+    for (const [sound, arr] of drumsRes.players) {
+      const ch =
+        sound === 'ride'
+          ? drumsRideChannel
+          : sound === 'stir'
+            ? drumsStirChannel
+            : drumsHihatChannel;
+      for (const p of arr) p.connect(ch);
+    }
+    drumsPlayersRef.current = drumsRes.players;
+    drumsDisposeRef.current = drumsRes.dispose;
 
-    drumsRidePlayersRef.current = makeDrumPlayers('ride', drumsRideChannel);
-    drumsStirPlayersRef.current = makeDrumPlayers('stir', drumsStirChannel);
-    drumsHihatPlayersRef.current = makeDrumPlayers('hihatFoot', drumsHihatChannel);
-
-    const drumSink: DrumSink = (atTicks, sound, _velocity, _durationTicks) => {
+    const drumsEventSink: EventSink = (payload, atTicks, _velocity, _durationTicks) => {
       const s = optsRef.current.settings;
       if (!(s.drumsEnabled ?? true)) return;
-      if (sound === 'ride' && !(s.drumsRideEnabled ?? true)) return;
-      if (sound === 'stir' && !(s.drumsStirEnabled ?? true)) return;
-      if (sound === 'hihatFoot' && !(s.drumsHihatEnabled ?? true)) return;
-
-      const pool =
-        sound === 'ride'
-          ? drumsRidePlayersRef.current
-          : sound === 'stir'
-            ? drumsStirPlayersRef.current
-            : drumsHihatPlayersRef.current;
-
-      const rr = drumsRrRef.current[sound] % 4;
-      drumsRrRef.current[sound]++;
+      const p = payload as DrumEvent;
+      if (p.sound === 'ride' && !(s.drumsRideEnabled ?? true)) return;
+      if (p.sound === 'stir' && !(s.drumsStirEnabled ?? true)) return;
+      if (p.sound === 'hihatFoot' && !(s.drumsHihatEnabled ?? true)) return;
+      const pool = drumsPlayersRef.current.get(p.sound);
+      if (!pool) return;
+      const rr = drumsRrRef.current[p.sound] % 4;
+      drumsRrRef.current[p.sound]++;
       const player = pool[rr];
       if (!player) return;
-
       tone.scheduleOnce((time: number) => {
         if (player.loaded) player.start(time);
       }, `${atTicks}i`);
@@ -418,15 +392,16 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     );
     drumInstrumentRef.current = drumInstrument;
 
+    // ── Transport engine ───────────────────────────────────────────────────
     const engine = new TransportEngine({
       bpm: settings.bpm,
       timeSignature,
-      swingRatio: settings.swingRatio ?? 0.50,
+      swingRatio: settings.swingRatio ?? 0.5,
       sink,
-      noteSink,
-      chordSink,
-      drumSink,
     });
+    engine.registerSink('bass', bassEventSink);
+    engine.registerSink('rhodes', rhodesEventSink);
+    engine.registerSink('drums', drumsEventSink);
 
     const metronome = new MetronomeInstrument();
     engine.addInstrument(metronome);
@@ -458,15 +433,13 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
       strongPlayerRef.current = null;
       strong2PlayerRef.current = null;
       weakPlayerRef.current = null;
-      bassMuteRRRef.current.forEach((s) => s.dispose());
-      bassMuteRRRef.current = [];
-      bassPluckRRRef.current.forEach((s) => s.dispose());
-      bassPluckRRRef.current = [];
+      bassDisposeRef.current();
+      bassSamplersRef.current = new Map();
       bassChannelRef.current?.dispose();
       bassChannelRef.current = null;
       bassInstrumentRef.current = null;
-      Object.values(rhodesLayersRef.current).forEach((s) => s.dispose());
-      rhodesLayersRef.current = {};
+      rhodesDisposeRef.current();
+      rhodesSamplersRef.current = new Map();
       rhodesEQ3Ref.current?.dispose();
       rhodesEQ3Ref.current = null;
       rhodesTremoloRef.current?.dispose();
@@ -478,12 +451,8 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
       rhodesChannelRef.current?.dispose();
       rhodesChannelRef.current = null;
       rhodesInstrumentRef.current = null;
-      drumsRidePlayersRef.current.forEach((p) => p.dispose());
-      drumsRidePlayersRef.current = [];
-      drumsStirPlayersRef.current.forEach((p) => p.dispose());
-      drumsStirPlayersRef.current = [];
-      drumsHihatPlayersRef.current.forEach((p) => p.dispose());
-      drumsHihatPlayersRef.current = [];
+      drumsDisposeRef.current();
+      drumsPlayersRef.current = new Map();
       drumsRideChannelRef.current?.dispose();
       drumsRideChannelRef.current = null;
       drumsStirChannelRef.current?.dispose();
@@ -635,7 +604,7 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
   // Update swing ratio
   useEffect(() => {
     if (!engineRef.current) return;
-    engineRef.current.setSwingRatio(settings.swingRatio ?? 0.50);
+    engineRef.current.setSwingRatio(settings.swingRatio ?? 0.5);
   }, [settings.swingRatio]);
 
   // Update time signature on the engine when it changes

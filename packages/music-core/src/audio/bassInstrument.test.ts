@@ -26,16 +26,32 @@ function makeChord(
 
 function makeCtx(sig = parseTimeSignature('4/4')): {
   ctx: ScheduleContext;
-  notes: Array<{ at: number; note: string; velocity: number; durationTicks: number; articulation: string }>;
+  notes: Array<{
+    at: number;
+    note: string;
+    velocity: number;
+    durationTicks: number;
+    articulation: string;
+  }>;
 } {
-  const notes: Array<{ at: number; note: string; velocity: number; durationTicks: number; articulation: string }> = [];
+  const notes: Array<{
+    at: number;
+    note: string;
+    velocity: number;
+    durationTicks: number;
+    articulation: string;
+  }> = [];
   const ctx: ScheduleContext = {
     bpm: 120,
     timeSignature: sig,
-    swingRatio: 0.50,
+    swingRatio: 0.5,
     scheduleClick: () => {},
-    scheduleNote: (at, note, velocity, durationTicks, articulation) =>
-      notes.push({ at, note, velocity, durationTicks, articulation }),
+    scheduleEvent: (_instrumentId, payload, at, velocity, durationTicks) => {
+      if (_instrumentId === 'bass') {
+        const p = payload as { note: string; articulation: string };
+        notes.push({ at, note: p.note, velocity, durationTicks, articulation: p.articulation });
+      }
+    },
   };
   return { ctx, notes };
 }
@@ -83,15 +99,17 @@ describe('BassInstrument', () => {
     expect(notes.map((n) => n.note)).toEqual(['D2', 'C2']);
   });
 
-  it('does nothing when scheduleNote is absent', () => {
+  it('does nothing when no bass sink is registered', () => {
     const timeline = new ChordTimeline([{ barIndex: 0, chord: makeChord('D') }]);
     const bass = new BassInstrument(timeline);
     const ctx: ScheduleContext = {
       bpm: 120,
       timeSignature: parseTimeSignature('4/4'),
-      swingRatio: 0.50,
+      swingRatio: 0.5,
       scheduleClick: () => {},
-      // scheduleNote intentionally absent
+      scheduleEvent: () => {
+        /* no-op: no sink registered for bass */
+      },
     };
     expect(() => bass.schedule({ fromTicks: 0, toTicks: 1920 }, ctx)).not.toThrow();
   });
@@ -179,7 +197,7 @@ describe('BassInstrument', () => {
 
       bass.schedule({ fromTicks: 0, toTicks: 1920 }, ctx);
 
-      expect(notes.map((n) => n.velocity)).toEqual([0.82, 0.68, 0.76, 0.70]);
+      expect(notes.map((n) => n.velocity)).toEqual([0.82, 0.68, 0.76, 0.7]);
     });
 
     it('follows chord changes per beat (chord change mid-bar)', () => {
@@ -200,9 +218,7 @@ describe('BassInstrument', () => {
     });
 
     it('resolves flat accidentals correctly (Bb, Ab)', () => {
-      const timeline = new ChordTimeline([
-        { barIndex: 0, chord: makeChord('B', 'b') },
-      ]);
+      const timeline = new ChordTimeline([{ barIndex: 0, chord: makeChord('B', 'b') }]);
       const bass = new BassInstrument(timeline);
       bass.setComplexity(2);
       const { ctx, notes } = makeCtx();
@@ -267,9 +283,7 @@ describe('BassInstrument', () => {
     });
 
     it('fifth lands above root when interval wraps octave boundary (G dominant → D3)', () => {
-      const timeline = new ChordTimeline([
-        { barIndex: 0, chord: makeChord('G', '', 'dominant') },
-      ]);
+      const timeline = new ChordTimeline([{ barIndex: 0, chord: makeChord('G', '', 'dominant') }]);
       const bass = new BassInstrument(timeline);
       bass.setComplexity(3);
       const { ctx, notes } = makeCtx();
@@ -407,7 +421,7 @@ describe('BassInstrument', () => {
 
       bass.schedule({ fromTicks: 0, toTicks: 1920 }, ctx);
 
-      expect(notes.map((n) => n.velocity)).toEqual([0.82, 0.68, 0.76, 0.70]);
+      expect(notes.map((n) => n.velocity)).toEqual([0.82, 0.68, 0.76, 0.7]);
     });
 
     it('approach from above to B wraps to C3 (B=11, approach=C=0 → oct+1)', () => {
@@ -547,7 +561,7 @@ describe('BassInstrument', () => {
 
       bass.schedule({ fromTicks: 0, toTicks: 1920 }, ctx);
 
-      expect(notes.map((n) => n.velocity)).toEqual([0.82, 0.68, 0.76, 0.70]);
+      expect(notes.map((n) => n.velocity)).toEqual([0.82, 0.68, 0.76, 0.7]);
     });
 
     it('plays root-third-fifth in 3/4 (no seventh slot)', () => {
@@ -774,7 +788,7 @@ describe('BassInstrument', () => {
 
       bass.schedule({ fromTicks: 0, toTicks: 1920 }, ctx);
 
-      expect(notes.map((n) => n.velocity)).toEqual([0.82, 0.68, 0.76, 0.70]);
+      expect(notes.map((n) => n.velocity)).toEqual([0.82, 0.68, 0.76, 0.7]);
     });
 
     it('resolves major seventh interval correctly (Cmaj7: C E G B)', () => {
@@ -789,7 +803,9 @@ describe('BassInstrument', () => {
     });
 
     it('resolves diminished seventh correctly (Bdim7: B D F Ab) — Ab clamped to oct 2', () => {
-      const timeline = new ChordTimeline([{ barIndex: 0, chord: makeChord('B', '', 'diminished') }]);
+      const timeline = new ChordTimeline([
+        { barIndex: 0, chord: makeChord('B', '', 'diminished') },
+      ]);
       const bass = new BassInstrument(timeline);
       bass.setComplexity(4);
       const { ctx, notes } = makeCtx();

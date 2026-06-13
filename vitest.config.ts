@@ -28,6 +28,11 @@ export default defineConfig({
       '@jazz/plugin-progression-recognition': r(
         './packages/plugins/progression-recognition/src/index.ts',
       ),
+      '@jazz/plugin-admin-users': r('./packages/plugins/admin-users/src/index.ts'),
+      '@jazz/plugin-admin-content': r('./packages/plugins/admin-content/src/index.ts'),
+      '@jazz/plugin-admin-flags': r('./packages/plugins/admin-flags/src/index.ts'),
+      '@jazz/plugin-admin-assets': r('./packages/plugins/admin-assets/src/index.ts'),
+      '@jazz/plugin-admin-diagnostics': r('./packages/plugins/admin-diagnostics/src/index.ts'),
     },
   },
   test: {

@@ -49,8 +49,6 @@ export class RhodesInstrument implements Instrument {
   }
 
   schedule(window: ScheduleWindow, ctx: ScheduleContext): void {
-    if (!ctx.scheduleChord) return;
-
     const sig = ctx.timeSignature;
     const tpBar = ticksPerBar(sig);
     const tpBeat = ticksPerBeat(sig);
@@ -62,9 +60,7 @@ export class RhodesInstrument implements Instrument {
 
     const pattern = getCompPattern(this.mode);
     // Max jitter in ticks at the current tempo (±6 ms)
-    const maxJitterTicks = this.humanize
-      ? Math.round(0.006 * (ctx.bpm / 60) * PPQ)
-      : 0;
+    const maxJitterTicks = this.humanize ? Math.round(0.006 * (ctx.bpm / 60) * PPQ) : 0;
 
     const firstBar = Math.floor(window.fromTicks / tpBar);
     const lastBar = Math.floor((window.toTicks - 1) / tpBar);
@@ -80,9 +76,10 @@ export class RhodesInstrument implements Instrument {
         const eventTicks = barStartTicks + (event.beat - 1) * tpBeat + subdivTicks;
         if (eventTicks < window.fromTicks || eventTicks >= window.toTicks) continue;
 
-        const chord = event.chordRef === 'next'
-          ? this.timeline.getChordAtTick((bar + 1) * tpBar, sig)
-          : currentChord;
+        const chord =
+          event.chordRef === 'next'
+            ? this.timeline.getChordAtTick((bar + 1) * tpBar, sig)
+            : currentChord;
         if (!chord) continue;
 
         const voicing = buildVoicing(chord, this.density, this.prevVoicing);
@@ -94,11 +91,14 @@ export class RhodesInstrument implements Instrument {
         let velocity = event.velocity * this.baseVelocity;
 
         if (this.humanize) {
-          atTicks = Math.max(window.fromTicks, atTicks + Math.round((Math.random() * 2 - 1) * maxJitterTicks));
+          atTicks = Math.max(
+            window.fromTicks,
+            atTicks + Math.round((Math.random() * 2 - 1) * maxJitterTicks),
+          );
           velocity = Math.max(0.01, Math.min(1, velocity + (Math.random() * 2 - 1) * 0.05));
         }
 
-        ctx.scheduleChord(atTicks, voicing, velocity, durationTicks);
+        ctx.scheduleEvent('rhodes', { notes: voicing }, atTicks, velocity, durationTicks);
         this.lastScheduledTick = eventTicks;
       }
     }

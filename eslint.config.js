@@ -58,10 +58,9 @@ export default tseslint.config(
   },
 
   // =====================================================================
-  // Фаза 0: архитектурные границы (PLAN.md §2)
+  // Архитектурные границы (eslint-plugin-boundaries)
   // =====================================================================
 
-  // 0.2 — eslint-plugin-boundaries: element-type rules по зонам
   {
     plugins: { boundaries },
     settings: {
@@ -70,8 +69,9 @@ export default tseslint.config(
         { type: 'packages/shared', pattern: 'packages/shared/*' },
         { type: 'packages/plugin-sdk', pattern: 'packages/plugin-sdk/*' },
         { type: 'packages/plugin-host', pattern: 'packages/plugin-host/*' },
-        { type: 'packages/plugins/*', pattern: 'packages/plugins/*' },
-        { type: 'packages/adapters/*', pattern: 'packages/adapters/**/*' },
+        { type: 'packages/ui', pattern: 'packages/ui/*' },
+        { type: 'packages/plugins', pattern: 'packages/plugins/*' },
+        { type: 'packages/adapters', pattern: 'packages/adapters/**/*' },
         { type: 'apps/web', pattern: 'apps/web/*' },
         { type: 'apps/api', pattern: 'apps/api/*' },
       ],
@@ -104,11 +104,16 @@ export default tseslint.config(
               ],
             },
             {
-              from: 'packages/plugins/*',
-              allow: ['packages/plugin-sdk', 'packages/music-core', 'packages/shared'],
+              from: 'packages/plugins',
+              allow: [
+                'packages/plugin-sdk',
+                'packages/music-core',
+                'packages/shared',
+                'packages/ui',
+              ],
             },
             {
-              from: 'packages/adapters/*',
+              from: 'packages/adapters',
               allow: ['packages/plugin-sdk', 'packages/music-core', 'packages/shared'],
             },
             {
@@ -119,6 +124,7 @@ export default tseslint.config(
                 'packages/plugin-sdk',
                 'packages/music-core',
                 'packages/shared',
+                'packages/ui',
               ],
             },
             {
@@ -131,7 +137,10 @@ export default tseslint.config(
     },
   },
 
-  // 0.3 — eslint-plugin-import: запрет браузерных API в music-core и shared
+  // =====================================================================
+  // eslint-plugin-import: запрет нежелательных путей
+  // =====================================================================
+
   importPlugin.flatConfigs.recommended,
   importPlugin.flatConfigs.typescript,
   {
@@ -168,6 +177,17 @@ export default tseslint.config(
               target: './packages/plugins',
               from: './apps/web/src/shell',
               message: 'Плагины не могут импортировать shell',
+            },
+            {
+              target: './packages/plugins',
+              from: './apps/web/src',
+              message:
+                'Плагины не могут импортировать внутренности apps/web. Используй @jazz/plugin-sdk, @jazz/music-core, @jazz/shared или @jazz/ui.',
+            },
+            {
+              target: './packages/adapters',
+              from: './apps/web/src',
+              message: 'Адаптеры не могут импортировать внутренности apps/web.',
             },
           ],
         },
