@@ -1,5 +1,5 @@
 import { useSettings, useUpdateSettings } from '@/queries/useSettings';
-import { useLocalSettingsStore } from '@/stores/useLocalSettingsStore';
+import { useLocalSettingsStore } from '@jazz/plugin-sdk';
 import { useAuth } from '@/queries/useAuth';
 import { useTheme } from '@/hooks/useTheme';
 import { SettingsForm } from '@/components/settings/SettingsForm';

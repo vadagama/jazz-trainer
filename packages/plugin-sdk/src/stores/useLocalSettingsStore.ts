@@ -17,6 +17,7 @@ const DEFAULT_SETTINGS: LocalSettings = {
   clickWeak: 'drum-stick',
   volume: 0.8,
   countIn: 1,
+  metronomeEnabled: true,
   metronomeVolume: 0.8,
   bassEnabled: true,
   bassVolume: 0.7,
@@ -33,16 +34,30 @@ const DEFAULT_SETTINGS: LocalSettings = {
   drumsStirEnabled: true,
   drumsStirVolume: 0.6,
   drumsHihatEnabled: true,
-  drumsHihatVolume: 0.55,
+  drumsHihatVolume: 0.65,
+  drumsHihatOpenness: 0,
+  drumsBassDrumEnabled: true,
+  drumsBassDrumVolume: 0.7,
+  drumsSnareEnabled: true,
+  drumsSnareVolume: 0.8,
+  drumsCrashEnabled: true,
+  drumsCrashVolume: 0.8,
+  drumsCrashFrequency: 4,
+  drumsRimEnabled: false,
+  drumsRimVolume: 0.6,
+  drumsPattern: 'swing' as const,
+  drumsHumanizeIntensity: 'med' as const,
+  drumsFunkComplexity: 'medium' as const,
+  drumsFillFrequency: 'rare' as const,
   drumsRidePattern: 'swingRide' as const,
+  swingRatio: 0.5,
 };
 
 export const useLocalSettingsStore = create<LocalSettingsStore>()(
   persist(
     (set) => ({
       settings: DEFAULT_SETTINGS,
-      setSettings: (patch) =>
-        set((state) => ({ settings: { ...state.settings, ...patch } })),
+      setSettings: (patch) => set((state) => ({ settings: { ...state.settings, ...patch } })),
       reset: () => set({ settings: DEFAULT_SETTINGS }),
     }),
     { name: 'jazz-local-settings' },

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { act } from '@testing-library/react';
-import { useLocalSettingsStore } from '@/stores/useLocalSettingsStore';
+import { useLocalSettingsStore } from '@jazz/plugin-sdk';
 
 describe('useLocalSettingsStore', () => {
   beforeEach(() => {
