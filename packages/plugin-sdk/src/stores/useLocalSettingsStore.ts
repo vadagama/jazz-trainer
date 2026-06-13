@@ -48,7 +48,12 @@ const DEFAULT_SETTINGS: LocalSettings = {
   drumsPattern: 'swing' as const,
   drumsHumanizeIntensity: 'med' as const,
   drumsFunkComplexity: 'medium' as const,
-  drumsFillFrequency: 'rare' as const,
+  drumsFillFrequency: '8bars' as const,
+  drumsRandomizationLevel: 'off' as const,
+  drumsFillComplexity: 'medium' as const,
+  drumsRideVariation: true,
+  drumsSnareGhosts: true,
+  drumsBassDrumVariation: true,
   drumsRidePattern: 'swingRide' as const,
   swingRatio: 0.5,
 };

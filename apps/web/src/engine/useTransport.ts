@@ -15,6 +15,8 @@ import {
   METRONOME_SAMPLE_BY_ID,
   pickRhodesLayer,
   DrumInstrument,
+  type DrumsPattern,
+  type HumanizeIntensity,
   bassManifest,
   rhodesManifest,
   drumsManifest,
@@ -23,7 +25,6 @@ import {
   type BassEvent,
   type RhodesEvent,
   type DrumEvent,
-  type DrumSound,
   type ChordTimelineEntry,
 } from '@jazz/music-core';
 import {
@@ -196,12 +197,15 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
   // Drums: per-sound players + channels
   const drumsPlayersRef = useRef<Map<string, Tone.Player[]>>(new Map());
   const drumsDisposeRef = useRef<() => void>(() => {});
-  const drumsRideChannelRef = useRef<Tone.Channel | null>(null);
-  const drumsStirChannelRef = useRef<Tone.Channel | null>(null);
+  const drumsBassDrumChannelRef = useRef<Tone.Channel | null>(null);
+  const drumsSnareChannelRef = useRef<Tone.Channel | null>(null);
   const drumsHihatChannelRef = useRef<Tone.Channel | null>(null);
+  const drumsRideChannelRef = useRef<Tone.Channel | null>(null);
+  const drumsCrashChannelRef = useRef<Tone.Channel | null>(null);
+  const drumsRimChannelRef = useRef<Tone.Channel | null>(null);
   const drumsMasterChannelRef = useRef<Tone.Channel | null>(null);
   const drumInstrumentRef = useRef<DrumInstrument | null>(null);
-  const drumsRrRef = useRef<Record<DrumSound, number>>({ ride: 0, stir: 0, hihatFoot: 0 });
+  const drumsRrRef = useRef<Record<string, number>>({});
   const rrCounterRef = useRef(new RoundRobinCounter());
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastScheduledRef = useRef(0);
@@ -248,6 +252,7 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     weakPlayerRef.current = makePlayer(settings.clickWeak, metronomeDb - 6);
 
     const sink = (atTicks: number, beatType: BeatType) => {
+      if (!(optsRef.current.settings.metronomeEnabled ?? true)) return;
       // Tone.js tick notation: "${N}i" = N ticks from transport start
       tone.scheduleOnce((time: number) => {
         let player: Tone.Player | null = null;
@@ -342,54 +347,125 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     }).toDestination();
     drumsMasterChannelRef.current = drumsMasterChannel;
 
+    const drumsBassDrumChannel = new Tone.Channel({
+      volume: Tone.gainToDb(settings.drumsBassDrumVolume ?? 0.7),
+    }).connect(drumsMasterChannel);
+    drumsBassDrumChannelRef.current = drumsBassDrumChannel;
+
+    const drumsSnareChannel = new Tone.Channel({
+      volume: Tone.gainToDb(settings.drumsSnareVolume ?? 0.8),
+    }).connect(drumsMasterChannel);
+    drumsSnareChannelRef.current = drumsSnareChannel;
+
+    const drumsHihatChannel = new Tone.Channel({
+      volume: Tone.gainToDb(settings.drumsHihatVolume ?? 0.65),
+    }).connect(drumsMasterChannel);
+    drumsHihatChannelRef.current = drumsHihatChannel;
+
     const drumsRideChannel = new Tone.Channel({
       volume: Tone.gainToDb(settings.drumsRideVolume ?? 0.7),
     }).connect(drumsMasterChannel);
-    const drumsStirChannel = new Tone.Channel({
-      volume: Tone.gainToDb(settings.drumsStirVolume ?? 0.6),
-    }).connect(drumsMasterChannel);
-    const drumsHihatChannel = new Tone.Channel({
-      volume: Tone.gainToDb(settings.drumsHihatVolume ?? 0.55),
-    }).connect(drumsMasterChannel);
     drumsRideChannelRef.current = drumsRideChannel;
-    drumsStirChannelRef.current = drumsStirChannel;
-    drumsHihatChannelRef.current = drumsHihatChannel;
+
+    const drumsCrashChannel = new Tone.Channel({
+      volume: Tone.gainToDb(settings.drumsCrashVolume ?? 0.8),
+    }).connect(drumsMasterChannel);
+    drumsCrashChannelRef.current = drumsCrashChannel;
+
+    const drumsRimChannel = new Tone.Channel({
+      volume: Tone.gainToDb(settings.drumsRimVolume ?? 0.6),
+    }).connect(drumsMasterChannel);
+    drumsRimChannelRef.current = drumsRimChannel;
 
     const drumsRes = createOneshotResources(drumsManifest.sampleManifest);
     for (const [sound, arr] of drumsRes.players) {
       const ch =
-        sound === 'ride'
-          ? drumsRideChannel
-          : sound === 'stir'
-            ? drumsStirChannel
-            : drumsHihatChannel;
+        sound === 'bassDrum'
+          ? drumsBassDrumChannel
+          : sound === 'snare'
+            ? drumsSnareChannel
+            : sound === 'hihat' || sound === 'hihatHalf' || sound === 'hihatOpen'
+              ? drumsHihatChannel
+              : sound === 'ride'
+                ? drumsRideChannel
+                : sound === 'crash'
+                  ? drumsCrashChannel
+                  : sound === 'rim'
+                    ? drumsRimChannel
+                    : drumsMasterChannel;
       for (const p of arr) p.connect(ch);
     }
     drumsPlayersRef.current = drumsRes.players;
     drumsDisposeRef.current = drumsRes.dispose;
 
-    const drumsEventSink: EventSink = (payload, atTicks, _velocity, _durationTicks) => {
+    const drumsEventSink: EventSink = (payload, atTicks, velocity, _durationTicks) => {
       const s = optsRef.current.settings;
       if (!(s.drumsEnabled ?? true)) return;
       const p = payload as DrumEvent;
+      if (p.sound === 'bassDrum' && !(s.drumsBassDrumEnabled ?? true)) return;
+      if (p.sound === 'snare' && !(s.drumsSnareEnabled ?? true)) return;
+      if (
+        (p.sound === 'hihat' || p.sound === 'hihatHalf' || p.sound === 'hihatOpen') &&
+        !(s.drumsHihatEnabled ?? true)
+      )
+        return;
       if (p.sound === 'ride' && !(s.drumsRideEnabled ?? true)) return;
-      if (p.sound === 'stir' && !(s.drumsStirEnabled ?? true)) return;
-      if (p.sound === 'hihatFoot' && !(s.drumsHihatEnabled ?? true)) return;
+      if (p.sound === 'crash' && !(s.drumsCrashEnabled ?? true)) return;
+      if (p.sound === 'rim' && !(s.drumsRimEnabled ?? true)) return;
       const pool = drumsPlayersRef.current.get(p.sound);
       if (!pool) return;
-      const rr = drumsRrRef.current[p.sound] % 4;
-      drumsRrRef.current[p.sound]++;
+      const rr = (drumsRrRef.current[p.sound] ?? 0) % 4;
+      drumsRrRef.current[p.sound] = (drumsRrRef.current[p.sound] ?? 0) + 1;
       const player = pool[rr];
       if (!player) return;
+      // Per-event velocity: set player volume inside the callback so it
+      // applies at the exact audio time, not at schedule-time (which would
+      // be overwritten by the next scheduling window).
+      const velDb = velocity < 1.0 ? Tone.gainToDb(velocity) : 0;
       tone.scheduleOnce((time: number) => {
-        if (player.loaded) player.start(time);
+        if (player.loaded) {
+          if (velocity < 1.0) player.volume.value = velDb;
+          player.start(time);
+        }
       }, `${atTicks}i`);
     };
 
     const drumInstrument = new DrumInstrument();
-    drumInstrument.setRidePattern(
-      (settings.drumsRidePattern ?? 'swingRide') as 'quarters' | 'swingRide',
-    );
+    drumInstrument.updateSettings({
+      enabled: settings.drumsEnabled ?? true,
+      volume: settings.drumsVolume ?? 0.7,
+      pattern: (settings.drumsPattern ?? 'swing') as DrumsPattern,
+      bassDrumEnabled: settings.drumsBassDrumEnabled ?? true,
+      bassDrumVolume: settings.drumsBassDrumVolume ?? 0.7,
+      snareEnabled: settings.drumsSnareEnabled ?? true,
+      snareVolume: settings.drumsSnareVolume ?? 0.8,
+      hihatEnabled: settings.drumsHihatEnabled ?? true,
+      hihatVolume: settings.drumsHihatVolume ?? 0.65,
+      hihatOpenness: settings.drumsHihatOpenness ?? 0,
+      rideEnabled: settings.drumsRideEnabled ?? true,
+      rideVolume: settings.drumsRideVolume ?? 0.7,
+      crashEnabled: settings.drumsCrashEnabled ?? true,
+      crashVolume: settings.drumsCrashVolume ?? 0.8,
+      crashFrequency: settings.drumsCrashFrequency ?? 4,
+      rimEnabled: settings.drumsRimEnabled ?? false,
+      rimVolume: settings.drumsRimVolume ?? 0.6,
+      humanizeIntensity: (settings.drumsHumanizeIntensity ?? 'med') as HumanizeIntensity,
+      funkComplexity: settings.drumsFunkComplexity ?? 'medium',
+      fillFrequency: (settings.drumsFillFrequency ?? '8bars') as
+        | 'never'
+        | '4bars'
+        | '8bars'
+        | '16bars',
+      randomizationLevel: (settings.drumsRandomizationLevel ?? 'off') as
+        | 'off'
+        | 'subtle'
+        | 'moderate'
+        | 'high',
+      fillComplexity: (settings.drumsFillComplexity ?? 'medium') as 'simple' | 'medium' | 'complex',
+      rideVariation: settings.drumsRideVariation ?? true,
+      snareGhosts: settings.drumsSnareGhosts ?? true,
+      bassDrumVariation: settings.drumsBassDrumVariation ?? true,
+    });
     drumInstrumentRef.current = drumInstrument;
 
     // ── Transport engine ───────────────────────────────────────────────────
@@ -453,16 +529,22 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
       rhodesInstrumentRef.current = null;
       drumsDisposeRef.current();
       drumsPlayersRef.current = new Map();
-      drumsRideChannelRef.current?.dispose();
-      drumsRideChannelRef.current = null;
-      drumsStirChannelRef.current?.dispose();
-      drumsStirChannelRef.current = null;
+      drumsBassDrumChannelRef.current?.dispose();
+      drumsBassDrumChannelRef.current = null;
+      drumsSnareChannelRef.current?.dispose();
+      drumsSnareChannelRef.current = null;
       drumsHihatChannelRef.current?.dispose();
       drumsHihatChannelRef.current = null;
+      drumsRideChannelRef.current?.dispose();
+      drumsRideChannelRef.current = null;
+      drumsCrashChannelRef.current?.dispose();
+      drumsCrashChannelRef.current = null;
+      drumsRimChannelRef.current?.dispose();
+      drumsRimChannelRef.current = null;
       drumsMasterChannelRef.current?.dispose();
       drumsMasterChannelRef.current = null;
       drumInstrumentRef.current = null;
-      drumsRrRef.current = { ride: 0, stir: 0, hihatFoot: 0 };
+      drumsRrRef.current = {};
       rrCounterRef.current.reset();
       engineRef.current = null;
       machineRef.current = null;
@@ -573,33 +655,84 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     rhodesInstrumentRef.current.setVoicingDensity(settings.rhodesVoicingDensity ?? 'rootless3');
   }, [settings.rhodesVoicingDensity]);
 
-  // Update drums master volume
-  useEffect(() => {
-    if (!drumsMasterChannelRef.current) return;
-    drumsMasterChannelRef.current.volume.value = Tone.gainToDb(settings.drumsVolume ?? 0.7);
-  }, [settings.drumsVolume]);
-
-  // Update per-sound drums volumes
-  useEffect(() => {
-    if (drumsRideChannelRef.current)
-      drumsRideChannelRef.current.volume.value = Tone.gainToDb(settings.drumsRideVolume ?? 0.7);
-  }, [settings.drumsRideVolume]);
-  useEffect(() => {
-    if (drumsStirChannelRef.current)
-      drumsStirChannelRef.current.volume.value = Tone.gainToDb(settings.drumsStirVolume ?? 0.6);
-  }, [settings.drumsStirVolume]);
-  useEffect(() => {
-    if (drumsHihatChannelRef.current)
-      drumsHihatChannelRef.current.volume.value = Tone.gainToDb(settings.drumsHihatVolume ?? 0.55);
-  }, [settings.drumsHihatVolume]);
-
-  // Update ride pattern
+  // Update drum instrument settings + per-sound channel volumes
   useEffect(() => {
     if (!drumInstrumentRef.current) return;
-    drumInstrumentRef.current.setRidePattern(
-      (settings.drumsRidePattern ?? 'swingRide') as 'quarters' | 'swingRide',
-    );
-  }, [settings.drumsRidePattern]);
+    drumInstrumentRef.current.updateSettings({
+      enabled: settings.drumsEnabled ?? true,
+      volume: settings.drumsVolume ?? 0.7,
+      pattern: (settings.drumsPattern ?? 'swing') as DrumsPattern,
+      bassDrumEnabled: settings.drumsBassDrumEnabled ?? true,
+      bassDrumVolume: settings.drumsBassDrumVolume ?? 0.7,
+      snareEnabled: settings.drumsSnareEnabled ?? true,
+      snareVolume: settings.drumsSnareVolume ?? 0.8,
+      hihatEnabled: settings.drumsHihatEnabled ?? true,
+      hihatVolume: settings.drumsHihatVolume ?? 0.65,
+      hihatOpenness: settings.drumsHihatOpenness ?? 0,
+      rideEnabled: settings.drumsRideEnabled ?? true,
+      rideVolume: settings.drumsRideVolume ?? 0.7,
+      crashEnabled: settings.drumsCrashEnabled ?? true,
+      crashVolume: settings.drumsCrashVolume ?? 0.8,
+      crashFrequency: settings.drumsCrashFrequency ?? 4,
+      rimEnabled: settings.drumsRimEnabled ?? false,
+      rimVolume: settings.drumsRimVolume ?? 0.6,
+      humanizeIntensity: (settings.drumsHumanizeIntensity ?? 'med') as HumanizeIntensity,
+      funkComplexity: settings.drumsFunkComplexity ?? 'medium',
+      fillFrequency: (settings.drumsFillFrequency ?? '8bars') as
+        | 'never'
+        | '4bars'
+        | '8bars'
+        | '16bars',
+      randomizationLevel: (settings.drumsRandomizationLevel ?? 'off') as
+        | 'off'
+        | 'subtle'
+        | 'moderate'
+        | 'high',
+      fillComplexity: (settings.drumsFillComplexity ?? 'medium') as 'simple' | 'medium' | 'complex',
+      rideVariation: settings.drumsRideVariation ?? true,
+      snareGhosts: settings.drumsSnareGhosts ?? true,
+      bassDrumVariation: settings.drumsBassDrumVariation ?? true,
+    });
+    // Sync per-sound channel volumes
+    if (drumsMasterChannelRef.current)
+      drumsMasterChannelRef.current.volume.value = Tone.gainToDb(settings.drumsVolume ?? 0.7);
+    if (drumsBassDrumChannelRef.current)
+      drumsBassDrumChannelRef.current.volume.value = Tone.gainToDb(
+        settings.drumsBassDrumVolume ?? 0.7,
+      );
+    if (drumsSnareChannelRef.current)
+      drumsSnareChannelRef.current.volume.value = Tone.gainToDb(settings.drumsSnareVolume ?? 0.8);
+    if (drumsHihatChannelRef.current)
+      drumsHihatChannelRef.current.volume.value = Tone.gainToDb(settings.drumsHihatVolume ?? 0.65);
+    if (drumsRideChannelRef.current)
+      drumsRideChannelRef.current.volume.value = Tone.gainToDb(settings.drumsRideVolume ?? 0.7);
+    if (drumsCrashChannelRef.current)
+      drumsCrashChannelRef.current.volume.value = Tone.gainToDb(settings.drumsCrashVolume ?? 0.8);
+    if (drumsRimChannelRef.current)
+      drumsRimChannelRef.current.volume.value = Tone.gainToDb(settings.drumsRimVolume ?? 0.6);
+  }, [
+    settings.drumsEnabled,
+    settings.drumsVolume,
+    settings.drumsPattern,
+    settings.drumsBassDrumEnabled,
+    settings.drumsBassDrumVolume,
+    settings.drumsSnareEnabled,
+    settings.drumsSnareVolume,
+    settings.drumsHihatEnabled,
+    settings.drumsHihatVolume,
+    settings.drumsHihatOpenness,
+    settings.drumsRideEnabled,
+    settings.drumsRideVolume,
+    settings.drumsCrashEnabled,
+    settings.drumsCrashVolume,
+    settings.drumsCrashFrequency,
+    settings.drumsRimEnabled,
+    settings.drumsRimVolume,
+    settings.drumsHumanizeIntensity,
+    settings.drumsFunkComplexity,
+    settings.drumsFillFrequency,
+    settings.drumsRidePattern,
+  ]);
 
   // Update swing ratio
   useEffect(() => {
@@ -699,7 +832,7 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     countInTimeoutsRef.current = [];
 
     // Schedule count-in beats at absolute audio time before transport starts
-    if (countInBars > 0) {
+    if (countInBars > 0 && (optsRef.current.settings.metronomeEnabled ?? true)) {
       const firstBeatAt = Tone.now() + 0.05;
       const totalCountInBeats = countInBars * sig.beatsPerBar;
       const secondStrong = defaultSecondStrongBeats(sig);

@@ -65,8 +65,20 @@ export {
   type InputPort,
 } from './ports.js';
 export { testAudioPortContract } from './ports.contract.js';
-export { DRUM_SAMPLE_FILES, DRUMS_BASE_URL, type DrumSound } from './drumSampleRegistry.js';
-export { DrumInstrument, type DrumRidePattern } from './drumInstrument.js';
+export {
+  DRUM_SAMPLE_FILES,
+  DRUMS_BASE_URL,
+  SWIRLY_DRUMS_BASE_URL,
+  type DrumSound,
+} from './drumSampleRegistry.js';
+export {
+  DrumInstrument,
+  DEFAULT_DRUM_SETTINGS,
+  type DrumRidePattern,
+  type DrumsPattern,
+  type HumanizeIntensity,
+  type DrumInstrumentSettings,
+} from './drumInstrument.js';
 export {
   evaluateNote,
   evaluateNoteSequence,
