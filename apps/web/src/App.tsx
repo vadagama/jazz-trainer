@@ -56,9 +56,6 @@ function wrapRoute(r: RouteContribution, child: React.ReactNode): React.ReactNod
 /** Маршруты, которые рендерятся внутри AppShell (Header + GridContainer). */
 const APP_SHELL_PATHS = new Set(['/', '/my', '/settings', '/profile']);
 
-/** Маршруты редактора — Header + full-height layout без скролла. */
-const EDITOR_SHELL_PATHS = new Set(['/grids/:id']);
-
 export function App() {
   const shellRoutes = contributions.routes.filter((r) => APP_SHELL_PATHS.has(r.path));
   const editorRoutes = contributions.routes.filter(
@@ -66,9 +63,7 @@ export function App() {
   );
   const bareRoutes = contributions.routes.filter(
     (r) =>
-      !APP_SHELL_PATHS.has(r.path) &&
-      !r.path.startsWith('/grids') &&
-      !r.path.startsWith('/play'),
+      !APP_SHELL_PATHS.has(r.path) && !r.path.startsWith('/grids') && !r.path.startsWith('/play'),
   );
 
   return (

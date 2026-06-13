@@ -40,28 +40,30 @@ function makeCtx(sig = parseTimeSignature('4/4')): {
   const ctx: ScheduleContext = {
     bpm: 120,
     timeSignature: sig,
-    swingRatio: 0.50,
+    swingRatio: 0.5,
     scheduleClick: () => {},
-    scheduleChord: (at, notes, velocity, durationTicks) =>
-      chords.push({ at, notes: [...notes], velocity, durationTicks }),
+    scheduleEvent: (_instrumentId, payload, at, velocity, durationTicks) => {
+      if (_instrumentId === 'rhodes') {
+        const p = payload as { notes: string[] };
+        chords.push({ at, notes: [...p.notes], velocity, durationTicks });
+      }
+    },
   };
   return { ctx, chords };
 }
 
 function makeRhodes(entries: { chord: ChordSymbol | null }[]) {
-  const timeline = new ChordTimeline(
-    entries.map((e, i) => ({ barIndex: i, chord: e.chord })),
-  );
+  const timeline = new ChordTimeline(entries.map((e, i) => ({ barIndex: i, chord: e.chord })));
   const inst = new RhodesInstrument(timeline);
   inst.setHumanize(false); // deterministic tests
   return inst;
 }
 
-const dm7   = makeChord('D', '', 'minor');
-const g7    = makeChord('G', '', 'dominant');
+const dm7 = makeChord('D', '', 'minor');
+const g7 = makeChord('G', '', 'dominant');
 const cmaj7 = makeChord('C', '', 'major');
 
-const TPB  = 480;  // ticks per beat
+const TPB = 480; // ticks per beat
 const TPBAR = 1920; // ticks per bar (4/4)
 
 // ─── Basic scheduling ─────────────────────────────────────────────────────────
@@ -178,7 +180,7 @@ describe('RhodesInstrument — quarterNotes', () => {
       expect.arrayContaining([
         expect.closeTo(0.53, 2),
         expect.closeTo(0.42, 2),
-        expect.closeTo(0.50, 2),
+        expect.closeTo(0.5, 2),
         expect.closeTo(0.44, 2),
       ]),
     );
@@ -214,11 +216,7 @@ describe('RhodesInstrument — window filtering', () => {
 
 describe('RhodesInstrument — null chord and missing callback', () => {
   it('skips bars with null chord', () => {
-    const inst = makeRhodes([
-      { chord: dm7 },
-      { chord: null },
-      { chord: cmaj7 },
-    ]);
+    const inst = makeRhodes([{ chord: dm7 }, { chord: null }, { chord: cmaj7 }]);
     inst.setMode('wholeNotes');
     const { ctx, chords } = makeCtx();
 
@@ -229,14 +227,16 @@ describe('RhodesInstrument — null chord and missing callback', () => {
     expect(chords[1]?.at).toBe(TPBAR * 2);
   });
 
-  it('does nothing when scheduleChord is absent', () => {
+  it('does nothing when no rhodes sink is registered', () => {
     const inst = makeRhodes([{ chord: dm7 }]);
     const ctx: ScheduleContext = {
       bpm: 120,
       timeSignature: parseTimeSignature('4/4'),
-      swingRatio: 0.50,
+      swingRatio: 0.5,
       scheduleClick: () => {},
-      // scheduleChord intentionally absent
+      scheduleEvent: () => {
+        /* no-op */
+      },
     };
     expect(() => inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx)).not.toThrow();
   });
@@ -288,7 +288,7 @@ describe('RhodesInstrument — voicing density', () => {
 
     for (const note of chords[0]!.notes) {
       expect(noteToMidi(note)).toBeGreaterThanOrEqual(48); // C3
-      expect(noteToMidi(note)).toBeLessThanOrEqual(84);    // C6
+      expect(noteToMidi(note)).toBeLessThanOrEqual(84); // C6
     }
   });
 });
@@ -317,12 +317,12 @@ describe('RhodesInstrument — voice leading', () => {
     const { ctx, chords } = makeCtx();
 
     // Schedule bar 0 and bar 1 in separate calls (simulates lookahead windows)
-    inst.schedule({ fromTicks: 0,     toTicks: TPBAR     }, ctx);
+    inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
     inst.schedule({ fromTicks: TPBAR, toTicks: TPBAR * 2 }, ctx);
 
     expect(chords).toHaveLength(2);
     const dm7Notes = chords[0]!.notes;
-    const g7Notes  = chords[1]!.notes;
+    const g7Notes = chords[1]!.notes;
 
     // Voice-led G7 must have lower total movement than default
     const defaultG7 = buildVoicing(g7, 'rootless3', null);
@@ -341,7 +341,7 @@ describe('RhodesInstrument — voice leading', () => {
     const { ctx, chords } = makeCtx();
 
     // Warm up prevVoicing with bar 0
-    inst.schedule({ fromTicks: 0,     toTicks: TPBAR     }, ctx);
+    inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
     inst.reset();
     // Bar 1 should now use default voicing (no prevVoicing)
     inst.schedule({ fromTicks: TPBAR, toTicks: TPBAR * 2 }, ctx);
@@ -459,8 +459,8 @@ describe('RhodesInstrument — swing patterns (subdivision)', () => {
     inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
 
     expect(chords).toHaveLength(2);
-    expect(chords[0]?.at).toBe(TPB);       // beat 2
-    expect(chords[1]?.at).toBe(3 * TPB);   // beat 4
+    expect(chords[0]?.at).toBe(TPB); // beat 2
+    expect(chords[1]?.at).toBe(3 * TPB); // beat 4
   });
 
   it('offbeat-2-4: beat 2& at 720, beat 4& at 1680', () => {
@@ -471,8 +471,8 @@ describe('RhodesInstrument — swing patterns (subdivision)', () => {
     inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
 
     expect(chords).toHaveLength(2);
-    expect(chords[0]?.at).toBe(TPB + TPB / 2);      // beat 2& = 720
-    expect(chords[1]?.at).toBe(3 * TPB + TPB / 2);  // beat 4& = 1680
+    expect(chords[0]?.at).toBe(TPB + TPB / 2); // beat 2& = 720
+    expect(chords[1]?.at).toBe(3 * TPB + TPB / 2); // beat 4& = 1680
   });
 
   it('one-twoand-four: schedules 3 events per bar', () => {
@@ -483,9 +483,9 @@ describe('RhodesInstrument — swing patterns (subdivision)', () => {
     inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
 
     expect(chords).toHaveLength(3);
-    expect(chords[0]?.at).toBe(0);               // beat 1
-    expect(chords[1]?.at).toBe(TPB + TPB / 2);  // beat 2&
-    expect(chords[2]?.at).toBe(3 * TPB);         // beat 4
+    expect(chords[0]?.at).toBe(0); // beat 1
+    expect(chords[1]?.at).toBe(TPB + TPB / 2); // beat 2&
+    expect(chords[2]?.at).toBe(3 * TPB); // beat 4
   });
 
   it('twoand-only: one event per bar at beat 2&', () => {

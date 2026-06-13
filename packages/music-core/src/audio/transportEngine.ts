@@ -1,11 +1,15 @@
-import {
-  ticksPerBar,
-  type TimeSignature,
-  parseTimeSignature,
-} from '../time/timeSignature.js';
+import { ticksPerBar, type TimeSignature, parseTimeSignature } from '../time/timeSignature.js';
 import { ticksToPosition, ticksToSeconds, type MusicalPosition } from '../time/position.js';
 import type { PlaybackStatus } from '../playback/stateMachine.js';
-import type { BassArticulation, Instrument, ScheduleWindow } from './instrument.js';
+import type {
+  BassArticulation,
+  Instrument,
+  ScheduleWindow,
+  BassEvent,
+  RhodesEvent,
+  DrumEvent,
+  InstrumentEventPayload,
+} from './instrument.js';
 import type { DrumSound } from './drumSampleRegistry.js';
 
 /** Three-level beat accent: first downbeat, secondary accent, or ordinary weak beat. */
@@ -14,7 +18,18 @@ export type BeatType = 'strong' | 'strong2' | 'weak';
 /** Sink that actually renders a scheduled click (real impl triggers a Tone synth). */
 export type ClickSink = (atTicks: number, beatType: BeatType) => void;
 
-/** Sink that renders a scheduled bass note via Tone.Sampler. */
+/**
+ * Generic event sink — receives an instrument event and renders it to audio.
+ * Each instrument registers one via {@link TransportEngine.registerSink}.
+ */
+export type EventSink = (
+  payload: InstrumentEventPayload,
+  atTicks: number,
+  velocity: number,
+  durationTicks: number,
+) => void;
+
+/** @deprecated Use {@link EventSink} registered as `'bass'` instead. */
 export type NoteSink = (
   atTicks: number,
   note: string,
@@ -23,7 +38,7 @@ export type NoteSink = (
   articulation: BassArticulation,
 ) => void;
 
-/** Sink that renders a scheduled Rhodes chord via Tone.Sampler. */
+/** @deprecated Use {@link EventSink} registered as `'rhodes'` instead. */
 export type ChordSink = (
   atTicks: number,
   notes: string[],
@@ -31,7 +46,7 @@ export type ChordSink = (
   durationTicks: number,
 ) => void;
 
-/** Sink that renders a scheduled drum hit via Tone.Player. */
+/** @deprecated Use {@link EventSink} registered as `'drums'` instead. */
 export type DrumSink = (
   atTicks: number,
   sound: DrumSound,
@@ -45,11 +60,11 @@ export interface TransportEngineOptions {
   /** Swing ratio for offbeat eighth notes: 0.50 = straight, 0.66 = classic swing, 0.75 = heavy shuffle. Default 0.50. */
   swingRatio?: number;
   sink: ClickSink;
-  /** Optional — wire a Tone.Sampler-backed sink to enable bass scheduling. */
+  /** @deprecated Use {@link TransportEngine.registerSink}('bass', ...) instead. */
   noteSink?: NoteSink;
-  /** Optional — wire a Tone.Sampler-backed sink to enable Rhodes chord scheduling. */
+  /** @deprecated Use {@link TransportEngine.registerSink}('rhodes', ...) instead. */
   chordSink?: ChordSink;
-  /** Optional — wire Tone.Player-backed sink to enable drum scheduling. */
+  /** @deprecated Use {@link TransportEngine.registerSink}('drums', ...) instead. */
   drumSink?: DrumSink;
 }
 
@@ -70,23 +85,48 @@ export class TransportEngine {
   private swingRatio: number;
 
   private readonly sink: ClickSink;
-  private readonly noteSink?: NoteSink;
-  private readonly chordSink?: ChordSink;
-  private readonly drumSink?: DrumSink;
+  /** Generic event sinks registered by instrument ID. */
+  private readonly eventSinks = new Map<string, EventSink>();
   private readonly instruments: Instrument[] = [];
   private readonly tickListeners = new Set<(pos: MusicalPosition) => void>();
 
   constructor(opts: TransportEngineOptions) {
     this.bpm = Math.max(20, Math.min(400, opts.bpm ?? 120));
-    this.swingRatio = Math.max(0.50, Math.min(0.75, opts.swingRatio ?? 0.50));
+    this.swingRatio = Math.max(0.5, Math.min(0.75, opts.swingRatio ?? 0.5));
     this.timeSignature =
       typeof opts.timeSignature === 'string'
         ? parseTimeSignature(opts.timeSignature)
         : (opts.timeSignature ?? { beatsPerBar: 4, beatUnit: 4 });
     this.sink = opts.sink;
-    this.noteSink = opts.noteSink;
-    this.chordSink = opts.chordSink;
-    this.drumSink = opts.drumSink;
+
+    // Auto-register legacy sinks for backward compatibility
+    if (opts.noteSink) {
+      this.registerSink('bass', (payload, atTicks, velocity, durationTicks) => {
+        const p = payload as BassEvent;
+        opts.noteSink!(atTicks, p.note, velocity, durationTicks, p.articulation);
+      });
+    }
+    if (opts.chordSink) {
+      this.registerSink('rhodes', (payload, atTicks, velocity, durationTicks) => {
+        const p = payload as RhodesEvent;
+        opts.chordSink!(atTicks, p.notes, velocity, durationTicks);
+      });
+    }
+    if (opts.drumSink) {
+      this.registerSink('drums', (payload, atTicks, velocity, durationTicks) => {
+        const p = payload as DrumEvent;
+        opts.drumSink!(atTicks, p.sound, velocity, durationTicks);
+      });
+    }
+  }
+
+  /**
+   * Register an audio sink for an instrument.
+   * When an instrument calls `ctx.scheduleEvent(id, payload, ...)`,
+   * the matching sink is invoked to render the sound.
+   */
+  registerSink(instrumentId: string, sink: EventSink): void {
+    this.eventSinks.set(instrumentId, sink);
   }
 
   addInstrument(instrument: Instrument): void {
@@ -98,7 +138,7 @@ export class TransportEngine {
   }
 
   setSwingRatio(ratio: number): void {
-    this.swingRatio = Math.max(0.50, Math.min(0.75, ratio));
+    this.swingRatio = Math.max(0.5, Math.min(0.75, ratio));
   }
 
   setTimeSignature(sig: TimeSignature | string): void {
@@ -119,25 +159,40 @@ export class TransportEngine {
 
   /** Ask every instrument to schedule its events into the given tick window. */
   scheduleWindow(window: ScheduleWindow): void {
-    const noteSink = this.noteSink;
-    const chordSink = this.chordSink;
-    const drumSink = this.drumSink;
+    const eventSinks = this.eventSinks;
     const ctx = {
       bpm: this.bpm,
       timeSignature: this.timeSignature,
       swingRatio: this.swingRatio,
       scheduleClick: (atTicks: number, beatType: BeatType) => this.sink(atTicks, beatType),
-      scheduleNote: noteSink
-        ? (atTicks: number, note: string, velocity: number, durationTicks: number, articulation: BassArticulation) =>
-            noteSink(atTicks, note, velocity, durationTicks, articulation)
+      // Canonical dispatch — each instrument calls this with its typed payload
+      scheduleEvent: (
+        instrumentId: string,
+        payload: InstrumentEventPayload,
+        atTicks: number,
+        velocity: number,
+        durationTicks: number,
+      ) => {
+        const sink = eventSinks.get(instrumentId);
+        if (sink) sink(payload, atTicks, velocity, durationTicks);
+      },
+      // Deprecated aliases — delegate to scheduleEvent for backward compatibility
+      scheduleNote: eventSinks.has('bass')
+        ? (
+            atTicks: number,
+            note: string,
+            velocity: number,
+            durationTicks: number,
+            articulation: BassArticulation,
+          ) => eventSinks.get('bass')!({ note, articulation }, atTicks, velocity, durationTicks)
         : undefined,
-      scheduleChord: chordSink
+      scheduleChord: eventSinks.has('rhodes')
         ? (atTicks: number, notes: string[], velocity: number, durationTicks: number) =>
-            chordSink(atTicks, notes, velocity, durationTicks)
+            eventSinks.get('rhodes')!({ notes }, atTicks, velocity, durationTicks)
         : undefined,
-      scheduleDrum: drumSink
+      scheduleDrum: eventSinks.has('drums')
         ? (atTicks: number, sound: DrumSound, velocity: number, durationTicks: number) =>
-            drumSink(atTicks, sound, velocity, durationTicks)
+            eventSinks.get('drums')!({ sound }, atTicks, velocity, durationTicks)
         : undefined,
     };
     for (const instrument of this.instruments) {

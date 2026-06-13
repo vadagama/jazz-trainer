@@ -1,4 +1,9 @@
-import { ticksPerBeat, defaultStrongBeats, defaultSecondStrongBeats, type TimeSignature } from '../time/timeSignature.js';
+import {
+  ticksPerBeat,
+  defaultStrongBeats,
+  defaultSecondStrongBeats,
+  type TimeSignature,
+} from '../time/timeSignature.js';
 import type { BeatType } from './transportEngine.js';
 import type { DrumSound } from './drumSampleRegistry.js';
 
@@ -11,6 +16,38 @@ export interface ScheduleWindow {
 /** Articulation types available in the bass sample library. */
 export type BassArticulation = 'pluck' | 'mute';
 
+// ─── Instrument event payloads ────────────────────────────────────────────────
+
+/** Payload emitted by {@link BassInstrument} via {@link ScheduleContext.scheduleEvent}. */
+export interface BassEvent {
+  note: string;
+  articulation: BassArticulation;
+}
+
+/** Payload emitted by {@link RhodesInstrument} via {@link ScheduleContext.scheduleEvent}. */
+export interface RhodesEvent {
+  notes: string[];
+}
+
+/** Payload emitted by {@link DrumInstrument} via {@link ScheduleContext.scheduleEvent}. */
+export interface DrumEvent {
+  sound: DrumSound;
+}
+
+/** Strum direction for guitar events. */
+export type GuitarStrum = 'down' | 'up';
+
+/** Payload emitted by {@link GuitarInstrument} via {@link ScheduleContext.scheduleEvent}. */
+export interface GuitarEvent {
+  notes: string[];
+  strum: GuitarStrum;
+}
+
+/** Union of all known instrument event payloads. Extend when adding a new instrument. */
+export type InstrumentEventPayload = BassEvent | RhodesEvent | DrumEvent | GuitarEvent;
+
+// ─── ScheduleContext ──────────────────────────────────────────────────────────
+
 /** Context passed to instruments while scheduling a look-ahead window. */
 export interface ScheduleContext {
   bpm: number;
@@ -19,7 +56,19 @@ export interface ScheduleContext {
   swingRatio: number;
   /** Schedule a metronome click at an absolute tick from the start of the form. */
   scheduleClick(atTicks: number, beatType: BeatType): void;
-  /** Schedule a pitched bass note. Present only when a bass sampler is wired in. */
+  /**
+   * Generic instrument event dispatch.
+   * Each instrument emits its own typed payload; the transport dispatches
+   * to the matching sink registered via {@link TransportEngine.registerSink}.
+   */
+  scheduleEvent(
+    instrumentId: string,
+    payload: InstrumentEventPayload,
+    atTicks: number,
+    velocity: number,
+    durationTicks: number,
+  ): void;
+  /** @deprecated Use `scheduleEvent('bass', { note, articulation }, ...)` instead. */
   scheduleNote?(
     atTicks: number,
     note: string,
@@ -27,20 +76,10 @@ export interface ScheduleContext {
     durationTicks: number,
     articulation: BassArticulation,
   ): void;
-  /** Schedule a multi-note chord (Rhodes comping). Present only when a chord sampler is wired in. */
-  scheduleChord?(
-    atTicks: number,
-    notes: string[],
-    velocity: number,
-    durationTicks: number,
-  ): void;
-  /** Schedule a drum hit. Present only when a drum sampler is wired in. */
-  scheduleDrum?(
-    atTicks: number,
-    sound: DrumSound,
-    velocity: number,
-    durationTicks: number,
-  ): void;
+  /** @deprecated Use `scheduleEvent('rhodes', { notes }, ...)` instead. */
+  scheduleChord?(atTicks: number, notes: string[], velocity: number, durationTicks: number): void;
+  /** @deprecated Use `scheduleEvent('drums', { sound }, ...)` instead. */
+  scheduleDrum?(atTicks: number, sound: DrumSound, velocity: number, durationTicks: number): void;
 }
 
 /**

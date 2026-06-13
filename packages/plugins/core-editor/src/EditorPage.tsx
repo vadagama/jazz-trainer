@@ -78,7 +78,6 @@ export function EditorPage() {
     selectedBarId,
     isDirty,
     setContent,
-    loadExternalContent,
     markClean,
     selectBar,
     addBarToSection,
@@ -322,7 +321,10 @@ export function EditorPage() {
         >
           {/* Breadcrumbs */}
           <nav className="flex items-center gap-1.5 px-6 py-2 text-sm">
-            <Link to="/my" className="text-muted-foreground transition-colors hover:text-foreground">
+            <Link
+              to="/my"
+              className="text-muted-foreground transition-colors hover:text-foreground"
+            >
               Мои сетки
             </Link>
             <span className="text-muted-foreground/40">/</span>
@@ -383,7 +385,6 @@ export function EditorPage() {
                 onHoverBar={handleHoverBar}
                 onAddSection={() => addSection(defaultTimeSignature)}
               />
-
             </div>
           </div>
         </main>
@@ -412,8 +413,6 @@ export function EditorPage() {
         volume={effectiveVolume}
         onVolumeChange={setLocalVolume}
       />
-
-
     </div>
   );
 }
