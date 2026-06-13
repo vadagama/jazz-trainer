@@ -78,6 +78,34 @@
       "when": 1781228290491,
       "tag": "0010_0010_add_rbac_audit_flags",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1781339584120,
+      "tag": "0012_gray_sinister_six",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1782100000000,
+      "tag": "0013_add_funk_drums_settings",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "6",
+      "when": 1782200000000,
+      "tag": "0014_add_metronome_enabled",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "6",
+      "when": 1782250000000,
+      "tag": "0015_add_missing_drums_columns",
+      "breakpoints": true
     }
   ]
 }

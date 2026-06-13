@@ -43,6 +43,7 @@ export const userSettings = sqliteTable('user_settings', {
   clickWeak: text('click_weak').default('drum-stick'),
   volume: real('volume').notNull().default(0.8),
   countIn: integer('count_in').notNull().default(0),
+  metronomeEnabled: integer('metronome_enabled', { mode: 'boolean' }).notNull().default(true),
   metronomeVolume: real('metronome_volume').notNull().default(0.8),
   bassEnabled: integer('bass_enabled', { mode: 'boolean' }).notNull().default(true),
   bassVolume: real('bass_volume').notNull().default(0.7),
@@ -56,10 +57,36 @@ export const userSettings = sqliteTable('user_settings', {
   drumsVolume: real('drums_volume').notNull().default(0.7),
   drumsRideEnabled: integer('drums_ride_enabled', { mode: 'boolean' }).notNull().default(true),
   drumsRideVolume: real('drums_ride_volume').notNull().default(0.7),
+  /** @deprecated — use drumsSnareEnabled instead */
   drumsStirEnabled: integer('drums_stir_enabled', { mode: 'boolean' }).notNull().default(true),
+  /** @deprecated — use drumsSnareVolume instead */
   drumsStirVolume: real('drums_stir_volume').notNull().default(0.6),
   drumsHihatEnabled: integer('drums_hihat_enabled', { mode: 'boolean' }).notNull().default(true),
-  drumsHihatVolume: real('drums_hihat_volume').notNull().default(0.55),
+  drumsHihatVolume: real('drums_hihat_volume').notNull().default(0.65),
+  drumsHihatOpenness: integer('drums_hihat_openness').notNull().default(0),
+  drumsBassDrumEnabled: integer('drums_bass_drum_enabled', { mode: 'boolean' })
+    .notNull()
+    .default(true),
+  drumsBassDrumVolume: real('drums_bass_drum_volume').notNull().default(0.7),
+  drumsSnareEnabled: integer('drums_snare_enabled', { mode: 'boolean' }).notNull().default(true),
+  drumsSnareVolume: real('drums_snare_volume').notNull().default(0.8),
+  drumsCrashEnabled: integer('drums_crash_enabled', { mode: 'boolean' }).notNull().default(true),
+  drumsCrashVolume: real('drums_crash_volume').notNull().default(0.8),
+  drumsCrashFrequency: integer('drums_crash_frequency').notNull().default(4),
+  drumsRimEnabled: integer('drums_rim_enabled', { mode: 'boolean' }).notNull().default(false),
+  drumsRimVolume: real('drums_rim_volume').notNull().default(0.6),
+  drumsPattern: text('drums_pattern').notNull().default('swing'),
+  drumsHumanizeIntensity: text('drums_humanize_intensity').notNull().default('med'),
+  drumsFunkComplexity: text('drums_funk_complexity').notNull().default('medium'),
+  drumsFillFrequency: text('drums_fill_frequency').notNull().default('8bars'),
+  drumsRandomizationLevel: text('drums_randomization_level').notNull().default('off'),
+  drumsFillComplexity: text('drums_fill_complexity').notNull().default('medium'),
+  drumsRideVariation: integer('drums_ride_variation', { mode: 'boolean' }).notNull().default(true),
+  drumsSnareGhosts: integer('drums_snare_ghosts', { mode: 'boolean' }).notNull().default(true),
+  drumsBassDrumVariation: integer('drums_bass_drum_variation', { mode: 'boolean' })
+    .notNull()
+    .default(true),
+  /** @deprecated — use drumsPattern instead */
   drumsRidePattern: text('drums_ride_pattern').notNull().default('swingRide'),
   swingRatio: real('swing_ratio').notNull().default(0.5),
   createdAt: integer('created_at').notNull(),

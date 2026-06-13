@@ -21,7 +21,9 @@ export async function settingsRoutes(
     const user = request.user!;
     const row = db.select().from(userSettings).where(eq(userSettings.userId, user.id)).get();
     if (!row) {
-      return reply.status(404).send({ error: { code: 'NOT_FOUND', message: 'Settings not found' } });
+      return reply
+        .status(404)
+        .send({ error: { code: 'NOT_FOUND', message: 'Settings not found' } });
     }
     return reply.send(toSettingsDTO(row));
   });
@@ -32,13 +34,19 @@ export async function settingsRoutes(
     const parsed = UpdateSettingsSchema.safeParse(request.body);
     if (!parsed.success) {
       return reply.status(400).send({
-        error: { code: 'VALIDATION_ERROR', message: 'Invalid settings', details: parsed.error.issues },
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Invalid settings',
+          details: parsed.error.issues,
+        },
       });
     }
 
     const existing = db.select().from(userSettings).where(eq(userSettings.userId, user.id)).get();
     if (!existing) {
-      return reply.status(404).send({ error: { code: 'NOT_FOUND', message: 'Settings not found' } });
+      return reply
+        .status(404)
+        .send({ error: { code: 'NOT_FOUND', message: 'Settings not found' } });
     }
 
     const now = Date.now();
@@ -50,6 +58,7 @@ export async function settingsRoutes(
     if (data.clickWeak !== undefined) patch.clickWeak = data.clickWeak;
     if (data.volume !== undefined) patch.volume = data.volume;
     if (data.countIn !== undefined) patch.countIn = data.countIn;
+    if (data.metronomeEnabled !== undefined) patch.metronomeEnabled = data.metronomeEnabled;
     if (data.metronomeVolume !== undefined) patch.metronomeVolume = data.metronomeVolume;
     if (data.bassEnabled !== undefined) patch.bassEnabled = data.bassEnabled;
     if (data.bassVolume !== undefined) patch.bassVolume = data.bassVolume;
@@ -58,7 +67,8 @@ export async function settingsRoutes(
     if (data.rhodesEnabled !== undefined) patch.rhodesEnabled = data.rhodesEnabled;
     if (data.rhodesVolume !== undefined) patch.rhodesVolume = data.rhodesVolume;
     if (data.rhodesMode !== undefined) patch.rhodesMode = data.rhodesMode;
-    if (data.rhodesVoicingDensity !== undefined) patch.rhodesVoicingDensity = data.rhodesVoicingDensity;
+    if (data.rhodesVoicingDensity !== undefined)
+      patch.rhodesVoicingDensity = data.rhodesVoicingDensity;
     if (data.drumsEnabled !== undefined) patch.drumsEnabled = data.drumsEnabled;
     if (data.drumsVolume !== undefined) patch.drumsVolume = data.drumsVolume;
     if (data.drumsRideEnabled !== undefined) patch.drumsRideEnabled = data.drumsRideEnabled;
@@ -67,6 +77,33 @@ export async function settingsRoutes(
     if (data.drumsStirVolume !== undefined) patch.drumsStirVolume = data.drumsStirVolume;
     if (data.drumsHihatEnabled !== undefined) patch.drumsHihatEnabled = data.drumsHihatEnabled;
     if (data.drumsHihatVolume !== undefined) patch.drumsHihatVolume = data.drumsHihatVolume;
+    if (data.drumsHihatOpenness !== undefined) patch.drumsHihatOpenness = data.drumsHihatOpenness;
+    if (data.drumsBassDrumEnabled !== undefined)
+      patch.drumsBassDrumEnabled = data.drumsBassDrumEnabled;
+    if (data.drumsBassDrumVolume !== undefined)
+      patch.drumsBassDrumVolume = data.drumsBassDrumVolume;
+    if (data.drumsSnareEnabled !== undefined) patch.drumsSnareEnabled = data.drumsSnareEnabled;
+    if (data.drumsSnareVolume !== undefined) patch.drumsSnareVolume = data.drumsSnareVolume;
+    if (data.drumsCrashEnabled !== undefined) patch.drumsCrashEnabled = data.drumsCrashEnabled;
+    if (data.drumsCrashVolume !== undefined) patch.drumsCrashVolume = data.drumsCrashVolume;
+    if (data.drumsCrashFrequency !== undefined)
+      patch.drumsCrashFrequency = data.drumsCrashFrequency;
+    if (data.drumsRimEnabled !== undefined) patch.drumsRimEnabled = data.drumsRimEnabled;
+    if (data.drumsRimVolume !== undefined) patch.drumsRimVolume = data.drumsRimVolume;
+    if (data.drumsPattern !== undefined) patch.drumsPattern = data.drumsPattern;
+    if (data.drumsHumanizeIntensity !== undefined)
+      patch.drumsHumanizeIntensity = data.drumsHumanizeIntensity;
+    if (data.drumsFunkComplexity !== undefined)
+      patch.drumsFunkComplexity = data.drumsFunkComplexity;
+    if (data.drumsFillFrequency !== undefined) patch.drumsFillFrequency = data.drumsFillFrequency;
+    if (data.drumsRandomizationLevel !== undefined)
+      patch.drumsRandomizationLevel = data.drumsRandomizationLevel;
+    if (data.drumsFillComplexity !== undefined)
+      patch.drumsFillComplexity = data.drumsFillComplexity;
+    if (data.drumsRideVariation !== undefined) patch.drumsRideVariation = data.drumsRideVariation;
+    if (data.drumsSnareGhosts !== undefined) patch.drumsSnareGhosts = data.drumsSnareGhosts;
+    if (data.drumsBassDrumVariation !== undefined)
+      patch.drumsBassDrumVariation = data.drumsBassDrumVariation;
     if (data.drumsRidePattern !== undefined) patch.drumsRidePattern = data.drumsRidePattern;
     if (data.swingRatio !== undefined) patch.swingRatio = data.swingRatio;
 
