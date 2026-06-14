@@ -111,8 +111,9 @@ export class RhodesInstrument implements Instrument {
 
     for (let bar = firstBar; bar <= lastBar; bar++) {
       const barStartTicks = bar * tpBar;
-      const currentChord = this.timeline.getChordAtTick(barStartTicks, sig);
-      if (!currentChord) continue;
+      // Quick guard: skip bars with no chord at all
+      const firstBeatChord = this.timeline.getChordAtTick(barStartTicks, sig);
+      if (!firstBeatChord) continue;
 
       for (const event of pattern) {
         const isOffbeat = (event.subdivision ?? 0) > 0;
@@ -120,10 +121,11 @@ export class RhodesInstrument implements Instrument {
         const eventTicks = barStartTicks + (event.beat - 1) * tpBeat + subdivTicks;
         if (eventTicks < window.fromTicks || eventTicks >= window.toTicks) continue;
 
+        // Resolve chord at event time (sub-bar aware)
         const chord =
           event.chordRef === 'next'
-            ? this.timeline.getChordAtTick((bar + 1) * tpBar, sig)
-            : currentChord;
+            ? this.timeline.getNextChord(eventTicks, sig)
+            : this.timeline.getChordAtTick(eventTicks, sig);
         if (!chord) continue;
 
         const voicing = buildVoicing(chord, this.density, this.prevVoicing);
@@ -173,8 +175,9 @@ export class RhodesInstrument implements Instrument {
       if (this.layerMode === 'ambient-swells' && this.barCounter % 2 !== 1) continue;
 
       const barStartTicks = bar * tpBar;
-      const currentChord = this.timeline.getChordAtTick(barStartTicks, sig);
-      if (!currentChord) continue;
+      // Quick guard: skip bars with no chord at all
+      const firstBeatChord = this.timeline.getChordAtTick(barStartTicks, sig);
+      if (!firstBeatChord) continue;
 
       for (const event of pattern) {
         const isOffbeat = (event.subdivision ?? 0) > 0;
@@ -182,10 +185,11 @@ export class RhodesInstrument implements Instrument {
         const eventTicks = barStartTicks + (event.beat - 1) * tpBeat + subdivTicks;
         if (eventTicks < window.fromTicks || eventTicks >= window.toTicks) continue;
 
+        // Resolve chord at event time (sub-bar aware)
         const chord =
           event.chordRef === 'next'
-            ? this.timeline.getChordAtTick((bar + 1) * tpBar, sig)
-            : currentChord;
+            ? this.timeline.getNextChord(eventTicks, sig)
+            : this.timeline.getChordAtTick(eventTicks, sig);
         if (!chord) continue;
 
         const voicing = buildVoicing(chord, this.density, this.prevVoicing);

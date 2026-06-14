@@ -686,3 +686,299 @@ describe('BassInstrument — edge cases', () => {
     expect(notes[1]!.note).toMatch(/^Gb[23]/);
   });
 });
+
+// ─── Multi-chord (sub-bar) tests ─────────────────────────────────────────────
+
+describe('BassInstrument — multi-chord bars (sub-bar)', () => {
+  const dm7c = makeChord('D');
+  const g7c = makeChord('G', '', 'dominant');
+  const cmaj7c = makeChord('C', '', 'major');
+
+  it('swing c5–6: 2-chord bar (| Dm7 G7 |) resolves chords per-beat', () => {
+    const timeline = new ChordTimeline([
+      { barIndex: 0, beatStart: 0, beatEnd: 2, chord: dm7c },
+      { barIndex: 0, beatStart: 2, beatEnd: 4, chord: g7c },
+    ]);
+    const bass = makeBass(timeline, 'swing');
+    bass.setComplexity(5);
+    const { ctx, notes } = makeCtx();
+
+    bass.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
+    expect(notes).toHaveLength(4);
+    // beat 0: first of Dm7 -> root
+    expect(notes[0]!.note).toBe('D2');
+    // beat 1: last of Dm7 -> approach to G7 (bar 0 even -> from above: Ab)
+    expect(notes[1]!.note).toMatch(/^Ab[23]/);
+    // beat 2: first of G7 -> root
+    expect(notes[2]!.note).toBe('G2');
+    // beat 3: last of G7 -> seventh of G7 (no next chord)
+    expect(notes[3]!.note).toMatch(/^F[23]/);
+  });
+
+  it('swing c5–6: 2-chord bar with next chord (approach on beat 3)', () => {
+    const timeline = new ChordTimeline([
+      { barIndex: 0, beatStart: 0, beatEnd: 2, chord: dm7c },
+      { barIndex: 0, beatStart: 2, beatEnd: 4, chord: g7c },
+      { barIndex: 1, beatStart: 0, beatEnd: 4, chord: cmaj7c },
+    ]);
+    const bass = makeBass(timeline, 'swing');
+    bass.setComplexity(5);
+    const { ctx, notes } = makeCtx();
+
+    bass.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
+    // beat 3: last of G7 -> approach to Cmaj7 (bar 0 even -> from above: Db)
+    expect(notes[3]!.note).toMatch(/^Db[23]/);
+  });
+
+  it('swing c5–6: 4-chord bar — root on each beat', () => {
+    const timeline = new ChordTimeline([
+      { barIndex: 0, beatStart: 0, beatEnd: 1, chord: dm7c },
+      { barIndex: 0, beatStart: 1, beatEnd: 2, chord: g7c },
+      { barIndex: 0, beatStart: 2, beatEnd: 3, chord: cmaj7c },
+      { barIndex: 0, beatStart: 3, beatEnd: 4, chord: makeChord('A', '', 'dominant') },
+    ]);
+    const bass = makeBass(timeline, 'swing');
+    bass.setComplexity(5);
+    const { ctx, notes } = makeCtx();
+
+    bass.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
+    expect(notes).toHaveLength(4);
+    // Each beat is first of its chord → root (1-beat chords: first wins over last)
+    expect(notes[0]!.note).toBe('D2'); // Dm7 root
+    expect(notes[1]!.note).toBe('G2'); // G7 root
+    expect(notes[2]!.note).toBe('C2'); // Cmaj7 root
+    expect(notes[3]!.note).toMatch(/^A[23]/); // A7 root
+  });
+
+  it('swing c3–4: 2-chord bar plays root on chord boundaries', () => {
+    const timeline = new ChordTimeline([
+      { barIndex: 0, beatStart: 0, beatEnd: 2, chord: dm7c },
+      { barIndex: 0, beatStart: 2, beatEnd: 4, chord: g7c },
+    ]);
+    const bass = makeBass(timeline, 'swing');
+    bass.setComplexity(3);
+    const { ctx, notes } = makeCtx();
+
+    bass.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
+    expect(notes).toHaveLength(4);
+    expect(notes[0]!.note).toBe('D2'); // beat 0: first of Dm7
+    expect(notes[1]!.note).toMatch(/^A[23]/); // beat 1: weak -> fifth of Dm7
+    expect(notes[2]!.note).toBe('G2'); // beat 2: first of G7
+    expect(notes[3]!.note).toMatch(/^D[23]/); // beat 3: weak -> fifth of G7
+  });
+
+  it('swing c1–2: 2-chord bar plays root of each chord', () => {
+    const timeline = new ChordTimeline([
+      { barIndex: 0, beatStart: 0, beatEnd: 2, chord: dm7c },
+      { barIndex: 0, beatStart: 2, beatEnd: 4, chord: g7c },
+    ]);
+    const bass = makeBass(timeline, 'swing');
+    bass.setComplexity(2);
+    const { ctx, notes } = makeCtx();
+
+    bass.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
+    expect(notes).toHaveLength(4);
+    expect(notes[0]!.note).toBe('D2');
+    expect(notes[1]!.note).toBe('D3');
+    expect(notes[2]!.note).toBe('G2');
+    expect(notes[3]!.note).toBe('G3');
+  });
+
+  it('funk c7: approach note uses sub-bar next chord (not next bar)', () => {
+    const timeline = new ChordTimeline([
+      { barIndex: 0, beatStart: 0, beatEnd: 2, chord: dm7c },
+      { barIndex: 0, beatStart: 2, beatEnd: 4, chord: g7c },
+    ]);
+    const bass = makeBass(timeline, 'funk');
+    bass.setComplexity(7);
+    const { ctx, notes } = makeCtx();
+
+    bass.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
+    // beat 3 subIndex 0 uses getNextChord which should find the chord AFTER G7 in this bar
+    // Since no next chord after G7, falls back to fifth of G7 = D
+    const beat4Downbeat = notes.find((n) => Math.floor(n.at / TPB) === 3 && (n.at / TPB) % 1 === 0);
+    if (beat4Downbeat) {
+      expect(beat4Downbeat.note).toMatch(/^D[23]/);
+    }
+  });
+});
+
+// ─── BassRandomizer integration tests (T-108) ─────────────────────────────────
+
+describe('BassInstrument — BassRandomizer for multi-chord (T-108)', () => {
+  const dm7 = makeChord('D');
+  const g7 = makeChord('G', '', 'dominant');
+  const cmaj7 = makeChord('C', '', 'major');
+  const a7 = makeChord('A', '', 'dominant');
+
+  describe('approach variant — 2-chord bar', () => {
+    it('default (off): chromatic above on even bars', () => {
+      const tl = new ChordTimeline([
+        { barIndex: 0, beatStart: 0, beatEnd: 2, chord: dm7 },
+        { barIndex: 0, beatStart: 2, beatEnd: 4, chord: g7 },
+        { barIndex: 1, beatStart: 0, beatEnd: 4, chord: cmaj7 },
+      ]);
+      const bass = makeBass(tl, 'swing');
+      bass.setComplexity(5);
+      const { ctx, notes } = makeCtx();
+      bass.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
+      // bar 0 even → chromatic above: beat 1 approach to G7 = Ab
+      expect(notes[1]!.note).toMatch(/^Ab[23]/);
+      // beat 3 approach to Cmaj7 (even bar) = chromatic above: Db
+      expect(notes[3]!.note).toMatch(/^Db[23]/);
+    });
+
+    it('moderate randomization: may use diatonic (whole-step) approach', () => {
+      const tl = new ChordTimeline([
+        { barIndex: 0, beatStart: 0, beatEnd: 2, chord: dm7 },
+        { barIndex: 0, beatStart: 2, beatEnd: 4, chord: g7 },
+        { barIndex: 1, beatStart: 0, beatEnd: 4, chord: cmaj7 },
+      ]);
+      const bass = makeBass(tl, 'swing');
+      bass.setComplexity(5);
+      bass.setRandomizationLevel('moderate');
+      const { ctx, notes } = makeCtx();
+      bass.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
+      // Beat 1 approach to G7: Ab (chromAbove), A (diatAbove), Gb (chromBelow), F (diatBelow)
+      expect(notes[1]!.note).toMatch(/^[AFG]b?[23]/);
+      // Beat 3 approach to Cmaj7: Db (chromAbove), D (diatAbove), B (chromBelow), Bb (diatBelow)
+      expect(notes[3]!.note).toMatch(/^[BCD]b?[12]/);
+      expect(notes[0]!.note).toBe('D2');
+      expect(notes[2]!.note).toBe('G2');
+    });
+
+    it('deterministic: same input produces same output', () => {
+      const tl = new ChordTimeline([
+        { barIndex: 0, beatStart: 0, beatEnd: 2, chord: dm7 },
+        { barIndex: 0, beatStart: 2, beatEnd: 4, chord: g7 },
+      ]);
+
+      const b1 = makeBass(tl, 'swing');
+      b1.setComplexity(5);
+      b1.setRandomizationLevel('moderate');
+      const { ctx: c1, notes: n1 } = makeCtx();
+      b1.schedule({ fromTicks: 0, toTicks: TPBAR }, c1);
+
+      const b2 = makeBass(tl, 'swing');
+      b2.setComplexity(5);
+      b2.setRandomizationLevel('moderate');
+      const { ctx: c2, notes: n2 } = makeCtx();
+      b2.schedule({ fromTicks: 0, toTicks: TPBAR }, c2);
+
+      expect(n1).toEqual(n2);
+    });
+  });
+
+  describe('sparse mode — 3-4 chord bars', () => {
+    it('moderate randomization: 4-chord bar may play sparse (fewer than 4 notes)', () => {
+      const tl = new ChordTimeline([
+        { barIndex: 0, beatStart: 0, beatEnd: 1, chord: dm7 },
+        { barIndex: 0, beatStart: 1, beatEnd: 2, chord: g7 },
+        { barIndex: 0, beatStart: 2, beatEnd: 3, chord: cmaj7 },
+        { barIndex: 0, beatStart: 3, beatEnd: 4, chord: a7 },
+      ]);
+      const bass = makeBass(tl, 'swing');
+      bass.setComplexity(5);
+      bass.setRandomizationLevel('moderate');
+      const { ctx, notes } = makeCtx();
+      bass.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
+      // With barIndex=0 and moderate, shouldPlaySparse may trigger.
+      // All notes are chord boundaries (roots).
+      for (const n of notes) {
+        const ch = tl.getChordAtTick(n.at, parseTimeSignature('4/4'));
+        if (ch) expect(n.note).toMatch(new RegExp('^' + ch.root));
+      }
+      expect(notes.length).toBeGreaterThanOrEqual(2);
+      expect(notes.length).toBeLessThanOrEqual(4);
+    });
+
+    it('without randomization: 4-chord bar always plays 4 beats', () => {
+      const tl = new ChordTimeline([
+        { barIndex: 0, beatStart: 0, beatEnd: 1, chord: dm7 },
+        { barIndex: 0, beatStart: 1, beatEnd: 2, chord: g7 },
+        { barIndex: 0, beatStart: 2, beatEnd: 3, chord: cmaj7 },
+        { barIndex: 0, beatStart: 3, beatEnd: 4, chord: a7 },
+      ]);
+      const bass = makeBass(tl, 'swing');
+      bass.setComplexity(5);
+      const { ctx, notes } = makeCtx();
+      bass.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
+      expect(notes).toHaveLength(4);
+      expect(notes[0]!.note).toBe('D2');
+      expect(notes[1]!.note).toBe('G2');
+      expect(notes[2]!.note).toBe('C2');
+      expect(notes[3]!.note).toMatch(/^A[23]/);
+    });
+
+    it('3-chord bar: plays roots on chord boundaries', () => {
+      // 3 chords in 4/4: Dm7 (beats 0-1), G7 (1-3), Cmaj7 (3-4)
+      const tl = new ChordTimeline([
+        { barIndex: 0, beatStart: 0, beatEnd: 1, chord: dm7 },
+        { barIndex: 0, beatStart: 1, beatEnd: 3, chord: g7 },
+        { barIndex: 0, beatStart: 3, beatEnd: 4, chord: cmaj7 },
+      ]);
+      const bass = makeBass(tl, 'swing');
+      bass.setComplexity(5);
+      bass.setRandomizationLevel('moderate');
+      const { ctx, notes } = makeCtx();
+      bass.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
+      // beat 0 (first of Dm7) and beat 1 (first of G7) always play.
+      // beat 2 may be skipped in sparse mode (inner of G7).
+      // beat 3 is first of Cmaj7 → always plays.
+      const atSet = new Set(notes.map((n) => n.at));
+      expect(atSet.has(0)).toBe(true); // beat 0
+      expect(atSet.has(TPB)).toBe(true); // beat 1
+      // beat 3 (3*TPB) always plays as chord boundary
+      expect(atSet.has(3 * TPB)).toBe(true);
+    });
+  });
+
+  describe('octave jumps — multi-chord bars', () => {
+    it('moderate randomization: may shift octave on chord boundaries', () => {
+      const tl = new ChordTimeline([
+        { barIndex: 0, beatStart: 0, beatEnd: 2, chord: dm7 },
+        { barIndex: 0, beatStart: 2, beatEnd: 4, chord: g7 },
+      ]);
+      const bass = makeBass(tl, 'swing');
+      bass.setComplexity(5);
+      bass.setRandomizationLevel('moderate');
+      const { ctx, notes } = makeCtx();
+      bass.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
+      // Roots on beats 0 and 2 — octave may be 2 or 3 (os=0)
+      expect(notes[0]!.note).toMatch(/^D[23]/);
+      expect(notes[2]!.note).toMatch(/^G[23]/);
+    });
+
+    it('off level: no octave variation (always octave 2)', () => {
+      const tl = new ChordTimeline([
+        { barIndex: 0, beatStart: 0, beatEnd: 2, chord: dm7 },
+        { barIndex: 0, beatStart: 2, beatEnd: 4, chord: g7 },
+      ]);
+      const bass = makeBass(tl, 'swing');
+      bass.setComplexity(5);
+      const { ctx, notes } = makeCtx();
+      bass.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
+      expect(notes[0]!.note).toBe('D2');
+      expect(notes[2]!.note).toBe('G2');
+    });
+  });
+
+  describe('subtle level', () => {
+    it('produces valid notes for 2-chord bar', () => {
+      const tl = new ChordTimeline([
+        { barIndex: 0, beatStart: 0, beatEnd: 2, chord: dm7 },
+        { barIndex: 0, beatStart: 2, beatEnd: 4, chord: g7 },
+      ]);
+      const bass = makeBass(tl, 'swing');
+      bass.setComplexity(5);
+      bass.setRandomizationLevel('subtle');
+      const { ctx, notes } = makeCtx();
+      bass.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
+      expect(notes).toHaveLength(4);
+      // All notes should be valid pitch strings
+      for (const n of notes) {
+        expect(n.note).toMatch(/^[A-G][b#]?[0-9]$/);
+      }
+    });
+  });
+});

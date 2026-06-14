@@ -224,11 +224,33 @@ function generateCandidates(chord: ChordSymbol, density: RhodesVoicingDensity): 
 
 // ─── Voice leading ─────────────────────────────────────────────────────────────
 
-/** Sum of per-voice semitone movements between two voicings. */
-function totalDistance(a: readonly number[], b: readonly number[]): number {
-  const len = Math.min(a.length, b.length);
+/**
+ * Weighted voice-leading distance with directional bias and soft ceiling.
+ *
+ * - Upward movement (candidate higher than previous) costs 1.3×.
+ * - Downward movement costs 0.7×.
+ * - When the previous voicing's top note is above C5 (72), upward cost rises to 2.0×.
+ *
+ * This creates a gentle downward "gravitational pull" that prevents the
+ * endless upward drift inherent in pure minimum-distance voice leading.
+ */
+function weightedDistance(prev: readonly number[], candidate: readonly number[]): number {
+  const UP_WEIGHT = 1.3;
+  const DOWN_WEIGHT = 0.7;
+  const CEIL_SOFT = 72; // C5
+  const UP_WEIGHT_CEIL = 2.0;
+
+  const prevTop = prev[prev.length - 1]!;
+  const upWeight = prevTop > CEIL_SOFT ? UP_WEIGHT_CEIL : UP_WEIGHT;
+
+  const len = Math.min(prev.length, candidate.length);
   let dist = 0;
-  for (let i = 0; i < len; i++) dist += Math.abs(a[i]! - b[i]!);
+  for (let i = 0; i < len; i++) {
+    const delta = prev[i]! - candidate[i]!;
+    // delta > 0: previous note was higher → candidate moved DOWN (cheaper)
+    // delta < 0: previous note was lower  → candidate moved UP   (costlier)
+    dist += delta > 0 ? delta * DOWN_WEIGHT : -delta * upWeight;
+  }
   return dist;
 }
 
@@ -257,17 +279,23 @@ export function buildVoicing(
 
   const prevMidi = prevVoicing.map(noteToMidi);
   let best = candidates[0]!;
-  let bestDist = totalDistance(best, prevMidi);
+  let bestScore = weightedDistance(prevMidi, best);
   let bestSpan = best[best.length - 1]! - best[0]!;
 
   for (const c of candidates.slice(1)) {
-    const d = totalDistance(c, prevMidi);
+    const score = weightedDistance(prevMidi, c);
     const span = c[c.length - 1]! - c[0]!;
-    if (d < bestDist || (d === bestDist && span < bestSpan)) {
+    if (score < bestScore || (score === bestScore && span < bestSpan)) {
       best = c;
-      bestDist = d;
+      bestScore = score;
       bestSpan = span;
     }
+  }
+
+  // Hard emergency brake: if voicing is pushed against the ceiling, reset to default
+  const HARD_CEIL = RANGE_MAX - 4; // 80
+  if (best[best.length - 1]! > HARD_CEIL) {
+    return buildDefaultVoicing(chord, density).map(midiToNote);
   }
 
   return best.map(midiToNote);

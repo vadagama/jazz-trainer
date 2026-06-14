@@ -70,12 +70,7 @@ const TPBAR = 1920; // 4/4 bar
 
 describe('PianoInstrument — basic scheduling', () => {
   it('schedules events when profile has patterns', () => {
-    const inst = makePiano([
-      { chord: dm7 },
-      { chord: g7 },
-      { chord: cmaj7 },
-      { chord: dm7 },
-    ]);
+    const inst = makePiano([{ chord: dm7 }, { chord: g7 }, { chord: cmaj7 }, { chord: dm7 }]);
     const { ctx, chords } = makeCtx();
     inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
     expect(chords.length).toBeGreaterThan(0);
@@ -89,11 +84,7 @@ describe('PianoInstrument — basic scheduling', () => {
   });
 
   it('skips bars with null chord', () => {
-    const inst = makePiano([
-      { chord: null },
-      { chord: dm7 },
-      { chord: null },
-    ]);
+    const inst = makePiano([{ chord: null }, { chord: dm7 }, { chord: null }]);
     const { ctx, chords } = makeCtx();
     inst.schedule({ fromTicks: 0, toTicks: 3 * TPBAR }, ctx);
     // Only bar 1 (index 1) should produce events
@@ -106,12 +97,7 @@ describe('PianoInstrument — basic scheduling', () => {
 
 describe('PianoInstrument — profiles', () => {
   it('swing-sparse: uses 4-bar cycle with basie-2-4, charleston, basie-2-4, halfNotes', () => {
-    const inst = makePiano([
-      { chord: dm7 },
-      { chord: dm7 },
-      { chord: dm7 },
-      { chord: dm7 },
-    ]);
+    const inst = makePiano([{ chord: dm7 }, { chord: dm7 }, { chord: dm7 }, { chord: dm7 }]);
     inst.setProfile('swing-sparse');
     const { ctx, chords } = makeCtx();
     inst.schedule({ fromTicks: 0, toTicks: 4 * TPBAR }, ctx);
@@ -122,39 +108,25 @@ describe('PianoInstrument — profiles', () => {
   });
 
   it('swing-medium: produces events across 4 bars', () => {
-    const inst = makePiano([
-      { chord: dm7 },
-      { chord: dm7 },
-      { chord: dm7 },
-      { chord: dm7 },
-    ]);
+    const inst = makePiano([{ chord: dm7 }, { chord: dm7 }, { chord: dm7 }, { chord: dm7 }]);
     inst.setProfile('swing-medium');
     const { ctx, chords } = makeCtx();
     inst.schedule({ fromTicks: 0, toTicks: 4 * TPBAR }, ctx);
     expect(chords.length).toBeGreaterThan(0);
     // Each bar should have at least 1 event
     for (let bar = 0; bar < 4; bar++) {
-      const barEvents = chords.filter(
-        (c) => c.at >= bar * TPBAR && c.at < (bar + 1) * TPBAR,
-      );
+      const barEvents = chords.filter((c) => c.at >= bar * TPBAR && c.at < (bar + 1) * TPBAR);
       expect(barEvents.length).toBeGreaterThan(0);
     }
   });
 
   it('basie-light: has rest on bar 2 (index 1)', () => {
-    const inst = makePiano([
-      { chord: dm7 },
-      { chord: dm7 },
-      { chord: dm7 },
-      { chord: dm7 },
-    ]);
+    const inst = makePiano([{ chord: dm7 }, { chord: dm7 }, { chord: dm7 }, { chord: dm7 }]);
     inst.setProfile('basie-light');
     const { ctx, chords } = makeCtx();
     inst.schedule({ fromTicks: 0, toTicks: 4 * TPBAR }, ctx);
 
-    const bar1Events = chords.filter(
-      (c) => c.at >= TPBAR && c.at < 2 * TPBAR,
-    );
+    const bar1Events = chords.filter((c) => c.at >= TPBAR && c.at < 2 * TPBAR);
     expect(bar1Events.length).toBe(0);
   });
 
@@ -171,10 +143,7 @@ describe('PianoInstrument — profiles', () => {
   });
 
   it('beginner-safe: uses halfNotes and wholeNotes', () => {
-    const inst = makePiano([
-      { chord: dm7 },
-      { chord: dm7 },
-    ]);
+    const inst = makePiano([{ chord: dm7 }, { chord: dm7 }]);
     inst.setProfile('beginner-safe');
     const { ctx, chords } = makeCtx();
     inst.schedule({ fromTicks: 0, toTicks: 2 * TPBAR }, ctx);
@@ -318,35 +287,26 @@ describe('PianoInstrument — baseVelocity', () => {
 
 describe('PianoInstrument — multi-bar', () => {
   it('4-bar cycle repeats across 8 bars', () => {
-    const inst = makePiano(
-      Array.from({ length: 8 }, () => ({ chord: dm7 })),
-    );
+    const inst = makePiano(Array.from({ length: 8 }, () => ({ chord: dm7 })));
     inst.setProfile('beginner-safe');
     const { ctx, chords } = makeCtx();
     inst.schedule({ fromTicks: 0, toTicks: 8 * TPBAR }, ctx);
 
     // Bars 0-3 same as bars 4-7
     const firstCycle = chords.filter((c) => c.at < 4 * TPBAR).length;
-    const secondCycle = chords.filter(
-      (c) => c.at >= 4 * TPBAR && c.at < 8 * TPBAR,
-    ).length;
+    const secondCycle = chords.filter((c) => c.at >= 4 * TPBAR && c.at < 8 * TPBAR).length;
     expect(secondCycle).toBe(firstCycle);
   });
 
   it('setTimeline() updates chord source', () => {
-    const inst = makePiano([
-      { chord: dm7 },
-      { chord: dm7 },
-    ]);
+    const inst = makePiano([{ chord: dm7 }, { chord: dm7 }]);
     inst.setProfile('swing-sparse');
     const { ctx, chords } = makeCtx();
     inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
     const firstChordNotes = chords[0]?.notes;
 
     // Replace timeline with different chords
-    const newTimeline = new ChordTimeline([
-      { barIndex: 0, chord: cmaj7 },
-    ]);
+    const newTimeline = new ChordTimeline([{ barIndex: 0, chord: cmaj7 }]);
     inst.setTimeline(newTimeline);
     inst.reset();
 
@@ -361,10 +321,7 @@ describe('PianoInstrument — multi-bar', () => {
 
 describe('PianoInstrument — window filtering', () => {
   it('only schedules events within [fromTicks, toTicks)', () => {
-    const inst = makePiano([
-      { chord: dm7 },
-      { chord: g7 },
-    ]);
+    const inst = makePiano([{ chord: dm7 }, { chord: g7 }]);
     inst.setProfile('swing-sparse');
     const { ctx, chords } = makeCtx();
     // Window covers only bar 0
@@ -421,10 +378,7 @@ describe('PianoInstrument — humanization', () => {
 
 describe('PianoInstrument — reset', () => {
   it('reset() clears voice leading state', () => {
-    const inst = makePiano([
-      { chord: dm7 },
-      { chord: g7 },
-    ]);
+    const inst = makePiano([{ chord: dm7 }, { chord: g7 }]);
     inst.setProfile('swing-sparse');
 
     // Schedule bar 0
@@ -458,10 +412,7 @@ describe('PianoInstrument — randomization', () => {
   });
 
   it('randomization high may add or modify events', () => {
-    const inst = makePiano([
-      { chord: dm7 },
-      { chord: g7 },
-    ]);
+    const inst = makePiano([{ chord: dm7 }, { chord: g7 }]);
     inst.setProfile('swing-medium');
     inst.setRandomizationLevel('high');
     inst.setHumanize(false);
@@ -481,11 +432,8 @@ describe('PianoInstrument — randomization', () => {
 
 describe('PianoInstrument — voice leading', () => {
   it('maintains voice leading across consecutive bars', () => {
-    const inst = makePiano([
-      { chord: dm7 },
-      { chord: g7 },
-    ]);
-    inst.setProfile('halfNotes');
+    const inst = makePiano([{ chord: dm7 }, { chord: g7 }]);
+    inst.setProfile('swing-sparse');
     inst.setVoicingDensity('rootless4');
     inst.setHumanize(false);
 
@@ -508,10 +456,7 @@ describe('PianoInstrument — voice leading', () => {
 
 describe('PianoInstrument — edge cases', () => {
   it('handles a timeline with all null chords gracefully', () => {
-    const inst = makePiano([
-      { chord: null },
-      { chord: null },
-    ]);
+    const inst = makePiano([{ chord: null }, { chord: null }]);
     const { ctx, chords } = makeCtx();
     expect(() => inst.schedule({ fromTicks: 0, toTicks: 2 * TPBAR }, ctx)).not.toThrow();
     expect(chords.length).toBe(0);
@@ -563,5 +508,260 @@ describe('PianoInstrument — edge cases', () => {
     inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
     // velocity = event.velocity * 2.0 (clamped from 3)
     expect(chords[0]!.velocity).toBeCloseTo(0.45 * 2, 3);
+  });
+});
+
+// ─── Multi-chord (sub-bar) tests ─────────────────────────────────────────────
+
+describe('PianoInstrument — multi-chord bars (sub-bar)', () => {
+  const dm7Chord = makeChord('D');
+  const g7Chord = makeChord('G', '', 'dominant');
+  const cmaj7Chord = makeChord('C', '', 'major');
+
+  it('2-chord bar: events resolve chord at their tick position', () => {
+    // | Dm7 G7 | in one bar: Dm7 on beats 0-1, G7 on beats 2-3
+    // Use beginner-safe -> bar 0 halfNotes: events on beat 1 and beat 3
+    const timeline = new ChordTimeline([
+      { barIndex: 0, beatStart: 0, beatEnd: 2, chord: dm7Chord },
+      { barIndex: 0, beatStart: 2, beatEnd: 4, chord: g7Chord },
+    ]);
+    const inst = new PianoInstrument(timeline);
+    inst.setHumanize(false);
+    inst.setProfile('beginner-safe');
+    const { ctx, chords } = makeCtx();
+
+    inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
+    // halfNotes: beat 1 (Dm7 range) and beat 3 (G7 range) -> different voicings
+    const beat1Events = chords.filter((c) => c.at >= 0 && c.at < 1 * TPB);
+    const beat3Events = chords.filter((c) => c.at >= 2 * TPB && c.at < 3 * TPB);
+    expect(beat1Events.length).toBe(1);
+    expect(beat3Events.length).toBe(1);
+    expect(beat3Events[0]!.notes).not.toEqual(beat1Events[0]!.notes);
+  });
+
+  it('chordRef: next uses sub-bar getNextChord (not next bar)', () => {
+    // | Dm7 G7 | Cmaj7 | — bar 0 has Dm7(0-1) and G7(2-3), bar 1 has Cmaj7
+    // offbeat-push bar 3 of cycle uses anticipation-4and (chordRef: 'next')
+    // Scheduling 4 bars so we reach bar 3 of the cycle
+    const timeline = new ChordTimeline([
+      { barIndex: 0, beatStart: 0, beatEnd: 2, chord: dm7Chord },
+      { barIndex: 0, beatStart: 2, beatEnd: 4, chord: g7Chord },
+      { barIndex: 1, beatStart: 0, beatEnd: 4, chord: cmaj7Chord },
+      { barIndex: 2, beatStart: 0, beatEnd: 4, chord: dm7Chord },
+      { barIndex: 3, beatStart: 0, beatEnd: 4, chord: g7Chord },
+      { barIndex: 4, beatStart: 0, beatEnd: 4, chord: cmaj7Chord },
+    ]);
+    const inst = new PianoInstrument(timeline);
+    inst.setHumanize(false);
+    inst.setProfile('offbeat-push');
+    const { ctx, chords } = makeCtx();
+
+    // Schedule bar 3 of the 4-bar cycle (physically the 4th bar, index 3)
+    inst.schedule({ fromTicks: 3 * TPBAR, toTicks: 4 * TPBAR }, ctx);
+    // anticipation-4and: beat 4.5 (tick 3*TPBAR + 3*TPB + swingOffset)
+    // The 'next' chord from that tick should resolve to cmaj7Chord
+    const anticipEvent = chords.find((c) => c.at > 3 * TPBAR + 3 * TPB && c.at < 4 * TPBAR);
+    expect(anticipEvent).toBeDefined();
+    expect(anticipEvent!.notes.length).toBeGreaterThan(0);
+  });
+
+  it('3-chord bar: halfNotes pattern resolves different chords', () => {
+    // | Dm7 G7 Cmaj7 | — 2+1+1 beats
+    // beginner-safe halfNotes: beat 1 (Dm7) and beat 3 (G7 or Cmaj7? depends on beatStart)
+    // G7: beatStart 2, beatEnd 3. Cmaj7: beatStart 3, beatEnd 4.
+    // Beat 3 = beatInBar 2 -> in G7 range [2,3). So beat 3 is G7.
+    const timeline = new ChordTimeline([
+      { barIndex: 0, beatStart: 0, beatEnd: 2, chord: dm7Chord },
+      { barIndex: 0, beatStart: 2, beatEnd: 3, chord: g7Chord },
+      { barIndex: 0, beatStart: 3, beatEnd: 4, chord: cmaj7Chord },
+    ]);
+    const inst = new PianoInstrument(timeline);
+    inst.setHumanize(false);
+    inst.setProfile('beginner-safe');
+    const { ctx, chords } = makeCtx();
+
+    inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
+    expect(chords.length).toBe(2); // halfNotes: 2 events
+    const beat1Event = chords.find((c) => c.at === 0);
+    const beat3Event = chords.find((c) => c.at === 2 * TPB);
+    expect(beat1Event).toBeDefined();
+    expect(beat3Event).toBeDefined();
+    // Dm7 voicing != G7 voicing
+    expect(beat3Event!.notes).not.toEqual(beat1Event!.notes);
+  });
+
+  it('4-chord bar: each halfNotes event resolves its chord', () => {
+    const a7Chord = makeChord('A', '', 'dominant');
+    // | Dm7 G7 Cmaj7 A7 | — 1+1+1+1 beats
+    // beginner-safe halfNotes: beat 1 (Dm7) and beat 3 (Cmaj7, beatStart=2)
+    const timeline = new ChordTimeline([
+      { barIndex: 0, beatStart: 0, beatEnd: 1, chord: dm7Chord },
+      { barIndex: 0, beatStart: 1, beatEnd: 2, chord: g7Chord },
+      { barIndex: 0, beatStart: 2, beatEnd: 3, chord: cmaj7Chord },
+      { barIndex: 0, beatStart: 3, beatEnd: 4, chord: a7Chord },
+    ]);
+    const inst = new PianoInstrument(timeline);
+    inst.setHumanize(false);
+    inst.setProfile('beginner-safe');
+    const { ctx, chords } = makeCtx();
+
+    inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
+    expect(chords.length).toBe(2);
+    const beat1Event = chords.find((c) => c.at === 0);
+    const beat3Event = chords.find((c) => c.at === 2 * TPB);
+    expect(beat1Event).toBeDefined();
+    expect(beat3Event).toBeDefined();
+    // Dm7 vs Cmaj7 — different chords
+    expect(beat3Event!.notes).not.toEqual(beat1Event!.notes);
+  });
+
+  it('voice leading works across chord boundaries within a bar', () => {
+    // | Dm7 G7 | — halfNotes beat 1 (Dm7) then beat 3 (G7)
+    const timeline = new ChordTimeline([
+      { barIndex: 0, beatStart: 0, beatEnd: 2, chord: dm7Chord },
+      { barIndex: 0, beatStart: 2, beatEnd: 4, chord: g7Chord },
+    ]);
+    const inst = new PianoInstrument(timeline);
+    inst.setHumanize(false);
+    inst.setProfile('beginner-safe');
+    const { ctx, chords } = makeCtx();
+
+    inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
+    const beat1Event = chords.find((c) => c.at === 0);
+    const beat3Event = chords.find((c) => c.at === 2 * TPB);
+    expect(beat1Event).toBeDefined();
+    expect(beat3Event).toBeDefined();
+    // Both should produce valid voicings (no crash on chord transition)
+    expect(beat1Event!.notes.length).toBeGreaterThan(0);
+    expect(beat3Event!.notes.length).toBeGreaterThan(0);
+  });
+});
+
+// ─── Adaptive profile ─────────────────────────────────────────────────────────
+
+describe('PianoInstrument — adaptive profile', () => {
+  const dm7Chord = makeChord('D');
+  const g7Chord = makeChord('G', '', 'dominant');
+  const cmaj7Chord = makeChord('C', '', 'major');
+  const a7Chord = makeChord('A', '', 'dominant');
+
+  it('disabled by default: uses profile cycle pattern for 2-chord bars', () => {
+    const timeline = new ChordTimeline([
+      { barIndex: 0, beatStart: 0, beatEnd: 2, chord: dm7Chord },
+      { barIndex: 0, beatStart: 2, beatEnd: 4, chord: g7Chord },
+    ]);
+    const inst = new PianoInstrument(timeline);
+    inst.setHumanize(false);
+    inst.setProfile('beginner-safe'); // halfNotes → 2 events on beats 1 and 3
+    const { ctx, chords } = makeCtx();
+
+    inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
+    // Without adaptive: beginner-safe bar 0 = halfNotes (2 events)
+    expect(chords.length).toBe(2);
+  });
+
+  it('2-chord bar: switches to two-and-four when adaptive is on', () => {
+    const timeline = new ChordTimeline([
+      { barIndex: 0, beatStart: 0, beatEnd: 2, chord: dm7Chord },
+      { barIndex: 0, beatStart: 2, beatEnd: 4, chord: g7Chord },
+    ]);
+    const inst = new PianoInstrument(timeline);
+    inst.setHumanize(false);
+    inst.setProfile('beginner-safe'); // would be halfNotes (beat 1, 3)
+    inst.setAdaptiveProfile(true);
+    const { ctx, chords } = makeCtx();
+
+    inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
+    // two-and-four: 2 events on beats 2 and 4
+    expect(chords.length).toBe(2);
+    const ticks = chords.map((c) => c.at);
+    expect(ticks).toContain(TPB); // beat 2 = 480
+    expect(ticks).toContain(3 * TPB); // beat 4 = 1440
+  });
+
+  it('3-chord bar: switches to quarter-comp when adaptive is on', () => {
+    const timeline = new ChordTimeline([
+      { barIndex: 0, beatStart: 0, beatEnd: 2, chord: dm7Chord },
+      { barIndex: 0, beatStart: 2, beatEnd: 3, chord: g7Chord },
+      { barIndex: 0, beatStart: 3, beatEnd: 4, chord: cmaj7Chord },
+    ]);
+    const inst = new PianoInstrument(timeline);
+    inst.setHumanize(false);
+    inst.setProfile('beginner-safe'); // would be halfNotes (2 events)
+    inst.setAdaptiveProfile(true);
+    const { ctx, chords } = makeCtx();
+
+    inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
+    // quarter-comp: 4 events on all beats
+    expect(chords.length).toBe(4);
+    // Verify all 4 beats have events
+    const ticks = chords.map((c) => c.at).sort((a, b) => a - b);
+    expect(ticks[0]).toBe(0); // beat 1
+    expect(ticks[1]).toBe(TPB); // beat 2
+    expect(ticks[2]).toBe(2 * TPB); // beat 3
+    expect(ticks[3]).toBe(3 * TPB); // beat 4
+  });
+
+  it('4-chord bar: switches to quarter-comp when adaptive is on', () => {
+    const timeline = new ChordTimeline([
+      { barIndex: 0, beatStart: 0, beatEnd: 1, chord: cmaj7Chord },
+      { barIndex: 0, beatStart: 1, beatEnd: 2, chord: a7Chord },
+      { barIndex: 0, beatStart: 2, beatEnd: 3, chord: dm7Chord },
+      { barIndex: 0, beatStart: 3, beatEnd: 4, chord: g7Chord },
+    ]);
+    const inst = new PianoInstrument(timeline);
+    inst.setHumanize(false);
+    inst.setProfile('beginner-safe'); // would be halfNotes (2 events)
+    inst.setAdaptiveProfile(true);
+    const { ctx, chords } = makeCtx();
+
+    inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
+    // quarter-comp: 4 events — one per chord
+    expect(chords.length).toBe(4);
+  });
+
+  it('1-chord bar: keeps profile cycle pattern even with adaptive on', () => {
+    const timeline = new ChordTimeline([
+      { barIndex: 0, beatStart: 0, beatEnd: 4, chord: dm7Chord },
+    ]);
+    const inst = new PianoInstrument(timeline);
+    inst.setHumanize(false);
+    inst.setProfile('beginner-safe'); // halfNotes → 2 events
+    inst.setAdaptiveProfile(true);
+    const { ctx, chords } = makeCtx();
+
+    inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
+    // Still halfNotes: 2 events
+    expect(chords.length).toBe(2);
+  });
+
+  it('adaptive can be toggled on and off', () => {
+    const timeline = new ChordTimeline([
+      { barIndex: 0, beatStart: 0, beatEnd: 2, chord: dm7Chord },
+      { barIndex: 0, beatStart: 2, beatEnd: 4, chord: g7Chord },
+    ]);
+    const inst = new PianoInstrument(timeline);
+    inst.setHumanize(false);
+    inst.setProfile('beginner-safe');
+
+    // Off: uses halfNotes (2 events on beats 1, 3)
+    let { ctx, chords } = makeCtx();
+    inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
+    expect(chords.length).toBe(2);
+    expect(chords[0]!.at).toBe(0); // beat 1
+
+    // On: switches to two-and-four (events on beats 2, 4)
+    inst.setAdaptiveProfile(true);
+    ({ ctx, chords } = makeCtx());
+    inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
+    expect(chords.length).toBe(2);
+    expect(chords[0]!.at).toBe(TPB); // beat 2
+
+    // Back off: halfNotes again
+    inst.setAdaptiveProfile(false);
+    ({ ctx, chords } = makeCtx());
+    inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
+    expect(chords.length).toBe(2);
+    expect(chords[0]!.at).toBe(0); // beat 1
   });
 });

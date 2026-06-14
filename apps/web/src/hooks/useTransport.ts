@@ -9,7 +9,6 @@ import {
   ChordTimeline,
   RoundRobinCounter,
   PlaybackStateMachine,
-  parseChord,
   ticksPerBar,
   parseTimeSignature,
   defaultSecondStrongBeats,
@@ -29,7 +28,9 @@ import {
   type RhodesEvent,
   type PianoEvent,
   type DrumEvent,
-  type ChordTimelineEntry,
+  buildFlatSequence,
+  buildChordTimelineEntries,
+  type FlatSequence,
 } from '@jazz/music-core';
 import {
   ToneAudioAdapter,
@@ -51,117 +52,6 @@ const PPQ = 480;
 
 function ticksToSeconds(durationTicks: number, bpm: number): number {
   return (durationTicks * 60) / (PPQ * bpm);
-}
-
-/**
- * Flat playback sequence resolved from sections with repeat markers.
- * Each entry is the original 0-based bar index in the grid.
- * For infinite loops, Tone.Transport.loop is configured and infiniteLoopStart
- * marks where the loop region begins in the virtual sequence.
- */
-interface FlatSequence {
-  bars: number[];
-  infiniteLoopStart: number | null;
-}
-
-/**
- * Expand sections into a linear playback order respecting repeatEnd markers.
- * - repeatEnd.count = N  → play that section N times total
- * - repeatEnd.count = null on the LAST section → infinite loop via Transport.loop
- * Only the last bar of each section is checked for a repeatEnd marker.
- */
-/**
- * Recursively expand bars [from..to] respecting nested repeat markers.
- * The LAST repeatEnd in the range is the outermost repeat — it plays the whole
- * sub-range (including inner repeats) N times. Earlier markers are inner repeats.
- *
- * Example: [b0, b1(×2), b2, b3(×2)]
- *   outer = b3(×2) → play [b0..b3] twice
- *   inner = b1(×2) → play [b0..b1] twice on each outer pass
- *   result: b0 b1 b0 b1 b2 b3  b0 b1 b0 b1 b2 b3
- */
-function expandRange(
-  sectionBars: Section['bars'],
-  from: number,
-  to: number,
-  globalOffset: number,
-  result: number[],
-): void {
-  if (from > to) return;
-
-  // Find the LAST repeatEnd in [from..to] — it is the outermost for this range.
-  let outerIdx = -1;
-  for (let bi = to; bi >= from; bi--) {
-    if (sectionBars[bi]?.repeatEnd) {
-      outerIdx = bi;
-      break;
-    }
-  }
-
-  if (outerIdx === -1) {
-    // No repeats — linear pass.
-    for (let bi = from; bi <= to; bi++) result.push(globalOffset + bi);
-    return;
-  }
-
-  const times = sectionBars[outerIdx]!.repeatEnd!.count ?? 1;
-
-  // Play [from..outerIdx] `times` times; on every pass expand inner repeats.
-  for (let t = 0; t < times; t++) {
-    expandRange(sectionBars, from, outerIdx - 1, globalOffset, result);
-    result.push(globalOffset + outerIdx); // repeat-end bar itself (plain)
-  }
-
-  // Bars after the outermost repeat in this range — by definition no more repeats.
-  for (let bi = outerIdx + 1; bi <= to; bi++) result.push(globalOffset + bi);
-}
-
-function buildFlatSequence(sections: Section[]): FlatSequence {
-  const bars: number[] = [];
-  let globalOffset = 0;
-  let infiniteLoopStart: number | null = null;
-
-  for (let si = 0; si < sections.length; si++) {
-    const section = sections[si]!;
-    const sectionBars = section.bars;
-    const isLastSection = si === sections.length - 1;
-
-    const lastBar = sectionBars[sectionBars.length - 1];
-    const isInfiniteSection = isLastSection && lastBar?.repeatEnd?.count === null;
-
-    if (isInfiniteSection) {
-      // Infinite loop: expand inner structure once, Tone.Transport.loop repeats it.
-      infiniteLoopStart = bars.length;
-      expandRange(sectionBars, 0, sectionBars.length - 2, globalOffset, bars);
-      bars.push(globalOffset + sectionBars.length - 1); // last bar (plain, loop boundary)
-    } else {
-      expandRange(sectionBars, 0, sectionBars.length - 1, globalOffset, bars);
-    }
-
-    globalOffset += sectionBars.length;
-  }
-
-  return { bars, infiniteLoopStart };
-}
-
-/** Build ChordTimeline entries from sections + flat bar sequence.
- *  Parses `symbol` on-the-fly when `parsed` is missing — this covers:
- *  - grids freshly loaded from API (parsed never stored server-side)
- *  - transposed sections (transposeSections sets parsed: null)
- */
-function buildChordTimelineEntries(sections: Section[], flatBars: number[]): ChordTimelineEntry[] {
-  const allBars = sections.flatMap((s) => s.bars);
-  return flatBars.map((originalBarIdx) => {
-    const slot = allBars[originalBarIdx]?.chords[0];
-    if (!slot) return { barIndex: originalBarIdx, chord: null };
-
-    let chord = slot.parsed ?? null;
-    if (!chord && slot.symbol) {
-      const result = parseChord(slot.symbol);
-      chord = result.ok && result.value ? result.value : null;
-    }
-    return { barIndex: originalBarIdx, chord };
-  });
 }
 
 export interface UseTransportOptions {
@@ -897,12 +787,12 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
   useEffect(() => {
     const seq = flatSeqRef.current;
     if (seq.bars.length === 0) return;
-    const entries = buildChordTimelineEntries(opts.sections ?? [], seq.bars);
+    const entries = buildChordTimelineEntries(opts.sections ?? [], seq.bars, opts.timeSignature);
     const timeline = new ChordTimeline(entries);
     bassInstrumentRef.current?.setTimeline(timeline);
     rhodesInstrumentRef.current?.setTimeline(new ChordTimeline(entries));
     pianoInstrumentRef.current?.setTimeline(new ChordTimeline(entries));
-  }, [opts.sections]);
+  }, [opts.sections, opts.timeSignature]);
 
   const play = useCallback(async () => {
     const engine = engineRef.current;
@@ -951,7 +841,11 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     flatSeqRef.current = seq;
 
     // Sync chord timeline to bass, Rhodes, and Piano instruments
-    const timelineEntries = buildChordTimelineEntries(sections, seq.bars);
+    const timelineEntries = buildChordTimelineEntries(
+      sections,
+      seq.bars,
+      optsRef.current.timeSignature,
+    );
     if (bassInstrumentRef.current) {
       bassInstrumentRef.current.setTimeline(new ChordTimeline(timelineEntries));
       rrCounterRef.current.reset();

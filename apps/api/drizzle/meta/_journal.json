@@ -127,6 +127,13 @@
       "when": 1781429910786,
       "tag": "0018_add_piano_rhodes_columns",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "6",
+      "when": 1790000000000,
+      "tag": "0019_add_pickup_settings",
+      "breakpoints": true
     }
   ]
 }

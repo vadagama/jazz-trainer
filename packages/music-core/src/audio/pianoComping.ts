@@ -23,12 +23,16 @@ export type CompPatternId =
   | 'two-threeand'
   | 'halfNotes'
   | 'quarterNotes'
+  | 'quarter-comp'
+  | 'two-and-four'
+  | 'one-three'
   | 'wholeNotes'
   | 'rest';
 
 export type CompingProfileId =
   | 'swing-sparse'
   | 'swing-medium'
+  | 'swing-dense'
   | 'basie-light'
   | 'offbeat-push'
   | 'beginner-safe';
@@ -90,6 +94,20 @@ export const COMP_PATTERNS: Record<CompPatternId, readonly CompEvent[]> = {
     { beat: 3, durationBeats: 0.65, velocity: 0.5 },
     { beat: 4, durationBeats: 0.5, velocity: 0.44 },
   ],
+  'quarter-comp': [
+    { beat: 1, durationBeats: 0.5, velocity: 0.53 },
+    { beat: 2, durationBeats: 0.5, velocity: 0.45 },
+    { beat: 3, durationBeats: 0.5, velocity: 0.5 },
+    { beat: 4, durationBeats: 0.5, velocity: 0.48 },
+  ],
+  'two-and-four': [
+    { beat: 2, durationBeats: 0.65, velocity: 0.52 },
+    { beat: 4, durationBeats: 0.65, velocity: 0.5 },
+  ],
+  'one-three': [
+    { beat: 1, durationBeats: 0.75, velocity: 0.54 },
+    { beat: 3, durationBeats: 0.75, velocity: 0.48 },
+  ],
   wholeNotes: [{ beat: 1, durationBeats: 3.6, velocity: 0.54 }],
   rest: [],
 };
@@ -130,6 +148,12 @@ export const COMPING_PROFILES: Record<CompingProfileId, CompingProfile> = {
     name: 'Beginner Safe',
     complexity: 1,
     bars: ['halfNotes', 'wholeNotes', 'halfNotes', 'wholeNotes'],
+  },
+  'swing-dense': {
+    id: 'swing-dense',
+    name: 'Swing Dense',
+    complexity: 3,
+    bars: ['quarter-comp', 'two-and-four', 'quarter-comp', 'one-three'],
   },
 };
 

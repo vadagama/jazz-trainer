@@ -48,19 +48,38 @@ export function SettingsForm({ defaultValues, onSave, themeControl }: Props) {
     defaultValues,
   });
 
+  const savedRef = React.useRef(false);
+  const doSave = React.useCallback(
+    (data: UserSettingsDTO) => {
+      savedRef.current = true;
+      onSave(data);
+    },
+    [onSave],
+  );
+
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout>;
+    savedRef.current = false;
     const { unsubscribe } = form.watch(() => {
       clearTimeout(timer);
+      savedRef.current = false;
       timer = setTimeout(() => {
-        form.handleSubmit(onSave)();
-      }, 500);
+        form.handleSubmit(doSave, (errors) => {
+          console.warn('[SettingsForm] validation failed:', errors);
+        })();
+      }, 300);
     });
     return () => {
       clearTimeout(timer);
+      // Flush pending save on unmount if form is dirty and not already saved
+      if (form.formState.isDirty && !savedRef.current) {
+        form.handleSubmit(doSave, (errors) => {
+          console.warn('[SettingsForm] validation failed on unmount:', errors);
+        })();
+      }
       unsubscribe();
     };
-  }, [form, onSave]);
+  }, [form, onSave, doSave]);
 
   const volumePct = Math.round((form.watch('volume') ?? 0.8) * 100);
   const metronomeVolumePct = Math.round((form.watch('metronomeVolume') ?? 0.8) * 100);

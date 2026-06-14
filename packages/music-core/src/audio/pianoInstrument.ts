@@ -36,6 +36,7 @@ export class PianoInstrument implements Instrument {
   private lastScheduledTick = -1;
   private style: Style = 'swing';
   private randomizer = new PianoRandomizer();
+  private adaptiveProfile = false;
 
   constructor(timeline: ChordTimeline) {
     this.timeline = timeline;
@@ -70,6 +71,10 @@ export class PianoInstrument implements Instrument {
     this.randomizer.setLevel(level);
   }
 
+  setAdaptiveProfile(enabled: boolean): void {
+    this.adaptiveProfile = enabled;
+  }
+
   reset(): void {
     this.prevVoicing = null;
     this.lastScheduledTick = -1;
@@ -94,12 +99,24 @@ export class PianoInstrument implements Instrument {
 
     for (let bar = firstBar; bar <= lastBar; bar++) {
       const barStartTicks = bar * tpBar;
-      const currentChord = this.timeline.getChordAtTick(barStartTicks, sig);
-      if (!currentChord) continue;
+      // Quick guard: skip bars with no chord at all
+      const firstBeatChord = this.timeline.getChordAtTick(barStartTicks, sig);
+      if (!firstBeatChord) continue;
 
       // Select pattern from profile's 4-bar cycle
       const barInCycle = ((bar % 4) + 4) % 4;
-      const patternId = profile.bars[barInCycle]! as CompPatternId;
+      let patternId: CompPatternId = profile.bars[barInCycle]! as CompPatternId;
+
+      // Adaptive override: force denser patterns for multi-chord bars
+      if (this.adaptiveProfile) {
+        const chordCount = this.timeline.getChordCountInBar(bar);
+        if (chordCount >= 3) {
+          patternId = 'quarter-comp';
+        } else if (chordCount === 2) {
+          patternId = 'two-and-four';
+        }
+      }
+
       const pattern = getCompPattern(patternId);
       if (pattern.length === 0) continue;
 
@@ -107,11 +124,10 @@ export class PianoInstrument implements Instrument {
       const densityForBar = this.randomizer.shouldVaryVoicing(bar, this.density) ?? this.density;
 
       // Build bar context for randomizer
-      const nextChord = this.timeline.getChordAtTick((bar + 1) * tpBar, sig);
       const barCtx: PianoBarContext = {
         barIndex: bar,
         formLength: 0,
-        hasNextChord: nextChord !== null,
+        hasNextChord: this.timeline.getNextChord(barStartTicks, sig) !== null,
       };
 
       const events = this.randomizer.apply(pattern, barCtx);
@@ -122,7 +138,11 @@ export class PianoInstrument implements Instrument {
         const eventTicks = barStartTicks + (event.beat - 1) * tpBeat + subdivTicks;
         if (eventTicks < window.fromTicks || eventTicks >= window.toTicks) continue;
 
-        const chord = event.chordRef === 'next' ? nextChord : currentChord;
+        // Resolve chord at event time (sub-bar aware)
+        const chord =
+          event.chordRef === 'next'
+            ? this.timeline.getNextChord(eventTicks, sig)
+            : this.timeline.getChordAtTick(eventTicks, sig);
         if (!chord) continue;
 
         const voicing = buildPianoVoicing(chord, densityForBar, this.prevVoicing);

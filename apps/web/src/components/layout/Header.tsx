@@ -1,5 +1,6 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Music4, LogOut, Settings, User, Sun, Moon } from 'lucide-react';
+import { LogOut, Settings, User, Sun, Moon } from 'lucide-react';
+import { Logo } from './Logo';
 import { useAuth, useLogout } from '@/queries/useAuth';
 import { useTheme } from '@/hooks/useTheme';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -34,7 +35,7 @@ export function Header() {
         to="/"
         className="flex items-center gap-3 text-foreground hover:opacity-80 transition-opacity"
       >
-        <Music4 className="size-8 shrink-0 text-primary" />
+        <Logo className="size-8 shrink-0 text-primary" />
         <span className="text-2xl font-semibold tracking-tight">Jazz Trainer</span>
       </Link>
 
