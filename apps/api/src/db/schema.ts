@@ -53,6 +53,14 @@ export const userSettings = sqliteTable('user_settings', {
   rhodesVolume: real('rhodes_volume').notNull().default(0.6),
   rhodesMode: text('rhodes_mode').notNull().default('halfNotes'),
   rhodesVoicingDensity: text('rhodes_voicing_density').notNull().default('rootless3'),
+  rhodesLayerMode: text('rhodes_layer_mode').notNull().default('none'),
+  rhodesLayerVolume: real('rhodes_layer_volume').notNull().default(0.5),
+  pianoEnabled: integer('piano_enabled', { mode: 'boolean' }).notNull().default(false),
+  pianoVolume: real('piano_volume').notNull().default(0.7),
+  pianoProfile: text('piano_profile').notNull().default('swing-sparse'),
+  pianoVoicingDensity: text('piano_voicing_density').notNull().default('rootless3'),
+  pianoSampleLibrary: text('piano_sample_library').notNull().default('salamander'),
+  pianoRandomizationLevel: text('piano_randomization_level').notNull().default('off'),
   drumsEnabled: integer('drums_enabled', { mode: 'boolean' }).notNull().default(true),
   drumsVolume: real('drums_volume').notNull().default(0.7),
   drumsRideEnabled: integer('drums_ride_enabled', { mode: 'boolean' }).notNull().default(true),
@@ -88,7 +96,10 @@ export const userSettings = sqliteTable('user_settings', {
     .default(true),
   /** @deprecated — use drumsPattern instead */
   drumsRidePattern: text('drums_ride_pattern').notNull().default('swingRide'),
+  /** Global playback style — single source of truth for all instruments. */
+  style: text('style').notNull().default('swing'),
   swingRatio: real('swing_ratio').notNull().default(0.5),
+  audioFormat: text('audio_format').notNull().default('aac'),
   createdAt: integer('created_at').notNull(),
   updatedAt: integer('updated_at').notNull(),
 });

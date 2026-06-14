@@ -26,20 +26,20 @@ export function useMidiInput(
 /**
  * Collect MIDI note-on events into a buffer with flush support.
  */
-export function useMidiEventBuffer(
-  inputPort: InputPort | null | undefined,
-  maxEvents = 200,
-) {
+export function useMidiEventBuffer(inputPort: InputPort | null | undefined, maxEvents = 200) {
   const eventsRef = useRef<MidiInputEvent[]>([]);
 
   useMidiInput(
     inputPort,
-    useCallback((event: MidiInputEvent) => {
-      const buf = eventsRef.current;
-      if (buf.length < maxEvents) {
-        buf.push(event);
-      }
-    }, [maxEvents]),
+    useCallback(
+      (event: MidiInputEvent) => {
+        const buf = eventsRef.current;
+        if (buf.length < maxEvents) {
+          buf.push(event);
+        }
+      },
+      [maxEvents],
+    ),
   );
 
   const flush = useCallback((): MidiInputEvent[] => {

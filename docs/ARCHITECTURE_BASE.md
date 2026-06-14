@@ -62,15 +62,15 @@ graph TD
 
 **Правило слоёв (принудительно, ESLint `boundaries`):**
 
-| Слой | Может импортировать | Не может |
-|---|---|---|
-| `core` (`music-core`, `shared`) | друг друга, stdlib | shell, host, sdk, плагины, браузерные API |
-| `plugin-sdk` | `core` | shell, host, плагины, адаптеры |
-| `plugin-host` | `sdk`, `core` | конкретные плагины, адаптеры напрямую |
-| `plugins/*` | `sdk`, `core`, `ui` | другие плагины, shell, host напрямую |
-| `adapters/*` | `sdk`, `core` | плагины |
-| `apps/web` | host, sdk, core, shared, ui | внутренности плагинов |
-| `apps/api` | core, shared | sdk, host, плагины, shell |
+| Слой                            | Может импортировать         | Не может                                  |
+| ------------------------------- | --------------------------- | ----------------------------------------- |
+| `core` (`music-core`, `shared`) | друг друга, stdlib          | shell, host, sdk, плагины, браузерные API |
+| `plugin-sdk`                    | `core`                      | shell, host, плагины, адаптеры            |
+| `plugin-host`                   | `sdk`, `core`               | конкретные плагины, адаптеры напрямую     |
+| `plugins/*`                     | `sdk`, `core`, `ui`         | другие плагины, shell, host напрямую      |
+| `adapters/*`                    | `sdk`, `core`               | плагины                                   |
+| `apps/web`                      | host, sdk, core, shared, ui | внутренности плагинов                     |
+| `apps/api`                      | core, shared                | sdk, host, плагины, shell                 |
 
 ---
 
@@ -83,11 +83,11 @@ graph TD
 ```ts
 export default definePlugin({
   manifest: {
-    id: 'theory.scales',        // уникальный ID
-    name: 'Scales',             // читаемое имя
-    apiVersion: 1,              // версия API
-    category: 'theory',         // core|admin|theory|practice|assess
-    description: '...',         // описание
+    id: 'theory.scales', // уникальный ID
+    name: 'Scales', // читаемое имя
+    apiVersion: 1, // версия API
+    category: 'theory', // core|admin|theory|practice|assess
+    description: '...', // описание
   },
   contributes: {
     routes: [{ path: '/scales', element: () => import('./ScalesPage') }],
@@ -98,24 +98,24 @@ export default definePlugin({
 
 ### 3.2. Точки расширения
 
-| Точка | Назначение | Статус |
-|---|---|---|
-| `routes` | Страницы плагина (lazy import) | 🟢 16 плагинов |
-| `navItems` | Пункты меню (main, create, learn, practice, admin) | 🟢 |
-| `commands` | Именованные действия (палитра, хоткеи) | 🔴 Типы есть, не используется |
-| `lessons` / `exercises` / `assessments` | Учебные активности | 🔴 Типы есть, не используется |
-| `instruments` / `generators` / `theoryProviders` | Звуковые движки, генераторы, теория | 🔴 Тип `unknown[]` |
-| `settingsSchema` | Декларация настроек плагина | 🟡 Тип есть, не используется |
+| Точка                                            | Назначение                                         | Статус                        |
+| ------------------------------------------------ | -------------------------------------------------- | ----------------------------- |
+| `routes`                                         | Страницы плагина (lazy import)                     | 🟢 16 плагинов                |
+| `navItems`                                       | Пункты меню (main, create, learn, practice, admin) | 🟢                            |
+| `commands`                                       | Именованные действия (палитра, хоткеи)             | 🔴 Типы есть, не используется |
+| `lessons` / `exercises` / `assessments`          | Учебные активности                                 | 🔴 Типы есть, не используется |
+| `instruments` / `generators` / `theoryProviders` | Звуковые движки, генераторы, теория                | 🔴 Тип `unknown[]`            |
+| `settingsSchema`                                 | Декларация настроек плагина                        | 🟡 Тип есть, не используется  |
 
 ### 3.3. Категории и плагины (16 шт.)
 
-| Категория | Плагины |
-|---|---|
-| `core` | `core-editor` (грид-редактор), `core-player` (плеер), `catalog` (каталог) |
-| `theory` | `theory-scales`, `theory-chords`, `theory-intervals` |
-| `practice` | `ear-training` (MIDI, слух), `rhythm-drills` (MIDI, ритм) |
-| `assess` | `chord-quiz`, `progression-recognition` |
-| `admin` | `admin-users`, `admin-content`, `admin-flags`, `admin-assets`, `admin-diagnostics` |
+| Категория  | Плагины                                                                            |
+| ---------- | ---------------------------------------------------------------------------------- |
+| `core`     | `core-editor` (грид-редактор), `core-player` (плеер), `catalog` (каталог)          |
+| `theory`   | `theory-scales`, `theory-chords`, `theory-intervals`                               |
+| `practice` | `ear-training` (MIDI, слух), `rhythm-drills` (MIDI, ритм)                          |
+| `assess`   | `chord-quiz`, `progression-recognition`                                            |
+| `admin`    | `admin-users`, `admin-content`, `admin-flags`, `admin-assets`, `admin-diagnostics` |
 
 ### 3.4. Реестр и загрузка
 
@@ -135,13 +135,13 @@ export const contributions = aggregateContributions(loaded);
 
 ```ts
 interface PluginContext {
-  audio: AudioService;        // 🟡 заглушка
-  storage: StorageService;    // 🟡 заглушка
-  settings: SettingsService;  // 🟡 заглушка
+  audio: AudioService; // 🟡 заглушка
+  storage: StorageService; // 🟡 заглушка
+  settings: SettingsService; // 🟡 заглушка
   navigation: NavigationService; // 🟡 заглушка
-  events: EventBus;           // 🟡 заглушка
-  music: unknown;             // 🔴 не типизирован
-  query: unknown;             // 🔴 не типизирован
+  events: EventBus; // 🟡 заглушка
+  music: unknown; // 🔴 не типизирован
+  query: unknown; // 🔴 не типизирован
 }
 ```
 
@@ -179,6 +179,7 @@ graph LR
 ```
 
 **Адаптеры:**
+
 - `tone-audio-adapter` — оборачивает Tone.js в `AudioPort`, изолирует браузерное API от ядра.
 - `webmidi-adapter` — предоставляет MIDI-ввод (оценка игры) и MIDI-вывод.
 
@@ -217,11 +218,11 @@ sequenceDiagram
 Роль → permissions (n:n)
 ```
 
-| Роль | Permissions |
-|---|---|
-| `super_admin` | Все 11 permissions |
-| `admin` | `users:read`, `content:*`, `flags:*`, `assets:*`, `diagnostics:read`, `audit:read` |
-| `user` | `users:read` (свой профиль), `content:read` |
+| Роль          | Permissions                                                                        |
+| ------------- | ---------------------------------------------------------------------------------- |
+| `super_admin` | Все 11 permissions                                                                 |
+| `admin`       | `users:read`, `content:*`, `flags:*`, `assets:*`, `diagnostics:read`, `audit:read` |
+| `user`        | `users:read` (свой профиль), `content:read`                                        |
 
 **Permissions (11 шт.):** `users:read`, `users:write`, `content:read`, `content:write`, `flags:read`, `flags:write`, `assets:read`, `assets:write`, `diagnostics:read`, `audit:read`, `admin`.
 
@@ -239,12 +240,12 @@ Append-only таблица `audit_log`. Все мутации — через `wi
 
 ## 7. Стратегия тестирования
 
-| Уровень | Что | Инструмент | Статус |
-|---|---|---|---|
-| Unit | Чистое ядро (`music-core`, `shared`) | Vitest | 🟢 |
-| Контрактные | SDK-схемы (`manifest.schema.test.ts`) | Vitest | 🟢 |
-| Интеграционные | Адаптеры, API-эндпоинты | Vitest | 🟡 Частично |
-| E2E | Критические пользовательские сценарии | Playwright | 🔴 Не настроены |
+| Уровень        | Что                                   | Инструмент | Статус          |
+| -------------- | ------------------------------------- | ---------- | --------------- |
+| Unit           | Чистое ядро (`music-core`, `shared`)  | Vitest     | 🟢              |
+| Контрактные    | SDK-схемы (`manifest.schema.test.ts`) | Vitest     | 🟢              |
+| Интеграционные | Адаптеры, API-эндпоинты               | Vitest     | 🟡 Частично     |
+| E2E            | Критические пользовательские сценарии | Playwright | 🔴 Не настроены |
 
 **Принцип:** Тесты лежат рядом с кодом (`src/__tests__/` или `src/*.test.ts`).
 
@@ -426,16 +427,16 @@ jazz-trainer/
 
 ## 10. Фазы миграции — статус
 
-| Фаза | Статус | Ключевой результат |
-|---|---|---|
-| Ф0 — Границы | ✅ | ESLint boundaries + strict, 0 нарушений |
-| Ф1 — SDK + Host | ✅ | `plugin-sdk`, `plugin-host`, `plugin-registry`, shell bootstrap |
-| ФR — RBAC + аудит | ✅ | 3 роли, 11 permissions, audit log, `usePermission`/`useFlag` |
-| Ф2 — AudioPort | 🟢 | `tone-audio-adapter` + `webmidi-adapter` готовы. Wiring в shell — частично |
-| Ф3 — Фичи → плагины | ✅ | `core-editor`, `core-player`, `catalog` вынесены |
-| Ф4 — Новые домены | 🟡 | 10 domain-плагинов созданы. Наполнение контентом — в процессе |
-| Ф5 — MIDI | 🟡 | `webmidi-adapter` (354 строки, 72 теста), `midiEval`, MIDI-плагины. Desktop исключён |
+| Фаза                | Статус | Ключевой результат                                                                   |
+| ------------------- | ------ | ------------------------------------------------------------------------------------ |
+| Ф0 — Границы        | ✅     | ESLint boundaries + strict, 0 нарушений                                              |
+| Ф1 — SDK + Host     | ✅     | `plugin-sdk`, `plugin-host`, `plugin-registry`, shell bootstrap                      |
+| ФR — RBAC + аудит   | ✅     | 3 роли, 11 permissions, audit log, `usePermission`/`useFlag`                         |
+| Ф2 — AudioPort      | 🟢     | `tone-audio-adapter` + `webmidi-adapter` готовы. Wiring в shell — частично           |
+| Ф3 — Фичи → плагины | ✅     | `core-editor`, `core-player`, `catalog` вынесены                                     |
+| Ф4 — Новые домены   | 🟡     | 10 domain-плагинов созданы. Наполнение контентом — в процессе                        |
+| Ф5 — MIDI           | 🟡     | `webmidi-adapter` (354 строки, 72 теста), `midiEval`, MIDI-плагины. Desktop исключён |
 
 ---
 
-*Документ описывает текущую архитектуру. Обновлён 2026-06-13. Фазы 0, 1, R, 3 готовы ✅, Фазы 2, 4, 5 частично 🟡. Целевое видение — в `ARCHITECTURE_VISION.md`.*
+_Документ описывает текущую архитектуру. Обновлён 2026-06-13. Фазы 0, 1, R, 3 готовы ✅, Фазы 2, 4, 5 частично 🟡. Целевое видение — в `ARCHITECTURE_VISION.md`._

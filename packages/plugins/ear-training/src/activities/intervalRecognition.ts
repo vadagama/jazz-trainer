@@ -94,9 +94,7 @@ export function createIntervalRecognitionActivity(
         return { score: 0, maxScore: 1, durationMs: 0 };
       }
 
-      const evaluations = data.events.map((e) =>
-        evaluateNote(e, data.target, evalOptions),
-      );
+      const evaluations = data.events.map((e) => evaluateNote(e, data.target, evalOptions));
       const score = evaluateNoteSequence(evaluations, evalOptions);
 
       return {

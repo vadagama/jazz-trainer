@@ -13,7 +13,13 @@ export default definePlugin({
       { path: '/admin/content', element: () => import('./ContentPage'), requires: 'content:read' },
     ],
     navItems: [
-      { section: 'admin', label: 'Content', to: '/admin/content', icon: 'file-text', requires: 'content:read' },
+      {
+        section: 'admin',
+        label: 'Content',
+        to: '/admin/content',
+        icon: 'file-text',
+        requires: 'content:read',
+      },
     ],
   },
 });

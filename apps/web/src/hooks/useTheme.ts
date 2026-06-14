@@ -13,7 +13,9 @@ function getInitialTheme(): Theme {
   try {
     const saved = localStorage.getItem('jazz-theme') as Theme | null;
     if (saved === 'light' || saved === 'dark') return saved;
-  } catch { /* storage unavailable */ }
+  } catch {
+    /* storage unavailable */
+  }
   return document.documentElement.classList.contains('dark') ? 'dark' : 'light';
 }
 
@@ -29,7 +31,9 @@ export function useThemeState(): ThemeContextValue {
       const next: Theme = prev === 'dark' ? 'light' : 'dark';
       try {
         localStorage.setItem('jazz-theme', next);
-      } catch { /* storage unavailable */ }
+      } catch {
+        /* storage unavailable */
+      }
       return next;
     });
   }, []);

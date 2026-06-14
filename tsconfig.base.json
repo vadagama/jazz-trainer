@@ -52,8 +52,8 @@
       "@jazz/plugin-rhythm-drills": ["packages/plugins/rhythm-drills/src/index.ts"],
       "@jazz/plugin-chord-quiz": ["packages/plugins/chord-quiz/src/index.ts"],
       "@jazz/plugin-progression-recognition": [
-        "packages/plugins/progression-recognition/src/index.ts",
-      ],
-    },
-  },
+        "packages/plugins/progression-recognition/src/index.ts"
+      ]
+    }
+  }
 }

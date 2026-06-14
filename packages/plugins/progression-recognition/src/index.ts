@@ -9,9 +9,7 @@ export default definePlugin({
     description: 'Identify chord progressions by ear.',
   },
   contributes: {
-    routes: [
-      { path: '/quiz/progressions', element: () => import('./ProgressionsPage') },
-    ],
+    routes: [{ path: '/quiz/progressions', element: () => import('./ProgressionsPage') }],
     navItems: [
       { section: 'practice', label: 'Progressions', to: '/quiz/progressions', icon: 'list-music' },
     ],

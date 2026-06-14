@@ -191,7 +191,7 @@ describe('WebMidiAdapter', () => {
       outputs: new Map(),
       inputs: new Map(),
       onstatechange: null,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any;
     const adapter = new WebMidiAdapter({ midiAccess: emptyAccess });
     adapter.start();

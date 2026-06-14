@@ -40,7 +40,16 @@ export function toSettingsDTO(s: UserSettingsRecord): UserSettingsDTO {
     rhodesEnabled: s.rhodesEnabled,
     rhodesVolume: clampVolume(s.rhodesVolume),
     rhodesMode: s.rhodesMode as UserSettingsDTO['rhodesMode'],
+    rhodesLayerMode: s.rhodesLayerMode as UserSettingsDTO['rhodesLayerMode'],
+    rhodesLayerVolume: clampVolume(s.rhodesLayerVolume),
     rhodesVoicingDensity: s.rhodesVoicingDensity as UserSettingsDTO['rhodesVoicingDensity'],
+    pianoEnabled: s.pianoEnabled,
+    pianoVolume: clampVolume(s.pianoVolume),
+    pianoProfile: s.pianoProfile as UserSettingsDTO['pianoProfile'],
+    pianoVoicingDensity: s.pianoVoicingDensity as UserSettingsDTO['pianoVoicingDensity'],
+    pianoSampleLibrary: s.pianoSampleLibrary as UserSettingsDTO['pianoSampleLibrary'],
+    pianoRandomizationLevel:
+      s.pianoRandomizationLevel as UserSettingsDTO['pianoRandomizationLevel'],
     drumsEnabled: s.drumsEnabled,
     drumsVolume: clampVolume(s.drumsVolume),
     drumsRideEnabled: s.drumsRideEnabled,
@@ -59,6 +68,10 @@ export function toSettingsDTO(s: UserSettingsRecord): UserSettingsDTO {
     drumsCrashFrequency: s.drumsCrashFrequency,
     drumsRimEnabled: s.drumsRimEnabled,
     drumsRimVolume: clampVolume(s.drumsRimVolume),
+    style:
+      (s.style as UserSettingsDTO['style']) ??
+      (s.drumsPattern as UserSettingsDTO['style']) ??
+      'swing',
     drumsPattern: s.drumsPattern as UserSettingsDTO['drumsPattern'],
     drumsHumanizeIntensity: s.drumsHumanizeIntensity as UserSettingsDTO['drumsHumanizeIntensity'],
     drumsFunkComplexity: s.drumsFunkComplexity as UserSettingsDTO['drumsFunkComplexity'],
@@ -71,6 +84,7 @@ export function toSettingsDTO(s: UserSettingsRecord): UserSettingsDTO {
     drumsBassDrumVariation: s.drumsBassDrumVariation,
     drumsRidePattern: s.drumsRidePattern as UserSettingsDTO['drumsRidePattern'],
     swingRatio: Math.max(0.5, Math.min(0.75, s.swingRatio)),
+    audioFormat: s.audioFormat as UserSettingsDTO['audioFormat'],
   };
 }
 

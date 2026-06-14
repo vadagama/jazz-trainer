@@ -167,9 +167,7 @@ export function BarEditor({
               <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                 Свойства
               </p>
-              <p className="text-xs text-muted-foreground">
-                Выберите такт для редактирования
-              </p>
+              <p className="text-xs text-muted-foreground">Выберите такт для редактирования</p>
             </div>
           )}
         </div>

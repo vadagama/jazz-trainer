@@ -19,9 +19,9 @@
 - [x] Реализовать 3 отдельных `Tone.Sampler` — по одному на каждый звук
 - [x] Реализовать метод `schedule(window, ctx)` из интерфейса `Instrument`
 - [x] Паттерн swing 4/4:
-  - [x]  на каждую долю (1 2 3 4), длительность = 1 четверть
-  - [x]  на доли 2 и 4
-  - [x]  паттерн по настройке: `quarters` или `swingRide`
+  - [x] на каждую долю (1 2 3 4), длительность = 1 четверть
+  - [x] на доли 2 и 4
+  - [x] паттерн по настройке: `quarters` или `swingRide`
 - [x] Humanization: ±5 ms timing, ±0.05 velocity
 - [x] Управление громкостью каждого звука через `Tone.Channel`
 - [x] Управление enable/disable каждого звука (skip scheduling если отключён)
@@ -38,15 +38,15 @@
 
 - [x] Добавить поля в DB schema (`apps/api/src/db/schema.ts`):
   ```ts
-  drumsEnabled:       boolean  // default: true
-  drumsVolume:        number   // master, dB, default: 0
-  drumsRideEnabled:   boolean  // default: true
-  drumsRideVolume:    number   // dB, default: 0
-  drumsStirEnabled:   boolean  // default: true
-  drumsStirVolume:    number   // dB, default: 0
-  drumsHihatEnabled:  boolean  // default: true
-  drumsHihatVolume:   number   // dB, default: -3
-  drumsRidePattern:   string   // 'quarters' | 'swingRide', default: 'swingRide'
+  drumsEnabled: boolean; // default: true
+  drumsVolume: number; // master, dB, default: 0
+  drumsRideEnabled: boolean; // default: true
+  drumsRideVolume: number; // dB, default: 0
+  drumsStirEnabled: boolean; // default: true
+  drumsStirVolume: number; // dB, default: 0
+  drumsHihatEnabled: boolean; // default: true
+  drumsHihatVolume: number; // dB, default: -3
+  drumsRidePattern: string; // 'quarters' | 'swingRide', default: 'swingRide'
   ```
 - [x] Создать миграцию `0008_add_drums_settings.sql`
 - [x] Обновить `UserSettingsDTOSchema` (Zod) в `packages/shared/src/dto.ts`
@@ -57,10 +57,10 @@
 - [x] Добавить поля drums в `useLocalSettingsStore`
 - [x] Добавить `useEffect` хуки для синхронизации с `DrumInstrument`
 - [x] Добавить секцию «Drums» в `SettingsForm.tsx`:
-  - [x]  (enabled)
-  - [x]  (slider)
-  - [x]  — для каждого: checkbox enabled + slider volume
-  - [x]  pattern
+  - [x] (enabled)
+  - [x] (slider)
+  - [x] — для каждого: checkbox enabled + slider volume
+  - [x] pattern
 
 ### Фаза 6 — Тесты
 
@@ -91,11 +91,11 @@
 
 **Три звука для MVP:**
 
-| Звук       | Техника          | Функция                       |
-|------------|------------------|-------------------------------|
-| `stir`     | Brushes on snare | Непрерывный swing, все доли   |
-| `hihatFoot`| Hi-hat pedal     | Акцент на 2 и 4 (backbeat)    |
-| `ride`     | Ride cymbal      | Пульс, swing pattern          |
+| Звук        | Техника          | Функция                     |
+| ----------- | ---------------- | --------------------------- |
+| `stir`      | Brushes on snare | Непрерывный swing, все доли |
+| `hihatFoot` | Hi-hat pedal     | Акцент на 2 и 4 (backbeat)  |
+| `ride`      | Ride cymbal      | Пульс, swing pattern        |
 
 ## 2. Паттерны по размерам
 
@@ -179,11 +179,11 @@ Ride:        ●         ●    ●    ●         ●    ●
 
 ```ts
 const swingRidePattern = [
-  { beat: 0, subdivision: 0 },    // доля 1
-  { beat: 1, subdivision: 0 },    // доля 2
+  { beat: 0, subdivision: 0 }, // доля 1
+  { beat: 1, subdivision: 0 }, // доля 2
   { beat: 1, subdivision: 0.67 }, // &-доля 2 (swing triplet)
-  { beat: 2, subdivision: 0 },    // доля 3
-  { beat: 3, subdivision: 0 },    // доля 4
+  { beat: 2, subdivision: 0 }, // доля 3
+  { beat: 3, subdivision: 0 }, // доля 4
   { beat: 3, subdivision: 0.67 }, // &-доля 4
 ];
 ```
@@ -195,13 +195,13 @@ const swingRidePattern = [
 
 ### Сводная таблица по размерам
 
-| Размер | Stir            | HiHat foot            | swingRide | Источник backbeat              |
-|--------|-----------------|------------------------|-----------|-------------------------------|
-| 4/4    | все 4 доли      | 2 и 4 (0-ind: 1, 3)    | ✅        | `defaultSecondStrongBeats`→[2] + last |
-| 3/4    | все 3 доли      | 2 и 3 (0-ind: 1, 2)    | ❌        | все кроме первой               |
-| 2/4    | обе доли        | только 2 (0-ind: 1)    | ❌        | все кроме первой               |
-| 5/4    | все 5 долей     | 4 и 5 (0-ind: 3, 4)    | ❌        | `defaultSecondStrongBeats`→[3] + last |
-| 6/8    | восьмые 1, 3, 5 | восьмая 4 (0-ind: 3)   | ❌        | `defaultSecondStrongBeats`→[3] |
+| Размер | Stir            | HiHat foot           | swingRide | Источник backbeat                     |
+| ------ | --------------- | -------------------- | --------- | ------------------------------------- |
+| 4/4    | все 4 доли      | 2 и 4 (0-ind: 1, 3)  | ✅        | `defaultSecondStrongBeats`→[2] + last |
+| 3/4    | все 3 доли      | 2 и 3 (0-ind: 1, 2)  | ❌        | все кроме первой                      |
+| 2/4    | обе доли        | только 2 (0-ind: 1)  | ❌        | все кроме первой                      |
+| 5/4    | все 5 долей     | 4 и 5 (0-ind: 3, 4)  | ❌        | `defaultSecondStrongBeats`→[3] + last |
+| 6/8    | восьмые 1, 3, 5 | восьмая 4 (0-ind: 3) | ❌        | `defaultSecondStrongBeats`→[3]        |
 
 ## 3. Семплы
 
@@ -219,10 +219,10 @@ stir_dl2_skin_rr1.ogg → brushes stir, dynamics level 2, skin head, RR 1
 
 ### Все файлы в `apps/web/public/samples/drums/`
 
-| Файл                    | Звук        | Слои |
-|-------------------------|-------------|------|
-| `hh_foot_vl5_rr1-4.ogg` | HiHat foot  | vl5 × 4 RR |
-| `ride_vl6_rr1-4.ogg`    | Ride cymbal | vl6 × 4 RR |
+| Файл                      | Звук         | Слои       |
+| ------------------------- | ------------ | ---------- |
+| `hh_foot_vl5_rr1-4.ogg`   | HiHat foot   | vl5 × 4 RR |
+| `ride_vl6_rr1-4.ogg`      | Ride cymbal  | vl6 × 4 RR |
 | `stir_dl2_skin_rr1-4.ogg` | Stir brushes | dl2 × 4 RR |
 
 ### Round-robin
@@ -252,7 +252,7 @@ export function pickDrumSample(sound: DrumSound): string {
 ```ts
 export interface DrumInstrumentSettings {
   enabled: boolean;
-  masterVolume: number;      // dB
+  masterVolume: number; // dB
   ride: { enabled: boolean; volume: number };
   stir: { enabled: boolean; volume: number };
   hihatFoot: { enabled: boolean; volume: number };
@@ -427,10 +427,10 @@ schedule(window: ScheduleWindow, ctx: ScheduleContext): void {
 
 ## 7. Humanization
 
-| Параметр       | Значение      |
-|----------------|---------------|
-| Timing jitter  | ±5 ms         |
-| Velocity range | ±0.05 (0–1)   |
+| Параметр       | Значение    |
+| -------------- | ----------- |
+| Timing jitter  | ±5 ms       |
+| Velocity range | ±0.05 (0–1) |
 
 Jitter не должен вывести ноту за начало окна (`tick >= window.startTicks`).
 

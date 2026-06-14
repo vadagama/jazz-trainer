@@ -23,7 +23,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ApiConfig {
     sessionTtlMs: THIRTY_DAYS_MS,
     googleClientId: env.GOOGLE_CLIENT_ID ?? null,
     googleClientSecret: env.GOOGLE_CLIENT_SECRET ?? null,
-    googleCallbackUrl:
-      env.GOOGLE_CALLBACK_URL ?? 'http://localhost:3999/api/auth/google/callback',
+    googleCallbackUrl: env.GOOGLE_CALLBACK_URL ?? 'http://localhost:3999/api/auth/google/callback',
   };
 }

@@ -13,7 +13,13 @@ export default definePlugin({
       { path: '/admin/users', element: () => import('./UsersPage'), requires: 'users:read' },
     ],
     navItems: [
-      { section: 'admin', label: 'Users', to: '/admin/users', icon: 'users', requires: 'users:read' },
+      {
+        section: 'admin',
+        label: 'Users',
+        to: '/admin/users',
+        icon: 'users',
+        requires: 'users:read',
+      },
     ],
   },
 });

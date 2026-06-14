@@ -3,11 +3,7 @@ import { Plus, Infinity as InfinityIcon, Pencil, Trash2 } from 'lucide-react';
 import { cn } from './utils';
 import type { Bar, Section, RepeatEnd, TimeSignatureString } from '@jazz/shared';
 import { TIME_SIGNATURES } from '@jazz/shared';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from './dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from './dropdown-menu';
 
 function TimeSigDisplay({
   ts,
@@ -46,7 +42,10 @@ function TimeSigDisplay({
           {TIME_SIGNATURES.map((sig) => (
             <button
               key={sig}
-              onClick={() => { onChange(sig); setOpen(false); }}
+              onClick={() => {
+                onChange(sig);
+                setOpen(false);
+              }}
               className={cn(
                 'rounded px-2 py-1 text-xs font-medium transition-colors',
                 ts === sig
@@ -63,13 +62,7 @@ function TimeSigDisplay({
   );
 }
 
-function SectionNameEditor({
-  name,
-  onChange,
-}: {
-  name: string;
-  onChange: (name: string) => void;
-}) {
+function SectionNameEditor({ name, onChange }: { name: string; onChange: (name: string) => void }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(name);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -94,7 +87,10 @@ function SectionNameEditor({
         onBlur={commit}
         onKeyDown={(e) => {
           if (e.key === 'Enter') commit();
-          if (e.key === 'Escape') { setDraft(name); setEditing(false); }
+          if (e.key === 'Escape') {
+            setDraft(name);
+            setEditing(false);
+          }
         }}
         className="rounded border border-primary bg-background px-2 py-0.5 text-sm font-semibold outline-none"
         style={{ minWidth: 80 }}
@@ -104,7 +100,10 @@ function SectionNameEditor({
 
   return (
     <div
-      onDoubleClick={() => { setDraft(name); setEditing(true); }}
+      onDoubleClick={() => {
+        setDraft(name);
+        setEditing(true);
+      }}
       className="group flex cursor-default items-center gap-1.5 select-none"
       title="Двойной клик для переименования"
     >
@@ -227,7 +226,10 @@ function BarCard({
     <div
       role="button"
       tabIndex={0}
-      onClick={(e) => { e.stopPropagation(); onSelect(); }}
+      onClick={(e) => {
+        e.stopPropagation();
+        onSelect();
+      }}
       onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onSelect()}
       onMouseEnter={onMouseEnter}
       data-testid={`bar-cell-${bar.id}`}
@@ -271,7 +273,9 @@ function BarCard({
                 {slot.symbol}
               </span>
               {slot.beats != null && (
-                <span className="mt-0.5 block text-[10px] text-muted-foreground">×{slot.beats}</span>
+                <span className="mt-0.5 block text-[10px] text-muted-foreground">
+                  ×{slot.beats}
+                </span>
               )}
             </div>
           ))
@@ -343,13 +347,17 @@ function SectionView({
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-2 pl-12">
-        {readonly
-          ? <span className="text-sm font-semibold text-foreground select-none">{section.name}</span>
-          : <SectionNameEditor name={section.name} onChange={onRename} />
-        }
+        {readonly ? (
+          <span className="text-sm font-semibold text-foreground select-none">{section.name}</span>
+        ) : (
+          <SectionNameEditor name={section.name} onChange={onRename} />
+        )}
         {!readonly && (
           <button
-            onClick={(e) => { e.stopPropagation(); onDeleteSection(); }}
+            onClick={(e) => {
+              e.stopPropagation();
+              onDeleteSection();
+            }}
             className="group ml-auto flex items-center gap-1 rounded px-1.5 py-1 text-muted-foreground/40 transition-colors hover:text-primary"
             title="Удалить секцию"
           >
@@ -361,7 +369,10 @@ function SectionView({
 
       {section.bars.length === 0 ? (
         <div
-          onClick={(e) => { e.stopPropagation(); onAddBar(); }}
+          onClick={(e) => {
+            e.stopPropagation();
+            onAddBar();
+          }}
           className="ml-12 flex h-24 cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-dashed border-border text-xs text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground"
         >
           <Plus className="size-3" /> Добавить такт
@@ -374,17 +385,29 @@ function SectionView({
           onMouseLeave={() => onHoverBar?.(null)}
         >
           {cells.map((cell) => {
-            if (cell.type === 'timesig') return <TimeSigDisplay key="timesig" ts={section.timeSignature} onChange={onSetTimeSignature} readonly={readonly} />;
+            if (cell.type === 'timesig')
+              return (
+                <TimeSigDisplay
+                  key="timesig"
+                  ts={section.timeSignature}
+                  onChange={onSetTimeSignature}
+                  readonly={readonly}
+                />
+              );
             if (cell.type === 'spacer') return <div key={cell.key} />;
-            if (cell.type === 'ghost') return (
-              <button
-                key="ghost"
-                onClick={(e) => { e.stopPropagation(); onAddBar(); }}
-                className="flex min-h-[130px] items-center justify-center rounded-lg border border-dashed border-muted-foreground/20 text-muted-foreground/25 transition-colors hover:border-muted-foreground/40 hover:text-muted-foreground/50"
-              >
-                <Plus className="size-10" />
-              </button>
-            );
+            if (cell.type === 'ghost')
+              return (
+                <button
+                  key="ghost"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onAddBar();
+                  }}
+                  className="flex min-h-[130px] items-center justify-center rounded-lg border border-dashed border-muted-foreground/20 text-muted-foreground/25 transition-colors hover:border-muted-foreground/40 hover:text-muted-foreground/50"
+                >
+                  <Plus className="size-10" />
+                </button>
+              );
             return (
               <BarCard
                 key={cell.bar.id}
@@ -405,7 +428,10 @@ function SectionView({
 
       {!readonly && lastRowFull && (
         <button
-          onClick={(e) => { e.stopPropagation(); onAddBar(); }}
+          onClick={(e) => {
+            e.stopPropagation();
+            onAddBar();
+          }}
           className="ml-12 flex w-fit items-center gap-1 rounded px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
         >
           <Plus className="size-3" /> Такт

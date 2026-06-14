@@ -9,7 +9,11 @@ export function CatalogPage() {
   const [sort, setSort] = useState<'updated' | 'likes' | 'name'>('updated');
   const debouncedQuery = useDebounce(query, 300);
 
-  const { data: grids, isLoading, isError } = usePublicGrids({
+  const {
+    data: grids,
+    isLoading,
+    isError,
+  } = usePublicGrids({
     q: debouncedQuery || undefined,
     sort,
   });

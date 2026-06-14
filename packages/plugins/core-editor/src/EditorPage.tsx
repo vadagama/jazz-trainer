@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Loader2, AlertCircle, Pencil, Save } from 'lucide-react';
-import type { TimeSignatureString, Key } from '@jazz/shared';
+import type { TimeSignatureString, Key, Style } from '@jazz/shared';
 import { transposeSections } from '@jazz/music-core';
 import { useGrid, useUpdateGrid } from './queries/useGrid';
 import {
@@ -9,6 +9,7 @@ import {
   usePlaybackStore,
   useEffectiveSettings,
   usePluginTransport,
+  useUpdateSettings,
 } from '@jazz/plugin-sdk';
 import { HarmonyGrid, PlayerToolbar, Button, cn } from '@jazz/ui';
 import { ChordPalette } from './components/ChordPalette';
@@ -93,6 +94,7 @@ export function EditorPage() {
   } = useEditorStore();
 
   const settings = useEffectiveSettings();
+  const updateSettings = useUpdateSettings();
   const { status, currentBar, currentBeat, countInActive, countInBeat } = usePlaybackStore();
   const displayBeat = countInActive ? countInBeat : currentBeat;
   const countingInBarIndex = countInActive ? currentBar : undefined;
@@ -276,6 +278,10 @@ export function EditorPage() {
     );
   }
 
+  const handleStyleChange = (style: Style) => {
+    updateSettings.mutate({ style });
+  };
+
   async function handleSave() {
     await updateMutation.mutateAsync({
       name: grid!.name,
@@ -412,6 +418,8 @@ export function EditorPage() {
         onKeyChange={setPlayerKey}
         volume={effectiveVolume}
         onVolumeChange={setLocalVolume}
+        style={(settings.style ?? 'swing') as Style}
+        onStyleChange={handleStyleChange}
       />
     </div>
   );

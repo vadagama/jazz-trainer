@@ -13,7 +13,13 @@ export default definePlugin({
       { path: '/admin/flags', element: () => import('./FlagsPage'), requires: 'flags:read' },
     ],
     navItems: [
-      { section: 'admin', label: 'Flags', to: '/admin/flags', icon: 'flag', requires: 'flags:read' },
+      {
+        section: 'admin',
+        label: 'Flags',
+        to: '/admin/flags',
+        icon: 'flag',
+        requires: 'flags:read',
+      },
     ],
   },
 });

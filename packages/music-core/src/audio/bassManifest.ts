@@ -14,7 +14,8 @@ function buildBassLayers(): Record<string, Record<string, string>> {
 }
 
 const BASS_SAMPLE_MANIFEST: SampleManifest = {
-  baseUrl: '/samples/bass/',
+  baseUrl: '/samples/aac/bass/',
+  fallbackBaseUrl: '/samples/mp3/bass/',
   layers: buildBassLayers(),
   release: 0.8,
 };

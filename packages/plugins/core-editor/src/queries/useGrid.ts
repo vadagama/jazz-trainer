@@ -1,5 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import type { HarmonyGridDTO, UpdateGridInput, PatternInfo, GenerateInput, GridContent } from '@jazz/shared';
+import type {
+  HarmonyGridDTO,
+  UpdateGridInput,
+  PatternInfo,
+  GenerateInput,
+  GridContent,
+} from '@jazz/shared';
 import { apiClient } from '@jazz/plugin-sdk';
 
 export function gridKey(id: string) {
@@ -18,7 +24,8 @@ export function useUpdateGrid(id: string) {
   const qc = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: UpdateGridInput) => apiClient.patch<HarmonyGridDTO>(`/api/grids/${id}`, data),
+    mutationFn: (data: UpdateGridInput) =>
+      apiClient.patch<HarmonyGridDTO>(`/api/grids/${id}`, data),
     onSuccess: (updated) => {
       qc.setQueryData(gridKey(id), updated);
       qc.invalidateQueries({ queryKey: ['grids', 'mine'] });

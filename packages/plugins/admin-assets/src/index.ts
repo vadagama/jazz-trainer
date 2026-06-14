@@ -13,7 +13,13 @@ export default definePlugin({
       { path: '/admin/assets', element: () => import('./AssetsPage'), requires: 'assets:read' },
     ],
     navItems: [
-      { section: 'admin', label: 'Assets', to: '/admin/assets', icon: 'image', requires: 'assets:read' },
+      {
+        section: 'admin',
+        label: 'Assets',
+        to: '/admin/assets',
+        icon: 'image',
+        requires: 'assets:read',
+      },
     ],
   },
 });

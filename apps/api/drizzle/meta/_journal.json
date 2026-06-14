@@ -106,6 +106,27 @@
       "when": 1782250000000,
       "tag": "0015_add_missing_drums_columns",
       "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "6",
+      "when": 1789900000000,
+      "tag": "0016_add_audio_format",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "6",
+      "when": 1789900000000,
+      "tag": "0017_add_global_style",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "6",
+      "when": 1781429910786,
+      "tag": "0018_add_piano_rhodes_columns",
+      "breakpoints": true
     }
   ]
 }

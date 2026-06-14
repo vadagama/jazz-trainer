@@ -7,7 +7,13 @@ describe('GridContentSchema', () => {
       version: 1,
       bars: [
         { id: 'b1', chords: [{ symbol: 'Dm7' }] },
-        { id: 'b2', chords: [{ symbol: 'Cmaj7', beats: 2 }, { symbol: 'A7', beats: 2 }] },
+        {
+          id: 'b2',
+          chords: [
+            { symbol: 'Cmaj7', beats: 2 },
+            { symbol: 'A7', beats: 2 },
+          ],
+        },
       ],
     });
     expect(ok.success).toBe(true);

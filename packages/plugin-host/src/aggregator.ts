@@ -1,17 +1,11 @@
-import type {
-  PluginDefinition,
-  RouteContribution,
-  NavItemContribution,
-} from '@jazz/plugin-sdk';
+import type { PluginDefinition, RouteContribution, NavItemContribution } from '@jazz/plugin-sdk';
 
 export interface AggregatedContributions {
   routes: (RouteContribution & { pluginId: string })[];
   navItems: (NavItemContribution & { pluginId: string })[];
 }
 
-export function aggregateContributions(
-  plugins: PluginDefinition[],
-): AggregatedContributions {
+export function aggregateContributions(plugins: PluginDefinition[]): AggregatedContributions {
   const routes: AggregatedContributions['routes'] = [];
   const navItems: AggregatedContributions['navItems'] = [];
 

@@ -16,7 +16,10 @@ export function BarCard({ bar, barIndex, isSelected, isPlaying, onClick }: BarCa
     <div
       role="button"
       tabIndex={0}
-      onClick={(e) => { e.stopPropagation(); onClick(); }}
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick();
+      }}
       onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onClick()}
       className={cn(
         'group relative cursor-pointer rounded-lg border bg-card p-4 transition-all',
@@ -46,9 +49,7 @@ export function BarCard({ bar, barIndex, isSelected, isPlaying, onClick }: BarCa
             <span className="block text-2xl font-bold leading-tight tracking-tight text-foreground">
               {slot.symbol}
             </span>
-            {slot.beats && (
-              <span className="text-[10px] text-muted-foreground">{slot.beats}b</span>
-            )}
+            {slot.beats && <span className="text-[10px] text-muted-foreground">{slot.beats}b</span>}
           </div>
         ))}
       </div>

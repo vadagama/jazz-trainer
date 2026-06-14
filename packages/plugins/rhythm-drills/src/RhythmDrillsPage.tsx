@@ -101,9 +101,7 @@ export function RhythmDrillsPage({ inputPort }: RhythmDrillsPageProps) {
     <div className="mx-auto max-w-md space-y-8 py-12">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Rhythm Drills</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Tap the rhythm on your MIDI controller
-        </p>
+        <p className="mt-1 text-sm text-muted-foreground">Tap the rhythm on your MIDI controller</p>
       </div>
 
       {/* Exercise info */}
@@ -118,11 +116,7 @@ export function RhythmDrillsPage({ inputPort }: RhythmDrillsPageProps) {
       {/* Beat visualization */}
       <div className="flex items-center justify-center gap-2">
         {exercise.beats.map((beat, i) => (
-          <div
-            key={i}
-            className="h-10 w-4 rounded-sm bg-primary/30"
-            title={`Beat at ${beat}s`}
-          />
+          <div key={i} className="h-10 w-4 rounded-sm bg-primary/30" title={`Beat at ${beat}s`} />
         ))}
       </div>
 
@@ -152,9 +146,7 @@ export function RhythmDrillsPage({ inputPort }: RhythmDrillsPageProps) {
                 }}
               />
             </div>
-            <p className="text-sm text-muted-foreground">
-              Listening… ({events.length} taps)
-            </p>
+            <p className="text-sm text-muted-foreground">Listening… ({events.length} taps)</p>
           </div>
           <button
             onClick={handleStop}
@@ -168,12 +160,12 @@ export function RhythmDrillsPage({ inputPort }: RhythmDrillsPageProps) {
       {phase === 'scored' && score && (
         <div className="space-y-4 rounded-md border border-border bg-card p-4 text-center">
           <p className="text-sm text-muted-foreground">Result</p>
-          <p className="text-3xl font-bold tabular-nums">
-            {Math.round(score.score * 100)}%
-          </p>
+          <p className="text-3xl font-bold tabular-nums">{Math.round(score.score * 100)}%</p>
           <div className="text-xs text-muted-foreground space-y-1">
-            <p>Accuracy: {Math.round((score.details?.accuracy as number ?? 0) * 100)}%</p>
-            <p>Hits: {score.details?.hits as number ?? 0} / {score.details?.total as number ?? 0}</p>
+            <p>Accuracy: {Math.round(((score.details?.accuracy as number) ?? 0) * 100)}%</p>
+            <p>
+              Hits: {(score.details?.hits as number) ?? 0} / {(score.details?.total as number) ?? 0}
+            </p>
           </div>
           <button
             onClick={handleNext}

@@ -9,15 +9,20 @@ export interface MetronomeSampleDef {
 }
 
 export const METRONOME_SAMPLES: readonly MetronomeSampleDef[] = [
-  { id: 'analog-metronome', label: 'Analog Metronome', url: '/samples/metronome/analog-metronome.mp3' },
-  { id: 'button-click',     label: 'Button Click',     url: '/samples/metronome/button-click.mp3' },
-  { id: 'drum-stick',       label: 'Drum Stick',       url: '/samples/metronome/drum-stick.mp3' },
-  { id: 'retro-stick',      label: 'Retro Stick',      url: '/samples/metronome/retro-stick.mp3' },
-  { id: 'switch',           label: 'Switch',           url: '/samples/metronome/switch.mp3' },
+  {
+    id: 'analog-metronome',
+    label: 'Analog Metronome',
+    url: '/samples/aac/metronome/analog-metronome.m4a',
+  },
+  { id: 'button-click', label: 'Button Click', url: '/samples/aac/metronome/button-click.m4a' },
+  { id: 'drum-stick', label: 'Drum Stick', url: '/samples/aac/metronome/drum-stick.m4a' },
+  { id: 'retro-stick', label: 'Retro Stick', url: '/samples/aac/metronome/retro-stick.m4a' },
+  { id: 'switch', label: 'Switch', url: '/samples/aac/metronome/switch.m4a' },
 ];
 
-export const METRONOME_SAMPLE_BY_ID: Record<ClickSound, MetronomeSampleDef> =
-  Object.fromEntries(METRONOME_SAMPLES.map((s) => [s.id, s])) as Record<ClickSound, MetronomeSampleDef>;
+export const METRONOME_SAMPLE_BY_ID: Record<ClickSound, MetronomeSampleDef> = Object.fromEntries(
+  METRONOME_SAMPLES.map((s) => [s.id, s]),
+) as Record<ClickSound, MetronomeSampleDef>;
 
 // ─── Pitched instruments — Tone.Sampler note→URL maps ────────────────────────
 
@@ -47,7 +52,7 @@ export function buildBassPluckUrls(rr: 1 | 2 | 3 | 4): NoteMap {
   return Object.fromEntries(
     BASS_PLUCK_ANCHOR_NOTES.map((note) => [
       note,
-      `pluck/sneakybass_${note.toLowerCase()}_pluck_rr${rr}.ogg`,
+      `pluck/sneakybass_${note.toLowerCase()}_pluck_rr${rr}.m4a`,
     ]),
   );
 }
@@ -57,13 +62,13 @@ export function buildBassMuteUrls(rr: 1 | 2 | 3 | 4): NoteMap {
   return Object.fromEntries(
     BASS_MUTE_ANCHOR_NOTES.map((note) => [
       note,
-      `mute/sneakybass_${note.toLowerCase()}_mute_rr${rr}.ogg`,
+      `mute/sneakybass_${note.toLowerCase()}_mute_rr${rr}.m4a`,
     ]),
   );
 }
 
 export const BASS_SAMPLER: SamplerDef = {
-  baseUrl: '/samples/bass/',
+  baseUrl: '/samples/aac/bass/',
   notes: buildBassPluckUrls(1),
 };
 

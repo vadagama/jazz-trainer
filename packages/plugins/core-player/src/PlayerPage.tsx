@@ -1,13 +1,14 @@
 import { useState, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Loader2, AlertCircle } from 'lucide-react';
-import type { Key, Section } from '@jazz/shared';
+import type { Key, Section, Style } from '@jazz/shared';
 import { transposeSections } from '@jazz/music-core';
 import { usePublicGrid } from './queries/usePublicGrids';
 import {
   useEffectiveSettings,
   usePlaybackStore,
   usePluginTransport,
+  useUpdateSettings,
 } from '@jazz/plugin-sdk';
 import { HarmonyGrid, PlayerToolbar } from '@jazz/ui';
 
@@ -15,6 +16,7 @@ export function PlayerPage() {
   const { id } = useParams<{ id: string }>();
   const { data: grid, isLoading, isError } = usePublicGrid(id ?? '');
   const settings = useEffectiveSettings();
+  const updateSettings = useUpdateSettings();
   const { status, currentBar, currentBeat, countInActive, countInBeat } = usePlaybackStore();
   const displayBeat = countInActive ? countInBeat : currentBeat;
   const countingInBarIndex = countInActive ? currentBar : undefined;
@@ -22,6 +24,10 @@ export function PlayerPage() {
   const [localBpm, setLocalBpm] = useState<number | null>(null);
   const [localKey, setLocalKey] = useState<Key | null>(null);
   const [localVolume, setLocalVolume] = useState<number | null>(null);
+
+  const handleStyleChange = (style: Style) => {
+    updateSettings.mutate({ style });
+  };
 
   const effectiveBpm = localBpm ?? settings.bpm;
   const effectiveVolume = localVolume ?? settings.volume;
@@ -130,6 +136,8 @@ export function PlayerPage() {
         onKeyChange={setLocalKey}
         volume={effectiveVolume}
         onVolumeChange={setLocalVolume}
+        style={(settings.style ?? 'swing') as Style}
+        onStyleChange={handleStyleChange}
       />
     </div>
   );
