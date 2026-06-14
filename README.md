@@ -25,6 +25,7 @@ docs/                     Документация
 ```
 
 Архитектура: **тонкое ядро + build-time плагины**. Подробнее:
+
 - [ARCHITECTURE_BASE.md](docs/ARCHITECTURE_BASE.md) — текущая архитектура + архитектурные решения (ADR)
 - [ARCHITECTURE_VISION.md](docs/ARCHITECTURE_VISION.md) — целевое видение архитектуры
 - [FUNCTIONS.md](docs/FUNCTIONS.md) — каталог возможностей
@@ -47,15 +48,15 @@ npm run dev          # поднять web (Vite :5173) и api (Fastify :3999) п
 
 ## Скрипты
 
-| Скрипт | Назначение |
-|---|---|
-| `npm run dev` | web + api параллельно |
-| `npm run build` | typecheck + сборка web и api |
-| `npm run test` | unit/integration тесты (Vitest) |
-| `npm run typecheck` | проверка типов по всем workspaces |
-| `npm run lint` | ESLint + границы слоёв (boundaries) |
-| `npm run format` | Prettier |
-| `npm run e2e` | e2e-тесты (Playwright) |
+| Скрипт              | Назначение                          |
+| ------------------- | ----------------------------------- |
+| `npm run dev`       | web + api параллельно               |
+| `npm run build`     | typecheck + сборка web и api        |
+| `npm run test`      | unit/integration тесты (Vitest)     |
+| `npm run typecheck` | проверка типов по всем workspaces   |
+| `npm run lint`      | ESLint + границы слоёв (boundaries) |
+| `npm run format`    | Prettier                            |
+| `npm run e2e`       | e2e-тесты (Playwright)              |
 
 ## Переменные окружения
 
@@ -66,12 +67,12 @@ npm run dev          # поднять web (Vite :5173) и api (Fastify :3999) п
 
 Миграция на плагинную архитектуру:
 
-| Фаза | Статус | Ключевой результат |
-|---|---|---|
-| Ф0 — Границы | ✅ | ESLint boundaries + strict, 0 нарушений |
-| Ф1 — SDK + Host | ✅ | `plugin-sdk`, `plugin-host`, `plugin-registry`, shell bootstrap |
-| ФR — RBAC + аудит | ✅ | 3 роли, 11 permissions, audit log |
-| Ф2 — AudioPort | 🟢 | Адаптеры готовы (Tone.js, Web MIDI), wiring частичный |
-| Ф3 — Фичи → плагины | ✅ | `core-editor`, `core-player`, `catalog` вынесены |
-| Ф4 — Новые домены | 🟡 | 10 domain-плагинов созданы, наполнение в процессе |
-| Ф5 — MIDI | 🟡 | MIDI-плагины готовы, Desktop исключён из скоупа |
+| Фаза                | Статус | Ключевой результат                                              |
+| ------------------- | ------ | --------------------------------------------------------------- |
+| Ф0 — Границы        | ✅     | ESLint boundaries + strict, 0 нарушений                         |
+| Ф1 — SDK + Host     | ✅     | `plugin-sdk`, `plugin-host`, `plugin-registry`, shell bootstrap |
+| ФR — RBAC + аудит   | ✅     | 3 роли, 11 permissions, audit log                               |
+| Ф2 — AudioPort      | 🟢     | Адаптеры готовы (Tone.js, Web MIDI), wiring частичный           |
+| Ф3 — Фичи → плагины | ✅     | `core-editor`, `core-player`, `catalog` вынесены                |
+| Ф4 — Новые домены   | 🟡     | 10 domain-плагинов созданы, наполнение в процессе               |
+| Ф5 — MIDI           | 🟡     | MIDI-плагины готовы, Desktop исключён из скоупа                 |

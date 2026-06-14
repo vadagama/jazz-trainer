@@ -10,6 +10,18 @@ export interface SampleManifest {
   /** Base URL prepended to every filename. */
   baseUrl: string;
   /**
+   * Fallback base URL for browsers that don't support the primary format.
+   * When active, primary extensions in filenames are replaced with fallback extensions.
+   * Default swap: `.m4a` → `.mp3`. Override via {@link formatSwap}.
+   */
+  fallbackBaseUrl?: string;
+  /**
+   * Custom extension swap for format fallback.
+   * `[primaryExt, fallbackExt]` — e.g. `['.m4a', '.mp3']` for AAC→MP3 fallback.
+   * Defaults to `['.m4a', '.mp3']` when not specified.
+   */
+  formatSwap?: readonly [string, string];
+  /**
    * For pitched instruments: each layer is a separate Tone.Sampler instance.
    * Key = layer name (e.g. 'pluck_rr1', 'soft', 'nylon').
    * Value = { [scientificNote]: filename-relative-to-baseUrl }.

@@ -56,3 +56,4 @@ export { Label } from './label';
 
 export { HarmonyGrid } from './HarmonyGrid';
 export { PlayerToolbar } from './PlayerToolbar';
+export { StyleSelector } from './StyleSelector';

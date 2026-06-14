@@ -9,9 +9,7 @@ export default definePlugin({
     description: 'Test your chord recognition skills with timed quizzes.',
   },
   contributes: {
-    routes: [
-      { path: '/quiz/chords', element: () => import('./ChordQuizPage') },
-    ],
+    routes: [{ path: '/quiz/chords', element: () => import('./ChordQuizPage') }],
     navItems: [
       { section: 'practice', label: 'Chord Quiz', to: '/quiz/chords', icon: 'help-circle' },
     ],

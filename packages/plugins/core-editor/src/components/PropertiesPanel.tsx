@@ -48,7 +48,10 @@ export function PropertiesPanel({
               </h3>
               <div className="space-y-2">
                 {selectedBar.chords.map((chord, i) => (
-                  <div key={chord.id ?? `${selectedBar.id}-chord-${i}`} className="rounded-md border border-border bg-secondary/40 p-3">
+                  <div
+                    key={chord.id ?? `${selectedBar.id}-chord-${i}`}
+                    className="rounded-md border border-border bg-secondary/40 p-3"
+                  >
                     <p className="text-lg font-bold">{chord.symbol}</p>
                     {chord.beats && (
                       <p className="text-xs text-muted-foreground">Длительность: {chord.beats}b</p>

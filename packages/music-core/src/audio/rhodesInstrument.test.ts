@@ -548,3 +548,119 @@ describe('RhodesInstrument — chordRef: next (anticipation)', () => {
     expect(chords[0]?.notes).toEqual(buildVoicing(g7, 'rootless3', null));
   });
 });
+
+// ─── Complementary layer modes (setLayerMode API) ────────────────────────────
+//
+// Rhodes now operates as a complementary layer to Piano via setLayerMode().
+// Each mode has its own pattern with lower velocities, octave shifts, etc.
+// Unlike the legacy setMode(), setLayerMode() takes precedence when set.
+
+describe('RhodesInstrument — complementary layer modes (setLayerMode)', () => {
+  it('pads: schedules one long low-velocity event per bar on beat 1', () => {
+    const inst = makeRhodes([{ chord: cmaj7 }]);
+    inst.setLayerMode('pads');
+    const { ctx, chords } = makeCtx();
+    inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
+    expect(chords).toHaveLength(1);
+    expect(chords[0]!.at).toBe(0);
+    expect(chords[0]!.durationTicks).toBe(Math.round(3.6 * TPB));
+    expect(chords[0]!.velocity).toBeCloseTo(0.35 * 0.5, 1); // patternVel * layerVolume
+  });
+
+  it('subtle-offbeats: only 2& and 4& with low velocity', () => {
+    const inst = makeRhodes([{ chord: dm7 }]);
+    inst.setLayerMode('subtle-offbeats');
+    const { ctx, chords } = makeCtx();
+    inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
+    expect(chords).toHaveLength(2);
+    expect(chords[0]!.at).toBe(TPB + Math.round(0.5 * TPB)); // beat 2&
+    expect(chords[1]!.at).toBe(3 * TPB + Math.round(0.5 * TPB)); // beat 4&
+    expect(chords[0]!.velocity).toBeCloseTo(0.35 * 0.5, 1);
+  });
+
+  it('high-comping: halfNotes pattern with octave shift (+12)', () => {
+    const inst = makeRhodes([{ chord: dm7 }]);
+    inst.setLayerMode('high-comping');
+    const { ctx, chords } = makeCtx();
+    inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
+    expect(chords).toHaveLength(2);
+    // Verify notes are shifted up an octave compared to default voicing
+    const defaultVoicing = buildVoicing(dm7, 'rootless3', null);
+    for (const note of chords[0]!.notes) {
+      const midi = noteToMidi(note);
+      const defaultMidi = noteToMidi(
+        defaultVoicing[chords[0]!.notes.indexOf(note)] ?? defaultVoicing[0]!,
+      );
+      // High-comping shifts notes +12 semitones up
+      expect(midi).toBeGreaterThanOrEqual(defaultMidi);
+    }
+  });
+
+  it('ambient-swells: fires once every 2 bars with long duration', () => {
+    const inst = makeRhodes([{ chord: cmaj7 }, { chord: cmaj7 }, { chord: cmaj7 }]);
+    inst.setLayerMode('ambient-swells');
+    const { ctx, chords } = makeCtx();
+    inst.schedule({ fromTicks: 0, toTicks: 3 * TPBAR }, ctx);
+    // Should fire on bars 0 and 2 only (every 2 bars)
+    expect(chords).toHaveLength(2);
+    expect(chords[0]!.at).toBe(0);
+    expect(chords[1]!.at).toBe(2 * TPBAR);
+    expect(chords[0]!.velocity).toBeCloseTo(0.3 * 0.5, 1);
+  });
+
+  it('stab-accents: short accents on beats 2 and 4 with higher velocity', () => {
+    const inst = makeRhodes([{ chord: dm7 }]);
+    inst.setLayerMode('stab-accents');
+    const { ctx, chords } = makeCtx();
+    inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
+    expect(chords).toHaveLength(2);
+    expect(chords[0]!.at).toBe(TPB); // beat 2
+    expect(chords[1]!.at).toBe(3 * TPB); // beat 4
+    expect(chords[0]!.durationTicks).toBe(Math.round(0.3 * TPB));
+    expect(chords[0]!.velocity).toBeCloseTo(0.65 * 0.5, 1);
+    expect(chords[1]!.velocity).toBeCloseTo(0.6 * 0.5, 1);
+  });
+
+  it('none: schedules no events', () => {
+    const inst = makeRhodes([{ chord: dm7 }]);
+    inst.setLayerMode('none');
+    const { ctx, chords } = makeCtx();
+    inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
+    expect(chords).toHaveLength(0);
+  });
+
+  it('layerMode takes precedence over setMode()', () => {
+    const inst = makeRhodes([{ chord: dm7 }]);
+    inst.setMode('quarterNotes'); // legacy: 4 events
+    inst.setLayerMode('pads'); // complementary: 1 event
+    const { ctx, chords } = makeCtx();
+    inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
+    expect(chords).toHaveLength(1); // layerMode wins
+  });
+
+  it('setLayerVolume scales velocity proportionally', () => {
+    const inst = makeRhodes([{ chord: dm7 }]);
+    inst.setLayerMode('pads');
+    inst.setLayerVolume(0.2);
+    const { ctx, chords } = makeCtx();
+    inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
+    expect(chords[0]!.velocity).toBeCloseTo(0.35 * 0.2, 2);
+  });
+
+  it('reset() clears bar counter — ambient-swells restarts from bar 0', () => {
+    const inst = makeRhodes([{ chord: cmaj7 }]);
+    inst.setLayerMode('ambient-swells');
+    const { ctx, chords } = makeCtx();
+    inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
+    expect(chords).toHaveLength(1); // bar 0 fires
+    chords.length = 0;
+    // Schedule bar 1 — should NOT fire (ambient-swells skips odd bars)
+    inst.schedule({ fromTicks: TPBAR, toTicks: 2 * TPBAR }, ctx);
+    expect(chords).toHaveLength(0); // bar 1 skipped
+    inst.reset();
+    chords.length = 0;
+    // After reset, bar 0 fires again
+    inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
+    expect(chords).toHaveLength(1);
+  });
+});

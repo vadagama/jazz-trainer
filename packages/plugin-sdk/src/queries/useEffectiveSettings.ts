@@ -18,9 +18,7 @@ export function useEffectiveSettings(): UserSettingsDTO {
     if (stored) return;
 
     const hasLocalCustom =
-      localSettings.bpm !== 120 ||
-      localSettings.volume !== 0.8 ||
-      localSettings.countIn !== 1;
+      localSettings.bpm !== 120 || localSettings.volume !== 0.8 || localSettings.countIn !== 1;
 
     if (hasLocalCustom) {
       migratedRef.current = true;

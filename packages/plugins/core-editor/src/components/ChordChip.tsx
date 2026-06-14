@@ -21,9 +21,7 @@ export function ChordChip({ slot, className }: ChordChipProps) {
       title={isInvalid ? `Неизвестный аккорд: ${slot.symbol}` : undefined}
     >
       {slot.symbol}
-      {slot.beats != null && (
-        <span className="ml-1 text-[10px] opacity-60">×{slot.beats}</span>
-      )}
+      {slot.beats != null && <span className="ml-1 text-[10px] opacity-60">×{slot.beats}</span>}
     </span>
   );
 }

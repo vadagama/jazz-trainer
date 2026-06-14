@@ -18,6 +18,15 @@ export type RhodesCompingMode =
   | 'four-and-sparse'
   | 'two-threeand';
 
+/** Complementary layer mode — Rhodes sits behind/around Piano, not competing. */
+export type RhodesLayerMode =
+  | 'pads'
+  | 'subtle-offbeats'
+  | 'high-comping'
+  | 'ambient-swells'
+  | 'stab-accents'
+  | 'none';
+
 export interface CompEvent {
   readonly beat: 1 | 2 | 3 | 4;
   readonly subdivision?: 0 | 0.5;
@@ -40,12 +49,16 @@ const RANGE_MIN = 48; // C3
 const RANGE_MAX = 84; // C6
 
 const SEMITONE: Record<string, number> = {
-  C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11,
+  C: 0,
+  D: 2,
+  E: 4,
+  F: 5,
+  G: 7,
+  A: 9,
+  B: 11,
 };
 
-const NOTE_NAMES = [
-  'C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B',
-] as const;
+const NOTE_NAMES = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'] as const;
 
 /** Maximum span (semitones) between lowest and highest voice in one voicing. */
 const MAX_SPAN = 24;
@@ -55,7 +68,7 @@ const MAX_SPAN = 24;
 export function noteToMidi(note: string): number {
   const m = /^([A-G])(#|b)?(-?\d+)$/.exec(note);
   if (!m) throw new Error(`Invalid note: ${note}`);
-  const pc = ((SEMITONE[m[1]!]! + (m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0)) + 12) % 12;
+  const pc = (SEMITONE[m[1]!]! + (m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0) + 12) % 12;
   return (parseInt(m[3]!, 10) + 1) * 12 + pc;
 }
 
@@ -67,7 +80,7 @@ export function midiToNote(midi: number): string {
 function chordRootPc(chord: ChordSymbol): number {
   const base = SEMITONE[chord.root]!;
   const acc = chord.rootAccidental === '#' ? 1 : chord.rootAccidental === 'b' ? -1 : 0;
-  return ((base + acc) + 12) % 12;
+  return (base + acc + 12) % 12;
 }
 
 // ─── Interval tables (semitones from root) ───────────────────────────────────
@@ -81,31 +94,39 @@ function chordRootPc(chord: ChordSymbol): number {
 function voicingIntervals(chord: ChordSymbol, density: RhodesVoicingDensity): readonly number[] {
   switch (chord.quality) {
     case 'major':
-      return density === 'shell2'    ? [4, 11]
-           : density === 'rootless3' ? [4, 11, 14]
-           :                           [4, 11, 14, 19];
+      return density === 'shell2'
+        ? [4, 11]
+        : density === 'rootless3'
+          ? [4, 11, 14]
+          : [4, 11, 14, 19];
     case 'minor':
-      return density === 'shell2'    ? [3, 10]
-           : density === 'rootless3' ? [3, 10, 14]
-           :                           [3, 10, 14, 19];
+      return density === 'shell2'
+        ? [3, 10]
+        : density === 'rootless3'
+          ? [3, 10, 14]
+          : [3, 10, 14, 19];
     case 'dominant':
-      return density === 'shell2'    ? [4, 10]
-           : density === 'rootless3' ? [4, 10, 14]
-           :                           [4, 10, 14, 21];
+      return density === 'shell2'
+        ? [4, 10]
+        : density === 'rootless3'
+          ? [4, 10, 14]
+          : [4, 10, 14, 21];
     case 'halfDiminished':
-      return density === 'shell2'    ? [3, 10]
-           : density === 'rootless3' ? [3, 10, 13]
-           :                           [3, 10, 13, 18];
+      return density === 'shell2'
+        ? [3, 10]
+        : density === 'rootless3'
+          ? [3, 10, 13]
+          : [3, 10, 13, 18];
     case 'diminished':
       // bb7 = 9 semitones; shell2 uses b3+bb7, rootless3/4 include b5
-      return density === 'shell2'    ? [3, 9]
-           : density === 'rootless3' ? [3, 6, 9]
-           :                           [3, 6, 9, 12]; // symmetric: adds root+oct
+      return density === 'shell2' ? [3, 9] : density === 'rootless3' ? [3, 6, 9] : [3, 6, 9, 12]; // symmetric: adds root+oct
     default:
       // suspended, augmented, power — fallback to dominant intervals
-      return density === 'shell2'    ? [4, 10]
-           : density === 'rootless3' ? [4, 10, 14]
-           :                           [4, 10, 14, 21];
+      return density === 'shell2'
+        ? [4, 10]
+        : density === 'rootless3'
+          ? [4, 10, 14]
+          : [4, 10, 14, 21];
   }
 }
 
@@ -119,7 +140,7 @@ function stackAbove(baseMidi: number, pcs: readonly number[]): number[] | null {
   const result: number[] = [];
   let current = baseMidi;
   for (const pc of pcs) {
-    const delta = ((pc - current % 12) + 12) % 12 || 12;
+    const delta = (pc - (current % 12) + 12) % 12 || 12;
     current = current + delta;
     if (current > RANGE_MAX) return null;
     result.push(current);
@@ -131,7 +152,7 @@ function stackAbove(baseMidi: number, pcs: readonly number[]): number[] | null {
 function permute<T>(arr: readonly T[]): T[][] {
   if (arr.length <= 1) return [[...arr]];
   return arr.flatMap((item, i) =>
-    permute([...arr.slice(0, i), ...arr.slice(i + 1)]).map(p => [item, ...p]),
+    permute([...arr.slice(0, i), ...arr.slice(i + 1)]).map((p) => [item, ...p]),
   );
 }
 
@@ -145,7 +166,7 @@ function buildDefaultVoicing(chord: ChordSymbol, density: RhodesVoicingDensity):
   const intervals = voicingIntervals(chord, density);
   const rootPc = chordRootPc(chord);
   const bassPc = (rootPc + intervals[0]!) % 12;
-  const restPcs = intervals.slice(1).map(i => (rootPc + i) % 12);
+  const restPcs = intervals.slice(1).map((i) => (rootPc + i) % 12);
 
   for (let bassMidi = RANGE_MIN; bassMidi <= RANGE_MAX; bassMidi++) {
     if (((bassMidi % 12) + 12) % 12 !== bassPc) continue;
@@ -169,14 +190,14 @@ function buildDefaultVoicing(chord: ChordSymbol, density: RhodesVoicingDensity):
 function generateCandidates(chord: ChordSymbol, density: RhodesVoicingDensity): number[][] {
   const intervals = voicingIntervals(chord, density);
   const rootPc = chordRootPc(chord);
-  const allPcs = [...new Set(intervals.map(i => (rootPc + i) % 12))];
+  const allPcs = [...new Set(intervals.map((i) => (rootPc + i) % 12))];
   const n = allPcs.length;
 
   const candidates: number[][] = [];
   const seen = new Set<string>();
 
   for (const bassPc of allPcs) {
-    const restPcs = allPcs.filter(pc => pc !== bassPc);
+    const restPcs = allPcs.filter((pc) => pc !== bassPc);
     const restPerms = permute(restPcs);
 
     for (let bassMidi = RANGE_MIN; bassMidi <= RANGE_MAX; bassMidi++) {
@@ -295,9 +316,7 @@ export const SWING_PATTERNS: readonly RhodesRhythmPattern[] = [
     id: 'anticipation-4and',
     name: 'Антиципация 4&',
     complexity: 2,
-    hits: [
-      { beat: 4, subdivision: 0.5, durationBeats: 0.6, velocity: 0.46, chordRef: 'next' },
-    ],
+    hits: [{ beat: 4, subdivision: 0.5, durationBeats: 0.6, velocity: 0.46, chordRef: 'next' }],
   },
   {
     id: 'one-twoand-four',
@@ -322,17 +341,13 @@ export const SWING_PATTERNS: readonly RhodesRhythmPattern[] = [
     id: 'twoand-only',
     name: '2& only',
     complexity: 1,
-    hits: [
-      { beat: 2, subdivision: 0.5, durationBeats: 0.65, velocity: 0.45 },
-    ],
+    hits: [{ beat: 2, subdivision: 0.5, durationBeats: 0.65, velocity: 0.45 }],
   },
   {
     id: 'four-and-sparse',
     name: '4& (редкий)',
     complexity: 1,
-    hits: [
-      { beat: 4, subdivision: 0.5, durationBeats: 0.55, velocity: 0.43, chordRef: 'next' },
-    ],
+    hits: [{ beat: 4, subdivision: 0.5, durationBeats: 0.55, velocity: 0.43, chordRef: 'next' }],
   },
   {
     id: 'two-threeand',
@@ -360,12 +375,44 @@ export function getCompPattern(mode: RhodesCompingMode): readonly CompEvent[] {
     case 'quarterNotes':
       return [
         { beat: 1, durationBeats: 0.65, velocity: 0.53 },
-        { beat: 2, durationBeats: 0.50, velocity: 0.42 },
-        { beat: 3, durationBeats: 0.65, velocity: 0.50 },
-        { beat: 4, durationBeats: 0.50, velocity: 0.44 },
+        { beat: 2, durationBeats: 0.5, velocity: 0.42 },
+        { beat: 3, durationBeats: 0.65, velocity: 0.5 },
+        { beat: 4, durationBeats: 0.5, velocity: 0.44 },
       ];
     default:
-      return SWING_PATTERNS.find(p => p.id === mode)?.hits
-        ?? [{ beat: 1, durationBeats: 3.6, velocity: 0.54 }];
+      return (
+        SWING_PATTERNS.find((p) => p.id === mode)?.hits ?? [
+          { beat: 1, durationBeats: 3.6, velocity: 0.54 },
+        ]
+      );
   }
+}
+
+// ─── Complementary layer patterns ──────────────────────────────────────────────
+
+/**
+ * Complementary patterns for Rhodes as a background layer behind Piano.
+ * Lower velocities, sparser rhythms, and octave shifts prevent conflicts.
+ */
+export const LAYER_PATTERNS: Record<RhodesLayerMode, readonly CompEvent[]> = {
+  pads: [{ beat: 1, durationBeats: 3.6, velocity: 0.35 }],
+  'subtle-offbeats': [
+    { beat: 2, subdivision: 0.5, durationBeats: 0.55, velocity: 0.35 },
+    { beat: 4, subdivision: 0.5, durationBeats: 0.55, velocity: 0.32 },
+  ],
+  'high-comping': [
+    { beat: 1, durationBeats: 1.65, velocity: 0.34 },
+    { beat: 3, durationBeats: 1.45, velocity: 0.3 },
+  ],
+  'ambient-swells': [{ beat: 1, durationBeats: 7.6, velocity: 0.3, chordRef: 'current' }],
+  'stab-accents': [
+    { beat: 2, durationBeats: 0.3, velocity: 0.65 },
+    { beat: 4, durationBeats: 0.3, velocity: 0.6 },
+  ],
+  none: [],
+};
+
+/** Look up the complementary layer pattern. */
+export function getLayerPattern(mode: RhodesLayerMode): readonly CompEvent[] {
+  return LAYER_PATTERNS[mode] ?? [];
 }

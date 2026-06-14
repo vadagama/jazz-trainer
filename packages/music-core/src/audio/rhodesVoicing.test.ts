@@ -21,11 +21,11 @@ function chord(
   };
 }
 
-const dm7    = chord('D', '', 'minor');
-const g7     = chord('G', '', 'dominant');
-const cmaj7  = chord('C', '', 'major');
-const bm7b5  = chord('B', '', 'halfDiminished');
-const bdim7  = chord('B', '', 'diminished');
+const dm7 = chord('D', '', 'minor');
+const g7 = chord('G', '', 'dominant');
+const cmaj7 = chord('C', '', 'major');
+const bm7b5 = chord('B', '', 'halfDiminished');
+const bdim7 = chord('B', '', 'diminished');
 
 // ─── Pitch helpers ────────────────────────────────────────────────────────────
 
@@ -102,7 +102,7 @@ describe('buildVoicing — register constraint', () => {
         for (const note of notes) {
           const midi = noteToMidi(note);
           expect(midi).toBeGreaterThanOrEqual(48); // C3
-          expect(midi).toBeLessThanOrEqual(84);    // C6
+          expect(midi).toBeLessThanOrEqual(84); // C6
         }
       });
     }
@@ -114,7 +114,7 @@ describe('buildVoicing — register constraint', () => {
 describe('buildVoicing — voice leading ii–V–I', () => {
   it('voice-leads Dm7 → G7 with minimal movement', () => {
     const dm7v = buildVoicing(dm7, 'rootless3', null); // F3 C4 E4
-    const g7v  = buildVoicing(g7, 'rootless3', dm7v);
+    const g7v = buildVoicing(g7, 'rootless3', dm7v);
     expect(dm7v).toEqual(['F3', 'C4', 'E4']);
 
     // All notes in range
@@ -123,31 +123,39 @@ describe('buildVoicing — voice leading ii–V–I', () => {
       expect(noteToMidi(n)).toBeLessThanOrEqual(84);
     }
     // Total movement ≤ 10 semitones (smooth voice leading)
-    const dist = dm7v.map((n, i) => Math.abs(noteToMidi(n) - noteToMidi(g7v[i]!))).reduce((a, b) => a + b, 0);
+    const dist = dm7v
+      .map((n, i) => Math.abs(noteToMidi(n) - noteToMidi(g7v[i]!)))
+      .reduce((a, b) => a + b, 0);
     expect(dist).toBeLessThanOrEqual(10);
   });
 
   it('voice-leads G7 → Cmaj7 with minimal movement', () => {
-    const dm7v  = buildVoicing(dm7, 'rootless3', null);
-    const g7v   = buildVoicing(g7, 'rootless3', dm7v);
+    const dm7v = buildVoicing(dm7, 'rootless3', null);
+    const g7v = buildVoicing(g7, 'rootless3', dm7v);
     const cmaj7v = buildVoicing(cmaj7, 'rootless3', g7v);
 
     for (const n of cmaj7v) {
       expect(noteToMidi(n)).toBeGreaterThanOrEqual(48);
       expect(noteToMidi(n)).toBeLessThanOrEqual(84);
     }
-    const dist = g7v.map((n, i) => Math.abs(noteToMidi(n) - noteToMidi(cmaj7v[i]!))).reduce((a, b) => a + b, 0);
+    const dist = g7v
+      .map((n, i) => Math.abs(noteToMidi(n) - noteToMidi(cmaj7v[i]!)))
+      .reduce((a, b) => a + b, 0);
     expect(dist).toBeLessThanOrEqual(10);
   });
 
   it('ii–V–I chain: G7 voicing moves closer than default position', () => {
-    const dm7v  = buildVoicing(dm7, 'rootless3', null);     // F3 C4 E4
-    const g7vl  = buildVoicing(g7, 'rootless3', dm7v);      // voice-led
-    const g7def = buildVoicing(g7, 'rootless3', null);       // default B3 F4 A4
+    const dm7v = buildVoicing(dm7, 'rootless3', null); // F3 C4 E4
+    const g7vl = buildVoicing(g7, 'rootless3', dm7v); // voice-led
+    const g7def = buildVoicing(g7, 'rootless3', null); // default B3 F4 A4
 
     const prevMidi = dm7v.map(noteToMidi);
-    const distLed  = g7vl.map((n, i) => Math.abs(noteToMidi(n) - prevMidi[i]!)).reduce((a, b) => a + b, 0);
-    const distDef  = g7def.map((n, i) => Math.abs(noteToMidi(n) - prevMidi[i]!)).reduce((a, b) => a + b, 0);
+    const distLed = g7vl
+      .map((n, i) => Math.abs(noteToMidi(n) - prevMidi[i]!))
+      .reduce((a, b) => a + b, 0);
+    const distDef = g7def
+      .map((n, i) => Math.abs(noteToMidi(n) - prevMidi[i]!))
+      .reduce((a, b) => a + b, 0);
     expect(distLed).toBeLessThanOrEqual(distDef);
   });
 });
@@ -157,22 +165,22 @@ describe('buildVoicing — voice leading ii–V–I', () => {
 describe('buildVoicing — guide tones', () => {
   it('Dm7 rootless3 contains b3 (F) and b7 (C)', () => {
     const notes = buildVoicing(dm7, 'rootless3', null);
-    const pcs = notes.map(n => noteToMidi(n) % 12);
-    expect(pcs).toContain(5);  // F
-    expect(pcs).toContain(0);  // C
+    const pcs = notes.map((n) => noteToMidi(n) % 12);
+    expect(pcs).toContain(5); // F
+    expect(pcs).toContain(0); // C
   });
 
   it('G7 rootless3 contains 3rd (B) and b7 (F)', () => {
     const notes = buildVoicing(g7, 'rootless3', null);
-    const pcs = notes.map(n => noteToMidi(n) % 12);
+    const pcs = notes.map((n) => noteToMidi(n) % 12);
     expect(pcs).toContain(11); // B
-    expect(pcs).toContain(5);  // F
+    expect(pcs).toContain(5); // F
   });
 
   it('Cmaj7 rootless3 contains 3rd (E) and maj7 (B)', () => {
     const notes = buildVoicing(cmaj7, 'rootless3', null);
-    const pcs = notes.map(n => noteToMidi(n) % 12);
-    expect(pcs).toContain(4);  // E
+    const pcs = notes.map((n) => noteToMidi(n) % 12);
+    expect(pcs).toContain(4); // E
     expect(pcs).toContain(11); // B
   });
 });
@@ -197,7 +205,7 @@ describe('getCompPattern', () => {
   it('quarterNotes: 4 events on beats 1–4', () => {
     const p = getCompPattern('quarterNotes');
     expect(p).toHaveLength(4);
-    expect(p.map(e => e.beat)).toEqual([1, 2, 3, 4]);
+    expect(p.map((e) => e.beat)).toEqual([1, 2, 3, 4]);
   });
 
   it('beat 1 louder than beat 2 in halfNotes', () => {

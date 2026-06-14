@@ -65,7 +65,11 @@ export async function gridsRoutes(
     const parsed = CreateGridSchema.safeParse(request.body);
     if (!parsed.success) {
       return reply.status(400).send({
-        error: { code: 'VALIDATION_ERROR', message: 'Invalid grid data', details: parsed.error.issues },
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Invalid grid data',
+          details: parsed.error.issues,
+        },
       });
     }
     const grid = createGrid(db, request.user!.id, parsed.data);
@@ -77,7 +81,11 @@ export async function gridsRoutes(
     const parsed = ImportGridSchema.safeParse(request.body);
     if (!parsed.success) {
       return reply.status(400).send({
-        error: { code: 'VALIDATION_ERROR', message: 'Invalid import data', details: parsed.error.issues },
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Invalid import data',
+          details: parsed.error.issues,
+        },
       });
     }
     const result = importGrid(db, request.user!.id, parsed.data);
@@ -110,7 +118,11 @@ export async function gridsRoutes(
       const parsed = UpdateGridSchema.safeParse(request.body);
       if (!parsed.success) {
         return reply.status(400).send({
-          error: { code: 'VALIDATION_ERROR', message: 'Invalid grid data', details: parsed.error.issues },
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Invalid grid data',
+            details: parsed.error.issues,
+          },
         });
       }
       const grid = updateGrid(db, request.user!.id, request.params.id, parsed.data);
@@ -142,7 +154,11 @@ export async function gridsRoutes(
       const parsed = CopyGridSchema.safeParse(request.body);
       if (!parsed.success) {
         return reply.status(400).send({
-          error: { code: 'VALIDATION_ERROR', message: 'Invalid copy data', details: parsed.error.issues },
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Invalid copy data',
+            details: parsed.error.issues,
+          },
         });
       }
       const grid = copyGrid(db, request.user!.id, request.params.id, parsed.data.name);

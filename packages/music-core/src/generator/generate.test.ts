@@ -103,8 +103,18 @@ describe('generate — random diatonic determinism', () => {
   });
 
   it('produces different output for different seeds', () => {
-    const a = generate({ patternId: 'random-diatonic', key: 'C', lengthBars: 16, options: { seed: 1 } });
-    const b = generate({ patternId: 'random-diatonic', key: 'C', lengthBars: 16, options: { seed: 2 } });
+    const a = generate({
+      patternId: 'random-diatonic',
+      key: 'C',
+      lengthBars: 16,
+      options: { seed: 1 },
+    });
+    const b = generate({
+      patternId: 'random-diatonic',
+      key: 'C',
+      lengthBars: 16,
+      options: { seed: 2 },
+    });
     expect(symbols(a)).not.toEqual(symbols(b));
   });
 });

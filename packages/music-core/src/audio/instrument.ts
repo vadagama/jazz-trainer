@@ -29,6 +29,11 @@ export interface RhodesEvent {
   notes: string[];
 }
 
+/** Payload emitted by {@link PianoInstrument} via {@link ScheduleContext.scheduleEvent}. */
+export interface PianoEvent {
+  notes: string[];
+}
+
 /** Payload emitted by {@link DrumInstrument} via {@link ScheduleContext.scheduleEvent}. */
 export interface DrumEvent {
   sound: DrumSound;
@@ -44,7 +49,7 @@ export interface GuitarEvent {
 }
 
 /** Union of all known instrument event payloads. Extend when adding a new instrument. */
-export type InstrumentEventPayload = BassEvent | RhodesEvent | DrumEvent | GuitarEvent;
+export type InstrumentEventPayload = BassEvent | RhodesEvent | DrumEvent | GuitarEvent | PianoEvent;
 
 // ─── ScheduleContext ──────────────────────────────────────────────────────────
 

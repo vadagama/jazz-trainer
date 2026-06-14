@@ -18,8 +18,6 @@ export default definePlugin({
   },
   contributes: {
     routes: [{ path: '/rhythm-drills', element: () => import('./RhythmDrillsPage') }],
-    navItems: [
-      { section: 'practice', label: 'Rhythm Drills', to: '/rhythm-drills', icon: 'drum' },
-    ],
+    navItems: [{ section: 'practice', label: 'Rhythm Drills', to: '/rhythm-drills', icon: 'drum' }],
   },
 });

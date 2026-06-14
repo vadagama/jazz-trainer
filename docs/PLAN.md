@@ -1,523 +1,686 @@
-# План работ — Рефакторинг DrumInstrument
+# План работ — Рефакторинг гармонии: Piano, Rhodes и глобальные стили
 
-**На основе:** docs/VISION.md (2026-06-13)
+**На основе:** VISION-2026-06-13 (docs/VISION.md)
 **Дата:** 2026-06-13
-**Статус:** 🟡 В работе
+**Статус:** 🟢 Завершено (33/33 задач)
 
 ## 1. Задачи (Tasks)
 
----
+### Этап 1: Глобальный стиль + контракты (MVP, P0)
 
-### Этап 1: Классический свинг (MVP)
+#### T-001. Определить тип `Style` и обновить `shared/dto.ts`
 
-#### T-001. Расширить `DrumSound` и `DrumEvent`
-
-- **Родительская функция:** 3.1 Звуковой набор Swirly Drums
+- **Родительская функция:** 3.1 (Глобальный стиль)
 - **Приоритет:** P0
-- **Сложность:** XS (<1d)
-- **Слой:** music-core
-- **Модуль:** `packages/music-core/src/audio/drumSampleRegistry.ts`, `instrument.ts`
-- **Описание:** Добавить в `DrumSound` новые значения: `'bassDrum'`, `'snare'`, `'hihat'`, `'crash'`, `'rim'`. Сохранить старые (`'ride'`, `'stir'`, `'hihatFoot'`) как deprecated aliases. Обновить `DrumEvent` — поле `sound` принимает новый union. Обновить `InstrumentEventPayload`.
-- **Критерий готовности:** typecheck проходит, `DrumEvent.sound` принимает новые значения.
-- **Зависит от задач:** —
-- **Статус:** 🔴 Запланировано
-
-#### T-002. Отобрать и сконвертировать сэмплы Swirly Drums
-
-- **Родительская функция:** 3.1 Звуковой набор Swirly Drums
-- **Приоритет:** P0
-- **Сложность:** M (3–5d)
-- **Слой:** music-core + web (public/assets)
-- **Модуль:** `apps/web/public/samples/drums/`
-- **Описание:** Скачать Swirly Drums с GitHub, отобрать подмножество для 6 звуков (по 4 RR на звук, 1 velocity layer). Для hihat — 3 степени открытости (closed, half, open) × 4 RR = 12 файлов. Итого ~36–40 OGG-файлов. Конвертировать WAV → OGG (libopus 128k) через ffmpeg. Разместить в `apps/web/public/samples/drums/swirly/`.
-- **Критерий готовности:** Все файлы в директории, проигрываются через Tone.js.
-- **Зависит от задач:** T-001 (нужны имена звуков для маппинга)
-- **Статус:** 🔴 Запланировано
-
-#### T-003. Обновить `drumSampleRegistry.ts`
-
-- **Родительская функция:** 3.1 Звуковой набор Swirly Drums
-- **Приоритет:** P0
-- **Сложность:** S (1–2d)
-- **Слой:** music-core
-- **Модуль:** `packages/music-core/src/audio/drumSampleRegistry.ts`
-- **Описание:** Новый `DRUM_SAMPLE_FILES` с маппингом звук → массив OGG-имён. Новый `DRUMS_BASE_URL` (`/samples/drums/swirly/`). Сохранить старый реестр как `LEGACY_DRUM_SAMPLE_FILES` для обратной совместимости. Round-robin логика остаётся без изменений.
-- **Критерий готовности:** typecheck + существующие тесты `drumSampleRegistry` проходят.
-- **Зависит от задач:** T-001, T-002
-- **Статус:** 🔴 Запланировано
-
-#### T-004. Обновить `drumsManifest.ts`
-
-- **Родительская функция:** 3.1 Звуковой набор Swirly Drums
-- **Приоритет:** P0
-- **Сложность:** XS (<1d)
-- **Слой:** music-core
-- **Модуль:** `packages/music-core/src/audio/drumsManifest.ts`
-- **Описание:** Новый `SampleManifest` с 6+ звуками. Обновить `defaultSettings`: добавить `bassDrumEnabled`, `snareEnabled`, `hihatEnabled`, `crashEnabled`, `rimEnabled`, `hihatOpenness`, `humanizeIntensity`, `pattern`. Сохранить старые настройки с маппингом.
-- **Критерий готовности:** typecheck, `drumsManifest.defaultSettings` содержит все новые поля.
-- **Зависит от задач:** T-003
-- **Статус:** 🔴 Запланировано
-
-#### T-005. Переписать `DrumInstrument.schedule()` — алгоритм свинга
-
-- **Родительская функция:** 3.2 Паттерн «Классический свинг»
-- **Приоритет:** P0
-- **Сложность:** M (3–5d)
-- **Слой:** music-core
-- **Модуль:** `packages/music-core/src/audio/drumInstrument.ts`
-- **Описание:** Новый метод `schedule()` с полноценной ритм-секцией:
-  - **Ride:** классический swing (ding ding-a-ding), оффбиты через `ctx.swingRatio`
-  - **Hihat:** восьмые с variable openness (closed на 2 и 4, half на оффбитах 1& и 3&, open на остальных)
-  - **Snare:** акцент на 2 и 4 (backbeat), velocity 0.8
-  - **Bass drum:** feathering (тихие четверти, velocity 0.3), акцент на 1 и 3 (velocity 0.6)
-  - **Crash:** акцент на первую долю каждого N-го такта (начало формы)
-  - **Rim:** опционально, выключен по умолчанию в свинге
-  - Humanization: ±5ms timing, ±0.05 velocity (настраиваемая intensity)
-  - Уважать per-sound `enabled` флаги
-  - Деградация для не-4/4 размеров (3/4 jazz waltz, 6/8 и др.)
-- **Критерий готовности:** typecheck + test + ручное прослушивание — свинг звучит естественно.
-- **Зависит от задач:** T-004
-- **Статус:** 🔴 Запланировано
-
-#### T-006. Humanization с настраиваемой интенсивностью
-
-- **Родительская функция:** 3.2 Паттерн «Классический свинг»
-- **Приоритет:** P1
-- **Сложность:** S (1–2d)
-- **Слой:** music-core
-- **Модуль:** `packages/music-core/src/audio/drumInstrument.ts`
-- **Описание:** Параметр `humanizeIntensity: 'off' | 'low' | 'med' | 'high'`:
-  - `off`: без jitter
-  - `low`: ±3ms timing, ±0.03 velocity
-  - `med`: ±5ms timing, ±0.05 velocity (текущий)
-  - `high`: ±8ms timing, ±0.08 velocity
-  - Метод `setHumanizeIntensity(intensity)` на DrumInstrument.
-- **Критерий готовности:** typecheck + test — jitter в заданных диапазонах.
-- **Зависит от задач:** T-005
-- **Статус:** 🔴 Запланировано
-
-#### T-007. Обновить DB schema — новые поля настроек
-
-- **Родительская функция:** 3.5 Настройки барабанов
-- **Приоритет:** P0
-- **Сложность:** S (1–2d)
-- **Слой:** api
-- **Модуль:** `apps/api/src/db/schema.ts`, migration
-- **Описание:** Создать миграцию `0009_add_drums_v2_settings.sql`:
-  ```sql
-  ALTER TABLE user_settings ADD COLUMN drums_bass_drum_enabled BOOLEAN NOT NULL DEFAULT TRUE;
-  ALTER TABLE user_settings ADD COLUMN drums_bass_drum_volume REAL NOT NULL DEFAULT 0.7;
-  ALTER TABLE user_settings ADD COLUMN drums_snare_enabled BOOLEAN NOT NULL DEFAULT TRUE;
-  ALTER TABLE user_settings ADD COLUMN drums_snare_volume REAL NOT NULL DEFAULT 0.8;
-  ALTER TABLE user_settings ADD COLUMN drums_hihat_enabled BOOLEAN NOT NULL DEFAULT TRUE;
-  ALTER TABLE user_settings ADD COLUMN drums_hihat_volume REAL NOT NULL DEFAULT 0.65;
-  ALTER TABLE user_settings ADD COLUMN drums_hihat_openness INTEGER NOT NULL DEFAULT 0; -- 0–5
-  ALTER TABLE user_settings ADD COLUMN drums_crash_enabled BOOLEAN NOT NULL DEFAULT TRUE;
-  ALTER TABLE user_settings ADD COLUMN drums_crash_volume REAL NOT NULL DEFAULT 0.8;
-  ALTER TABLE user_settings ADD COLUMN drums_rim_enabled BOOLEAN NOT NULL DEFAULT FALSE;
-  ALTER TABLE user_settings ADD COLUMN drums_rim_volume REAL NOT NULL DEFAULT 0.6;
-  ALTER TABLE user_settings ADD COLUMN drums_pattern TEXT NOT NULL DEFAULT 'swing';
-  ALTER TABLE user_settings ADD COLUMN drums_humanize_intensity TEXT NOT NULL DEFAULT 'med';
-  ```
-  Старые колонки (`drums_stir_*`, `drums_hihat_*`) оставить, пометить `-- deprecated` в схеме.
-- **Критерий готовности:** Миграция применяется, `typecheck`.
-- **Зависит от задач:** T-001
-- **Статус:** 🔴 Запланировано
-
-#### T-008. Обновить Zod-DTO (`shared/src/dto.ts`)
-
-- **Родительская функция:** 3.5 Настройки барабанов
-- **Приоритет:** P0
-- **Сложность:** S (1–2d)
+- **Сложность:** XS
 - **Слой:** shared
-- **Модуль:** `packages/shared/src/dto.ts`
-- **Описание:** Добавить новые поля в `UserSettingsDTOSchema`:
-  ```ts
-  drumsBassDrumEnabled: z.boolean().optional(),
-  drumsBassDrumVolume: z.number().min(0).max(1).optional(),
-  drumsSnareEnabled: z.boolean().optional(),
-  drumsSnareVolume: z.number().min(0).max(1).optional(),
-  drumsHihatEnabled: z.boolean().optional(),       // replaces drumsStirEnabled
-  drumsHihatVolume: z.number().min(0).max(1).optional(),
-  drumsHihatOpenness: z.number().int().min(0).max(5).optional(),
-  drumsCrashEnabled: z.boolean().optional(),
-  drumsCrashVolume: z.number().min(0).max(1).optional(),
-  drumsRimEnabled: z.boolean().optional(),
-  drumsRimVolume: z.number().min(0).max(1).optional(),
-  drumsPattern: z.enum(['swing', 'bossa', 'funk']).optional(),
-  drumsHumanizeIntensity: z.enum(['off', 'low', 'med', 'high']).optional(),
-  ```
-  Старые поля (`drumsStirEnabled`, `drumsStirVolume`, `drumsHihatEnabled`, `drumsHihatVolume`) оставить с пометкой `/** @deprecated */`, удалить из валидации новых запросов.
-- **Критерий готовности:** typecheck, Zod-схема принимает новые поля.
-- **Зависит от задач:** T-007
-- **Статус:** 🔴 Запланировано
-
-#### T-009. Обновить API — PATCH `/api/settings`
-
-- **Родительская функция:** 3.5 Настройки барабанов
-- **Приоритет:** P0
-- **Сложность:** S (1–2d)
-- **Слой:** api
-- **Модуль:** `apps/api/src/routes/settings.routes.ts`, `apps/api/src/services/settings.service.ts`
-- **Описание:** Обработка новых полей в PATCH `/api/settings`. Маппинг старых полей на новые при чтении (для обратной совместимости): `drumsStirEnabled` → `drumsSnareEnabled`, `drumsStirVolume` → `drumsSnareVolume`. Сохранение новых полей в БД. Валидация через обновлённую Zod-схему.
-- **Критерий готовности:** `GET /api/settings` возвращает новые поля, `PATCH` сохраняет их в БД. Старые клиенты продолжают работать.
-- **Зависит от задач:** T-007, T-008
-- **Статус:** 🔴 Запланировано
-
-#### T-010. Обновить SettingsForm (секция Drums)
-
-- **Родительская функция:** 3.5 Настройки барабанов
-- **Приоритет:** P0
-- **Сложность:** M (3–5d)
-- **Слой:** web
-- **Плагин:** `core-player` (`apps/web/src/plugins/core-player/`)
-- **Описание:** Новая секция «Drums» в `SettingsForm.tsx`:
-  - Master: on/off, volume
-  - Pattern: select (`swing` | `bossa` | `funk`), условно показывать только доступные
-  - Swing feel: slider 0.50–0.75 (общий `swingRatio` из TransportEngine)
-  - Humanize: select (`off` | `low` | `med` | `high`)
-  - Per-sound subsections:
-    - Bass Drum: on/off, volume
-    - Snare: on/off, volume
-    - Hi-hat: on/off, volume, openness slider (0–5)
-    - Ride: on/off, volume
-    - Crash: on/off, volume
-    - Rim: on/off, volume
-  - Миграция: при первом рендере — если старые настройки есть, маппить на новые.
-- **Критерий готовности:** UI отображает все контролы, изменения применяются к звуку. Старые настройки не теряются.
-- **Зависит от задач:** T-009
-- **Статус:** 🔴 Запланировано
-
-#### T-011. Обновить `useLocalSettingsStore` и синхронизацию с DrumInstrument
-
-- **Родительская функция:** 3.5 Настройки барабанов
-- **Приоритет:** P0
-- **Сложность:** S (1–2d)
-- **Слой:** web
-- **Плагин:** `core-player`
-- **Описание:** Добавить новые поля в `useLocalSettingsStore`. `useEffect` для синхронизации настроек с `DrumInstrument.setRidePattern()` / новых методов (`setHihatOpenness`, `setHumanizeIntensity`, `setPattern`). При изменении `pattern` — пересоздавать внутреннее состояние DrumInstrument (или передавать pattern в `schedule()`).
-- **Критерий готовности:** Изменение любого контрола в SettingsForm мгновенно влияет на звук.
-- **Зависит от задач:** T-005, T-010
-- **Статус:** 🔴 Запланировано
-
-#### T-012. Тесты для нового DrumInstrument
-
-- **Родительская функция:** 3.2 Паттерн «Классический свинг»
-- **Приоритет:** P0
-- **Сложность:** M (3–5d)
-- **Слой:** music-core
-- **Модуль:** `packages/music-core/src/audio/drumInstrument.test.ts`
-- **Описание:** Написать unit-тесты:
-  - 4/4 свинг: ride на все доли + оффбиты, snare на 2 и 4, bass drum на 1 и 3, hihat восьмые, crash на начало
-  - 3/4 jazz waltz: ride на все доли, snare на 2 и 3, bass drum на 1
-  - 6/8: ride на 1,3,5; snare на 4; bass drum на 1
-  - Отключённый звук не попадает в sink
-  - Humanization: jitter не выходит за границы окна
-  - `swingRide` паттерн (legacy) работает идентично новому `swing` для 4/4
-  - Старые тесты проходят с deprecated алиасами
-- **Критерий готовности:** `npm run test -- packages/music-core` — все тесты зелёные.
-- **Зависит от задач:** T-005, T-006
-- **Статус:** 🔴 Запланировано
-
-#### T-013. Обновить `docs/DRUMS.md`
-
-- **Родительская функция:** 4.2 DRUMS.md
-- **Приоритет:** P1
-- **Сложность:** S (1–2d)
-- **Слой:** docs
-- **Модуль:** `docs/DRUMS.md`
-- **Описание:** Полностью переписать документ: новые звуки, новые паттерны, библиотека Swirly Drums, архитектура DrumInstrument v2, настройки, инструкция по добавлению стиля.
-- **Критерий готовности:** Документ отражает актуальное состояние.
-- **Зависит от задач:** T-012
-- **Статус:** 🔴 Запланировано
-
----
-
-### Этап 2: Босса-нова
-
-#### T-014. Добавить bossa nova паттерн в DrumInstrument
-
-- **Родительская функция:** 3.3 Паттерн «Босса-нова»
-- **Приоритет:** P1
-- **Сложность:** M (3–5d)
-- **Слой:** music-core
-- **Модуль:** `packages/music-core/src/audio/drumInstrument.ts`
-- **Описание:** Метод `scheduleBossa()` или ветка в `schedule()` при `pattern === 'bossa'`:
-  - Rim: clave-подобный паттерн (X . X . X . . .)
-  - Bass drum: синкопы на 1 и 3&
-  - Hihat: закрытый chick на 2 и 4, восьмые на остальных
-  - Ride: опционально (по умолчанию выключен)
-  - Crash: на начало формы
-- **Критерий готовности:** typecheck + test + прослушивание — босса-нова звучит аутентично.
-- **Зависит от задач:** T-005, T-012
-- **Статус:** 🔴 Запланировано
-
-#### T-015. Настройки bossa nova (pattern selection, UI)
-
-- **Родительская функция:** 3.3 Паттерн «Босса-нова»
-- **Приоритет:** P1
-- **Сложность:** S (1–2d)
-- **Слой:** api + web
-- **Модуль:** `apps/api/`, `apps/web/`
-- **Описание:** Расширить `drumsPattern` enum значением `'bossa'` (уже заложено в T-008). В SettingsForm: выбор `bossa` в селекторе паттерна. Для bossa — автоматически выключить ride (или сделать опциональным). Добавить опцию `bossaClaveDirection` (P3 — опционально).
-- **Критерий готовности:** Выбор «Bossa Nova» в UI меняет паттерн.
-- **Зависит от задач:** T-014, T-010
-- **Статус:** 🔴 Запланировано
-
-#### T-016. Тесты bossa nova
-
-- **Родительская функция:** 3.3 Паттерн «Босса-нова»
-- **Приоритет:** P1
-- **Сложность:** S (1–2d)
-- **Слой:** music-core
-- **Модуль:** `packages/music-core/src/audio/drumInstrument.test.ts`
-- **Описание:** Тесты для bossa nova:
-  - 4/4: rim clave-паттерн, bass drum синкопы, hihat chick
-  - 3/4: деградация (waltz bossa?)
-  - Humanization работает
-- **Критерий готовности:** Тесты проходят.
-- **Зависит от задач:** T-014
-- **Статус:** 🔴 Запланировано
-
----
-
-### Рандомизация (cross-cutting, Этап 2)
-
-#### T-020. Создать `DrumRandomizer` в music-core
-
-- **Родительская функция:** 3.7 Рандомизация барабанных паттернов
-- **Приоритет:** P1
-- **Сложность:** M (3–5d)
-- **Слой:** music-core
-- **Модуль:** `packages/music-core/src/audio/drumRandomizer.ts` (новый файл)
-- **Описание:** Чистый класс `DrumRandomizer` без IO, полностью тестируемый. Конструктор принимает `DrumRandomizerSettings`:
-  - `randomizationLevel: 'off' | 'subtle' | 'moderate' | 'high'`
-  - `fillFrequency: 'never' | '4bars' | '8bars' | '16bars'`
-  - `fillComplexity: 'simple' | 'medium' | 'complex'`
-  - `rideVariation: boolean`, `snareGhosts: boolean`, `bassDrumVariation: boolean`
-  - Методы: `shouldVaryRide(barIndex, formLength)` → boolean (не на последнем такте), `shouldAddGhostNotes(barIndex, subdivision)` → `GhostNote[]` (только на слабых долях e, a), `shouldVaryBassDrum(barIndex)` → `BassDrumVariation`, `shouldFill(barIndex)` → boolean, `generateFill(style)` → `DrumEvent[]`.
-  - Главный метод: `apply(baseEvents: DrumEvent[], barContext) → DrumEvent[]` — принимает базовый паттерн и контекст такта (`barIndex`, `formLength`, `style`, `timeSignature`), возвращает модифицированный набор событий.
-  - При `level = 'off'` возвращает baseEvents без изменений (zero-cost).
-  - Вероятностные правила сгруппированы по уровням, используют `Math.random()`.
-  - Fill адаптируется под стиль: swing — snare+bass drum triplet-комбинации, bossa — rim-вариации clave, funk — 16th-note fills с crash.
-- **Критерий готовности:** typecheck + unit-тесты (см. T-025).
-- **Зависит от задач:** T-001 (нужны DrumSound/DrumEvent)
-- **Статус:** 🔴 Запланировано
-
-#### T-021. Интегрировать DrumRandomizer в swing-паттерн
-
-- **Родительская функция:** 3.7 Рандомизация барабанных паттернов
-- **Приоритет:** P1
-- **Сложность:** S (1–2d)
-- **Слой:** music-core
-- **Модуль:** `packages/music-core/src/audio/drumInstrument.ts`
-- **Описание:** В `schedule()` (ветка `pattern === 'swing'`): после построения базового набора `DrumEvent[]` вызвать `this.randomizer.apply(baseEvents, barContext)`. `barContext`: `barIndex`, `formLength`, `style`, `timeSignature`. При `level = 'off'` randomizer не создаётся (lazy init). `updateSettings()` передаёт новые настройки в randomizer.
-- **Критерий готовности:** Свинг с `moderate` звучит вариативно; `off` — идентично базовому паттерну.
-- **Зависит от задач:** T-005, T-020
-- **Статус:** 🔴 Запланировано
-
-#### T-022. Расширить DB schema, Zod-DTO и API для рандомизации
-
-- **Родительская функция:** 3.7 Рандомизация барабанных паттернов
-- **Приоритет:** P1
-- **Сложность:** M (3–5d)
-- **Слой:** api + shared
-- **Модуль:** `apps/api/src/db/schema.ts`, migration, `packages/shared/src/dto.ts`, `apps/api/src/routes/settings.routes.ts`
+- **Плагин / Модуль:** `packages/shared/src/dto.ts`
 - **Описание:**
-  - **DB migration** `0010_add_drums_randomization.sql` — 6 новых колонок:
-    ```sql
-    ALTER TABLE user_settings ADD COLUMN drums_randomization_level TEXT NOT NULL DEFAULT 'off';
-    ALTER TABLE user_settings ADD COLUMN drums_fill_frequency TEXT NOT NULL DEFAULT '8bars';
-    ALTER TABLE user_settings ADD COLUMN drums_fill_complexity TEXT NOT NULL DEFAULT 'medium';
-    ALTER TABLE user_settings ADD COLUMN drums_ride_variation BOOLEAN NOT NULL DEFAULT TRUE;
-    ALTER TABLE user_settings ADD COLUMN drums_snare_ghosts BOOLEAN NOT NULL DEFAULT TRUE;
-    ALTER TABLE user_settings ADD COLUMN drums_bass_drum_variation BOOLEAN NOT NULL DEFAULT TRUE;
-    ```
-  - **Zod-DTO:** 6 полей с `.optional()` в `UserSettingsDTOSchema`:
-    ```ts
-    drumsRandomizationLevel: z.enum(['off', 'subtle', 'moderate', 'high']).optional(),
-    drumsFillFrequency: z.enum(['never', '4bars', '8bars', '16bars']).optional(),
-    drumsFillComplexity: z.enum(['simple', 'medium', 'complex']).optional(),
-    drumsRideVariation: z.boolean().optional(),
-    drumsSnareGhosts: z.boolean().optional(),
-    drumsBassDrumVariation: z.boolean().optional(),
-    ```
-  - **API:** PATCH `/api/settings` — сохранение новых полей в БД.
-- **Критерий готовности:** `GET /api/settings` возвращает поля; `PATCH` сохраняет; typecheck.
-- **Зависит от задач:** T-007, T-008, T-009
-- **Статус:** 🔴 Запланировано
+  - Добавить `Style` тип: `'swing' | 'bossa' | 'funk' | 'latin' | 'ballad'`
+  - Добавить `style` поле в `UserSettingsDTOSchema` (опциональное)
+  - Пометить `drumsPattern` как `@deprecated`
+  - Экспортировать `Style` тип
+- **Критерий готовности (DoD):** typecheck + lint
+- **Зависит от задач:** —
+- **Статус:** 🟢 Готово
 
-#### T-023. Расширить SettingsForm — секция «Randomization»
+#### T-002. Обновить DB schema — колонка `style`
 
-- **Родительская функция:** 3.7 Рандомизация барабанных паттернов
-- **Приоритет:** P1
-- **Сложность:** S (1–2d)
-- **Слой:** web
-- **Плагин:** `core-player`
-- **Описание:** Новая подсекция «Randomization» в `SettingsForm.tsx` (секция Drums):
-  - `SelectRow` для `randomizationLevel`: `off` / `subtle` / `moderate` / `high`
-  - `SelectRow` для `fillFrequency`: `never` / `4 bars` / `8 bars` / `16 bars`
-  - `SelectRow` для `fillComplexity`: `simple` / `medium` / `complex`
-  - `ToggleRow` для `rideVariation`: «Ride variation»
-  - `ToggleRow` для `snareGhosts`: «Snare ghost notes»
-  - `ToggleRow` для `bassDrumVariation`: «Bass drum variation»
-  - Per-element toggles показываются только при `randomizationLevel !== 'off'` (условный рендеринг).
-  - Синхронизация через `useLocalSettingsStore`.
-- **Критерий готовности:** UI отображает все контролы, изменения мгновенно влияют на звук.
-- **Зависит от задач:** T-010, T-022
-- **Статус:** 🔴 Запланировано
+- **Родительская функция:** 3.1 (Глобальный стиль)
+- **Приоритет:** P0
+- **Сложность:** XS
+- **Слой:** api
+- **Плагин / Модуль:** `apps/api/src/db/schema.ts`
+- **Описание:**
+  - Добавить `style: text('style').notNull().default('swing')` в `userSettings`
+  - Создать drizzle-миграцию
+- **Критерий готовности (DoD):** typecheck + миграция применяется без ошибок
+- **Зависит от задач:** T-001
+- **Статус:** 🟢 Готово
 
-#### T-024. Интегрировать DrumRandomizer в bossa nova
+#### T-003. Обновить API — PATCH `/api/settings` и `auth.service`
 
-- **Родительская функция:** 3.7 Рандомизация барабанных паттернов
-- **Приоритет:** P1
-- **Сложность:** S (1–2d)
-- **Слой:** music-core
-- **Модуль:** `packages/music-core/src/audio/drumInstrument.ts`
-- **Описание:** В `schedule()` (ветка `pattern === 'bossa'`): вызов `randomizer.apply()`. Особенности bossa-рандомизации: ride variation не применяется (ride выключен), snare ghosts не применяется (только rim), bass drum — синкопированные вариации (смещение акцентов 1 и 3&), fills — rim-вариации clave.
-- **Критерий готовности:** Босса варьируется при `level > off`; `off` — идентично базовому паттерну.
-- **Зависит от задач:** T-014, T-020
-- **Статус:** 🔴 Запланировано
+- **Родительская функция:** 3.1 (Глобальный стиль)
+- **Приоритет:** P0
+- **Сложность:** XS
+- **Слой:** api
+- **Плагин / Модуль:** `apps/api/src/routes/settings.routes.ts`, `apps/api/src/services/auth.service.ts`
+- **Описание:**
+  - В `settings.routes.ts`: поддержка `style` в PATCH
+  - В `auth.service.ts` (`toSettingsDTO`): маппинг `s.style` → DTO, fallback с `s.drumsPattern` при миграции
+- **Критерий готовности (DoD):** typecheck + lint
+- **Зависит от задач:** T-001, T-002
+- **Статус:** 🟢 Готово
 
-#### T-025. Тесты DrumRandomizer
+#### T-004. Переподключить `DrumInstrument` на глобальный стиль
 
-- **Родительская функция:** 3.7 Рандомизация барабанных паттернов
-- **Приоритет:** P1
-- **Сложность:** M (3–5d)
-- **Слой:** music-core
-- **Модуль:** `packages/music-core/src/audio/drumRandomizer.test.ts` (новый файл)
-- **Описание:** Unit-тесты:
-  - `off`: `apply()` возвращает входной массив без изменений.
-  - `subtle`/`moderate`/`high`: выходной массив отличается от входного (хотя бы в части запусков).
-  - `rideVariation = false`: ride-события в выходе идентичны входу.
-  - `snareGhosts = false`: нет новых snare-событий.
-  - `bassDrumVariation = false`: bass drum-события идентичны входу.
-  - `fillFrequency = 'never'`: `shouldFill()` всегда false.
-  - `fillFrequency = '4bars'`: fill только на barIndex % 4 === 3.
-  - `fillComplexity`: simple — ≤3 событий в fill, medium — ≤6, complex — ≤10.
-  - Ghost notes только на слабых долях (e, a), не на сильных (1, 2, 3, 4).
-  - Ride не варьируется на последнем такте формы (`barIndex === formLength - 1`).
-  - Все три стиля (swing, bossa, funk) покрыты.
-  - Статистический тест: за 1000 вызовов `subtle` вариация ride происходит в ~8–12% случаев (доверительный интервал).
-- **Критерий готовности:** `npm run test -- packages/music-core` — все тесты зелёные.
-- **Зависит от задач:** T-020, T-021, T-024
-- **Статус:** 🔴 Запланировано
+- **Родительская функция:** 3.1 (Глобальный стиль), 4.1 (Миграция `drumsPattern` → `style`)
+- **Приоритет:** P0
+- **Сложность:** S
+- **Слой:** music-core, web
+- **Плагин / Модуль:** `packages/music-core/src/audio/drumInstrument.ts`, `apps/web/src/engine/useTransport.ts`
+- **Описание:**
+  - `DrumInstrument`: добавить метод `setStyle(style: Style)` — маппинг `Style` → `DrumsPattern`
+  - Убрать чтение `settings.pattern` из `schedule()`; заменить на `this.currentStyle`
+  - `useTransport.ts`: читать `style` из `settings` (вместо `settings.drumsPattern`), пробрасывать в `drumInstrument.setStyle()`
+  - Сохранить `setPattern()` как deprecated (прокси на `setStyle`)
+- **Критерий готовности (DoD):** typecheck + lint + test (существующие тесты DrumInstrument проходят)
+- **Зависит от задач:** T-001
+- **Статус:** 🟢 Готово
 
 ---
 
-### Этап 3: Фанк
+### Этап 2: Piano Instrument (MVP, P0)
 
-#### T-017. Добавить funk паттерн в DrumInstrument
+#### T-005. Отобрать и сконвертировать сэмплы Salamander Grand Piano
 
-- **Родительская функция:** 3.4 Паттерн «Фанк»
-- **Приоритет:** P2
-- **Сложность:** M (3–5d)
+- **Родительская функция:** 3.2 (Piano Instrument)
+- **Приоритет:** P0
+- **Сложность:** M
+- **Слой:** web (public assets)
+- **Плагин / Модуль:** `apps/web/public/samples/piano/salamander/`
+- **Описание:**
+  - Скачать Salamander Grand Piano 44.1kHz 16bit из freepats.zenvoid.org
+  - Выбрать ноты: C3–C6 (37 нот)
+  - Выбрать 2–4 velocity layers (soft: ~pp–mp, medium: ~mf–f, hard: ~ff, [bark: ~fff])
+  - Конвертировать в OGG (libopus 128kbps) через ffmpeg
+  - Именование: `{note}_{layer}.ogg` (например, `C4_soft.ogg`, `C4_medium.ogg`)
+  - Целевой размер: ~15–25 MB
+- **Критерий готовности (DoD):** Все файлы на месте, проигрываются через Tone.js `Sampler`
+- **Зависит от задач:** —
+- **Статус:** 🟢 Готово
+
+#### T-006. Отобрать и сконвертировать сэмплы Upright KW
+
+- **Родительская функция:** 3.2 (Piano Instrument)
+- **Приоритет:** P0
+- **Сложность:** M
+- **Слой:** web (public assets)
+- **Плагин / Модуль:** `apps/web/public/samples/piano/upright-kw/`
+- **Описание:**
+  - Аналогично T-005, но для Upright KW (Best quality) из freepats.zenvoid.org
+  - Тот же диапазон (C3–C6), 2–4 velocity layers
+  - OGG 128kbps
+- **Критерий готовности (DoD):** Все файлы на месте, проигрываются
+- **Зависит от задач:** —
+- **Статус:** 🟢 Готово
+
+#### T-007. Создать `pianoSampleRegistry.ts`
+
+- **Родительская функция:** 3.2 (Piano Instrument)
+- **Приоритет:** P0
+- **Сложность:** S
 - **Слой:** music-core
-- **Модуль:** `packages/music-core/src/audio/drumInstrument.ts`
-- **Описание:** Метод `scheduleFunk()` или ветка в `schedule()` при `pattern === 'funk'`:
-  - Hihat: 16th note (или восьмые с открытым звуком на оффбитах)
-  - Bass drum: синкопированный грув с вариациями плотности
-  - Snare: акценты на 2 и 4, rimshot, опциональные заполнения
-  - Ride: выключен по умолчанию
-  - Crash: акценты на границах секций
-- **Критерий готовности:** typecheck + test + прослушивание — фанк звучит groove-во.
-- **Зависит от задач:** T-014
-- **Статус:** 🔴 Запланировано
+- **Плагин / Модуль:** `packages/music-core/src/audio/pianoSampleRegistry.ts`
+- **Описание:**
+  - `PianoVelocityLayer = 'soft' | 'medium' | 'hard' | 'bark'`
+  - `PIANO_VELOCITY_THRESHOLDS` (пороги как в Rhodes: 0.35 / 0.65 / 0.88)
+  - `pickPianoLayer(velocity)` — выбор слоя по velocity
+  - `PIANO_SALAMANDER_LAYERS: Record<PianoVelocityLayer, NoteMap>` (C3–C6)
+  - `PIANO_UPRIGHT_KW_LAYERS: Record<PianoVelocityLayer, NoteMap>`
+  - `PIANO_SALAMANDER_BASE_URL = '/samples/piano/salamander/'`
+  - `PIANO_UPRIGHT_KW_BASE_URL = '/samples/piano/upright-kw/'`
+- **Критерий готовности (DoD):** typecheck
+- **Зависит от задач:** T-005, T-006
+- **Статус:** 🟢 Готово
 
-#### T-018. Настройки funk (complexity, UI)
+#### T-008. Определить простые компинг-паттерны («кирпичики»)
 
-- **Родительская функция:** 3.4 Паттерн «Фанк»
-- **Приоритет:** P2
-- **Сложность:** S (1–2d)
-- **Слой:** api + web
-- **Модуль:** `apps/api/`, `apps/web/`
-- **Описание:** Расширить `drumsPattern` значением `'funk'`. Добавить поле:
-  - `drumsFunkComplexity: 'simple' | 'medium' | 'complex'` — плотность bass drum и синкоп.
-  - DB миграция, Zod-DTO, API, SettingsForm.
-  - Примечание: заполнения (fills) управляются общим `DrumsRandomizer` (T-022), а не отдельным funk-параметром.
-- **Критерий готовности:** Выбор «Funk» в UI, настройка complexity работает.
-- **Зависит от задач:** T-017, T-015
-- **Статус:** 🔴 Запланировано
-
-#### T-019. Тесты funk
-
-- **Родительская функция:** 3.4 Паттерн «Фанк»
-- **Приоритет:** P2
-- **Сложность:** S (1–2d)
+- **Родительская функция:** 3.2 (Piano Instrument)
+- **Приоритет:** P0
+- **Сложность:** M
 - **Слой:** music-core
-- **Модуль:** `packages/music-core/src/audio/drumInstrument.test.ts`
-- **Описание:** Тесты для funk:
-  - 4/4: 16th note hihat, синкопированная bass drum, snare backbeat
-  - Разные уровни complexity
-  - Humanization работает
-- **Критерий готовности:** Тесты проходят.
-- **Зависит от задач:** T-017
-- **Статус:** 🔴 Запланировано
+- **Плагин / Модуль:** `packages/music-core/src/audio/pianoComping.ts` (новый)
+- **Описание:**
+  - Вынести простые паттерны из `rhodesVoicing.ts` в `pianoComping.ts` (без удаления из Rhodes)
+  - Тип `CompPatternId` — идентификатор простого паттерна:
+    `'charleston' | 'reverse-charleston' | 'basie-2-4' | 'offbeat-2-4' | 'anticipation-4and' | 'one-twoand-four' | 'oneand-three' | 'twoand-only' | 'four-and-sparse' | 'two-threeand' | 'halfNotes' | 'quarterNotes' | 'wholeNotes' | 'rest'`
+  - `COMP_PATTERNS: Record<CompPatternId, CompEvent[]>` — словарь паттернов
+  - `getCompPattern(id: CompPatternId): CompEvent[]`
+  - Реэкспортировать из `rhodesVoicing.ts` (пока не удаляем — нужно для обратной совместимости Rhodes)
+- **Критерий готовности (DoD):** typecheck + lint + test (покрыть все 14 паттернов)
+- **Зависит от задач:** —
+- **Статус:** 🟢 Готово
 
-#### T-026. Интегрировать DrumRandomizer в funk
+#### T-009. Определить 5 составных профилей компинга
 
-- **Родительская функция:** 3.7 Рандомизация барабанных паттернов
-- **Приоритет:** P2
-- **Сложность:** S (1–2d)
+- **Родительская функция:** 3.2 (Piano Instrument)
+- **Приоритет:** P0
+- **Сложность:** S
 - **Слой:** music-core
-- **Модуль:** `packages/music-core/src/audio/drumInstrument.ts`
-- **Описание:** В `schedule()` (ветка `pattern === 'funk'`): вызов `randomizer.apply()`. Особенности funk-рандомизации: ride variation не применяется (ride выключен), snare ghosts — активные ghost notes между backbeat, bass drum — агрессивные синкопированные вариации, fills — busy 16th-note fills с crash-акцентами.
-- **Критерий готовности:** Фанк варьируется при `level > off`; `off` — идентично базовому.
-- **Зависит от задач:** T-017, T-020
-- **Статус:** 🔴 Запланировано
+- **Плагин / Модуль:** `packages/music-core/src/audio/pianoComping.ts`
+- **Описание:**
+  - Тип `CompingProfile` (см. VISION §3.2): `id`, `name`, `complexity`, `bars: [CompPatternId × 4]`
+  - 5 профилей: `swing-sparse`, `swing-medium`, `basie-light`, `offbeat-push`, `beginner-safe`
+  - `COMPING_PROFILES: Record<string, CompingProfile>`
+  - `getCompingProfile(id: string): CompingProfile`
+- **Критерий готовности (DoD):** typecheck + test (каждый профиль содержит валидные `CompPatternId`)
+- **Зависит от задач:** T-008
+- **Статус:** 🟢 Готово
+
+#### T-010. Создать `pianoVoicing.ts` (voicing-логика для фортепиано)
+
+- **Родительская функция:** 3.2 (Piano Instrument)
+- **Приоритет:** P0
+- **Сложность:** S
+- **Слой:** music-core
+- **Плагин / Модуль:** `packages/music-core/src/audio/pianoVoicing.ts` (новый)
+- **Описание:**
+  - Адаптировать `rhodesVoicing.ts` для фортепиано — другой регистр (C3–C6 вместо C3–C6 — совпадает), quaral voicings
+  - `PianoVoicingDensity = 'shell2' | 'rootless3' | 'rootless4' | 'quartal'`
+  - `buildPianoVoicing(chord, density, prevVoicing)` — с поддержкой quartal
+  - Quartal: стеки из чистых кварт (5 semitones) от корня или терции
+- **Критерий готовности (DoD):** typecheck + test (каждый voicing density для maj7, m7, 7, m7b5, dim7)
+- **Зависит от задач:** T-008
+- **Статус:** 🟢 Готово
+
+#### T-011. Создать `PianoInstrument` класс
+
+- **Родительская функция:** 3.2 (Piano Instrument)
+- **Приоритет:** P0
+- **Сложность:** M
+- **Слой:** music-core
+- **Плагин / Модуль:** `packages/music-core/src/audio/pianoInstrument.ts` (новый)
+- **Описание:**
+  - Реализует интерфейс `Instrument`
+  - Конструктор: принимает `ChordTimeline`
+  - `setProfile(profileId)` — выбор профиля компинга
+  - `setVoicingDensity(density)` — выбор voicing density
+  - `setStyle(style: Style)` — адаптация к стилю (влияет на выбор default-профиля)
+  - `schedule(window, ctx)` — основной цикл:
+    1. Для каждого такта: определить `CompPatternId` из профиля (`barIndex % 4`)
+    2. Получить `CompEvent[]` для этого паттерна
+    3. Для каждого события: построить voicing через `buildPianoVoicing`
+    4. Запланировать событие через `ctx.scheduleEvent('piano', ...)`
+  - Humanization: timing jitter ±6ms + velocity variation ±5%
+- **Критерий готовности (DoD):** typecheck + lint + test (unit-тесты schedule с mock-окном)
+- **Зависит от задач:** T-008, T-009, T-010
+- **Статус:** 🟢 Готово
+
+#### T-012. Создать `pianoManifest.ts`
+
+- **Родительская функция:** 3.2 (Piano Instrument)
+- **Приоритет:** P0
+- **Сложность:** XS
+- **Слой:** music-core
+- **Плагин / Модуль:** `packages/music-core/src/audio/pianoManifest.ts` (новый)
+- **Описание:**
+  - `pianoManifest: InstrumentManifest` — аналогично `rhodesManifest`
+  - `sampleManifest` ссылается на Salamander (default) или Upright KW (через параметр)
+  - `createInstrument: () => new PianoInstrument(new ChordTimeline())`
+  - `defaultSettings: { enabled: false, volume: 0.7, profile: 'swing-sparse', voicingDensity: 'rootless3', sampleLibrary: 'salamander' }`
+- **Критерий готовности (DoD):** typecheck
+- **Зависит от задач:** T-007, T-011
+- **Статус:** 🟢 Готово
+
+#### T-013. Экспортировать piano-модули из `music-core/audio/index.ts`
+
+- **Родительская функция:** 3.2 (Piano Instrument)
+- **Приоритет:** P0
+- **Сложность:** XS
+- **Слой:** music-core
+- **Плагин / Модуль:** `packages/music-core/src/audio/index.ts`
+- **Описание:**
+  - Экспортировать `PianoInstrument`, `pianoManifest`, `pickPianoLayer`, типы voicing и профилей
+- **Критерий готовности (DoD):** typecheck
+- **Зависит от задач:** T-011, T-012
+- **Статус:** 🟢 Готово
+
+#### T-014. Подключить Piano в `useTransport.ts`
+
+- **Родительская функция:** 3.2 (Piano Instrument)
+- **Приоритет:** P0
+- **Сложность:** M
+- **Слой:** web
+- **Плагин / Модуль:** `apps/web/src/engine/useTransport.ts`
+- **Описание:**
+  - Импортировать `PianoInstrument`, `pianoManifest`, `pickPianoLayer`
+  - Создать FX-цепь для piano: ConvolutionReverb (загрузить IR зала) + EQ3 (subtle)
+  - Создать `PitchedInstrumentResources` для piano сэмплов (через `createPitchedResources`)
+  - Создать `PianoInstrument` и зарегистрировать через `engine.addInstrument()`
+  - Создать `pianoEventSink`: `scheduleEvent('piano', ...)` → играет на Tone.Sampler
+  - Зарегистрировать sink через `engine.registerSink('piano', ...)`
+  - `useEffect`-ы для: `pianoVolume`, `pianoProfile`, `pianoVoicingDensity`, `pianoSampleLibrary`
+  - При смене библиотеки: dispose старых сэмплов, создать новые
+  - Синхронизация ChordTimeline с bass и piano (как сейчас для rhodes)
+- **Критерий готовности (DoD):** typecheck + lint. Piano слышен при воспроизведении.
+- **Зависит от задач:** T-004, T-013
+- **Статус:** 🟢 Готово
+
+---
+
+### Этап 3: Rhodes как комплементарный слой (MVP, P0)
+
+#### T-015. Рефакторинг `RhodesInstrument` — добавить комплементарные режимы
+
+- **Родительская функция:** 3.3 (Rhodes как комплементарный слой)
+- **Приоритет:** P0
+- **Сложность:** M
+- **Слой:** music-core
+- **Плагин / Модуль:** `packages/music-core/src/audio/rhodesVoicing.ts`, `packages/music-core/src/audio/rhodesInstrument.ts`
+- **Описание:**
+  - В `rhodesVoicing.ts`: добавить тип `RhodesLayerMode = 'pads' | 'subtle-offbeats' | 'high-comping' | 'ambient-swells' | 'stab-accents' | 'none'`
+  - Определить 6 комплементарных паттернов (каждый — `CompEvent[]`):
+    - `pads`: целые ноты, velocity 0.3–0.4
+    - `subtle-offbeats`: только 2& и 4&, velocity 0.3–0.4
+    - `high-comping`: как halfNotes но +12 semitones (верхний регистр)
+    - `ambient-swells`: один аккорд на 2 такта, velocity 0.25–0.35
+    - `stab-accents`: beat 2 и 4, velocity 0.6–0.7, короткая длительность
+    - `none`: пустой массив
+  - В `RhodesInstrument`: добавить `setLayerMode(mode)`, `schedule()` использует `layerMode` вместо `mode`
+  - Сохранить `setMode()` как deprecated (прокси на старые режимы, если они ещё нужны)
+- **Критерий готовности (DoD):** typecheck + test (6 режимов × несколько аккордов)
+- **Зависит от задач:** T-008 (использует CompEvent)
+- **Статус:** 🟢 Готово
+
+#### T-016. Правила взаимодействия Piano ↔ Rhodes
+
+- **Родительская функция:** 3.3 (Rhodes как комплементарный слой)
+- **Приоритет:** P0
+- **Сложность:** S
+- **Слой:** music-core
+- **Плагин / Модуль:** `packages/music-core/src/audio/pianoRhodesInteraction.ts` (новый)
+- **Описание:**
+  - Функция `avoidConflicts(rhodesEvents, pianoEvents, barStartTick, tpBeat): CompEvent[]`
+  - Правила:
+    1. Если Rhodes-событие попадает в ту же долю (±1/16), что и piano — сместить на 1/16 позже или тише
+    2. Если Rhodes в режиме `high-comping` — транспонировать ноты на октаву вверх
+    3. Если Rhodes `subtle-offbeats` — только если piano не играет на этой доле
+  - Тесты: 3 сценария (Rhodes накладывается / не накладывается / high-comping)
+- **Критерий готовности (DoD):** typecheck + test
+- **Зависит от задач:** T-011 (PianoInstrument API), T-015
+- **Статус:** 🟢 Готово
+
+#### T-017. Подключить комплементарный Rhodes в `useTransport.ts`
+
+- **Родительская функция:** 3.3 (Rhodes как комплементарный слой)
+- **Приоритет:** P0
+- **Сложность:** S
+- **Слой:** web
+- **Плагин / Модуль:** `apps/web/src/engine/useTransport.ts`
+- **Описание:**
+  - Добавить `rhodesLayerMode` и `rhodesLayerVolume` в настройки
+  - Передать `setLayerMode` и громкость в `RhodesInstrument`
+  - Убедиться, что Rhodes FX-цепь не конфликтует с Piano (разные Channel)
+  - Rhodes подключается к тому же ChordTimeline что и Piano
+- **Критерий готовности (DoD):** typecheck + lint. Rhodes работает как слой поверх Piano.
+- **Зависит от задач:** T-014, T-015
+- **Статус:** 🟢 Готово
+
+---
+
+### Этап 4: API, настройки и форма (P0)
+
+#### T-018. Расширить `UserSettingsDTO` — piano и rhodes поля
+
+- **Родительская функция:** 4.3 (Новые Piano-настройки), 4.2 (Миграция Rhodes)
+- **Приоритет:** P0
+- **Сложность:** S
+- **Слой:** shared
+- **Плагин / Модуль:** `packages/shared/src/dto.ts`
+- **Описание:**
+  - Добавить поля:
+    ```ts
+    pianoEnabled: z.boolean().optional(),
+    pianoVolume: z.number().min(0).max(1).optional(),
+    pianoProfile: z.enum(['swing-sparse','swing-medium','basie-light','offbeat-push','beginner-safe']).optional(),
+    pianoVoicingDensity: z.enum(['shell2','rootless3','rootless4','quartal']).optional(),
+    pianoSampleLibrary: z.enum(['salamander','upright-kw']).optional(),
+    pianoRandomizationLevel: z.enum(['off','subtle','moderate','high']).optional(),
+    rhodesLayerMode: z.enum(['pads','subtle-offbeats','high-comping','ambient-swells','stab-accents','none']).optional(),
+    rhodesLayerVolume: z.number().min(0).max(1).optional(),
+    ```
+  - Пометить `rhodesMode` как `@deprecated` (заменён на `rhodesLayerMode`)
+- **Критерий готовности (DoD):** typecheck (Zod-схема валидна)
+- **Зависит от задач:** T-001, T-009, T-015
+- **Статус:** 🟢 Готово
+
+#### T-019. Расширить DB schema — piano + rhodes колонки
+
+- **Родительская функция:** 4.3 (Новые Piano-настройки)
+- **Приоритет:** P0
+- **Сложность:** S
+- **Слой:** api
+- **Плагин / Модуль:** `apps/api/src/db/schema.ts`
+- **Описание:**
+  - Добавить в `userSettings`:
+    - `pianoEnabled: integer('piano_enabled', { mode: 'boolean' }).notNull().default(false)`
+    - `pianoVolume: real('piano_volume').notNull().default(0.7)`
+    - `pianoProfile: text('piano_profile').notNull().default('swing-sparse')`
+    - `pianoVoicingDensity: text('piano_voicing_density').notNull().default('rootless3')`
+    - `pianoSampleLibrary: text('piano_sample_library').notNull().default('salamander')`
+    - `pianoRandomizationLevel: text('piano_randomization_level').notNull().default('off')`
+    - `rhodesLayerMode: text('rhodes_layer_mode').notNull().default('none')`
+    - `rhodesLayerVolume: real('rhodes_layer_volume').notNull().default(0.5)`
+  - Создать drizzle-миграцию
+- **Критерий готовности (DoD):** typecheck + миграция применяется
+- **Зависит от задач:** T-018
+- **Статус:** 🟢 Готово
+
+#### T-020. Обновить API и `auth.service` для новых полей
+
+- **Родительская функция:** 4.2, 4.3
+- **Приоритет:** P0
+- **Сложность:** XS
+- **Слой:** api
+- **Плагин / Модуль:** `apps/api/src/routes/settings.routes.ts`, `apps/api/src/services/auth.service.ts`
+- **Описание:**
+  - PATCH `/api/settings`: поддержка всех новых полей из T-018
+  - `toSettingsDTO()`: маппинг всех новых полей
+- **Критерий готовности (DoD):** typecheck + lint
+- **Зависит от задач:** T-018, T-019
+- **Статус:** 🟢 Готово
+
+#### T-021. Обновить `SettingsForm` — секция Piano
+
+- **Родительская функция:** 4.3 (Новые Piano-настройки)
+- **Приоритет:** P0
+- **Сложность:** M
+- **Слой:** web
+- **Плагин / Модуль:** `apps/web/src/components/settings/SettingsForm.tsx`
+- **Описание:**
+  - Новая карточка «Piano» (аналогично текущим «Rhodes», «Drums»):
+    - `pianoEnabled` — чекбокс
+    - `pianoVolume` — слайдер
+    - `pianoProfile` — Select (5 профилей: Swing Sparse, Swing Medium, Basie Light, Offbeat Push, Beginner Safe)
+    - `pianoVoicingDensity` — Select (shell2, rootless3, rootless4, quartal)
+    - `pianoSampleLibrary` — Select (Salamander Grand, Upright KW)
+    - `pianoRandomizationLevel` — Select (off, subtle, moderate, high)
+  - Все контролы disabled когда `pianoEnabled = false`
+- **Критерий готовности (DoD):** typecheck + lint + визуально форма отображается
+- **Зависит от задач:** T-018
+- **Статус:** 🟢 Готово
+
+#### T-022. Обновить `SettingsForm` — секция Rhodes (комплементарный слой)
+
+- **Родительская функция:** 4.2 (Миграция Rhodes-настроек)
+- **Приоритет:** P0
+- **Сложность:** S
+- **Слой:** web
+- **Плагин / Модуль:** `apps/web/src/components/settings/SettingsForm.tsx`
+- **Описание:**
+  - В карточке Rhodes:
+    - Заменить `rhodesMode` (старые режимы) на `rhodesLayerMode` (6 комплементарных режимов)
+    - `rhodesVoicingDensity` — оставить
+    - Добавить `rhodesLayerVolume` — слайдер громкости слоя
+    - Добавить подсказку: «Rhodes теперь работает как дополнительный слой поверх Piano»
+  - Старый `rhodesMode` Select заменить на `rhodesLayerMode`:
+    - Pads, Subtle Offbeats, High Comping, Ambient Swells, Stab Accents, None
+- **Критерий готовности (DoD):** typecheck + lint + визуально
+- **Зависит от задач:** T-018
+- **Статус:** 🟢 Готово
+
+---
+
+### Этап 5: Style Selector на панели плеера (P1)
+
+#### T-023. Добавить StyleSelector на панель плеера
+
+- **Родительская функция:** 3.4 (Панель плеера: Style Selector)
+- **Приоритет:** P1
+- **Сложность:** S
+- **Слой:** web
+- **Плагин / Модуль:** `apps/web/src/engine/useTransport.ts`, плагин `core-player` (playbar)
+- **Описание:**
+  - Компонент `StyleSelector` — Select / кнопки: Swing, Bossa Nova, Funk, Latin, Ballad
+  - Разместить на панели плеера (рядом с транспортом)
+  - При изменении: обновить `style` в настройках через `useUpdateSettings`
+  - `useTransport`: слушать `settings.style` → пробрасывать во все инструменты (`drumInstrument.setStyle()`, `pianoInstrument.setStyle()`, `rhodesInstrument.setStyle()`, `bassInstrument.setStyle()`)
+  - Мгновенное переключение (следующий такт подхватывает новый стиль)
+- **Критерий готовности (DoD):** typecheck + lint + визуально: переключение стиля меняет звучание
+- **Зависит от задач:** T-004, T-014, T-017
+- **Статус:** 🟢 Готово
+
+---
+
+### Этап 6: Piano Randomizer (P2)
+
+#### T-024. Создать `PianoRandomizer`
+
+- **Родительская функция:** 3.5 (Piano Randomizer)
+- **Приоритет:** P2
+- **Сложность:** M
+- **Слой:** music-core
+- **Плагин / Модуль:** `packages/music-core/src/audio/pianoRandomizer.ts` (новый)
+- **Описание:**
+  - `PianoRandomizer` — чистый класс, без IO, полностью тестируемый
+  - `apply(profile, settings, barContext): CompEvent[]` — модифицирует события такта:
+    - С вероятностью (level): пропускает долю, добавляет anticipation, смещает на восьмую
+    - Варьирует voicing density: `shell2` ↔ `rootless4` (на лету перестраивает voicing)
+    - С вероятностью (level): добавляет passing chord между текущим и следующим аккордом
+  - Уровни: `off` (no-op), `subtle` (~10% тактов), `moderate` (~25%), `high` (~40%)
+  - Использует `pseudoRandom(barIndex * 17 + beat * 31 + 1)` для repeatable randomness
+- **Критерий готовности (DoD):** typecheck + test (все 4 уровня, проверка что события изменены)
+- **Зависит от задач:** T-011 (PianoInstrument API)
+- **Статус:** 🟢 Готово
+
+#### T-025. Интегрировать `PianoRandomizer` в `PianoInstrument`
+
+- **Родительская функция:** 3.5 (Piano Randomizer)
+- **Приоритет:** P2
+- **Сложность:** S
+- **Слой:** music-core
+- **Плагин / Модуль:** `packages/music-core/src/audio/pianoInstrument.ts`
+- **Описание:**
+  - `PianoInstrument` создаёт `PianoRandomizer` в конструкторе
+  - `setRandomizationLevel(level)` — пробрасывает в randomizer
+  - В `schedule()`: после получения `CompEvent[]` из профиля → `randomizer.apply(events, settings, barContext)`
+  - При `level = 'off'` — zero-cost (randomizer возвращает исходный массив)
+- **Критерий готовности (DoD):** typecheck + test (интеграционный: randomizer влияет на schedule)
+- **Зависит от задач:** T-024
+- **Статус:** 🟢 Готово
+
+---
+
+### Этап 7: Стиле-зависимый Bass (P1)
+
+#### T-026. Адаптировать `BassInstrument` к глобальному стилю
+
+- **Родительская функция:** 4.5 (Стиле-зависимый Bass)
+- **Приоритет:** P1
+- **Сложность:** M
+- **Слой:** music-core
+- **Плагин / Модуль:** `packages/music-core/src/audio/bassInstrument.ts`
+- **Описание:**
+  - Добавить `setStyle(style: Style)` в `BassInstrument`
+  - 5 режимов басовой линии:
+    - `swing` → walking bass (текущее поведение)
+    - `bossa` → root-5th паттерн (половинные: 1 5 | 1 5)
+    - `funk` → синкопированная линия (восьмые с паузами)
+    - `latin` → montuno-style: root на 1, 5th на 2&, octave на 4
+    - `ballad` → two-feel (только 1 и 3 доли, длинные ноты)
+  - `schedule()`: выбор режима по `this.currentStyle`
+- **Критерий готовности (DoD):** typecheck + test (5 стилей × несколько прогрессий)
+- **Зависит от задач:** T-004 (глобальный стиль уже передаётся)
+- **Статус:** 🟢 Готово
+
+---
+
+### Этап 8: Тесты и документация (P1)
+
+#### T-027. Тесты `PianoInstrument`
+
+- **Родительская функция:** 3.2 (Piano Instrument)
+- **Приоритет:** P1
+- **Сложность:** M
+- **Слой:** music-core
+- **Плагин / Модуль:** `packages/music-core/src/audio/pianoInstrument.test.ts` (новый)
+- **Описание:**
+  - Unit-тесты `schedule()` с mock `ScheduleContext` и `ScheduleWindow`
+  - Тесты для каждого из 5 профилей (проверка, что генерируются правильные события)
+  - Тесты смены voicing density
+  - Тесты humanization (timing jitter, velocity variation в допустимых пределах)
+  - Тесты `reset()` и `setTimeline()`
+- **Критерий готовности (DoD):** typecheck + test pass (≥20 тестов)
+- **Зависит от задач:** T-011
+- **Статус:** 🟢 Готово
+
+#### T-028. Тесты `PianoRandomizer`
+
+- **Родительская функция:** 3.5 (Piano Randomizer)
+- **Приоритет:** P1
+- **Сложность:** M
+- **Слой:** music-core
+- **Плагин / Модуль:** `packages/music-core/src/audio/pianoRandomizer.test.ts` (новый)
+- **Описание:**
+  - `off` → массив не изменён
+  - `subtle` / `moderate` / `high` → события модифицированы (структурно валидны)
+  - Passing chords генерируются корректно
+  - Не выходит за границы такта
+- **Критерий готовности (DoD):** typecheck + test pass (≥15 тестов)
+- **Зависит от задач:** T-024
+- **Статус:** 🟢 Готово
+
+#### T-029. Тесты комплементарных Rhodes-режимов
+
+- **Родительская функция:** 3.3 (Rhodes как комплементарный слой)
+- **Приоритет:** P1
+- **Сложность:** S
+- **Слой:** music-core
+- **Плагин / Модуль:** `packages/music-core/src/audio/rhodesInstrument.test.ts` (обновить)
+- **Описание:**
+  - Тесты для каждого из 6 `layerMode`
+  - `none` → 0 событий
+  - `pads` → целые ноты
+  - `subtle-offbeats` → только 2& и 4&
+  - `high-comping` → ноты в верхнем регистре
+  - `ambient-swells` → 1 событие на 2 такта
+  - `stab-accents` → короткие акценты на 2 и 4
+- **Критерий готовности (DoD):** typecheck + test pass
+- **Зависит от задач:** T-015
+- **Статус:** 🟢 Готово
+
+#### T-030. Тесты `BassInstrument` — стилевые режимы
+
+- **Родительская функция:** 4.5 (Стиле-зависимый Bass)
+- **Приоритет:** P1
+- **Сложность:** S
+- **Слой:** music-core
+- **Плагин / Модуль:** `packages/music-core/src/audio/bassInstrument.test.ts` (обновить)
+- **Описание:**
+  - Тесты для 5 стилей: swing (walking), bossa (root-5th), funk (syncopated), latin (montuno), ballad (two-feel)
+- **Критерий готовности (DoD):** typecheck + test pass
+- **Зависит от задач:** T-026
+- **Статус:** 🟢 Готово
+
+#### T-031. Создать `docs/PIANO.md`
+
+- **Родительская функция:** 4.4 (Документация)
+- **Приоритет:** P1
+- **Сложность:** S
+- **Слой:** docs
+- **Плагин / Модуль:** `docs/PIANO.md` (новый)
+- **Описание:**
+  - Роль Piano в аранжировке
+  - Сэмплы: Salamander Grand Piano, Upright KW (источник, характеристики, оптимизация)
+  - Профили компинга: 5 составных профилей с описанием
+  - Voicings: shell2, rootless3, rootless4, quartal
+  - FX-цепь
+  - Взаимодействие с Rhodes (правила избегания конфликтов)
+- **Критерий готовности (DoD):** Документ готов, отражает актуальное состояние
+- **Зависит от задач:** T-011, T-015, T-016
+- **Статус:** 🟢 Готово
+
+#### T-032. Обновить `docs/RHODES.md`
+
+- **Родительская функция:** 4.4 (Документация)
+- **Приоритет:** P1
+- **Сложность:** S
+- **Слой:** docs
+- **Плагин / Модуль:** `docs/RHODES.md`
+- **Описание:**
+  - Обновить §1: Rhodes теперь комплементарный слой
+  - Новые режимы: pads, subtle-offbeats, high-comping, ambient-swells, stab-accents
+  - Правила взаимодействия с Piano
+  - Старые режимы помечены как устаревшие (перенесены в Piano)
+- **Критерий готовности (DoD):** Документ отражает актуальное состояние
+- **Зависит от задач:** T-015, T-016
+- **Статус:** 🟢 Готово
+
+#### T-033. Обновить `docs/FUNCTIONS.md`
+
+- **Родительская функция:** 4.4 (Документация)
+- **Приоритет:** P1
+- **Сложность:** XS
+- **Слой:** docs
+- **Плагин / Модуль:** `docs/FUNCTIONS.md`
+- **Описание:**
+  - §6.3: разделить «Гармония (Rhodes)» на «Piano» и «Rhodes (комплементарный слой)»
+  - §6.4: добавить глобальный стиль
+  - Обновить статусы: Piano 🟢, Rhodes 🟡 (рефакторинг)
+- **Критерий готовности (DoD):** Документ актуален
+- **Зависит от задач:** T-031, T-032
+- **Статус:** 🟢 Готово
 
 ---
 
 ## 2. Последовательность (Ordering)
 
 ```
-Этап 1 (Swing MVP):
-T-001 → T-002 → T-003 → T-004 → T-005 → T-006
-                    ↘ T-007 → T-008 → T-009 → T-010 → T-011
-                                               T-005 → T-012 → T-013
-
-Этап 2 (Bossa Nova + Рандомизация):
-                          T-020 (DrumRandomizer) ─────────────┐
-                              ↘ T-021 (swing integration)      │
-T-014 → T-015 → T-016          ↘ T-024 (bossa integration)     │
-                              T-007/8/9 → T-022 (DB/Zod/API) → T-023 (UI)
-                                               T-020/21/24 → T-025 (тесты)
-
-Этап 3 (Funk):
-T-017 → T-018 → T-019
-          ↘ T-026 (funk randomization)
+Этап 1 (T-001–T-004): Глобальный стиль + контракты
+    │
+    ├── Этап 2 (T-005–T-014): Piano Instrument
+    │       │
+    │       ├── T-005, T-006 (сэмплы) — параллельно
+    │       ├── T-007 (sampleRegistry) — после T-005, T-006
+    │       ├── T-008 (простые паттерны)
+    │       ├── T-009 (профили) — после T-008
+    │       ├── T-010 (voicing) — после T-008
+    │       ├── T-011 (PianoInstrument) — после T-008, T-009, T-010
+    │       ├── T-012 (manifest) — после T-007, T-011
+    │       ├── T-013 (exports) — после T-011, T-012
+    │       └── T-014 (useTransport) — после T-004, T-013
+    │
+    ├── Этап 3 (T-015–T-017): Rhodes комплементарный
+    │       │
+    │       ├── T-015 (RhodesInstrument refactor) — после T-008
+    │       ├── T-016 (interaction rules) — после T-011, T-015
+    │       └── T-017 (useTransport rhodes) — после T-014, T-015
+    │
+    ├── Этап 4 (T-018–T-022): API, настройки, форма
+    │       │
+    │       ├── T-018 (DTO) — после T-001, T-009, T-015
+    │       ├── T-019 (DB schema) — после T-018
+    │       ├── T-020 (API routes) — после T-018, T-019
+    │       ├── T-021 (SettingsForm Piano) — после T-018
+    │       └── T-022 (SettingsForm Rhodes) — после T-018
+    │
+    ├── Этап 5 (T-023): Style Selector — после T-004, T-014, T-017
+    │
+    ├── Этап 6 (T-024–T-025): Piano Randomizer
+    │       │
+    │       ├── T-024 (PianoRandomizer) — после T-011
+    │       └── T-025 (интеграция) — после T-024
+    │
+    ├── Этап 7 (T-026): Bass стилевой — после T-004
+    │
+    └── Этап 8 (T-027–T-033): Тесты + документация
+            │
+            ├── T-027 (PianoInstrument tests) — после T-011
+            ├── T-028 (PianoRandomizer tests) — после T-024
+            ├── T-029 (Rhodes tests) — после T-015
+            ├── T-030 (Bass tests) — после T-026
+            ├── T-031 (PIANO.md) — после T-011, T-015, T-016
+            ├── T-032 (RHODES.md update) — после T-015, T-016
+            └── T-033 (FUNCTIONS.md update) — после T-031, T-032
 ```
-
-Параллельно можно делать:
-- T-002 (сэмплы) и T-007 (DB schema) — независимы
-- T-012 (тесты) и T-010 (SettingsForm) — независимы после T-005
-- T-020 (DrumRandomizer) можно начинать сразу после T-001, параллельно с Этапом 1
-- T-022 (DB/Zod/API) зависит от инфраструктуры Этапа 1, можно начинать после T-009
 
 ## 3. Оценка суммарной трудоёмкости
 
-| Сложность | Количество |
-|---|---|
-| XS | 2 (T-001, T-004) |
-| S | 15 (T-003, T-006, T-007, T-008, T-009, T-011, T-013, T-015, T-016, T-018, T-019, T-021, T-023, T-024, T-026) |
-| M | 9 (T-002, T-005, T-010, T-012, T-014, T-017, T-020, T-022, T-025) |
-| L | 0 |
-| XL | 0 |
+| Сложность | Количество   | Часы (оценка)           |
+| --------- | ------------ | ----------------------- |
+| XS (<1d)  | 6            | ~12h                    |
+| S (1–2d)  | 13           | ~65h                    |
+| M (3–5d)  | 10           | ~100h                   |
+| L (1–2w)  | 0            | 0                       |
+| XL (>2w)  | 0            | 0                       |
+| **Итого** | **29 задач** | **~180h (~4.5 недель)** |
 
-**Суммарно:** ~34–45 рабочих дней (~7–9 недель одним разработчиком).
-
-- Этап 1: ~15–20 дней (3–4 недели)
-- Этап 2 (bossa + randomization): ~12–16 дней (~2.5–3 недели)
-- Этап 3 (funk + funk randomization): ~7–9 дней (~1.5 недели)
+> Оценка для одного разработчика. При параллельной работе над сэмплами (T-005, T-006) и кодом — можно сократить до 3–4 недель.
 
 ## 4. Критические пути
 
-- **T-001 → T-005 → T-012** — критическая цепочка музыкального ядра. Без неё нет звука.
-- **T-007 → T-008 → T-009 → T-010 → T-011** — цепочка настроек. Без неё пользователь не может управлять барабанами.
-- **T-002 (сэмплы)** — блокирует T-003, но может делаться параллельно с T-001, T-007, T-008.
-- **T-020 → T-025** — DrumRandomizer + тесты, критичен для всей вариативности Этапов 2–3.
-- **T-022 → T-023** — цепочка настроек рандомизации, может идти параллельно с интеграцией (T-021, T-024).
-
----
-
-*План создан 2026-06-13 на основе docs/VISION.md. Статусы задач обновляются по мере реализации.*
+1. **T-001 → T-004 → T-014 → T-017 → T-023** — цепочка «глобальный стиль → drums → piano → rhodes → style selector». Критический путь для MVP.
+2. **T-005, T-006 → T-007 → T-012** — цепочка «сэмплы → sampleRegistry → manifest». Можно начать параллельно с кодом.
+3. **T-008 → T-009 + T-010 → T-011** — цепочка «паттерны → профили + voicing → PianoInstrument». Блокирует всю piano-разработку.
+4. **T-018 → T-019 → T-020** — цепочка «DTO → DB → API». Блокирует сохранение настроек.

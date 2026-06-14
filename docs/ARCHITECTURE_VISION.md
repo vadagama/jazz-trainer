@@ -11,6 +11,7 @@
 > Документ описывает целевую архитектуру с разметкой статуса — видно, что уже сделано, а что предстоит.
 >
 > Контекст ключевых решений:
+>
 > - Плагины подключаются **на этапе сборки** (build-time реестр), без динамической загрузки кода в рантайме.
 > - Плагины пишет **только команда** (first-party). Песочница, изоляция чужого кода и публичный версионируемый SDK **не нужны**.
 > - Целевые платформы: **Web (браузер)**, **Desktop (Electron/Tauri)**, **MIDI-устройства** (Web MIDI).
@@ -21,7 +22,7 @@
 
 ## 1. Принципы
 
-1. **Тонкое ядро, толстые плагины.** Приложение — это оболочка (shell) + хост, которые знают только о *контрактах*. Вся предметная функциональность (уроки, упражнения, квизы, инструменты) поставляется плагинами.
+1. **Тонкое ядро, толстые плагины.** Приложение — это оболочка (shell) + хост, которые знают только о _контрактах_. Вся предметная функциональность (уроки, упражнения, квизы, инструменты) поставляется плагинами.
 2. **Зависимости только сверху вниз.** Ядро не знает о плагинах. Плагины не знают друг о друге. Платформенные детали (Tone.js, Web MIDI, Electron) живут на самом краю, за портами.
 3. **Контракт важнее реализации.** Граница между хостом и плагином — это типизированный контракт (`@jazz/plugin-sdk`). Меняем реализацию свободно, контракт — осознанно.
 4. **Детерминированное ядро.** Вся музыкальная логика (`music-core`) — чистая, без браузерных API и без IO. Это делает её переносимой между платформами и дешёвой в тестировании.
@@ -73,15 +74,15 @@ graph TD
 
 **Правило слоёв (принудительно, через ESLint `eslint-plugin-boundaries`, см. §8):**
 
-| Слой | Файлы | Может импортировать | Не может |
-|---|---|---|---|
-| `core` (`music-core`, `shared`) | `packages/music-core/*`, `packages/shared/*` | только друг друга и stdlib | shell, host, sdk, плагины, браузерные API |
-| `plugin-sdk` | `packages/plugin-sdk/*` | `core` | shell, host, плагины, платформенные адаптеры |
-| `plugin-host` | `packages/plugin-host/*` | `sdk`, `core` | конкретные плагины, платформенные адаптеры напрямую |
-| плагины (`plugins/*`) | `packages/plugins/*` | `sdk`, `core`, `ui` | другие плагины, shell, host напрямую |
-| адаптеры | `packages/adapters/*` | `sdk`, `core` | плагины |
-| shell | `apps/web` | host, sdk, core, shared, ui | внутренности плагинов |
-| api | `apps/api` | core, shared | sdk, host, плагины, shell |
+| Слой                            | Файлы                                        | Может импортировать         | Не может                                            |
+| ------------------------------- | -------------------------------------------- | --------------------------- | --------------------------------------------------- |
+| `core` (`music-core`, `shared`) | `packages/music-core/*`, `packages/shared/*` | только друг друга и stdlib  | shell, host, sdk, плагины, браузерные API           |
+| `plugin-sdk`                    | `packages/plugin-sdk/*`                      | `core`                      | shell, host, плагины, платформенные адаптеры        |
+| `plugin-host`                   | `packages/plugin-host/*`                     | `sdk`, `core`               | конкретные плагины, платформенные адаптеры напрямую |
+| плагины (`plugins/*`)           | `packages/plugins/*`                         | `sdk`, `core`, `ui`         | другие плагины, shell, host напрямую                |
+| адаптеры                        | `packages/adapters/*`                        | `sdk`, `core`               | плагины                                             |
+| shell                           | `apps/web`                                   | host, sdk, core, shared, ui | внутренности плагинов                               |
+| api                             | `apps/api`                                   | core, shared                | sdk, host, плагины, shell                           |
 
 ---
 
@@ -104,12 +105,8 @@ export default definePlugin({
     description: 'Interactive scale reference with visualization.',
   },
   contributes: {
-    routes: [
-      { path: '/scales', element: () => import('./ScalesPage') },
-    ],
-    navItems: [
-      { section: 'learn', label: 'Scales', to: '/scales', icon: 'music' },
-    ],
+    routes: [{ path: '/scales', element: () => import('./ScalesPage') }],
+    navItems: [{ section: 'learn', label: 'Scales', to: '/scales', icon: 'music' }],
   },
   // setup(ctx) { /* опционально */ },
   // dispose() { /* опционально */ },
@@ -134,18 +131,18 @@ export const manifestSchema = z.object({
 
 Точки расширения — это контракт хоста.
 
-| Точка | Назначение | Статус |
-|---|---|---|
-| `routes` | Страницы/экраны плагина (lazy `import()`) | 🟢 Используется всеми 16 плагинами |
-| `navItems` | Пункты меню/навигации (секции: `main`, `create`, `learn`, `practice`, `admin`) | 🟢 Используется |
-| `commands` | Именованные действия (палитра команд, хоткеи) | 🔴 Тип определён, не используется |
-| `lessons` | Учебная единица: контент + проверка | 🔴 Тип определён, не используется |
-| `exercises` | Интерактивная тренировка | 🔴 Тип определён, не используется |
-| `assessments` | Проверка знаний: квиз/тест | 🔴 Тип определён, не используется |
-| `instruments` | Звуковой движок (бас, барабаны, гармония) | 🔴 Тип `unknown[]` |
-| `generators` | Генератор учебного материала | 🔴 Тип `unknown[]` |
-| `theoryProviders` | Модель/справочник теории | 🔴 Тип `unknown[]` |
-| `settingsSchema` | Декларация настроек плагина | 🟡 Тип `Record<string, unknown>`, не используется |
+| Точка             | Назначение                                                                     | Статус                                            |
+| ----------------- | ------------------------------------------------------------------------------ | ------------------------------------------------- |
+| `routes`          | Страницы/экраны плагина (lazy `import()`)                                      | 🟢 Используется всеми 16 плагинами                |
+| `navItems`        | Пункты меню/навигации (секции: `main`, `create`, `learn`, `practice`, `admin`) | 🟢 Используется                                   |
+| `commands`        | Именованные действия (палитра команд, хоткеи)                                  | 🔴 Тип определён, не используется                 |
+| `lessons`         | Учебная единица: контент + проверка                                            | 🔴 Тип определён, не используется                 |
+| `exercises`       | Интерактивная тренировка                                                       | 🔴 Тип определён, не используется                 |
+| `assessments`     | Проверка знаний: квиз/тест                                                     | 🔴 Тип определён, не используется                 |
+| `instruments`     | Звуковой движок (бас, барабаны, гармония)                                      | 🔴 Тип `unknown[]`                                |
+| `generators`      | Генератор учебного материала                                                   | 🔴 Тип `unknown[]`                                |
+| `theoryProviders` | Модель/справочник теории                                                       | 🔴 Тип `unknown[]`                                |
+| `settingsSchema`  | Декларация настроек плагина                                                    | 🟡 Тип `Record<string, unknown>`, не используется |
 
 **Фактические типы вкладов:**
 
@@ -153,8 +150,8 @@ export const manifestSchema = z.object({
 // packages/plugin-sdk/src/extension-points.ts
 export interface RouteContribution {
   path: string;
-  element: () => Promise<any>;  // lazy import
-  requires?: string;            // permission (RBAC)
+  element: () => Promise<any>; // lazy import
+  requires?: string; // permission (RBAC)
 }
 
 export interface NavItemContribution {
@@ -219,23 +216,23 @@ graph LR
 
 **Фактический список плагинов** (16 штук, все зарегистрированы в `packages/plugin-registry/src/index.ts`):
 
-| Плагин | Категория | Маршруты | Навигация |
-|---|---|---|---|
-| `core.editor` | core | `/grids/:id` | create → Editor |
-| `core.player` | core | `/grids/:id/play` | — |
-| `catalog` | core | `/`, `/grids/:id` (view) | main → Catalog |
-| `admin.users` | admin | `/admin/users` | admin → Users |
-| `admin.content` | admin | `/admin/content` | admin → Content |
-| `admin.flags` | admin | `/admin/flags` | admin → Flags |
-| `admin.assets` | admin | `/admin/assets` | admin → Assets |
-| `admin.diagnostics` | admin | `/admin/diagnostics` | admin → Diagnostics |
-| `theory.scales` | theory | `/scales` | learn → Scales |
-| `theory.chords` | theory | `/chords` | learn → Chords |
-| `theory.intervals` | theory | `/intervals` | learn → Intervals |
-| `practice.ear-training` | practice | `/ear-training` | practice → Ear Training (MIDI ввод, 🟢) |
-| `practice.rhythm-drills` | practice | `/rhythm-drills` | practice → Rhythm Drills (MIDI tap, 🟢) |
-| `chord-quiz` | assess | `/chord-quiz` | practice → Chord Quiz |
-| `progression-recognition` | assess | `/progression-recognition` | practice → Progression Recog. |
+| Плагин                    | Категория | Маршруты                   | Навигация                               |
+| ------------------------- | --------- | -------------------------- | --------------------------------------- |
+| `core.editor`             | core      | `/grids/:id`               | create → Editor                         |
+| `core.player`             | core      | `/grids/:id/play`          | —                                       |
+| `catalog`                 | core      | `/`, `/grids/:id` (view)   | main → Catalog                          |
+| `admin.users`             | admin     | `/admin/users`             | admin → Users                           |
+| `admin.content`           | admin     | `/admin/content`           | admin → Content                         |
+| `admin.flags`             | admin     | `/admin/flags`             | admin → Flags                           |
+| `admin.assets`            | admin     | `/admin/assets`            | admin → Assets                          |
+| `admin.diagnostics`       | admin     | `/admin/diagnostics`       | admin → Diagnostics                     |
+| `theory.scales`           | theory    | `/scales`                  | learn → Scales                          |
+| `theory.chords`           | theory    | `/chords`                  | learn → Chords                          |
+| `theory.intervals`        | theory    | `/intervals`               | learn → Intervals                       |
+| `practice.ear-training`   | practice  | `/ear-training`            | practice → Ear Training (MIDI ввод, 🟢) |
+| `practice.rhythm-drills`  | practice  | `/rhythm-drills`           | practice → Rhythm Drills (MIDI tap, 🟢) |
+| `chord-quiz`              | assess    | `/chord-quiz`              | practice → Chord Quiz                   |
+| `progression-recognition` | assess    | `/progression-recognition` | practice → Progression Recog.           |
 
 Плюс один **встроенный псевдоплагин** `builtin.core` (в `apps/web/src/shell/builtin-plugins.ts`) для страниц, которые ещё не вынесены в отдельные плагины: `/login`, `/my`, `/settings`, `/profile`, `/`.
 
@@ -249,10 +246,21 @@ import catalog from '@jazz/plugin-catalog';
 // ... ещё 13 импортов
 
 export const PLUGINS: PluginDefinition[] = [
-  coreEditor, corePlayer, catalog,
-  adminUsers, adminContent, adminFlags, adminAssets, adminDiagnostics,
-  theoryScales, theoryChords, theoryIntervals,
-  earTraining, rhythmDrills, chordQuiz, progressionRecognition,
+  coreEditor,
+  corePlayer,
+  catalog,
+  adminUsers,
+  adminContent,
+  adminFlags,
+  adminAssets,
+  adminDiagnostics,
+  theoryScales,
+  theoryChords,
+  theoryIntervals,
+  earTraining,
+  rhythmDrills,
+  chordQuiz,
+  progressionRecognition,
 ];
 ```
 
@@ -276,13 +284,13 @@ export const contributions = aggregateContributions(loaded);
 ```ts
 // packages/plugin-sdk/src/context.ts
 export interface PluginContext {
-  audio: AudioService;        // 🟡 заглушка до wiring
-  storage: StorageService;    // 🟡 заглушка
-  settings: SettingsService;  // 🟡 заглушка
+  audio: AudioService; // 🟡 заглушка до wiring
+  storage: StorageService; // 🟡 заглушка
+  settings: SettingsService; // 🟡 заглушка
   navigation: NavigationService; // 🟡 заглушка
-  events: EventBus;           // 🟡 заглушка
-  music: unknown;             // 🔴 не типизирован
-  query: unknown;             // 🔴 не типизирован
+  events: EventBus; // 🟡 заглушка
+  music: unknown; // 🔴 не типизирован
+  query: unknown; // 🔴 не типизирован
 }
 ```
 
@@ -331,6 +339,7 @@ graph TD
 ```
 
 **🟢 Реализовано:**
+
 - `AudioPort` и `InputPort` — контракты в `music-core/audio/ports.ts`
 - `ScheduledNote`, `ScheduledClick`, `MidiInputEvent` — типы данных
 - `testAudioPortContract()` — контрактный тест для любого адаптера (`music-core/audio/ports.contract.ts`)
@@ -340,9 +349,11 @@ graph TD
 - `webmidi-adapter` — реализует `AudioPort` + `InputPort` через Web MIDI API (354 строки, 72 теста, авто-reconnect, all-notes-off)
 
 **🟡 Частично:**
+
 - `useTransport` всё ещё живёт в `apps/web/src/engine/useTransport.ts`, не обёрнут в адаптер (хотя сами адаптеры готовы)
 
 **🔴 Запланировано:**
+
 - Wiring: переключить `useTransport` на `tone-audio-adapter` через `PluginContext.audio.audioPort`
 - `native-adapter` для desktop (убран из фазы 5, контр-условие)
 
@@ -467,14 +478,14 @@ jazz-trainer/
 
 Фактический охват тестами (на 2026-06-13, 483 тестов):
 
-| Уровень | Что покрыто | Статус |
-|---|---|---|
-| Unit + property-based | `music-core`: parseChord, serializeChord, DSL roundtrip, TransportEngine, BassInstrument, DrumInstrument, RhodesVoicing, midiEval, Instrument | 🟢 ~300+ тестов |
-| Контрактные | `plugin-sdk`: validateManifest (8 тестов). `music-core`: testAudioPortContract. `tone-audio-adapter` (18 тестов), `webmidi-adapter` (72 теста). `_template` и плагины: plugin-contract тесты | 🟢 8 + контракты адаптеров |
-| Host/registry интеграция | `plugin-host`: loadPlugins + aggregateContributions + createPluginContext (11 тестов) | 🟢 11 тестов |
-| Компонентные (RTL) | — | 🔴 Не начато |
-| E2E (Playwright) | — (конфиг есть, тестов нет) | 🔴 Не начато |
-| Статический контроль | TS `strict`, ESLint boundaries (8 зон), `import/no-restricted-paths` (3 правила) | 🟢 0 нарушений границ |
+| Уровень                  | Что покрыто                                                                                                                                                                                  | Статус                     |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------- |
+| Unit + property-based    | `music-core`: parseChord, serializeChord, DSL roundtrip, TransportEngine, BassInstrument, DrumInstrument, RhodesVoicing, midiEval, Instrument                                                | 🟢 ~300+ тестов            |
+| Контрактные              | `plugin-sdk`: validateManifest (8 тестов). `music-core`: testAudioPortContract. `tone-audio-adapter` (18 тестов), `webmidi-adapter` (72 теста). `_template` и плагины: plugin-contract тесты | 🟢 8 + контракты адаптеров |
+| Host/registry интеграция | `plugin-host`: loadPlugins + aggregateContributions + createPluginContext (11 тестов)                                                                                                        | 🟢 11 тестов               |
+| Компонентные (RTL)       | —                                                                                                                                                                                            | 🔴 Не начато               |
+| E2E (Playwright)         | — (конфиг есть, тестов нет)                                                                                                                                                                  | 🔴 Не начато               |
+| Статический контроль     | TS `strict`, ESLint boundaries (8 зон), `import/no-restricted-paths` (3 правила)                                                                                                             | 🟢 0 нарушений границ      |
 
 **Что нужно добавить** (минимум против ломкости): контрактные тесты по всем плагинам реестра, контракт портов для каждого адаптера, 4–6 E2E-смоуков.
 
@@ -535,17 +546,17 @@ user_permissions (user_id, permission_code, granted BOOLEAN) PK
 
 ```ts
 export const RBAC_PERMISSIONS = {
-  USERS_READ:        'users:read',
-  USERS_WRITE:       'users:write',
-  CONTENT_READ:      'content:read',
-  CONTENT_WRITE:     'content:write',
-  FLAGS_READ:        'flags:read',
-  FLAGS_WRITE:       'flags:write',
-  ASSETS_READ:       'assets:read',
-  ASSETS_WRITE:      'assets:write',
-  DIAGNOSTICS_READ:  'diagnostics:read',
-  AUDIT_READ:        'audit:read',
-  ADMIN:             'admin',
+  USERS_READ: 'users:read',
+  USERS_WRITE: 'users:write',
+  CONTENT_READ: 'content:read',
+  CONTENT_WRITE: 'content:write',
+  FLAGS_READ: 'flags:read',
+  FLAGS_WRITE: 'flags:write',
+  ASSETS_READ: 'assets:read',
+  ASSETS_WRITE: 'assets:write',
+  DIAGNOSTICS_READ: 'diagnostics:read',
+  AUDIT_READ: 'audit:read',
+  ADMIN: 'admin',
 };
 ```
 
@@ -562,6 +573,7 @@ export const RBAC_ROLES = {
 Роли `content_editor`, `support`, `developer`, `viewer` из целевого документа ещё не добавлены.
 
 **Двойное enforcement:**
+
 - **Сервер** — `rbac.plugin.ts`: авто-guard `/api/admin/*` (проверяет `request.hasPermission('admin')`), `requirePermission()` для точечных проверок.
 - **Фронт** — `usePermission('users:read')` в `plugin-sdk/hooks`, `RbacGuard` в `apps/web/src/components/layout`.
 
@@ -583,43 +595,43 @@ graph LR
     F1 --> FR["✅ Ф R: RBAC + аудит + админ-плагины"]
 ```
 
-| Фаза | Статус | Когда | Ключевой результат |
-|---|---|---|---|
-| Ф0 — Границы | ✅ | 2026-06-11 | ESLint boundaries + strict + restricted-paths, 0 нарушений |
-| Ф1 — SDK + Host | ✅ | 2026-06-11 | `plugin-sdk` (8 файлов), `plugin-host` (6 файлов), `plugin-registry`, shell bootstrap |
-| Ф R — RBAC + аудит | ✅ | 2026-06-11 | DB: role/permission/flag/audit таблицы, RBAC middleware, `withAudit`, `usePermission`/`useFlag` |
-| Ф2 — AudioPort | 🟢 | 2026-06-12 | Адаптеры реализованы: `tone-audio-adapter` (Tone.js → AudioPort), `webmidi-adapter` (MIDI → AudioPort+InputPort). Остался wiring в shell |
-| Ф3 — Фичи → плагины | ✅ | 2026-06-11 | `core-editor`, `core-player`, `catalog` вынесены. App.tsx рендерит из `contributions` |
-| Ф4 — Новые домены | 🟡 | scaffold готов | 10 domain-плагинов созданы и зарегистрированы. `ear-training`, `rhythm-drills` получили MIDI-реализацию |
-| Ф5 — MIDI | 🟡 | 2026-06-12 | `webmidi-adapter` (354 строки, 72 теста), `midiEval`, MIDI-плагины (`ear-training`, `rhythm-drills`). Desktop убран из scope |
+| Фаза                | Статус | Когда          | Ключевой результат                                                                                                                       |
+| ------------------- | ------ | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| Ф0 — Границы        | ✅     | 2026-06-11     | ESLint boundaries + strict + restricted-paths, 0 нарушений                                                                               |
+| Ф1 — SDK + Host     | ✅     | 2026-06-11     | `plugin-sdk` (8 файлов), `plugin-host` (6 файлов), `plugin-registry`, shell bootstrap                                                    |
+| Ф R — RBAC + аудит  | ✅     | 2026-06-11     | DB: role/permission/flag/audit таблицы, RBAC middleware, `withAudit`, `usePermission`/`useFlag`                                          |
+| Ф2 — AudioPort      | 🟢     | 2026-06-12     | Адаптеры реализованы: `tone-audio-adapter` (Tone.js → AudioPort), `webmidi-adapter` (MIDI → AudioPort+InputPort). Остался wiring в shell |
+| Ф3 — Фичи → плагины | ✅     | 2026-06-11     | `core-editor`, `core-player`, `catalog` вынесены. App.tsx рендерит из `contributions`                                                    |
+| Ф4 — Новые домены   | 🟡     | scaffold готов | 10 domain-плагинов созданы и зарегистрированы. `ear-training`, `rhythm-drills` получили MIDI-реализацию                                  |
+| Ф5 — MIDI           | 🟡     | 2026-06-12     | `webmidi-adapter` (354 строки, 72 теста), `midiEval`, MIDI-плагины (`ear-training`, `rhythm-drills`). Desktop убран из scope             |
 
 ---
 
 ## 12. Сводка решений (ADR-кратко)
 
-| Решение | Выбор | Статус |
-|---|---|---|
-| Подключение плагинов | Build-time реестр | 🟢 Реализовано |
-| Авторы плагинов | First-party | 🟢 |
-| Граница хост↔плагин | Типизированный SDK + Zod-манифест | 🟢 Реализовано |
-| Звук/MIDI | Порты + адаптеры | 🟢 `tone-audio-adapter` + `webmidi-adapter` готовы, wiring в процессе |
-| Общие фичи (editor/player) | Тоже плагины | 🟢 Вынесены |
-| Репозиторий | Единое монорепо | 🟢 |
-| Независимый деплой | Build-таргеты + CI path-фильтры | 🔴 CI не настроен |
-| Тесты | Контракты + чистое ядро + тонкий E2E | 🟡 Unit + контрактные + адаптеры (483 теста), E2E нет |
-| Архитектурные правила | ESLint boundaries + TS strict | 🟢 0 нарушений |
-| Размещение админки | Admin-плагины в том же `apps/web` | 🟢 5 плагинов |
-| Модель доступа | RBAC: роль → permissions (3 роли, 11 permissions) | 🟢 Реализовано |
-| Enforcement доступа | Сервер — источник истины, фронт — UX | 🟢 `rbac.plugin.ts` + `RbacGuard` |
-| Feature flags | Свой движок в БД | 🟢 Реализовано |
-| Audit log | Append-only, `withAudit` | 🟢 Реализовано |
-| API-слой | REST поверх Fastify, контракт — Zod-DTO из `@jazz/shared` | 🟢 |
-| Состояние активности | `ActivityRunner` в хосте | 🔴 Только типы |
-| Семантика EventBus | pub/sub + request/response | 🔴 Не реализована |
-| Build-time vs runtime флаги | Разные механизмы | 🟡 Флаги реализованы, дерево-шейкинг зависит от Vite |
-| Общие UI-компоненты | `@jazz/ui` как отдельный пакет, доступен плагинам | 🟢 Реализовано |
-| Desktop-оболочка | Исключена из MVP, контр-условие на будущее | 🔴 Убрана из Ф5 |
+| Решение                     | Выбор                                                     | Статус                                                                |
+| --------------------------- | --------------------------------------------------------- | --------------------------------------------------------------------- |
+| Подключение плагинов        | Build-time реестр                                         | 🟢 Реализовано                                                        |
+| Авторы плагинов             | First-party                                               | 🟢                                                                    |
+| Граница хост↔плагин         | Типизированный SDK + Zod-манифест                         | 🟢 Реализовано                                                        |
+| Звук/MIDI                   | Порты + адаптеры                                          | 🟢 `tone-audio-adapter` + `webmidi-adapter` готовы, wiring в процессе |
+| Общие фичи (editor/player)  | Тоже плагины                                              | 🟢 Вынесены                                                           |
+| Репозиторий                 | Единое монорепо                                           | 🟢                                                                    |
+| Независимый деплой          | Build-таргеты + CI path-фильтры                           | 🔴 CI не настроен                                                     |
+| Тесты                       | Контракты + чистое ядро + тонкий E2E                      | 🟡 Unit + контрактные + адаптеры (483 теста), E2E нет                 |
+| Архитектурные правила       | ESLint boundaries + TS strict                             | 🟢 0 нарушений                                                        |
+| Размещение админки          | Admin-плагины в том же `apps/web`                         | 🟢 5 плагинов                                                         |
+| Модель доступа              | RBAC: роль → permissions (3 роли, 11 permissions)         | 🟢 Реализовано                                                        |
+| Enforcement доступа         | Сервер — источник истины, фронт — UX                      | 🟢 `rbac.plugin.ts` + `RbacGuard`                                     |
+| Feature flags               | Свой движок в БД                                          | 🟢 Реализовано                                                        |
+| Audit log                   | Append-only, `withAudit`                                  | 🟢 Реализовано                                                        |
+| API-слой                    | REST поверх Fastify, контракт — Zod-DTO из `@jazz/shared` | 🟢                                                                    |
+| Состояние активности        | `ActivityRunner` в хосте                                  | 🔴 Только типы                                                        |
+| Семантика EventBus          | pub/sub + request/response                                | 🔴 Не реализована                                                     |
+| Build-time vs runtime флаги | Разные механизмы                                          | 🟡 Флаги реализованы, дерево-шейкинг зависит от Vite                  |
+| Общие UI-компоненты         | `@jazz/ui` как отдельный пакет, доступен плагинам         | 🟢 Реализовано                                                        |
+| Desktop-оболочка            | Исключена из MVP, контр-условие на будущее                | 🔴 Убрана из Ф5                                                       |
 
 ---
 
-*Документ подготовлен агентом `software-architect`. Обновлён 2026-06-13. Отражает целевое видение архитектуры и прогресс: Фазы 0, 1, 2, 3, R готовы ✅, Фазы 4 и 5 частично 🟡.*
+_Документ подготовлен агентом `software-architect`. Обновлён 2026-06-13. Отражает целевое видение архитектуры и прогресс: Фазы 0, 1, 2, 3, R готовы ✅, Фазы 4 и 5 частично 🟡._

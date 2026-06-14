@@ -18,8 +18,6 @@ export default definePlugin({
   },
   contributes: {
     routes: [{ path: '/ear-training', element: () => import('./EarTrainingPage') }],
-    navItems: [
-      { section: 'practice', label: 'Ear Training', to: '/ear-training', icon: 'music' },
-    ],
+    navItems: [{ section: 'practice', label: 'Ear Training', to: '/ear-training', icon: 'music' }],
   },
 });

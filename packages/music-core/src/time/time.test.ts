@@ -6,12 +6,7 @@ import {
   ticksPerBar,
   defaultStrongBeats,
 } from './timeSignature.js';
-import {
-  positionToTicks,
-  ticksToPosition,
-  ticksToSeconds,
-  secondsToTicks,
-} from './position.js';
+import { positionToTicks, ticksToPosition, ticksToSeconds, secondsToTicks } from './position.js';
 
 describe('parseTimeSignature', () => {
   it.each([

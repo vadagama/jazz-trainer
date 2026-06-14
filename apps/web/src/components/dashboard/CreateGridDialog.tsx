@@ -55,7 +55,9 @@ export function CreateGridDialog() {
           </div>
           <div className="flex justify-end gap-2">
             <DialogClose asChild>
-              <Button variant="outline" type="button">Отмена</Button>
+              <Button variant="outline" type="button">
+                Отмена
+              </Button>
             </DialogClose>
             <Button type="submit" disabled={createGrid.isPending}>
               {createGrid.isPending ? 'Создаём...' : 'Создать'}

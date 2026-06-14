@@ -11,8 +11,8 @@
       "@jazz/music-core/*": ["../../music-core/src/*"],
       "@jazz/plugin-sdk": ["../../plugin-sdk/src/index.ts"],
       "@jazz/ui": ["../../ui/src/index.ts"],
-      "@jazz/ui/*": ["../../ui/src/*"],
-    },
+      "@jazz/ui/*": ["../../ui/src/*"]
+    }
   },
-  "include": ["src"],
+  "include": ["src"]
 }

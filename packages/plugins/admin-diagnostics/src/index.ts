@@ -10,10 +10,20 @@ export default definePlugin({
   },
   contributes: {
     routes: [
-      { path: '/admin/diagnostics', element: () => import('./DiagnosticsPage'), requires: 'diagnostics:read' },
+      {
+        path: '/admin/diagnostics',
+        element: () => import('./DiagnosticsPage'),
+        requires: 'diagnostics:read',
+      },
     ],
     navItems: [
-      { section: 'admin', label: 'Diagnostics', to: '/admin/diagnostics', icon: 'activity', requires: 'diagnostics:read' },
+      {
+        section: 'admin',
+        label: 'Diagnostics',
+        to: '/admin/diagnostics',
+        icon: 'activity',
+        requires: 'diagnostics:read',
+      },
     ],
   },
 });

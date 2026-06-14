@@ -1,5 +1,6 @@
 import * as Tone from 'tone';
 import type { SampleManifest } from '@jazz/music-core/audio';
+import { effectiveFormat, type AudioFormat } from '@jazz/shared';
 
 // ─── Resource containers ─────────────────────────────────────────────────────
 
@@ -19,6 +20,42 @@ export interface OneshotInstrumentResources {
   dispose(): void;
 }
 
+// ─── Format fallback ─────────────────────────────────────────────────────────
+
+/** Default extension swap: .m4a → .mp3. */
+const DEFAULT_FORMAT_SWAP: readonly [string, string] = ['.m4a', '.mp3'];
+
+/** Resolve effective base URL, applying fallback if needed. */
+function effectiveBaseUrl(manifest: SampleManifest, preferred?: AudioFormat | null): string {
+  if (effectiveFormat(preferred) !== 'aac' && manifest.fallbackBaseUrl) {
+    return manifest.fallbackBaseUrl;
+  }
+  return manifest.baseUrl;
+}
+
+/** Replace primary extension → fallback extension in every filename across a layer map. */
+function applyExtensionFallback<T extends Record<string, Record<string, string>>>(
+  layers: T,
+  useFallback: boolean,
+  manifest: SampleManifest,
+): T {
+  if (!useFallback) return layers;
+  const [fromExt, toExt] = manifest.formatSwap ?? DEFAULT_FORMAT_SWAP;
+  const result = {} as Record<string, Record<string, string>>;
+  for (const [layerName, noteMap] of Object.entries(layers)) {
+    const mapped: Record<string, string> = {};
+    for (const [note, file] of Object.entries(noteMap)) {
+      mapped[note] = file.replace(new RegExp(`${escapeRegExp(fromExt)}$`), toExt);
+    }
+    result[layerName] = mapped;
+  }
+  return result as T;
+}
+
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 // ─── Factories ───────────────────────────────────────────────────────────────
 
 /**
@@ -28,20 +65,36 @@ export interface OneshotInstrumentResources {
  * The **caller** is responsible for connecting samplers to the audio graph
  * (channels, effects, destination).
  *
+ * Automatically falls back to MP3 if AAC is unsupported by the browser.
+ *
  * @example
  * ```ts
  * const { samplers, dispose } = createPitchedResources(bassManifest.sampleManifest);
  * for (const s of samplers.values()) s.connect(bassChannel);
  * ```
  */
-export function createPitchedResources(manifest: SampleManifest): PitchedInstrumentResources {
+/** Detect whether fallback format should be used for this manifest. */
+function shouldUseFallback(manifest: SampleManifest, preferred?: AudioFormat | null): boolean {
+  return effectiveFormat(preferred) !== 'aac' && !!manifest.fallbackBaseUrl;
+}
+
+export function createPitchedResources(
+  manifest: SampleManifest,
+  preferredFormat?: AudioFormat | null,
+): PitchedInstrumentResources {
   const samplers = new Map<string, Tone.Sampler>();
+  const baseUrl = effectiveBaseUrl(manifest, preferredFormat);
+  const useFallback = shouldUseFallback(manifest, preferredFormat);
 
   if (manifest.layers) {
-    for (const [layerName, noteMap] of Object.entries(manifest.layers)) {
+    const layers = useFallback
+      ? applyExtensionFallback(manifest.layers, true, manifest)
+      : manifest.layers;
+
+    for (const [layerName, noteMap] of Object.entries(layers)) {
       const sampler = new Tone.Sampler({
         urls: noteMap,
-        baseUrl: manifest.baseUrl,
+        baseUrl,
         release: manifest.release ?? 1.0,
       });
       samplers.set(layerName, sampler);
@@ -63,6 +116,8 @@ export function createPitchedResources(manifest: SampleManifest): PitchedInstrum
  * Each entry in `manifest.oneshots` becomes an array of `Tone.Player`
  * (one per round-robin variant). The **caller** connects them to the graph.
  *
+ * Automatically falls back to MP3 if AAC is unsupported by the browser.
+ *
  * @example
  * ```ts
  * const { players, dispose } = createOneshotResources(drumsManifest.sampleManifest);
@@ -72,12 +127,21 @@ export function createPitchedResources(manifest: SampleManifest): PitchedInstrum
  * }
  * ```
  */
-export function createOneshotResources(manifest: SampleManifest): OneshotInstrumentResources {
+export function createOneshotResources(
+  manifest: SampleManifest,
+  preferredFormat?: AudioFormat | null,
+): OneshotInstrumentResources {
   const players = new Map<string, Tone.Player[]>();
+  const baseUrl = effectiveBaseUrl(manifest, preferredFormat);
+  const useFallback = shouldUseFallback(manifest, preferredFormat);
 
   if (manifest.oneshots) {
     for (const [sound, files] of Object.entries(manifest.oneshots)) {
-      const playerArray = files.map((file) => new Tone.Player(`${manifest.baseUrl}${file}`));
+      const [fromExt, toExt] = manifest.formatSwap ?? DEFAULT_FORMAT_SWAP;
+      const resolvedFiles = useFallback
+        ? files.map((f) => f.replace(new RegExp(`${escapeRegExp(fromExt)}$`), toExt))
+        : files;
+      const playerArray = resolvedFiles.map((file) => new Tone.Player(`${baseUrl}${file}`));
       players.set(sound, playerArray);
     }
   }

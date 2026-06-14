@@ -1,5 +1,12 @@
 import { create } from 'zustand';
-import type { Bar, ChordSlot, GridContent, Section, RepeatEnd, TimeSignatureString } from '@jazz/shared';
+import type {
+  Bar,
+  ChordSlot,
+  GridContent,
+  Section,
+  RepeatEnd,
+  TimeSignatureString,
+} from '@jazz/shared';
 import { parseChord } from '@jazz/music-core';
 import { nanoid } from 'nanoid';
 
@@ -36,6 +43,21 @@ function parseSlot(symbol: string): ChordSlot {
   return { id: nanoid(8), symbol, parsed: res.value ?? null };
 }
 
+function chordBeats(count: number, index: number): number | null {
+  switch (count) {
+    case 1:
+      return null;
+    case 2:
+      return 2;
+    case 3:
+      return index === 0 ? 2 : 1;
+    case 4:
+      return 1;
+    default:
+      return null;
+  }
+}
+
 function assignChordIds(content: GridContent): GridContent {
   const withIds = (chords: ChordSlot[]): ChordSlot[] =>
     chords.map((slot) => (slot.id ? slot : { ...slot, id: nanoid(8) }));
@@ -51,7 +73,11 @@ function updateBar(bars: Bar[], barId: string, updater: (bar: Bar) => Bar): Bar[
   return bars.map((b) => (b.id === barId ? updater(b) : b));
 }
 
-function updateBarInSections(sections: Section[], barId: string, updater: (bar: Bar) => Bar): Section[] {
+function updateBarInSections(
+  sections: Section[],
+  barId: string,
+  updater: (bar: Bar) => Bar,
+): Section[] {
   return sections.map((s) => ({
     ...s,
     bars: updateBar(s.bars, barId, updater),
@@ -87,7 +113,10 @@ export const useEditorStore = create<EditorState>((set) => ({
   isDirty: false,
 
   setContent: (content, defaultTimeSignature) =>
-    set({ localContent: assignChordIds(migrateToSections(content, defaultTimeSignature)), isDirty: false }),
+    set({
+      localContent: assignChordIds(migrateToSections(content, defaultTimeSignature)),
+      isDirty: false,
+    }),
 
   loadExternalContent: (content) =>
     set((state) => ({
@@ -112,7 +141,11 @@ export const useEditorStore = create<EditorState>((set) => ({
       const newSections = sections.map((s) =>
         s.id === lastSection.id ? { ...s, bars: [...s.bars, newBar] } : s,
       );
-      return { localContent: syncBars({ ...state.localContent, sections: newSections }), isDirty: true, selectedBarId: newBar.id };
+      return {
+        localContent: syncBars({ ...state.localContent, sections: newSections }),
+        isDirty: true,
+        selectedBarId: newBar.id,
+      };
     }),
 
   addBarToSection: (sectionId) =>
@@ -122,7 +155,11 @@ export const useEditorStore = create<EditorState>((set) => ({
       const newSections = state.localContent.sections.map((s) =>
         s.id === sectionId ? { ...s, bars: [...s.bars, newBar] } : s,
       );
-      return { localContent: syncBars({ ...state.localContent, sections: newSections }), isDirty: true, selectedBarId: newBar.id };
+      return {
+        localContent: syncBars({ ...state.localContent, sections: newSections }),
+        isDirty: true,
+        selectedBarId: newBar.id,
+      };
     }),
 
   insertBarAfter: (barId) =>
@@ -136,7 +173,11 @@ export const useEditorStore = create<EditorState>((set) => ({
         newBars.splice(idx + 1, 0, newBar);
         return { ...s, bars: newBars };
       });
-      return { localContent: syncBars({ ...state.localContent, sections: newSections }), isDirty: true, selectedBarId: newBar.id };
+      return {
+        localContent: syncBars({ ...state.localContent, sections: newSections }),
+        isDirty: true,
+        selectedBarId: newBar.id,
+      };
     }),
 
   removeBar: (barId) =>
@@ -145,7 +186,10 @@ export const useEditorStore = create<EditorState>((set) => ({
       const allBars = state.localContent.sections.flatMap((s) => s.bars);
       const idx = allBars.findIndex((b) => b.id === barId);
       const prevBarId = idx > 0 ? (allBars[idx - 1]?.id ?? null) : (allBars[idx + 1]?.id ?? null);
-      const newSections = state.localContent.sections.map((s) => ({ ...s, bars: s.bars.filter((b) => b.id !== barId) }));
+      const newSections = state.localContent.sections.map((s) => ({
+        ...s,
+        bars: s.bars.filter((b) => b.id !== barId),
+      }));
       return {
         localContent: syncBars({ ...state.localContent, sections: newSections }),
         isDirty: true,
@@ -156,15 +200,42 @@ export const useEditorStore = create<EditorState>((set) => ({
   addChordToBar: (barId, symbol) =>
     set((state) => {
       if (!state.localContent?.sections) return state;
-      const newSections = updateBarInSections(state.localContent.sections, barId, (bar) => ({ ...bar, chords: [...bar.chords, parseSlot(symbol)] }));
-      return { localContent: syncBars({ ...state.localContent, sections: newSections }), isDirty: true };
+      const newSections = updateBarInSections(state.localContent.sections, barId, (bar) => {
+        const currentCount = bar.chords.length;
+
+        // Cycle back to 1 chord when already at max 4
+        if (currentCount >= 4) {
+          return { ...bar, chords: [parseSlot(symbol)] };
+        }
+
+        const newChords = [...bar.chords, parseSlot(symbol)];
+        const newCount = newChords.length;
+
+        return {
+          ...bar,
+          chords: newChords.map((slot, i) => ({
+            ...slot,
+            beats: chordBeats(newCount, i),
+          })),
+        };
+      });
+      return {
+        localContent: syncBars({ ...state.localContent, sections: newSections }),
+        isDirty: true,
+      };
     }),
 
   removeChordFromBar: (barId, index) =>
     set((state) => {
       if (!state.localContent?.sections) return state;
-      const newSections = updateBarInSections(state.localContent.sections, barId, (bar) => ({ ...bar, chords: bar.chords.filter((_, i) => i !== index) }));
-      return { localContent: syncBars({ ...state.localContent, sections: newSections }), isDirty: true };
+      const newSections = updateBarInSections(state.localContent.sections, barId, (bar) => ({
+        ...bar,
+        chords: bar.chords.filter((_, i) => i !== index),
+      }));
+      return {
+        localContent: syncBars({ ...state.localContent, sections: newSections }),
+        isDirty: true,
+      };
     }),
 
   updateChordInBar: (barId, index, symbol) =>
@@ -178,28 +249,49 @@ export const useEditorStore = create<EditorState>((set) => ({
           return { ...slot, symbol, parsed: res.value ?? null }; // preserve id
         }),
       }));
-      return { localContent: syncBars({ ...state.localContent, sections: newSections }), isDirty: true };
+      return {
+        localContent: syncBars({ ...state.localContent, sections: newSections }),
+        isDirty: true,
+      };
     }),
 
   updateChordBeats: (barId, index, beats) =>
     set((state) => {
       if (!state.localContent?.sections) return state;
-      const newSections = updateBarInSections(state.localContent.sections, barId, (bar) => ({ ...bar, chords: bar.chords.map((slot, i) => (i === index ? { ...slot, beats } : slot)) }));
-      return { localContent: syncBars({ ...state.localContent, sections: newSections }), isDirty: true };
+      const newSections = updateBarInSections(state.localContent.sections, barId, (bar) => ({
+        ...bar,
+        chords: bar.chords.map((slot, i) => (i === index ? { ...slot, beats } : slot)),
+      }));
+      return {
+        localContent: syncBars({ ...state.localContent, sections: newSections }),
+        isDirty: true,
+      };
     }),
 
   clearBarChords: (barId) =>
     set((state) => {
       if (!state.localContent?.sections) return state;
-      const newSections = updateBarInSections(state.localContent.sections, barId, (bar) => ({ ...bar, chords: [] }));
-      return { localContent: syncBars({ ...state.localContent, sections: newSections }), isDirty: true };
+      const newSections = updateBarInSections(state.localContent.sections, barId, (bar) => ({
+        ...bar,
+        chords: [],
+      }));
+      return {
+        localContent: syncBars({ ...state.localContent, sections: newSections }),
+        isDirty: true,
+      };
     }),
 
   setBarRepeatEnd: (barId, repeatEnd) =>
     set((state) => {
       if (!state.localContent?.sections) return state;
-      const newSections = updateBarInSections(state.localContent.sections, barId, (bar) => ({ ...bar, repeatEnd }));
-      return { localContent: syncBars({ ...state.localContent, sections: newSections }), isDirty: true };
+      const newSections = updateBarInSections(state.localContent.sections, barId, (bar) => ({
+        ...bar,
+        repeatEnd,
+      }));
+      return {
+        localContent: syncBars({ ...state.localContent, sections: newSections }),
+        isDirty: true,
+      };
     }),
 
   addSection: (timeSignature) =>
@@ -207,7 +299,12 @@ export const useEditorStore = create<EditorState>((set) => ({
       if (!state.localContent?.sections) return state;
       const sections = state.localContent.sections;
       const firstBar: Bar = { id: nanoid(8), chords: [] };
-      const newSection: Section = { id: nanoid(8), name: nextSectionName(sections), timeSignature, bars: [firstBar] };
+      const newSection: Section = {
+        id: nanoid(8),
+        name: nextSectionName(sections),
+        timeSignature,
+        bars: [firstBar],
+      };
       return {
         localContent: syncBars({ ...state.localContent, sections: [...sections, newSection] }),
         isDirty: true,
@@ -231,14 +328,18 @@ export const useEditorStore = create<EditorState>((set) => ({
   renameSection: (sectionId, name) =>
     set((state) => {
       if (!state.localContent?.sections) return state;
-      const newSections = state.localContent.sections.map((s) => s.id === sectionId ? { ...s, name } : s);
+      const newSections = state.localContent.sections.map((s) =>
+        s.id === sectionId ? { ...s, name } : s,
+      );
       return { localContent: { ...state.localContent, sections: newSections }, isDirty: true };
     }),
 
   setSectionTimeSignature: (sectionId, ts) =>
     set((state) => {
       if (!state.localContent?.sections) return state;
-      const newSections = state.localContent.sections.map((s) => s.id === sectionId ? { ...s, timeSignature: ts } : s);
+      const newSections = state.localContent.sections.map((s) =>
+        s.id === sectionId ? { ...s, timeSignature: ts } : s,
+      );
       return { localContent: { ...state.localContent, sections: newSections }, isDirty: true };
     }),
 }));

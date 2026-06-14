@@ -3,8 +3,8 @@ export default function ScalesPage() {
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-4">Scales</h1>
       <p className="text-muted-foreground">
-        Interactive scale reference with visualization. Explore major, minor,
-        and jazz scales with note highlighting and playback.
+        Interactive scale reference with visualization. Explore major, minor, and jazz scales with
+        note highlighting and playback.
       </p>
     </div>
   );

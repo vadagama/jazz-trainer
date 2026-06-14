@@ -1,5 +1,12 @@
 import { create } from 'zustand';
-import type { Bar, ChordSlot, GridContent, Section, RepeatEnd, TimeSignatureString } from '@jazz/shared';
+import type {
+  Bar,
+  ChordSlot,
+  GridContent,
+  Section,
+  RepeatEnd,
+  TimeSignatureString,
+} from '@jazz/shared';
 import { parseChord } from '@jazz/music-core';
 import { nanoid } from 'nanoid';
 
@@ -36,11 +43,30 @@ function parseSlot(symbol: string): ChordSlot {
   return { symbol, parsed: res.value ?? null };
 }
 
+function chordBeats(count: number, index: number): number | null {
+  switch (count) {
+    case 1:
+      return null;
+    case 2:
+      return 2;
+    case 3:
+      return index === 0 ? 2 : 1;
+    case 4:
+      return 1;
+    default:
+      return null;
+  }
+}
+
 function updateBar(bars: Bar[], barId: string, updater: (bar: Bar) => Bar): Bar[] {
   return bars.map((b) => (b.id === barId ? updater(b) : b));
 }
 
-function updateBarInSections(sections: Section[], barId: string, updater: (bar: Bar) => Bar): Section[] {
+function updateBarInSections(
+  sections: Section[],
+  barId: string,
+  updater: (bar: Bar) => Bar,
+): Section[] {
   return sections.map((s) => ({
     ...s,
     bars: updateBar(s.bars, barId, updater),
@@ -159,11 +185,29 @@ export const useEditorStore = create<EditorState>((set) => ({
   addChordToBar: (barId, symbol) =>
     set((state) => {
       if (!state.localContent?.sections) return state;
-      const newSections = updateBarInSections(state.localContent.sections, barId, (bar) => ({
-        ...bar,
-        chords: [...bar.chords, parseSlot(symbol)],
-      }));
-      return { localContent: syncBars({ ...state.localContent, sections: newSections }), isDirty: true };
+      const newSections = updateBarInSections(state.localContent.sections, barId, (bar) => {
+        const currentCount = bar.chords.length;
+
+        // Cycle back to 1 chord when already at max 4
+        if (currentCount >= 4) {
+          return { ...bar, chords: [parseSlot(symbol)] };
+        }
+
+        const newChords = [...bar.chords, parseSlot(symbol)];
+        const newCount = newChords.length;
+
+        return {
+          ...bar,
+          chords: newChords.map((slot, i) => ({
+            ...slot,
+            beats: chordBeats(newCount, i),
+          })),
+        };
+      });
+      return {
+        localContent: syncBars({ ...state.localContent, sections: newSections }),
+        isDirty: true,
+      };
     }),
 
   removeChordFromBar: (barId, index) =>
@@ -173,7 +217,10 @@ export const useEditorStore = create<EditorState>((set) => ({
         ...bar,
         chords: bar.chords.filter((_, i) => i !== index),
       }));
-      return { localContent: syncBars({ ...state.localContent, sections: newSections }), isDirty: true };
+      return {
+        localContent: syncBars({ ...state.localContent, sections: newSections }),
+        isDirty: true,
+      };
     }),
 
   updateChordInBar: (barId, index, symbol) =>
@@ -183,7 +230,10 @@ export const useEditorStore = create<EditorState>((set) => ({
         ...bar,
         chords: bar.chords.map((slot, i) => (i === index ? parseSlot(symbol) : slot)),
       }));
-      return { localContent: syncBars({ ...state.localContent, sections: newSections }), isDirty: true };
+      return {
+        localContent: syncBars({ ...state.localContent, sections: newSections }),
+        isDirty: true,
+      };
     }),
 
   updateChordBeats: (barId, index, beats) =>
@@ -193,7 +243,10 @@ export const useEditorStore = create<EditorState>((set) => ({
         ...bar,
         chords: bar.chords.map((slot, i) => (i === index ? { ...slot, beats } : slot)),
       }));
-      return { localContent: syncBars({ ...state.localContent, sections: newSections }), isDirty: true };
+      return {
+        localContent: syncBars({ ...state.localContent, sections: newSections }),
+        isDirty: true,
+      };
     }),
 
   clearBarChords: (barId) =>
@@ -203,7 +256,10 @@ export const useEditorStore = create<EditorState>((set) => ({
         ...bar,
         chords: [],
       }));
-      return { localContent: syncBars({ ...state.localContent, sections: newSections }), isDirty: true };
+      return {
+        localContent: syncBars({ ...state.localContent, sections: newSections }),
+        isDirty: true,
+      };
     }),
 
   setBarRepeatEnd: (barId, repeatEnd) =>
@@ -213,7 +269,10 @@ export const useEditorStore = create<EditorState>((set) => ({
         ...bar,
         repeatEnd,
       }));
-      return { localContent: syncBars({ ...state.localContent, sections: newSections }), isDirty: true };
+      return {
+        localContent: syncBars({ ...state.localContent, sections: newSections }),
+        isDirty: true,
+      };
     }),
 
   addSection: (timeSignature) =>

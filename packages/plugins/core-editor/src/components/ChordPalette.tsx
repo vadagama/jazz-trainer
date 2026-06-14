@@ -71,8 +71,7 @@ export function ChordPalette({
   const searchResults = search
     ? allChords.filter(
         (c) =>
-          c.full.toLowerCase().includes(searchLower) ||
-          c.label.toLowerCase().includes(searchLower),
+          c.full.toLowerCase().includes(searchLower) || c.label.toLowerCase().includes(searchLower),
       )
     : null;
 
@@ -142,29 +141,29 @@ export function ChordPalette({
         ) : (
           /* Grouped view */
           CHORD_GROUPS.map((group) => (
-              <div key={group.id} className="border-b border-border px-3 py-3">
-                <div className="mb-2">
-                  <span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-                    {group.label}
-                  </span>
-                </div>
-                <div className="grid grid-cols-2 gap-1.5">
-                  {group.chords.map((chord) => {
-                    const full = `${root}${chord.suffix}`;
-                    return (
-                      <button
-                        key={chord.suffix}
-                        onClick={() => onAddChord(full)}
-                        className="rounded-md border border-border bg-secondary px-2 py-2 text-left transition-colors hover:border-primary/50 hover:bg-accent"
-                      >
-                        <span className="block text-sm font-semibold leading-tight text-foreground">
-                          {full}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
+            <div key={group.id} className="border-b border-border px-3 py-3">
+              <div className="mb-2">
+                <span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+                  {group.label}
+                </span>
               </div>
+              <div className="grid grid-cols-2 gap-1.5">
+                {group.chords.map((chord) => {
+                  const full = `${root}${chord.suffix}`;
+                  return (
+                    <button
+                      key={chord.suffix}
+                      onClick={() => onAddChord(full)}
+                      className="rounded-md border border-border bg-secondary px-2 py-2 text-left transition-colors hover:border-primary/50 hover:bg-accent"
+                    >
+                      <span className="block text-sm font-semibold leading-tight text-foreground">
+                        {full}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           ))
         )}
       </div>

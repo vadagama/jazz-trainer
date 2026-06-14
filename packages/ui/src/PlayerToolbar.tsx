@@ -1,12 +1,13 @@
 import { Play, Square, Volume2, VolumeX, SkipBack, SkipForward } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { KEYS } from '@jazz/shared';
-import type { Key } from '@jazz/shared';
+import type { Key, Style } from '@jazz/shared';
 import type { PlaybackStatus } from '@jazz/music-core';
 import { Button } from './button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './select';
 import { Slider } from './slider';
 import { cn } from './utils';
+import { StyleSelector } from './StyleSelector';
 
 interface PlayerToolbarProps {
   status?: PlaybackStatus;
@@ -18,6 +19,7 @@ interface PlayerToolbarProps {
   bpm?: number;
   volume?: number;
   currentKey: Key;
+  style?: Style;
   onPlay?: () => void;
   onPause?: () => void;
   onStop?: () => void;
@@ -26,6 +28,7 @@ interface PlayerToolbarProps {
   onBpmChange?: (bpm: number) => void;
   onKeyChange?: (key: Key) => void;
   onVolumeChange?: (volume: number) => void;
+  onStyleChange?: (style: Style) => void;
 }
 
 function ToolbarLabel({ children }: { children: React.ReactNode }) {
@@ -49,6 +52,7 @@ export function PlayerToolbar({
   bpm = 120,
   volume: volumeProp = 0.8,
   currentKey,
+  style,
   onPlay,
   onPause: _onPause,
   onStop,
@@ -57,6 +61,7 @@ export function PlayerToolbar({
   onBpmChange,
   onKeyChange,
   onVolumeChange,
+  onStyleChange,
 }: PlayerToolbarProps) {
   const volumePct = Math.round(volumeProp * 100);
   const isMuted = volumeProp === 0;
@@ -155,6 +160,14 @@ export function PlayerToolbar({
             </SelectContent>
           </Select>
         </div>
+
+        {/* STYLE */}
+        {style !== undefined && onStyleChange && (
+          <div className="flex flex-col items-center justify-center rounded-md bg-secondary px-2 py-1">
+            <ToolbarLabel>STYLE</ToolbarLabel>
+            <StyleSelector value={style} onChange={onStyleChange} />
+          </div>
+        )}
       </div>
 
       <Divider />

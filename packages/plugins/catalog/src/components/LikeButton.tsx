@@ -56,7 +56,9 @@ export function LikeButton({ gridId, likeCount, likedByMe }: Props) {
       disabled={like.isPending || unlike.isPending}
       aria-label={localLiked ? 'Убрать лайк' : 'Поставить лайк'}
     >
-      <Heart className={`size-4 ${localLiked ? 'fill-red-500 text-red-500' : 'text-muted-foreground'}`} />
+      <Heart
+        className={`size-4 ${localLiked ? 'fill-red-500 text-red-500' : 'text-muted-foreground'}`}
+      />
       <span className={`text-sm ${localLiked ? 'text-red-500' : ''}`}>{localCount}</span>
     </Button>
   );

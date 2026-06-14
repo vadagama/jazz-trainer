@@ -38,7 +38,10 @@ export function MyGridCard({ grid }: Props) {
         <div className="flex items-start justify-between gap-2">
           <h3 className="truncate font-semibold leading-snug">{grid.name}</h3>
           {grid.visibility === 'public' && (
-            <Globe className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" aria-label="Публичная" />
+            <Globe
+              className="mt-0.5 size-3.5 shrink-0 text-muted-foreground"
+              aria-label="Публичная"
+            />
           )}
         </div>
         <div className="mt-3 flex flex-wrap items-center gap-1.5">
@@ -52,7 +55,12 @@ export function MyGridCard({ grid }: Props) {
       </div>
 
       <div className="flex items-center justify-between border-t border-border px-5 py-3">
-        <Button asChild variant="ghost" size="sm" className="gap-1.5 text-muted-foreground hover:text-foreground">
+        <Button
+          asChild
+          variant="ghost"
+          size="sm"
+          className="gap-1.5 text-muted-foreground hover:text-foreground"
+        >
           <Link to={`/grids/${grid.id}`}>
             <Pencil className="size-3.5" /> Редактировать
           </Link>

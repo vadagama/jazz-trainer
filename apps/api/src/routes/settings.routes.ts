@@ -90,6 +90,7 @@ export async function settingsRoutes(
       patch.drumsCrashFrequency = data.drumsCrashFrequency;
     if (data.drumsRimEnabled !== undefined) patch.drumsRimEnabled = data.drumsRimEnabled;
     if (data.drumsRimVolume !== undefined) patch.drumsRimVolume = data.drumsRimVolume;
+    if (data.style !== undefined) patch.style = data.style;
     if (data.drumsPattern !== undefined) patch.drumsPattern = data.drumsPattern;
     if (data.drumsHumanizeIntensity !== undefined)
       patch.drumsHumanizeIntensity = data.drumsHumanizeIntensity;
@@ -106,6 +107,17 @@ export async function settingsRoutes(
       patch.drumsBassDrumVariation = data.drumsBassDrumVariation;
     if (data.drumsRidePattern !== undefined) patch.drumsRidePattern = data.drumsRidePattern;
     if (data.swingRatio !== undefined) patch.swingRatio = data.swingRatio;
+    if (data.audioFormat !== undefined) patch.audioFormat = data.audioFormat;
+    if (data.pianoEnabled !== undefined) patch.pianoEnabled = data.pianoEnabled;
+    if (data.pianoVolume !== undefined) patch.pianoVolume = data.pianoVolume;
+    if (data.pianoProfile !== undefined) patch.pianoProfile = data.pianoProfile;
+    if (data.pianoVoicingDensity !== undefined)
+      patch.pianoVoicingDensity = data.pianoVoicingDensity;
+    if (data.pianoSampleLibrary !== undefined) patch.pianoSampleLibrary = data.pianoSampleLibrary;
+    if (data.pianoRandomizationLevel !== undefined)
+      patch.pianoRandomizationLevel = data.pianoRandomizationLevel;
+    if (data.rhodesLayerMode !== undefined) patch.rhodesLayerMode = data.rhodesLayerMode;
+    if (data.rhodesLayerVolume !== undefined) patch.rhodesLayerVolume = data.rhodesLayerVolume;
 
     db.update(userSettings).set(patch).where(eq(userSettings.userId, user.id)).run();
     return reply.send(toSettingsDTO({ ...existing, ...patch }));

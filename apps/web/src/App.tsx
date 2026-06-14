@@ -7,7 +7,7 @@ import { RbacGuard } from './components/layout/RbacGuard';
 import { contributions } from './shell/bootstrap';
 import type { RouteContribution } from '@jazz/plugin-sdk';
 import { PluginProvider } from '@jazz/plugin-sdk';
-import { useTransport } from '@/engine/useTransport';
+import { useTransport } from '@/hooks/useTransport';
 
 /**
  * Создаёт ленивый компонент из RouteContribution.element().

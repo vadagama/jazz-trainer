@@ -7,9 +7,7 @@ import type {
   EventBus,
 } from '@jazz/plugin-sdk';
 
-export function createPluginContext(
-  overrides?: Partial<PluginContext>,
-): PluginContext {
+export function createPluginContext(overrides?: Partial<PluginContext>): PluginContext {
   return {
     audio: overrides?.audio ?? ({} as AudioService),
     storage: overrides?.storage ?? ({} as StorageService),

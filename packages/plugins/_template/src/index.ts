@@ -12,10 +12,10 @@ import { definePlugin } from '@jazz/plugin-sdk';
 
 export default definePlugin({
   manifest: {
-    id: 'template',               // уникальный ID, например 'theory.scales'
-    name: 'Template',             // читаемое имя
-    apiVersion: 1 as const,       // версия API плагинов
-    category: 'theory' as const,  // 'theory' | 'technique' | 'play' | 'assess' | 'core' | 'admin'
+    id: 'template', // уникальный ID, например 'theory.scales'
+    name: 'Template', // читаемое имя
+    apiVersion: 1 as const, // версия API плагинов
+    category: 'theory' as const, // 'theory' | 'technique' | 'play' | 'assess' | 'core' | 'admin'
     description: 'Template plugin — copy me to start a new domain plugin.',
     // enabled: false,            // можно отключить плагин, не удаляя его
   },

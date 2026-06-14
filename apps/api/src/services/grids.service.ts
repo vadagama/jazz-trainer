@@ -46,10 +46,7 @@ function toDTO(g: HarmonyGridRecord): HarmonyGridDTO {
   };
 }
 
-function toPublicSummaryDTO(
-  g: HarmonyGridRecord,
-  likedByMe: boolean,
-): PublicGridSummaryDTO {
+function toPublicSummaryDTO(g: HarmonyGridRecord, likedByMe: boolean): PublicGridSummaryDTO {
   const content = parseContent(g.content);
   return {
     id: g.id,
@@ -63,11 +60,7 @@ function toPublicSummaryDTO(
   };
 }
 
-function toPublicDTO(
-  g: HarmonyGridRecord,
-  ownerName: string,
-  likedByMe: boolean,
-): PublicGridDTO {
+function toPublicDTO(g: HarmonyGridRecord, ownerName: string, likedByMe: boolean): PublicGridDTO {
   return {
     ...toPublicSummaryDTO(g, likedByMe),
     content: parseContent(g.content),
@@ -93,11 +86,7 @@ export function getUserGrids(db: DrizzleDb, userId: string): HarmonyGridSummaryD
   return rows.map(toSummaryDTO);
 }
 
-export function getOwnGrid(
-  db: DrizzleDb,
-  userId: string,
-  gridId: string,
-): HarmonyGridDTO | null {
+export function getOwnGrid(db: DrizzleDb, userId: string, gridId: string): HarmonyGridDTO | null {
   const row = db
     .select()
     .from(harmonyGrids)
@@ -106,11 +95,7 @@ export function getOwnGrid(
   return row ? toDTO(row) : null;
 }
 
-export function createGrid(
-  db: DrizzleDb,
-  userId: string,
-  input: CreateGridInput,
-): HarmonyGridDTO {
+export function createGrid(db: DrizzleDb, userId: string, input: CreateGridInput): HarmonyGridDTO {
   const now = Date.now();
   const id = crypto.randomUUID();
   const content = input.content ?? emptyContent();
@@ -226,11 +211,7 @@ export type ImportResult =
   | { ok: true; grid: HarmonyGridDTO }
   | { ok: false; errors: ImportError[] };
 
-export function importGrid(
-  db: DrizzleDb,
-  userId: string,
-  input: ImportGridInput,
-): ImportResult {
+export function importGrid(db: DrizzleDb, userId: string, input: ImportGridInput): ImportResult {
   const result = parseGrid(input.dsl);
   if (!result.ok || !result.value) {
     return {
@@ -251,11 +232,7 @@ export function importGrid(
   return { ok: true, grid };
 }
 
-export function exportGridDsl(
-  db: DrizzleDb,
-  userId: string,
-  gridId: string,
-): string | null {
+export function exportGridDsl(db: DrizzleDb, userId: string, gridId: string): string | null {
   const row = db
     .select()
     .from(harmonyGrids)
@@ -345,11 +322,7 @@ export interface LikeResult {
   likedByMe: boolean;
 }
 
-export function likeGrid(
-  db: DrizzleDb,
-  userId: string,
-  gridId: string,
-): LikeResult | null {
+export function likeGrid(db: DrizzleDb, userId: string, gridId: string): LikeResult | null {
   const grid = db
     .select()
     .from(harmonyGrids)
@@ -373,11 +346,7 @@ export function likeGrid(
   return { likeCount: grid.likeCount, likedByMe: true };
 }
 
-export function unlikeGrid(
-  db: DrizzleDb,
-  userId: string,
-  gridId: string,
-): LikeResult | null {
+export function unlikeGrid(db: DrizzleDb, userId: string, gridId: string): LikeResult | null {
   const grid = db
     .select()
     .from(harmonyGrids)
@@ -392,7 +361,9 @@ export function unlikeGrid(
     .get();
 
   if (existing) {
-    db.delete(gridLikes).where(and(eq(gridLikes.gridId, gridId), eq(gridLikes.userId, userId))).run();
+    db.delete(gridLikes)
+      .where(and(eq(gridLikes.gridId, gridId), eq(gridLikes.userId, userId)))
+      .run();
     const newCount = Math.max(0, grid.likeCount - 1);
     db.update(harmonyGrids).set({ likeCount: newCount }).where(eq(harmonyGrids.id, gridId)).run();
     return { likeCount: newCount, likedByMe: false };

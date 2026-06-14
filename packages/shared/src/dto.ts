@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { CLICK_SOUNDS } from './constants.js';
+import { CLICK_SOUNDS, STYLES } from './constants.js';
 
 /**
  * DTO types and Zod validation schemas for the auth + settings layer (F4).
@@ -40,6 +40,7 @@ export const UserSettingsDTOSchema = z.object({
   bassOctaveUp: z.boolean().optional(),
   rhodesEnabled: z.boolean().optional(),
   rhodesVolume: z.number().min(0).max(1).optional(),
+  /** @deprecated Use rhodesLayerMode instead */
   rhodesMode: z
     .enum([
       'wholeNotes',
@@ -57,7 +58,19 @@ export const UserSettingsDTOSchema = z.object({
       'two-threeand',
     ])
     .optional(),
+  rhodesLayerMode: z
+    .enum(['pads', 'subtle-offbeats', 'high-comping', 'ambient-swells', 'stab-accents', 'none'])
+    .optional(),
+  rhodesLayerVolume: z.number().min(0).max(1).optional(),
   rhodesVoicingDensity: z.enum(['shell2', 'rootless3', 'rootless4']).optional(),
+  pianoEnabled: z.boolean().optional(),
+  pianoVolume: z.number().min(0).max(1).optional(),
+  pianoProfile: z
+    .enum(['swing-sparse', 'swing-medium', 'basie-light', 'offbeat-push', 'beginner-safe'])
+    .optional(),
+  pianoVoicingDensity: z.enum(['shell2', 'rootless3', 'rootless4', 'quartal']).optional(),
+  pianoSampleLibrary: z.enum(['salamander', 'upright-kw']).optional(),
+  pianoRandomizationLevel: z.enum(['off', 'subtle', 'moderate', 'high']).optional(),
   drumsEnabled: z.boolean().optional(),
   drumsVolume: z.number().min(0).max(1).optional(),
   drumsRideEnabled: z.boolean().optional(),
@@ -78,7 +91,6 @@ export const UserSettingsDTOSchema = z.object({
   drumsCrashFrequency: z.number().int().min(0).max(32).optional(),
   drumsRimEnabled: z.boolean().optional(),
   drumsRimVolume: z.number().min(0).max(1).optional(),
-  drumsPattern: z.enum(['swing', 'bossa', 'funk']).optional(),
   drumsHumanizeIntensity: z.enum(['off', 'low', 'med', 'high']).optional(),
   drumsFunkComplexity: z.enum(['simple', 'medium', 'complex']).optional(),
   drumsFillFrequency: z.enum(['never', '4bars', '8bars', '16bars']).optional(),
@@ -87,9 +99,14 @@ export const UserSettingsDTOSchema = z.object({
   drumsRideVariation: z.boolean().optional(),
   drumsSnareGhosts: z.boolean().optional(),
   drumsBassDrumVariation: z.boolean().optional(),
+  /** @deprecated Use style instead */
+  drumsPattern: z.enum(STYLES.slice(0, 3) as [string, ...string[]]).optional(),
   /** @deprecated Use drumsPattern instead */
   drumsRidePattern: z.enum(['quarters', 'swingRide']).optional(),
+  /** Global playback style — replaces drumsPattern as the single source of style truth. */
+  style: z.enum(STYLES).optional(),
   swingRatio: z.number().min(0.5).max(0.75).optional(),
+  audioFormat: z.enum(['aac', 'mp3']).optional(),
 });
 export type UserSettingsDTO = z.infer<typeof UserSettingsDTOSchema>;
 

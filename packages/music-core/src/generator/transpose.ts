@@ -26,7 +26,7 @@ export function spellingTable(key: Key | string): string[] {
 /** Spell a pitch class in the chosen key's table, e.g. (3, Eb) → "Eb". */
 export function spellPitchClass(pc: number, key: Key | string): string {
   const table = spellingTable(key);
-  return table[(((pc % 12) + 12) % 12)]!;
+  return table[((pc % 12) + 12) % 12]!;
 }
 
 /** Transpose a single chord symbol string by the interval between fromKey and toKey. */
@@ -38,7 +38,10 @@ export function transposeChord(symbol: string, fromKey: Key | string, toKey: Key
   const shift = (((keyToPitchClass(toKey) - keyToPitchClass(fromKey)) % 12) + 12) % 12;
   if (shift === 0) return serializeChord(chord);
 
-  const newRootStr = spellPitchClass((keyToPitchClass(chord.root + chord.rootAccidental) + shift) % 12, toKey);
+  const newRootStr = spellPitchClass(
+    (keyToPitchClass(chord.root + chord.rootAccidental) + shift) % 12,
+    toKey,
+  );
   const newRoot = newRootStr[0] as NoteName;
   const newRootAccidental = (newRootStr.length > 1 ? newRootStr[1] : '') as Accidental;
 
@@ -54,7 +57,12 @@ export function transposeChord(symbol: string, fromKey: Key | string, toKey: Key
     };
   }
 
-  return serializeChord({ ...chord, root: newRoot, rootAccidental: newRootAccidental, bass: newBass });
+  return serializeChord({
+    ...chord,
+    root: newRoot,
+    rootAccidental: newRootAccidental,
+    bass: newBass,
+  });
 }
 
 /** Transpose all chord symbols in sections from fromKey to toKey (immutable). */

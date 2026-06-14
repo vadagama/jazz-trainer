@@ -43,3 +43,7 @@ export type Visibility = (typeof VISIBILITY)[number];
 /** Auth providers. */
 export const AUTH_PROVIDERS = ['google', 'dev', 'system'] as const;
 export type AuthProvider = (typeof AUTH_PROVIDERS)[number];
+
+/** Global playback styles — affects all instruments (drums, piano, bass, rhodes). */
+export const STYLES = ['swing', 'bossa', 'funk', 'latin', 'ballad'] as const;
+export type Style = (typeof STYLES)[number];

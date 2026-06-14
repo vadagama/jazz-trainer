@@ -9,11 +9,7 @@ export default definePlugin({
     description: 'Interactive interval reference and ear training.',
   },
   contributes: {
-    routes: [
-      { path: '/intervals', element: () => import('./IntervalsPage') },
-    ],
-    navItems: [
-      { section: 'learn', label: 'Intervals', to: '/intervals', icon: 'radio' },
-    ],
+    routes: [{ path: '/intervals', element: () => import('./IntervalsPage') }],
+    navItems: [{ section: 'learn', label: 'Intervals', to: '/intervals', icon: 'radio' }],
   },
 });

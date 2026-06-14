@@ -27,6 +27,14 @@ const DEFAULT_SETTINGS: LocalSettings = {
   rhodesVolume: 0.6,
   rhodesMode: 'halfNotes' as const,
   rhodesVoicingDensity: 'rootless3' as const,
+  rhodesLayerMode: 'none' as const,
+  rhodesLayerVolume: 0.5,
+  pianoEnabled: false,
+  pianoVolume: 0.7,
+  pianoProfile: 'swing-sparse' as const,
+  pianoVoicingDensity: 'rootless3' as const,
+  pianoSampleLibrary: 'salamander' as const,
+  pianoRandomizationLevel: 'off' as const,
   drumsEnabled: true,
   drumsVolume: 0.7,
   drumsRideEnabled: true,
@@ -55,7 +63,9 @@ const DEFAULT_SETTINGS: LocalSettings = {
   drumsSnareGhosts: true,
   drumsBassDrumVariation: true,
   drumsRidePattern: 'swingRide' as const,
+  style: 'swing' as const,
   swingRatio: 0.5,
+  audioFormat: 'aac' as const,
 };
 
 export const useLocalSettingsStore = create<LocalSettingsStore>()(
@@ -65,6 +75,13 @@ export const useLocalSettingsStore = create<LocalSettingsStore>()(
       setSettings: (patch) => set((state) => ({ settings: { ...state.settings, ...patch } })),
       reset: () => set({ settings: DEFAULT_SETTINGS }),
     }),
-    { name: 'jazz-local-settings' },
+    {
+      name: 'jazz-local-settings',
+      version: 1,
+      migrate: (persisted) => {
+        const s = { ...DEFAULT_SETTINGS, ...(persisted as Partial<LocalSettings> | undefined) };
+        return { settings: s } as unknown as LocalSettingsStore;
+      },
+    },
   ),
 );

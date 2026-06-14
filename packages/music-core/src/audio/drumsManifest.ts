@@ -5,6 +5,7 @@ import { DrumInstrument } from './drumInstrument.js';
 
 const DRUMS_SAMPLE_MANIFEST: SampleManifest = {
   baseUrl: SWIRLY_DRUMS_BASE_URL,
+  fallbackBaseUrl: '/samples/mp3/drums/swirly/',
   oneshots: DRUM_SAMPLE_FILES,
   rrCount: 4,
 };

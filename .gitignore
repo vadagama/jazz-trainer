@@ -42,6 +42,9 @@ npm-debug.log*
 # Local working files (plans, scratch)
 tmp/
 
+# Sample sources (large binaries, keep in cloud/DAM only)
+apps/web/public/samples/_source/
+
 # Playwright MCP artifacts and dev screenshots
 .playwright-mcp/
 *.png

@@ -30,7 +30,10 @@ export function Header() {
   return (
     <header className="flex h-24 shrink-0 items-center justify-between border-b border-border bg-card px-5">
       {/* Logo + name */}
-      <Link to="/" className="flex items-center gap-3 text-foreground hover:opacity-80 transition-opacity">
+      <Link
+        to="/"
+        className="flex items-center gap-3 text-foreground hover:opacity-80 transition-opacity"
+      >
         <Music4 className="size-8 shrink-0 text-primary" />
         <span className="text-2xl font-semibold tracking-tight">Jazz Trainer</span>
       </Link>

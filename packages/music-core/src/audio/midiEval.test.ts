@@ -16,7 +16,12 @@ function noteEvent(note: string, velocity: number, timestampMs: number): MidiInp
   return { note, velocity, timestamp: timestampMs };
 }
 
-function scheduledNote(note: string, timeSec: number, duration = 0.5, velocity = 0.8): ScheduledNote {
+function scheduledNote(
+  note: string,
+  timeSec: number,
+  duration = 0.5,
+  velocity = 0.8,
+): ScheduledNote {
   return { time: timeSec, note, duration, velocity };
 }
 
@@ -39,40 +44,32 @@ describe('evaluateNote', () => {
   });
 
   it('rejects note outside timing window', () => {
-    const result = evaluateNote(
-      noteEvent('C4', 100, 1500),
-      scheduledNote('C4', 1.0),
-      { timingTolerance: 0.2 },
-    );
+    const result = evaluateNote(noteEvent('C4', 100, 1500), scheduledNote('C4', 1.0), {
+      timingTolerance: 0.2,
+    });
     expect(result.hit).toBe(false);
   });
 
   it('accepts note within timing window (early)', () => {
-    const result = evaluateNote(
-      noteEvent('C4', 100, 900),
-      scheduledNote('C4', 1.0),
-      { timingTolerance: 0.2 },
-    );
+    const result = evaluateNote(noteEvent('C4', 100, 900), scheduledNote('C4', 1.0), {
+      timingTolerance: 0.2,
+    });
     expect(result.hit).toBe(true);
     expect(result.timingDelta).toBeCloseTo(-0.1, 1);
   });
 
   it('accepts note within timing window (late)', () => {
-    const result = evaluateNote(
-      noteEvent('C4', 100, 1100),
-      scheduledNote('C4', 1.0),
-      { timingTolerance: 0.2 },
-    );
+    const result = evaluateNote(noteEvent('C4', 100, 1100), scheduledNote('C4', 1.0), {
+      timingTolerance: 0.2,
+    });
     expect(result.hit).toBe(true);
     expect(result.timingDelta).toBeCloseTo(0.1, 1);
   });
 
   it('rejects note below velocity threshold', () => {
-    const result = evaluateNote(
-      noteEvent('C4', 5, 1000),
-      scheduledNote('C4', 1.0),
-      { velocityThreshold: 10 },
-    );
+    const result = evaluateNote(noteEvent('C4', 5, 1000), scheduledNote('C4', 1.0), {
+      velocityThreshold: 10,
+    });
     expect(result.hit).toBe(false);
   });
 
@@ -227,10 +224,7 @@ describe('evaluateRhythm', () => {
 
   it('matches nearest event within tolerance (greedy)', () => {
     // Two events, two beats — should match correctly
-    const events = [
-      noteEvent('C4', 100, 1050),
-      noteEvent('C4', 100, 1950),
-    ];
+    const events = [noteEvent('C4', 100, 1050), noteEvent('C4', 100, 1950)];
     const expected = [1.0, 2.0];
     const result = evaluateRhythm(events, expected, 0.2);
     expect(result.accuracy).toBe(1);
@@ -248,10 +242,7 @@ describe('scoreRhythmEval', () => {
   });
 
   it('returns max score for perfect rhythm', () => {
-    const events = [
-      noteEvent('C4', 100, 1000),
-      noteEvent('C4', 100, 2000),
-    ];
+    const events = [noteEvent('C4', 100, 1000), noteEvent('C4', 100, 2000)];
     const evalResult = evaluateRhythm(events, [1.0, 2.0], 0.2);
     const score = scoreRhythmEval(evalResult);
 

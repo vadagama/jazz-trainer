@@ -53,7 +53,9 @@ describe('GET /api/grids/public — public catalog', () => {
   it('filters by name with ?q=', async () => {
     const res = await agent.get('/api/grids/public?q=Blues');
     expect(res.status).toBe(200);
-    expect(res.body.every((g: { name: string }) => g.name.toLowerCase().includes('blues'))).toBe(true);
+    expect(res.body.every((g: { name: string }) => g.name.toLowerCase().includes('blues'))).toBe(
+      true,
+    );
   });
 
   it('supports sort=name', async () => {
@@ -264,9 +266,7 @@ describe('grids CRUD (authenticated)', () => {
 
   it('PATCH /api/grids/:id can set visibility to public', async () => {
     const created = await agent.post('/api/grids').send({ name: 'Will be public' });
-    const res = await agent
-      .patch(`/api/grids/${created.body.id}`)
-      .send({ visibility: 'public' });
+    const res = await agent.patch(`/api/grids/${created.body.id}`).send({ visibility: 'public' });
     expect(res.status).toBe(200);
     expect(res.body.visibility).toBe('public');
   });

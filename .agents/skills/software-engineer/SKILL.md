@@ -12,11 +12,11 @@ description: Staff-level software engineer for the Jazz Trainer project. Trigger
 
 **Всегда читай эти два файла первыми** (если ещё не читал в этой сессии):
 
-| Порядок | Файл | Что содержит |
-|---|---|---|
-| 1 | `CLAUDE.md` | Навигатор: карта «задача → файлы», рецепты, что НЕ читать, конвенции кода |
-| 2 | `docs/ARCHITECTURE_BASE.md` | Каноническая архитектура: принципы, слои, плагинная модель, порты/адаптеры, RBAC, ADR, фазы |
-| 3 | `docs/PLAN.md` (если есть) | Текущий план задач: приоритеты (P0–P3), сложность, зависимости, статусы. Показывает, какая задача сейчас в работе и что следующее |
+| Порядок | Файл                        | Что содержит                                                                                                                      |
+| ------- | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| 1       | `CLAUDE.md`                 | Навигатор: карта «задача → файлы», рецепты, что НЕ читать, конвенции кода                                                         |
+| 2       | `docs/ARCHITECTURE_BASE.md` | Каноническая архитектура: принципы, слои, плагинная модель, порты/адаптеры, RBAC, ADR, фазы                                       |
+| 3       | `docs/PLAN.md` (если есть)  | Текущий план задач: приоритеты (P0–P3), сложность, зависимости, статусы. Показывает, какая задача сейчас в работе и что следующее |
 
 Если нужны детали реализации — `docs/ARCHITECTURE_VISION.md`.
 Знания о структуре проекта, границах слоёв, плагинной модели, RBAC, API-слое — **всегда бери из `ARCHITECTURE_BASE.md`, не дублируй в памяти**.
@@ -46,6 +46,7 @@ description: Staff-level software engineer for the Jazz Trainer project. Trigger
 ## 4. Когда задать вопрос пользователю
 
 **Обязательно спроси, если:**
+
 - Задача выходит за твою компетенцию (инфраструктура, CI/CD, деплой)
 - Предполагаешь существенное архитектурное изменение (новый слой, изменение модели данных, новый паттерн взаимодействия)
 - Обнаружил конфликтующие требования или неясные спецификации
@@ -54,6 +55,7 @@ description: Staff-level software engineer for the Jazz Trainer project. Trigger
 - Меняешь контракт SDK (`extension-points.ts`, `manifest.schema.ts`)
 
 **Действуй самостоятельно, если:**
+
 - Добавляешь маршрут/страницу/пункт меню в существующий плагин
 - Добавляешь новый плагин по образцу (рецепт в CLAUDE.md)
 - Фиксишь баг в рамках существующей архитектуры
@@ -97,46 +99,51 @@ description: Staff-level software engineer for the Jazz Trainer project. Trigger
 ## 7. Краткий справочник
 
 ### Добавить плагин
+
 1. `cp -r packages/plugins/_template packages/plugins/<name>`
 2. Правь `src/index.ts` (id, name, category, description, contributes)
 3. Регистрируй в `packages/plugin-registry/src/index.ts`
 4. Алиасы в `vite.config.ts`, `tsconfig.base.json`, `vitest.config.ts`
 
 ### Добавить permission
+
 В `RBAC_PERMISSIONS` в `apps/api/src/services/rbac.service.ts` → seed в БД.
 
 ### Добавить маршрут в плагин
+
 В `contributes.routes` в `src/index.ts` плагина. Если новый плагин → алиасы (шаг 4 выше).
 
 ### API-эндпоинт
+
 DTO в `packages/shared/src/dto.ts`, роут в `apps/api/src/routes/<name>.routes.ts`, сервис в `apps/api/src/services/<name>.service.ts`.
 
 ### Команды
-| Команда | Когда |
-|---|---|
-| `npm run typecheck` | После правок типов/импортов |
-| `npm run lint` | После любых правок |
-| `npm run test` | После правок логики |
-| `npm run format` | Перед коммитом |
-| `npm run dev` | Запуск web (:5173) + api (:3999) |
+
+| Команда             | Когда                            |
+| ------------------- | -------------------------------- |
+| `npm run typecheck` | После правок типов/импортов      |
+| `npm run lint`      | После любых правок               |
+| `npm run test`      | После правок логики              |
+| `npm run format`    | Перед коммитом                   |
+| `npm run dev`       | Запуск web (:5173) + api (:3999) |
 
 ### Где брать знания
 
-| Знание | Источник |
-|---|---|
-| Что читать под задачу | `CLAUDE.md` |
-| Структура проекта, слои | `docs/ARCHITECTURE_BASE.md` §2, §8 |
-| Плагинная модель, реестр, PluginContext | `docs/ARCHITECTURE_BASE.md` §3 |
-| Порты, адаптеры, звук/MIDI | `docs/ARCHITECTURE_BASE.md` §4 |
-| API-слой, контракт | `docs/ARCHITECTURE_BASE.md` §5 |
-| RBAC, permissions, audit | `docs/ARCHITECTURE_BASE.md` §6 |
-| Тестирование | `docs/ARCHITECTURE_BASE.md` §7 |
-| ADR (почему так) | `docs/ARCHITECTURE_BASE.md` §9 |
-| Статус фаз | `docs/ARCHITECTURE_BASE.md` §10 |
-| Приоритеты и план задач | `docs/PLAN.md` |
-| Конвенции кода, алиасы | `CLAUDE.md` |
-| Границы слоёв (линтер) | `eslint.config.js` |
+| Знание                                  | Источник                           |
+| --------------------------------------- | ---------------------------------- |
+| Что читать под задачу                   | `CLAUDE.md`                        |
+| Структура проекта, слои                 | `docs/ARCHITECTURE_BASE.md` §2, §8 |
+| Плагинная модель, реестр, PluginContext | `docs/ARCHITECTURE_BASE.md` §3     |
+| Порты, адаптеры, звук/MIDI              | `docs/ARCHITECTURE_BASE.md` §4     |
+| API-слой, контракт                      | `docs/ARCHITECTURE_BASE.md` §5     |
+| RBAC, permissions, audit                | `docs/ARCHITECTURE_BASE.md` §6     |
+| Тестирование                            | `docs/ARCHITECTURE_BASE.md` §7     |
+| ADR (почему так)                        | `docs/ARCHITECTURE_BASE.md` §9     |
+| Статус фаз                              | `docs/ARCHITECTURE_BASE.md` §10    |
+| Приоритеты и план задач                 | `docs/PLAN.md`                     |
+| Конвенции кода, алиасы                  | `CLAUDE.md`                        |
+| Границы слоёв (линтер)                  | `eslint.config.js`                 |
 
 ---
 
-*Скилл загружается при запросах на изменение кода. Явный вызов: `/software-engineer` или `@software-engineer`.*
+_Скилл загружается при запросах на изменение кода. Явный вызов: `/software-engineer` или `@software-engineer`._

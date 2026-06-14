@@ -7,6 +7,7 @@ export {
   type BassArticulation,
   type BassEvent,
   type RhodesEvent,
+  type PianoEvent,
   type DrumEvent,
   type GuitarEvent,
   type GuitarStrum,
@@ -43,15 +44,30 @@ export {
   pickRhodesLayer,
   type RhodesVelocityLayer,
 } from './rhodesSampleRegistry.js';
+export {
+  UPRIGHT_LAYERS,
+  UPRIGHT_SAMPLER_BASE_URL,
+  pickPianoLayer,
+  type PianoVelocityLayer,
+} from './pianoSampleRegistry.js';
+export {
+  SALAMANDER_LAYERS,
+  SALAMANDER_SAMPLER_BASE_URL,
+  pickSalamanderLayer,
+  type SalamanderVelocityLayer,
+} from './salamanderSampleRegistry.js';
 export { RhodesInstrument } from './rhodesInstrument.js';
 export {
   buildVoicing,
   getCompPattern,
+  getLayerPattern,
+  LAYER_PATTERNS,
   noteToMidi,
   midiToNote,
   SWING_PATTERNS,
   type RhodesVoicingDensity,
   type RhodesCompingMode,
+  type RhodesLayerMode,
   type CompChordRef,
   type CompEvent,
   type RhodesRhythmPattern,
@@ -95,6 +111,25 @@ export { type SampleManifest } from './sampleManifest.js';
 export { type InstrumentManifest } from './instrumentManifest.js';
 export { bassManifest } from './bassManifest.js';
 export { rhodesManifest } from './rhodesManifest.js';
+export { pianoManifest } from './pianoManifest.js';
+export { salamanderManifest } from './salamanderManifest.js';
 export { drumsManifest } from './drumsManifest.js';
 export { guitarManifest } from './guitarManifest.js';
 export { GuitarInstrument, type GuitarMode, type GuitarVoicing } from './guitarInstrument.js';
+export { PianoInstrument } from './pianoInstrument.js';
+export {
+  PianoRandomizer,
+  type PianoRandomizationLevel,
+  type PianoBarContext,
+} from './pianoRandomizer.js';
+export { buildPianoVoicing, type PianoVoicingDensity } from './pianoVoicing.js';
+export { avoidConflicts } from './pianoRhodesInteraction.js';
+export {
+  getCompPattern as getPianoCompPattern,
+  getCompingProfile,
+  COMP_PATTERNS as PIANO_COMP_PATTERNS,
+  COMPING_PROFILES as PIANO_COMPING_PROFILES,
+  type CompPatternId,
+  type CompingProfileId,
+  type CompingProfile,
+} from './pianoComping.js';

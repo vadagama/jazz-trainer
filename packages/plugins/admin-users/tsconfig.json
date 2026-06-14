@@ -6,8 +6,8 @@
     "noEmit": true,
     "baseUrl": ".",
     "paths": {
-      "@jazz/plugin-sdk": ["../../plugin-sdk/src/index.ts"],
-    },
+      "@jazz/plugin-sdk": ["../../plugin-sdk/src/index.ts"]
+    }
   },
-  "include": ["src"],
+  "include": ["src"]
 }

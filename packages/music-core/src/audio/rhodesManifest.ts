@@ -6,6 +6,7 @@ import { ChordTimeline } from './chordTimeline.js';
 
 const RHODES_SAMPLE_MANIFEST: SampleManifest = {
   baseUrl: RHODES_SAMPLER_BASE_URL,
+  fallbackBaseUrl: '/samples/mp3/rhodes/',
   layers: RHODES_LAYERS,
   release: 1.5,
 };

@@ -36,8 +36,15 @@ export function useLikes() {
   return { like, unlike };
 }
 
-function updateLikeCount(qc: ReturnType<typeof useQueryClient>, gridId: string, delta: number, likedByMe: boolean) {
+function updateLikeCount(
+  qc: ReturnType<typeof useQueryClient>,
+  gridId: string,
+  delta: number,
+  likedByMe: boolean,
+) {
   qc.setQueriesData<PublicGridSummaryDTO[]>({ queryKey: ['grids', 'public'] }, (old) =>
-    old?.map((g) => g.id === gridId ? { ...g, likeCount: Math.max(0, g.likeCount + delta), likedByMe } : g),
+    old?.map((g) =>
+      g.id === gridId ? { ...g, likeCount: Math.max(0, g.likeCount + delta), likedByMe } : g,
+    ),
   );
 }

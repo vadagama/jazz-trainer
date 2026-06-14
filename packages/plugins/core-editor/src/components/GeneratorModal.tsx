@@ -62,7 +62,12 @@ export function GeneratorModal({ open, onApply, onClose }: GeneratorModalProps) 
   }
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { if (!v) handleClose(); }}>
+    <Dialog
+      open={open}
+      onOpenChange={(v) => {
+        if (!v) handleClose();
+      }}
+    >
       <DialogContent className="max-w-lg" data-testid="generator-modal">
         <DialogHeader>
           <DialogTitle>Генератор прогрессии</DialogTitle>
@@ -89,9 +94,7 @@ export function GeneratorModal({ open, onApply, onClose }: GeneratorModalProps) 
                 </SelectContent>
               </Select>
             )}
-            {selected && (
-              <p className="text-xs text-muted-foreground">{selected.description}</p>
-            )}
+            {selected && <p className="text-xs text-muted-foreground">{selected.description}</p>}
           </div>
 
           <div className="flex gap-3">

@@ -4,20 +4,39 @@ import type { ChordTimeline } from './chordTimeline.js';
 import {
   buildVoicing,
   getCompPattern,
+  getLayerPattern,
   type RhodesVoicingDensity,
   type RhodesCompingMode,
+  type RhodesLayerMode,
 } from './rhodesVoicing.js';
+import { noteToMidi, midiToNote } from './rhodesVoicing.js';
+import type { Style } from '@jazz/shared';
 
 const PPQ = 480;
+
+/** Style → default comping mode. */
+const STYLE_DEFAULT_MODE: Record<Style, RhodesCompingMode> = {
+  swing: 'halfNotes',
+  bossa: 'halfNotes',
+  funk: 'oneand-three',
+  latin: 'one-twoand-four',
+  ballad: 'wholeNotes',
+};
 
 export class RhodesInstrument implements Instrument {
   private timeline: ChordTimeline;
   private mode: RhodesCompingMode = 'halfNotes';
+  private layerMode: RhodesLayerMode = 'none';
+  private layerModeSet = false;
+  private layerVolume = 0.5;
   private density: RhodesVoicingDensity = 'rootless3';
   private baseVelocity = 1.0;
   private humanize = true;
   private prevVoicing: readonly string[] | null = null;
   private lastScheduledTick = -1;
+  private style: Style = 'swing';
+  /** Bar counter for ambient-swells (trigger every 2 bars). */
+  private barCounter = 0;
 
   constructor(timeline: ChordTimeline) {
     this.timeline = timeline;
@@ -27,8 +46,25 @@ export class RhodesInstrument implements Instrument {
     this.timeline = timeline;
   }
 
+  setStyle(style: Style): void {
+    this.style = style;
+    this.mode = STYLE_DEFAULT_MODE[style] ?? 'halfNotes';
+  }
+
+  /** @deprecated Use setLayerMode() for the complementary layer API. */
   setMode(mode: RhodesCompingMode): void {
     this.mode = mode;
+  }
+
+  /** Set the complementary layer mode. 'none' means Rhodes is off (no output). */
+  setLayerMode(mode: RhodesLayerMode): void {
+    this.layerMode = mode;
+    this.layerModeSet = true;
+  }
+
+  /** Set layer volume multiplier (0..1). Applied on top of baseVelocity. */
+  setLayerVolume(volume: number): void {
+    this.layerVolume = Math.max(0, Math.min(1, volume));
   }
 
   setVoicingDensity(density: RhodesVoicingDensity): void {
@@ -46,9 +82,17 @@ export class RhodesInstrument implements Instrument {
   reset(): void {
     this.prevVoicing = null;
     this.lastScheduledTick = -1;
+    this.barCounter = 0;
   }
 
   schedule(window: ScheduleWindow, ctx: ScheduleContext): void {
+    // If layerMode was explicitly set, use it (including 'none' = no output)
+    if (this.layerModeSet) {
+      if (this.layerMode === 'none') return;
+      this.scheduleLayer(window, ctx);
+      return;
+    }
+
     const sig = ctx.timeSignature;
     const tpBar = ticksPerBar(sig);
     const tpBeat = ticksPerBeat(sig);
@@ -99,6 +143,73 @@ export class RhodesInstrument implements Instrument {
         }
 
         ctx.scheduleEvent('rhodes', { notes: voicing }, atTicks, velocity, durationTicks);
+        this.lastScheduledTick = eventTicks;
+      }
+    }
+  }
+
+  /**
+   * Schedule using the complementary layer mode.
+   * lower velocities, octave shift for high-comping, 2-bar ambient swells.
+   */
+  private scheduleLayer(window: ScheduleWindow, ctx: ScheduleContext): void {
+    const sig = ctx.timeSignature;
+    const tpBar = ticksPerBar(sig);
+    const tpBeat = ticksPerBeat(sig);
+
+    const pattern = getLayerPattern(this.layerMode);
+    if (pattern.length === 0) return;
+
+    const maxJitterTicks = this.humanize ? Math.round(0.006 * (ctx.bpm / 60) * PPQ) : 0;
+    const octaveShift = this.layerMode === 'high-comping' ? 12 : 0;
+
+    const firstBar = Math.floor(window.fromTicks / tpBar);
+    const lastBar = Math.floor((window.toTicks - 1) / tpBar);
+
+    for (let bar = firstBar; bar <= lastBar; bar++) {
+      this.barCounter++;
+
+      // ambient-swells: fire every 2 bars only
+      if (this.layerMode === 'ambient-swells' && this.barCounter % 2 !== 1) continue;
+
+      const barStartTicks = bar * tpBar;
+      const currentChord = this.timeline.getChordAtTick(barStartTicks, sig);
+      if (!currentChord) continue;
+
+      for (const event of pattern) {
+        const isOffbeat = (event.subdivision ?? 0) > 0;
+        const subdivTicks = isOffbeat ? Math.round(ctx.swingRatio * tpBeat) : 0;
+        const eventTicks = barStartTicks + (event.beat - 1) * tpBeat + subdivTicks;
+        if (eventTicks < window.fromTicks || eventTicks >= window.toTicks) continue;
+
+        const chord =
+          event.chordRef === 'next'
+            ? this.timeline.getChordAtTick((bar + 1) * tpBar, sig)
+            : currentChord;
+        if (!chord) continue;
+
+        const voicing = buildVoicing(chord, this.density, this.prevVoicing);
+        this.prevVoicing = voicing;
+
+        // Apply octave shift for high-comping
+        const shiftedVoicing =
+          octaveShift !== 0 ? voicing.map((n) => midiToNote(noteToMidi(n) + octaveShift)) : voicing;
+
+        const durationTicks = Math.round(event.durationBeats * tpBeat);
+        const baseVel = event.velocity * this.baseVelocity * this.layerVolume;
+
+        let atTicks = eventTicks;
+        let velocity = baseVel;
+
+        if (this.humanize) {
+          atTicks = Math.max(
+            window.fromTicks,
+            atTicks + Math.round((Math.random() * 2 - 1) * maxJitterTicks),
+          );
+          velocity = Math.max(0.01, Math.min(1, velocity + (Math.random() * 2 - 1) * 0.03));
+        }
+
+        ctx.scheduleEvent('rhodes', { notes: shiftedVoicing }, atTicks, velocity, durationTicks);
         this.lastScheduledTick = eventTicks;
       }
     }

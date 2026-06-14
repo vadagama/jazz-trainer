@@ -32,20 +32,20 @@ export function useMidiInput(
  *
  * Returns the accumulated events and a callback to flush/clear them.
  */
-export function useMidiEventBuffer(
-  inputPort: InputPort | null | undefined,
-  maxEvents = 100,
-) {
+export function useMidiEventBuffer(inputPort: InputPort | null | undefined, maxEvents = 100) {
   const eventsRef = useRef<MidiInputEvent[]>([]);
 
   useMidiInput(
     inputPort,
-    useCallback((event: MidiInputEvent) => {
-      const buf = eventsRef.current;
-      if (buf.length < maxEvents) {
-        buf.push(event);
-      }
-    }, [maxEvents]),
+    useCallback(
+      (event: MidiInputEvent) => {
+        const buf = eventsRef.current;
+        if (buf.length < maxEvents) {
+          buf.push(event);
+        }
+      },
+      [maxEvents],
+    ),
   );
 
   const flush = useCallback((): MidiInputEvent[] => {

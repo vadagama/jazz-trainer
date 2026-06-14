@@ -7,6 +7,7 @@ import {
 import type { Instrument, ScheduleContext, ScheduleWindow } from './instrument.js';
 import type { DrumSound } from './drumSampleRegistry.js';
 import { DrumRandomizer, type DrumHit, type BarContext, type DrumStyle } from './drumRandomizer.js';
+import type { Style } from '@jazz/shared';
 
 const PPQ = 480;
 
@@ -151,11 +152,30 @@ function scheduleHits(
 export class DrumInstrument implements Instrument {
   private settings: DrumInstrumentSettings = { ...DEFAULT_DRUM_SETTINGS };
   private randomizer: DrumRandomizer = new DrumRandomizer();
+  private currentStyle: DrumStyle = 'swing';
+
+  /* ── Style → Pattern mapping ────────────────────────────────────────────── */
+
+  private static STYLE_TO_PATTERN: Record<Style, DrumStyle> = {
+    swing: 'swing',
+    bossa: 'bossa',
+    funk: 'funk',
+    latin: 'bossa',
+    ballad: 'swing',
+  };
+
+  setStyle(style: Style): void {
+    this.currentStyle = DrumInstrument.STYLE_TO_PATTERN[style];
+  }
 
   /* ── Setters ─────────────────────────────────────────────────────────────── */
 
   updateSettings(patch: Partial<DrumInstrumentSettings>): void {
     Object.assign(this.settings, patch);
+    // Backward compat: sync pattern → currentStyle
+    if (patch.pattern !== undefined) {
+      this.currentStyle = patch.pattern;
+    }
     this.randomizer.updateSettings({
       randomizationLevel: this.settings.randomizationLevel,
       fillFrequency: this.settings.fillFrequency,
@@ -166,8 +186,9 @@ export class DrumInstrument implements Instrument {
     });
   }
 
+  /** @deprecated Use setStyle() instead. */
   setPattern(pattern: DrumsPattern): void {
-    this.settings.pattern = pattern;
+    this.currentStyle = pattern;
   }
 
   setHumanizeIntensity(intensity: HumanizeIntensity): void {
@@ -187,6 +208,7 @@ export class DrumInstrument implements Instrument {
 
   reset(): void {
     this.settings = { ...DEFAULT_DRUM_SETTINGS };
+    this.currentStyle = 'swing';
     this.randomizer = new DrumRandomizer();
   }
 
@@ -196,7 +218,7 @@ export class DrumInstrument implements Instrument {
     const s = this.settings;
     if (!s.enabled) return;
 
-    switch (s.pattern) {
+    switch (this.currentStyle) {
       case 'swing':
         this.scheduleSwing(window, ctx, s);
         break;

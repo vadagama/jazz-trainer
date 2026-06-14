@@ -54,49 +54,40 @@
 
 ## 1. Роль Rhodes
 
-Контрабас уже держит:
-- пульс
-- root movement
-- гармоническое направление
-- walking motion
+> **Рефакторинг 2026:** Rhodes теперь работает как **комплементарный слой** поверх Piano.
+> Основная гармоническая партия перешла к `PianoInstrument` (см. `docs/PIANO.md`).
 
-Rhodes должен делать другое:
-- показывать качество аккорда
-- давать джазовую окраску
-- не дублировать бас внизу
-- оставлять пространство
-- играть целыми, половинками или четвертями
-- иногда делать syncopated comping, но не слишком активно
+Rhodes в роли комплементарного слоя:
 
-Режимы для MVP:
+- **Текстурная поддержка:** добавляет окраску и плотность, не перебивая Piano
+- **Верхний регистр:** играет в C4–C6, оставляя низ (C3–C4) для Piano
+- **Разреженный ритм:** целые ноты, offbeat-акценты, ambient-свеллы
+- **Не дублирует Piano:** избегает тех же ритмических слотов и регистров
 
-```ts
-type RhodesCompingMode =
-  | "wholeNotes"
-  | "halfNotes"
-  | "quarterNotes";
-```
+**Комплементарные режимы (маппинг на существующие CompingMode):**
 
-Расширенные режимы (позже):
+| Концепт | Режим `RhodesCompingMode` | Описание |
+|---------|--------------------------|----------|
+| `none` | (без регистрации sink) | Rhodes отключён — 0 событий |
+| `pads` | `wholeNotes` | Целые ноты — медленные гармонические подклады |
+| `subtle-offbeats` | `offbeat-2-4` | Только 2& и 4& — лёгкие offbeat-акценты |
+| `high-comping` | `one-twoand-four` | Активный компинг в верхнем регистре (3 события/такт) |
+| `ambient-swells` | `halfNotes` | Половинные ноты — 2 события/такт, ambient-текстура |
+| `stab-accents` | `basie-2-4` | Короткие акценты на 2 и 4 (как Basie-style) |
 
-```ts
-type RhodesCompingMode =
-  | "wholeNotes"
-  | "halfNotes"
-  | "quarterNotes"
-  | "sparseSwingComping"
-  | "charleston";
-```
+**Старые режимы (перенесены в Piano):**
+- `quarterNotes` — активный четвертной компинг (теперь в Piano-профилях)
+- Полный набор swing-паттернов (charleston, reverse-charleston и др.) — теперь в Piano-профилях
 
 ## 2. Главный принцип: Rhodes не играет root внизу
 
 Если рядом есть контрабас, Rhodes почти всегда должен использовать rootless voicings.
 
 | Аккорд | Rootless voicing | Полный voicing |
-|--------|-----------------|----------------|
-| Dm7    | F C E           | D F A C        |
-| G7     | F B E           | G B D F        |
-| Cmaj7  | E B D           | C E G B        |
+| ------ | ---------------- | -------------- |
+| Dm7    | F C E            | D F A C        |
+| G7     | F B E            | G B D F        |
+| Cmaj7  | E B D            | C E G B        |
 
 Бас уже играет D, G, C. Если Rhodes тоже будет постоянно играть roots, низ станет грязным и учебно-примитивным.
 
@@ -106,28 +97,30 @@ type RhodesCompingMode =
 
 ```ts
 const rhodesCompingRange = {
-  min: "C3",
-  max: "C6",
-  preferredMin: "F3",
-  preferredMax: "A5",
+  min: 'C3',
+  max: 'C6',
+  preferredMin: 'F3',
+  preferredMax: 'A5',
 };
 ```
 
-| Зона         | Диапазон    |
-|--------------|-------------|
-| Левая граница | C3 / D3    |
-| Основная зона | F3 – C5    |
-| Верхняя зона  | C5 – A5    |
+| Зона          | Диапазон |
+| ------------- | -------- |
+| Левая граница | C3 / D3  |
+| Основная зона | F3 – C5  |
+| Верхняя зона  | C5 – A5  |
 
 Не пускай Rhodes ниже C3, если играет контрабас. Особенно избегай плотных аккордов ниже F3.
 
 **Плохой вариант:**
+
 ```
 Rhodes: D2 F2 A2 C3
 Bass:   D1 / D2
 ```
 
 **Хороший вариант:**
+
 ```
 Bass:   D2
 Rhodes: F3 C4 E4
@@ -140,7 +133,7 @@ Rhodes: F3 C4 E4
 Самый простой и чистый вариант — 3rd + 7th:
 
 | Аккорд | Shell |
-|--------|-------|
+| ------ | ----- |
 | Dm7    | F C   |
 | G7     | B F   |
 | Cmaj7  | E B   |
@@ -157,23 +150,23 @@ type ShellVoicing = {
 Лучший default для MVP — 3rd + 7th + color tone:
 
 | Аккорд | Rootless 3 | Интервалы |
-|--------|-----------|-----------|
-| Dm7    | F C E     | 3, 7, 9   |
-| G7     | B F A     | 3, 7, 9   |
-| Cmaj7  | E B D     | 3, 7, 9   |
+| ------ | ---------- | --------- |
+| Dm7    | F C E      | 3, 7, 9   |
+| G7     | B F A      | 3, 7, 9   |
+| Cmaj7  | E B D      | 3, 7, 9   |
 
 ### 4.3. Four-note rootless voicings
 
 Для более плотного звучания — 3rd + 7th + 9th + 13th:
 
-| Аккорд | Rootless 4 | Интервалы    |
-|--------|-----------|--------------|
-| Dm9    | F C E A   | 3, 7, 9, 13  |
-| G13    | F B E A   | 3, 7, 9, 13  |
-| Cmaj9  | E B D G   | 3, 7, 9, 5   |
+| Аккорд | Rootless 4 | Интервалы   |
+| ------ | ---------- | ----------- |
+| Dm9    | F C E A    | 3, 7, 9, 13 |
+| G13    | F B E A    | 3, 7, 9, 13 |
+| Cmaj9  | E B D G    | 3, 7, 9, 5  |
 
 ```ts
-type RhodesVoicingDensity = "shell2" | "rootless3" | "rootless4";
+type RhodesVoicingDensity = 'shell2' | 'rootless3' | 'rootless4';
 // Default: "rootless3"
 ```
 
@@ -207,6 +200,7 @@ G7:
 ```
 
 Более джазовые варианты (для расширения):
+
 ```
 G7b9:   B F Ab
 G7#9:   B F A#
@@ -257,6 +251,7 @@ const defaultVoiceLeading: VoiceLeadingSettings = {
 ```
 
 **Алгоритм:**
+
 1. Для каждого аккорда сгенерировать несколько возможных voicings
 2. Отфильтровать по регистру
 3. Сравнить с предыдущим voicing
@@ -285,9 +280,7 @@ type VoicingCandidate = {
 ```
 
 ```ts
-const wholeNotes = [
-  { beat: 1, durationBeats: 4 }
-];
+const wholeNotes = [{ beat: 1, durationBeats: 4 }];
 // Tone.js: duration: "1m"
 // Рекомендуется: durationBeats: 3.5 (зазор перед следующим тактом)
 ```
@@ -305,7 +298,7 @@ const wholeNotes = [
 ```ts
 const halfNotes = [
   { beat: 1, durationBeats: 2 },
-  { beat: 3, durationBeats: 2 }
+  { beat: 3, durationBeats: 2 },
 ];
 ```
 
@@ -326,7 +319,7 @@ const quarterNotes = [
   { beat: 1, durationBeats: 0.75, velocity: 0.56 },
   { beat: 2, durationBeats: 0.65, velocity: 0.44 },
   { beat: 3, durationBeats: 0.75, velocity: 0.52 },
-  { beat: 4, durationBeats: 0.65, velocity: 0.46 }
+  { beat: 4, durationBeats: 0.65, velocity: 0.46 },
 ];
 ```
 
@@ -335,6 +328,7 @@ Default — половинки, не четверти.
 ## 8. Swing feel
 
 Для целых и половинок swing выражается через:
+
 - placement
 - duration
 - velocity
@@ -357,8 +351,8 @@ const rhodesHumanize = {
 
 ```ts
 const halfNoteVelocities = {
-  beat1: 0.58,  // medium
-  beat3: 0.50,  // slightly softer
+  beat1: 0.58, // medium
+  beat3: 0.5, // slightly softer
   random: 0.04,
 };
 ```
@@ -367,10 +361,10 @@ const halfNoteVelocities = {
 
 ```ts
 const quarterNoteVelocities = {
-  beat1: 0.56,  // сильнее
-  beat2: 0.42,  // мягче
-  beat3: 0.52,  // средне
-  beat4: 0.45,  // мягче / подготовка
+  beat1: 0.56, // сильнее
+  beat2: 0.42, // мягче
+  beat3: 0.52, // средне
+  beat4: 0.45, // мягче / подготовка
   random: 0.04,
 };
 ```
@@ -384,20 +378,18 @@ Rhodes не должен быть громче баса и учебной мел
 Rhodes сэмплы looped — важно контролировать длительность:
 
 ```ts
-const wholeComp = [
-  { beat: 1, durationBeats: 3.6, velocity: 0.55 },
-];
+const wholeComp = [{ beat: 1, durationBeats: 3.6, velocity: 0.55 }];
 
 const halfComp = [
   { beat: 1, durationBeats: 1.65, velocity: 0.56 },
-  { beat: 3, durationBeats: 1.45, velocity: 0.50 },
+  { beat: 3, durationBeats: 1.45, velocity: 0.5 },
 ];
 
 const quarterComp = [
   { beat: 1, durationBeats: 0.65, velocity: 0.54 },
   { beat: 2, durationBeats: 0.55, velocity: 0.42 },
-  { beat: 3, durationBeats: 0.65, velocity: 0.50 },
-  { beat: 4, durationBeats: 0.50, velocity: 0.44 },
+  { beat: 3, durationBeats: 0.65, velocity: 0.5 },
+  { beat: 4, durationBeats: 0.5, velocity: 0.44 },
 ];
 
 type CompEvent = {
@@ -445,7 +437,7 @@ rhodesSampler.chain(
   rhodesChorus,
   rhodesReverb,
   rhodesChannel,
-  Tone.Destination
+  Tone.Destination,
 );
 ```
 
@@ -454,6 +446,7 @@ rhodesSampler.chain(
 ## 12. Работа с сэмплами jRhodes3c
 
 Паттерн имён файлов:
+
 ```
 As_055__G3_371-mono.flac
 As_059__B3_513-mono.flac
@@ -461,7 +454,7 @@ As_062__D4_293-mono.flac
 ```
 
 | Часть    | Значение                        |
-|----------|---------------------------------|
+| -------- | ------------------------------- |
 | `As_055` | MIDI note number / sample index |
 | `G3`     | Root note                       |
 | `371`    | Velocity layer / sample variant |
@@ -470,6 +463,7 @@ As_062__D4_293-mono.flac
 Для точного mapping читай `.sfz` — там будут `key`, `lokey/hikey`, `lovel/hivel`, `sample`, `loop_start/loop_end`, `ampeg_release`.
 
 Рекомендуемый pipeline:
+
 ```
 SFZ → manifest.json → OGG files → Tone.js sample maps
 ```
@@ -480,7 +474,7 @@ SFZ → manifest.json → OGG files → Tone.js sample maps
 type RhodesSample = {
   note: string;
   midi: number;
-  velocityLayer: "soft" | "medium" | "hard" | "bark";
+  velocityLayer: 'soft' | 'medium' | 'hard' | 'bark';
   velocityMin: number;
   velocityMax: number;
   url: string;
@@ -488,11 +482,11 @@ type RhodesSample = {
 };
 
 type RhodesManifest = {
-  id: "jrhodes3c-standard-v1";
-  instrument: "rhodes";
-  format: "ogg";
+  id: 'jrhodes3c-standard-v1';
+  instrument: 'rhodes';
+  format: 'ogg';
   sampleRate: 44100;
-  range: { min: "F1"; max: "C7" };
+  range: { min: 'F1'; max: 'C7' };
   samples: RhodesSample[];
 };
 ```
@@ -501,10 +495,10 @@ type RhodesManifest = {
 
 ```ts
 const rhodesLayers = {
-  soft:   new Tone.Sampler({ urls: softUrls,   baseUrl }),
+  soft: new Tone.Sampler({ urls: softUrls, baseUrl }),
   medium: new Tone.Sampler({ urls: mediumUrls, baseUrl }),
-  hard:   new Tone.Sampler({ urls: hardUrls,   baseUrl }),
-  bark:   new Tone.Sampler({ urls: barkUrls,   baseUrl }),
+  hard: new Tone.Sampler({ urls: hardUrls, baseUrl }),
+  bark: new Tone.Sampler({ urls: barkUrls, baseUrl }),
 };
 
 function pickRhodesLayer(velocity: number) {
@@ -522,8 +516,8 @@ function pickRhodesLayer(velocity: number) {
 ```ts
 type RhodesCompingSettings = {
   enabled: boolean;
-  mode: "wholeNotes" | "halfNotes" | "quarterNotes";
-  voicingDensity: "shell2" | "rootless3" | "rootless4";
+  mode: 'wholeNotes' | 'halfNotes' | 'quarterNotes';
+  voicingDensity: 'shell2' | 'rootless3' | 'rootless4';
   register: {
     min: string;
     max: string;
@@ -531,7 +525,7 @@ type RhodesCompingSettings = {
     preferredMax: string;
   };
   rhythmicVariation: number; // 0..1
-  velocity: number;          // base 0..1
+  velocity: number; // base 0..1
   humanizeMs: number;
   avoidRoots: boolean;
   avoidLowRegister: boolean;
@@ -540,13 +534,13 @@ type RhodesCompingSettings = {
 
 const defaultRhodesComping: RhodesCompingSettings = {
   enabled: true,
-  mode: "halfNotes",
-  voicingDensity: "rootless3",
+  mode: 'halfNotes',
+  voicingDensity: 'rootless3',
   register: {
-    min: "C3",
-    max: "C6",
-    preferredMin: "F3",
-    preferredMax: "A5",
+    min: 'C3',
+    max: 'C6',
+    preferredMin: 'F3',
+    preferredMax: 'A5',
   },
   rhythmicVariation: 0.15,
   velocity: 0.52,
@@ -561,14 +555,14 @@ const defaultRhodesComping: RhodesCompingSettings = {
 
 ```ts
 type RhodesCompEvent = {
-  time: string;          // Tone.js transport time, e.g. "2:0:0"
+  time: string; // Tone.js transport time, e.g. "2:0:0"
   chordSymbol: string;
   notes: string[];
   duration: string;
   durationBeats: number;
   velocity: number;
-  role: "comp";
-  voicingType: "shell2" | "rootless3" | "rootless4";
+  role: 'comp';
+  voicingType: 'shell2' | 'rootless3' | 'rootless4';
 };
 ```
 
@@ -593,20 +587,20 @@ type RhodesCompEvent = {
 
 **Whole notes:**
 
-| Такт   | Voicing     |
-|--------|-------------|
-| Dm7    | F3 C4 E4   |
-| G7     | F3 B3 E4   |
-| Cmaj7  | E3 B3 D4   |
-| Cmaj7  | E3 A3 D4   |
+| Такт  | Voicing  |
+| ----- | -------- |
+| Dm7   | F3 C4 E4 |
+| G7    | F3 B3 E4 |
+| Cmaj7 | E3 B3 D4 |
+| Cmaj7 | E3 A3 D4 |
 
 **Half notes:**
 
-| Аккорд | beat 1  | beat 3  |
-|--------|---------|---------|
-| Dm7    | F C E   | A C F   |
-| G7     | F B E   | A B F   |
-| Cmaj7  | E B D   | G B E   |
+| Аккорд | beat 1 | beat 3 |
+| ------ | ------ | ------ |
+| Dm7    | F C E  | A C F  |
+| G7     | F B E  | A B F  |
+| Cmaj7  | E B D  | G B E  |
 
 **Quarter notes** (короткие stabs, один voicing с разными velocity):
 
@@ -621,8 +615,8 @@ type RhodesCompEvent = {
 ```ts
 const rhodesBassInteractionRules = {
   minDistanceFromBassTopSemitones: 10,
-  avoidRhodesNotesBelow: "C3",
-  avoidDoublingBassRootBelow: "C4",
+  avoidRhodesNotesBelow: 'C3',
+  avoidDoublingBassRootBelow: 'C4',
   reduceVelocityWhenBassIsActive: true,
 };
 ```
@@ -638,23 +632,21 @@ const rhodesBassInteractionRules = {
 ```ts
 function getRhodesCompPattern(mode: RhodesCompingMode): CompEvent[] {
   switch (mode) {
-    case "wholeNotes":
-      return [
-        { beat: 1, durationBeats: 3.6, velocity: 0.54 },
-      ];
+    case 'wholeNotes':
+      return [{ beat: 1, durationBeats: 3.6, velocity: 0.54 }];
 
-    case "halfNotes":
+    case 'halfNotes':
       return [
         { beat: 1, durationBeats: 1.65, velocity: 0.55 },
         { beat: 3, durationBeats: 1.45, velocity: 0.49 },
       ];
 
-    case "quarterNotes":
+    case 'quarterNotes':
       return [
         { beat: 1, durationBeats: 0.65, velocity: 0.53 },
-        { beat: 2, durationBeats: 0.50, velocity: 0.42 },
-        { beat: 3, durationBeats: 0.65, velocity: 0.50 },
-        { beat: 4, durationBeats: 0.50, velocity: 0.44 },
+        { beat: 2, durationBeats: 0.5, velocity: 0.42 },
+        { beat: 3, durationBeats: 0.65, velocity: 0.5 },
+        { beat: 4, durationBeats: 0.5, velocity: 0.44 },
       ];
   }
 }
@@ -666,7 +658,7 @@ function getRhodesCompPattern(mode: RhodesCompingMode): CompEvent[] {
 
 ```ts
 Tone.Transport.swing = 0.55;
-Tone.Transport.swingSubdivision = "8n";
+Tone.Transport.swingSubdivision = '8n';
 ```
 
 Для quarter-note comping — расписание по quarter grid + humanize вручную.
@@ -679,12 +671,7 @@ function scheduleRhodesComp(events: RhodesCompEvent[]) {
 
   for (const event of events) {
     const id = Tone.Transport.schedule((time) => {
-      playRhodesChord(
-        event.notes,
-        time + humanizeSeconds(6),
-        event.duration,
-        event.velocity
-      );
+      playRhodesChord(event.notes, time + humanizeSeconds(6), event.duration, event.velocity);
     }, event.time);
 
     scheduledIds.push(id);
@@ -693,12 +680,7 @@ function scheduleRhodesComp(events: RhodesCompEvent[]) {
   return scheduledIds;
 }
 
-function playRhodesChord(
-  notes: string[],
-  time: number,
-  duration: string,
-  velocity: number
-) {
+function playRhodesChord(notes: string[], time: number, duration: string, velocity: number) {
   const layer = pickRhodesLayer(velocity);
   for (const note of notes) {
     layer.triggerAttackRelease(note, duration, time, velocity);
@@ -710,15 +692,15 @@ function playRhodesChord(
 
 ## 21. MVP-спецификация
 
-| Параметр       | Значение                                     |
-|----------------|----------------------------------------------|
-| Источник       | jRhodes3c                                    |
-| Формат         | FLAC source → OGG q5/q6 web                 |
-| Диапазон       | C3–C6 для comping                            |
-| Voicing        | rootless 3-note voicings                     |
-| Ритм           | whole notes / half notes / quarter notes     |
-| Default ритм   | half notes                                   |
-| Velocity       | 0.45–0.58                                    |
-| Humanize       | ±6 ms                                        |
-| Эффекты        | light tremolo, light chorus, small reverb    |
+| Параметр       | Значение                                                         |
+| -------------- | ---------------------------------------------------------------- |
+| Источник       | jRhodes3c                                                        |
+| Формат         | FLAC source → OGG q5/q6 web                                      |
+| Диапазон       | C3–C6 для comping                                                |
+| Voicing        | rootless 3-note voicings                                         |
+| Ритм           | whole notes / half notes / quarter notes                         |
+| Default ритм   | half notes                                                       |
+| Velocity       | 0.45–0.58                                                        |
+| Humanize       | ±6 ms                                                            |
+| Эффекты        | light tremolo, light chorus, small reverb                        |
 | Бас-интеракция | no low roots, no dense chords below C3, prefer rootless voicings |
