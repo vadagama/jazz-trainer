@@ -194,6 +194,8 @@ Jazz Trainer — браузерный тренажёр джазовой гарм
 - Генерация басовой линии по гармонической сетке
 - Стиле-зависимые паттерны: swing (walking), bossa (root-5th), funk (syncopated), latin (montuno), ballad (two-feel)
 - 7 уровней сложности от простого root до полноценного walking bass
+- **Sub-bar chord resolution:** корректная смена аккордов внутри такта (multi-chord бары)
+- Встроенный рандомайзер с вариантами approach (chromatic above/below, diatonic), sparse-режимом и октавными прыжками
 - Использование сэмплов контрабаса
 
 **Барабаны (DrumInstrument):**
@@ -209,20 +211,22 @@ Jazz Trainer — браузерный тренажёр джазовой гарм
 
 - Основной гармонический инструмент — ведущая партия компинга
 - 5 составных 4-тактовых профилей: swing-sparse, swing-medium, basie-light, offbeat-push, beginner-safe
+- Адаптивный профиль для multi-chord баров: автоматически переключается на `two-and-four` (2 аккорда) или `quarter-comp` (3–4 аккорда)
 - 4 типа voicing'ов: shell2, rootless3, rootless4, quartal
-- Voice leading с минимальным движением голосов между аккордами
+- Voice leading с минимальным движением голосов между аккордами (включая внутритактовые переходы)
 - Встроенный рандомайзер (off/subtle/moderate/high)
 - Стиле-зависимый выбор профиля по умолчанию
 - Два источника сэмплов: Salamander Grand Piano, Upright KW
 - Подробнее: `docs/PIANO.md`
 
-**Rhodes (RhodesInstrument) 🟡 — комплементарный слой:**
+**Rhodes (RhodesInstrument) 🟢 — комплементарный слой:**
 
 - Текстурный слой поверх Piano — добавляет окраску и плотность
 - Комплементарные режимы: pads (wholeNotes), subtle-offbeats (offbeat-2-4), high-comping, ambient-swells (halfNotes), stab-accents (basie-2-4)
-- Верхний регистр (C4–C6), избегает конфликтов с Piano
+- Sub-bar chord resolution: каждый event резолвит аккорд на момент звучания
+- Верхний регистр (C4–C6), избегает конфликтов с Piano (проверка `avoidConflicts`)
 - Rootless voicings (shell2, rootless3, rootless4)
-- Voice leading между аккордами
+- Voice leading между аккордами (включая внутритактовые переходы)
 - Подробнее: `docs/RHODES.md`
 
 ### 6.4. Транспорт, метроном и глобальный стиль 🟢
@@ -232,6 +236,7 @@ Jazz Trainer — браузерный тренажёр джазовой гарм
 - Loop: зацикливание выбранного диапазона тактов
 - Предсчёт (count-in)
 - **Глобальный стиль:** единый `Style` (swing, bossa, funk, latin, ballad) управляет поведением всех инструментов (Bass, Piano, Rhodes, Drums) согласованно
+- **Sub-bar chord timeline:** `ChordTimeline` поддерживает multi-chord бары (несколько аккордов в одном такте), инструменты резолвят аккорд на момент звучания ноты. Подробнее: `docs/CHORDS.md`
 
 ---
 
@@ -304,4 +309,4 @@ Jazz Trainer — браузерный тренажёр джазовой гарм
 
 ---
 
-_Документ обновлён 2026-06-13. Отражает фактические возможности сервиса на текущий момент._
+_Документ обновлён 2026-06-14. Отражает фактические возможности сервиса на текущий момент._

@@ -185,6 +185,71 @@ describe('buildVoicing — guide tones', () => {
   });
 });
 
+// ─── Drift prevention: C7→D7→F7 loop ───────────────────────────────────────────
+
+describe('buildVoicing — drift prevention (asymmetric voice-leading)', () => {
+  const c7 = chord('C', '', 'dominant');
+  const d7 = chord('D', '', 'dominant');
+  const f7 = chord('F', '', 'dominant');
+  const chords = [c7, d7, f7] as const;
+
+  it('shell2 does not drift out of range over 20 cycles', () => {
+    let prev: readonly string[] | null = null;
+    for (let i = 0; i < 60; i++) {
+      prev = buildVoicing(chords[i % 3]!, 'shell2', prev);
+      for (const n of prev) {
+        const midi = noteToMidi(n);
+        expect(midi).toBeGreaterThanOrEqual(48);
+        expect(midi).toBeLessThanOrEqual(84);
+      }
+    }
+    // After 20 cycles, voicing should stay in lower 2/3 of range
+    const avg = prev!.reduce((s, n) => s + noteToMidi(n), 0) / prev!.length;
+    expect(avg).toBeLessThan(72);
+  });
+
+  it('rootless3 does not drift out of range over 20 cycles', () => {
+    let prev: readonly string[] | null = null;
+    for (let i = 0; i < 60; i++) {
+      prev = buildVoicing(chords[i % 3]!, 'rootless3', prev);
+      for (const n of prev) {
+        const midi = noteToMidi(n);
+        expect(midi).toBeGreaterThanOrEqual(48);
+        expect(midi).toBeLessThanOrEqual(84);
+      }
+    }
+    const avg = prev!.reduce((s, n) => s + noteToMidi(n), 0) / prev!.length;
+    expect(avg).toBeLessThan(72);
+  });
+
+  it('rootless4 does not drift out of range over 20 cycles', () => {
+    let prev: readonly string[] | null = null;
+    for (let i = 0; i < 60; i++) {
+      prev = buildVoicing(chords[i % 3]!, 'rootless4', prev);
+      for (const n of prev) {
+        const midi = noteToMidi(n);
+        expect(midi).toBeGreaterThanOrEqual(48);
+        expect(midi).toBeLessThanOrEqual(84);
+      }
+    }
+    const avg = prev!.reduce((s, n) => s + noteToMidi(n), 0) / prev!.length;
+    expect(avg).toBeLessThan(72);
+  });
+
+  it('hard reset triggers when voicing reaches ceiling', () => {
+    // Voicing near the top: E5(76) + Bb5(82). Top note 82 > HARD_CEIL(80).
+    // Either weighted voice-leading pulls it down, or hard reset falls back to default.
+    const highButValid = ['E5', 'Bb5'];
+    const result = buildVoicing(c7, 'shell2', highButValid);
+    // Either voice-led (weighted) or hard-reset to default — both must be in range
+    for (const n of result) {
+      const midi = noteToMidi(n);
+      expect(midi).toBeGreaterThanOrEqual(48);
+      expect(midi).toBeLessThanOrEqual(84);
+    }
+  });
+});
+
 // ─── Rhythmic patterns ─────────────────────────────────────────────────────────
 
 describe('getCompPattern', () => {

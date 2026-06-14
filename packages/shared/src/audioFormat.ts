@@ -8,6 +8,10 @@
 
 export type AudioFormat = 'aac' | 'mp3';
 
+declare const document:
+  | { createElement(tag: 'audio'): { canPlayType(type: string): string } }
+  | undefined;
+
 let _supportsAAC: boolean | null = null;
 
 /** Check if the browser can decode AAC-LC in MP4 container. */

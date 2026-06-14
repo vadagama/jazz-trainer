@@ -7,6 +7,11 @@ import {
 } from '../time/timeSignature.js';
 import type { Instrument, ScheduleContext, ScheduleWindow } from './instrument.js';
 import type { ChordTimeline } from './chordTimeline.js';
+import {
+  BassRandomizer,
+  type BassRandomizationLevel,
+  type ApproachVariant,
+} from './bassRandomizer.js';
 
 const NOTE_SEMITONES: Record<string, number> = {
   C: 0,
@@ -40,6 +45,7 @@ export class BassInstrument implements Instrument {
   private complexity: 1 | 2 | 3 | 4 | 5 | 6 | 7 = 5;
   private octaveShift = 0;
   private style: Style = 'swing';
+  readonly randomizer = new BassRandomizer();
 
   constructor(timeline: ChordTimeline) {
     this.timeline = timeline;
@@ -60,6 +66,10 @@ export class BassInstrument implements Instrument {
 
   setOctaveShift(shift: number): void {
     this.octaveShift = shift;
+  }
+
+  setRandomizationLevel(level: BassRandomizationLevel): void {
+    this.randomizer.setLevel(level);
   }
 
   /* ── Scheduling ──────────────────────────────────────────────────────────── */
@@ -108,7 +118,7 @@ export class BassInstrument implements Instrument {
         const velocity = BEAT_VELOCITY[beatInBar] ?? BEAT_VELOCITY[0];
         ctx.scheduleEvent(
           'bass',
-          { note: resolveRootNote(chord, octave), articulation: 'pluck' },
+          { note: resolveRootNote(chord, octave, os), articulation: 'pluck' },
           atTicks,
           velocity,
           durationTicks,
@@ -132,7 +142,7 @@ export class BassInstrument implements Instrument {
           const octave = (beatInBar !== 0 && barIndex % 2 === 1 ? 3 : 2) + os;
           ctx.scheduleEvent(
             'bass',
-            { note: resolveRootNote(chord, octave), articulation: 'pluck' },
+            { note: resolveRootNote(chord, octave, os), articulation: 'pluck' },
             atTicks,
             velocity,
             durationTicks,
@@ -148,36 +158,58 @@ export class BassInstrument implements Instrument {
         }
       }
     } else if (this.complexity <= 6) {
-      // Walking bass: root-3rd-5th on inner beats, chromatic approach on last beat
+      // Walking bass with sub-bar chord awareness:
+      // - First beat of a chord → root
+      // - Last beat of a chord → approach to next chord (sub-bar or next bar)
+      // - Inner beats → third / fifth (alternating)
+      //
+      // With BassRandomizer:
+      // - Approach notes use chromatic or diatonic variants (seed from barIndex).
+      // - 3–4 chord bars: sometimes play sparse (half notes instead of quarters),
+      //   with octave jumps for variety.
       const slotTicks = Math.floor(tpBar / 4);
       const durationTicks = Math.floor(slotTicks * GATE_RATIO);
       const firstBeat = Math.ceil(window.fromTicks / tpBeat);
+
       for (let beat = firstBeat; beat * tpBeat < window.toTicks; beat++) {
         const atTicks = beat * tpBeat;
         const beatInBar = beat % sig.beatsPerBar;
-        const barIndex = Math.floor(beat / sig.beatsPerBar);
+        const barIndex = Math.floor(atTicks / tpBar);
         const chord = this.timeline.getChordAtTick(atTicks, sig);
         if (!chord) continue;
-        const isLastBeat = beatInBar === sig.beatsPerBar - 1;
+
+        const chordCount = this.timeline.getChordCountInBar(barIndex);
+        const isSparse = this.randomizer.shouldPlaySparse(barIndex, chordCount);
+        const prevBeatChord = this.timeline.getChordAtTick(atTicks - tpBeat, sig);
+        const nextBeatChord = this.timeline.getChordAtTick(atTicks + tpBeat, sig);
+        const isFirstOfChord = !prevBeatChord || prevBeatChord !== chord;
+        const isLastOfChord = !nextBeatChord || nextBeatChord !== chord;
+
+        // In sparse mode (3-4 chord bars), skip inner beats: play only chord
+        // boundaries (where chord changes). Non-boundary beats rest.
+        if (isSparse && !isFirstOfChord) continue;
+
         const velocity = BEAT_VELOCITY[beatInBar] ?? BEAT_VELOCITY[0];
         let note: string;
-        if (isLastBeat) {
-          const nextChord = this.timeline.getChordAtTick((barIndex + 1) * tpBar, sig);
-          note = nextChord
-            ? resolveApproachNote(nextChord, barIndex % 2 === 0, 2 + os, os)
-            : resolveSeventhNote(chord, 2 + os, os);
-        } else {
-          switch (beatInBar) {
-            case 0:
-              note = resolveRootNote(chord, 2 + os);
-              break;
-            case 1:
-              note = resolveThirdNote(chord, 2 + os, os);
-              break;
-            default:
-              note = resolveFifthNote(chord, 2 + os, os);
-              break;
+        if (isFirstOfChord) {
+          let oct = 2 + os;
+          if (this.randomizer.shouldShiftOctave(barIndex, beat)) oct += 1;
+          if (this.randomizer.shouldDropOctave(barIndex, beat)) oct -= 1;
+          note = resolveRootNote(chord, oct, os);
+        } else if (isLastOfChord) {
+          const nextChord = this.timeline.getNextChord(atTicks, sig);
+          if (nextChord) {
+            const variant = this.randomizer.selectApproachVariant(barIndex, beat);
+            note = resolveApproachNote(nextChord, variant, 2 + os, os);
+          } else {
+            note = resolveSeventhNote(chord, 2 + os, os);
           }
+        } else {
+          // Inner beats: alternate third / fifth
+          note =
+            beatInBar % 2 === 0
+              ? resolveFifthNote(chord, 2 + os, os)
+              : resolveThirdNote(chord, 2 + os, os);
         }
         ctx.scheduleEvent(
           'bass',
@@ -201,7 +233,7 @@ export class BassInstrument implements Instrument {
         let note: string;
         switch (beatInBar) {
           case 0:
-            note = resolveRootNote(chord, 2 + os);
+            note = resolveRootNote(chord, 2 + os, os);
             break;
           case 1:
             note = resolveThirdNote(chord, 2 + os, os);
@@ -260,7 +292,7 @@ export class BassInstrument implements Instrument {
         // Beat 1: root
         // Higher complexity alternates octave 2/3 between bars
         const octave = this.complexity >= 4 && barIndex % 2 === 1 ? 3 : 2;
-        note = resolveRootNote(chord, octave + os);
+        note = resolveRootNote(chord, octave + os, os);
       } else {
         // Beat 3: fifth
         note = resolveFifthNote(chord, 2 + os, os);
@@ -304,37 +336,37 @@ export class BassInstrument implements Instrument {
       if (this.complexity <= 2) {
         // Sparse: root on beat 1, fifth on beat 3 (quarter-note feel)
         if (beatInBar === 0 && subIndex === 0) {
-          note = resolveRootNote(chord, 2 + os);
+          note = resolveRootNote(chord, 2 + os, os);
         } else if (beatInBar === 2 && subIndex === 0) {
           note = resolveFifthNote(chord, 2 + os, os);
         }
       } else if (this.complexity <= 4) {
         // Medium: root on 1, root on 1&, fifth on 2&, root on 4, root on 4&
         if (beatInBar === 0 && subIndex === 0) {
-          note = resolveRootNote(chord, 2 + os);
+          note = resolveRootNote(chord, 2 + os, os);
         } else if (beatInBar === 0 && subIndex === 1) {
-          note = resolveRootNote(chord, 3 + os);
+          note = resolveRootNote(chord, 3 + os, os);
         } else if (beatInBar === 1 && subIndex === 1) {
           note = resolveFifthNote(chord, 2 + os, os);
         } else if (beatInBar === 2 && subIndex === 1) {
-          note = resolveRootNote(chord, 3 + os);
+          note = resolveRootNote(chord, 3 + os, os);
         } else if (beatInBar === 3 && subIndex === 0) {
-          note = resolveRootNote(chord, 2 + os);
+          note = resolveRootNote(chord, 2 + os, os);
         } else if (beatInBar === 3 && subIndex === 1) {
-          note = resolveRootNote(chord, 3 + os);
+          note = resolveRootNote(chord, 3 + os, os);
         }
       } else if (this.complexity <= 6) {
         // Dense syncopated: hits on 1, 1&, 2&, 3, 3&, 4&
         if (beatInBar === 0 && subIndex === 0) {
-          note = resolveRootNote(chord, 2 + os);
+          note = resolveRootNote(chord, 2 + os, os);
         } else if (beatInBar === 0 && subIndex === 1) {
           note = resolveFifthNote(chord, 2 + os, os);
         } else if (beatInBar === 1 && subIndex === 1) {
-          note = resolveRootNote(chord, 3 + os);
+          note = resolveRootNote(chord, 3 + os, os);
         } else if (beatInBar === 2 && subIndex === 0) {
           note = resolveFifthNote(chord, 2 + os, os);
         } else if (beatInBar === 2 && subIndex === 1) {
-          note = resolveRootNote(chord, 3 + os);
+          note = resolveRootNote(chord, 3 + os, os);
         } else if (beatInBar === 3 && subIndex === 1) {
           note = resolveSeventhNote(chord, 2 + os, os);
         }
@@ -343,20 +375,23 @@ export class BassInstrument implements Instrument {
         if (beatInBar === 0 && subIndex === 0) {
           note = resolveFifthNote(chord, 2 + os, os);
         } else if (beatInBar === 0 && subIndex === 1) {
-          note = resolveRootNote(chord, 2 + os);
+          note = resolveRootNote(chord, 2 + os, os);
         } else if (beatInBar === 1 && subIndex === 1) {
           note = resolveFifthNote(chord, 2 + os, os);
         } else if (beatInBar === 2 && subIndex === 0) {
-          note = resolveRootNote(chord, 3 + os);
+          note = resolveRootNote(chord, 3 + os, os);
         } else if (beatInBar === 2 && subIndex === 1) {
           note = resolveSeventhNote(chord, 2 + os, os);
         } else if (beatInBar === 3 && subIndex === 0) {
-          const nextChord = this.timeline.getChordAtTick((barIndex + 1) * tpBar, sig);
-          note = nextChord
-            ? resolveApproachNote(nextChord, barIndex % 2 === 0, 2 + os, os)
-            : resolveFifthNote(chord, 2 + os, os);
+          const nextChord = this.timeline.getNextChord(atTicks, sig);
+          if (nextChord) {
+            const variant = this.randomizer.selectApproachVariant(barIndex, beatInBar);
+            note = resolveApproachNote(nextChord, variant, 2 + os, os);
+          } else {
+            note = resolveFifthNote(chord, 2 + os, os);
+          }
         } else if (beatInBar === 3 && subIndex === 1) {
-          note = resolveRootNote(chord, 3 + os);
+          note = resolveRootNote(chord, 3 + os, os);
         }
       }
 
@@ -400,7 +435,7 @@ export class BassInstrument implements Instrument {
         const octave = this.complexity >= 5 && barIndex % 2 === 1 ? 3 : 2;
         ctx.scheduleEvent(
           'bass',
-          { note: resolveRootNote(chord, octave + os), articulation: 'pluck' },
+          { note: resolveRootNote(chord, octave + os, os), articulation: 'pluck' },
           atTicks,
           velocity,
           durationTicks,
@@ -426,7 +461,7 @@ export class BassInstrument implements Instrument {
         const note =
           this.complexity >= 6
             ? resolveSeventhNote(chord, 2 + os, os)
-            : resolveRootNote(chord, 3 + os);
+            : resolveRootNote(chord, 3 + os, os);
         ctx.scheduleEvent(
           'bass',
           { note, articulation: 'pluck' },
@@ -473,12 +508,12 @@ export class BassInstrument implements Instrument {
       if (beatInBar === 0) {
         // Beat 1: root; higher complexity alternates octaves
         const octave = this.complexity >= 7 && barIndex % 2 === 1 ? 3 : 2;
-        note = resolveRootNote(chord, octave + os);
+        note = resolveRootNote(chord, octave + os, os);
       } else {
         // Beat 3: fifth (medium+) or root (low complexity)
         note =
           this.complexity <= 3
-            ? resolveRootNote(chord, 2 + os)
+            ? resolveRootNote(chord, 2 + os, os)
             : resolveFifthNote(chord, 2 + os, os);
       }
       ctx.scheduleEvent('bass', { note, articulation: 'pluck' }, atTicks, velocity, durationTicks);
@@ -488,9 +523,17 @@ export class BassInstrument implements Instrument {
 
 /* ── Note resolution helpers ───────────────────────────────────────────────── */
 
-/** Convert ChordSymbol root to a scientific pitch string at the given octave. */
-function resolveRootNote(chord: ChordSymbol, octave: number): string {
-  return `${chord.root}${chord.rootAccidental}${octave}`;
+/**
+ * Convert ChordSymbol root to a scientific pitch string at the given octave.
+ * Applies a ceiling at G3 + octaveShift (matching resolveIntervalNote).
+ */
+function resolveRootNote(chord: ChordSymbol, octave: number, octaveShift = 0): string {
+  const accOffset = chord.rootAccidental === '#' ? 1 : chord.rootAccidental === 'b' ? -1 : 0;
+  const rootSemitone = ((NOTE_SEMITONES[chord.root] ?? 0) + accOffset + 12) % 12;
+  const ceilOct = 3 + octaveShift;
+  let finalOctave = octave;
+  if (finalOctave > ceilOct || (finalOctave === ceilOct && rootSemitone > 7)) finalOctave -= 1;
+  return `${chord.root}${chord.rootAccidental}${finalOctave}`;
 }
 
 /** Interval in semitones from root to third based on chord quality. */
@@ -562,22 +605,28 @@ function resolveSeventhNote(chord: ChordSymbol, rootOctave: number, octaveShift 
  */
 function resolveApproachNote(
   nextChord: ChordSymbol,
-  fromAbove: boolean,
+  variant: ApproachVariant | boolean,
   targetOctave: number,
   octaveShift = 0,
 ): string {
   const accOffset =
     nextChord.rootAccidental === '#' ? 1 : nextChord.rootAccidental === 'b' ? -1 : 0;
   const nextRootSemitone = ((NOTE_SEMITONES[nextChord.root] ?? 0) + accOffset + 12) % 12;
+
+  // Normalise boolean legacy calls to variant
+  if (variant === true) variant = 'chromaticAbove';
+  else if (variant === false) variant = 'chromaticBelow';
+
+  const stepSemitones = variant === 'chromaticAbove' || variant === 'chromaticBelow' ? 1 : 2;
+  const isAbove = variant === 'chromaticAbove' || variant === 'diatonicAbove';
+
   let approachSemitone: number;
   let approachOctave: number;
-  if (fromAbove) {
-    approachSemitone = (nextRootSemitone + 1) % 12;
-    // Wrap means approach crossed 12→0 boundary: it lands one octave higher
+  if (isAbove) {
+    approachSemitone = (nextRootSemitone + stepSemitones) % 12;
     approachOctave = approachSemitone <= nextRootSemitone ? targetOctave + 1 : targetOctave;
   } else {
-    approachSemitone = (nextRootSemitone + 11) % 12;
-    // Wrap means approach crossed 0→11 boundary: it lands one octave lower
+    approachSemitone = (nextRootSemitone + (12 - stepSemitones)) % 12;
     approachOctave = approachSemitone >= nextRootSemitone ? targetOctave - 1 : targetOctave;
   }
   const ceilOct = 3 + octaveShift;

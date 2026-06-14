@@ -31,18 +31,14 @@ export function avoidConflicts(
   if (rhodesEvents.length === 0 || pianoEvents.length === 0) return rhodesEvents;
 
   const pianoPositions = new Set(
-    pianoEvents.map(
-      (e) => (e.beat - 1) * tpBeat + Math.round((e.subdivision ?? 0) * tpBeat),
-    ),
+    pianoEvents.map((e) => (e.beat - 1) * tpBeat + Math.round((e.subdivision ?? 0) * tpBeat)),
   );
 
   for (const re of rhodesEvents) {
     const reTicks = (re.beat - 1) * tpBeat + Math.round((re.subdivision ?? 0) * tpBeat);
 
     // Check for conflict: same beat ±1/16
-    const conflicts = [...pianoPositions].some(
-      (pp) => Math.abs(pp - reTicks) <= SIXTEENTH_TICKS,
-    );
+    const conflicts = [...pianoPositions].some((pp) => Math.abs(pp - reTicks) <= SIXTEENTH_TICKS);
 
     if (!conflicts) continue;
 

@@ -664,3 +664,74 @@ describe('RhodesInstrument — complementary layer modes (setLayerMode)', () => 
     expect(chords).toHaveLength(1);
   });
 });
+
+// ─── Multi-chord (sub-bar) tests ─────────────────────────────────────────────
+
+describe('RhodesInstrument — multi-chord bars (sub-bar)', () => {
+  it('2-chord bar: events resolve chord at their tick position', () => {
+    // | Dm7 G7 | in one bar: Dm7 on beats 0-1, G7 on beats 2-3
+    // halfNotes: events on beat 1 (Dm7) and beat 3 (G7)
+    const timeline = new ChordTimeline([
+      { barIndex: 0, beatStart: 0, beatEnd: 2, chord: dm7 },
+      { barIndex: 0, beatStart: 2, beatEnd: 4, chord: g7 },
+    ]);
+    const inst = new RhodesInstrument(timeline);
+    inst.setHumanize(false);
+    inst.setMode('halfNotes');
+    const { ctx, chords } = makeCtx();
+
+    inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
+    expect(chords.length).toBe(2);
+    const beat1Event = chords.find((c) => c.at === 0);
+    const beat3Event = chords.find((c) => c.at === 2 * TPB);
+    expect(beat1Event).toBeDefined();
+    expect(beat3Event).toBeDefined();
+    // Dm7 voicing != G7 voicing
+    expect(beat3Event!.notes).not.toEqual(beat1Event!.notes);
+  });
+
+  it('chordRef: next uses sub-bar getNextChord (not next bar)', () => {
+    // | Dm7 G7 | Cmaj7 | — anticipation-4and on beat 4.5
+    const timeline = new ChordTimeline([
+      { barIndex: 0, beatStart: 0, beatEnd: 2, chord: dm7 },
+      { barIndex: 0, beatStart: 2, beatEnd: 4, chord: g7 },
+      { barIndex: 1, beatStart: 0, beatEnd: 4, chord: cmaj7 },
+    ]);
+    const inst = new RhodesInstrument(timeline);
+    inst.setHumanize(false);
+    inst.setMode('anticipation-4and');
+    const { ctx, chords } = makeCtx();
+
+    inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
+    // anticipation-4and: beat 4.5, chordRef='next'
+    // The 'next' from beat 4.5 should be cmaj7 (bar 1)
+    const anticipEvent = chords.find((c) => c.at > 3 * TPB && c.at < TPBAR);
+    expect(anticipEvent).toBeDefined();
+    expect(anticipEvent!.notes.length).toBeGreaterThan(0);
+  });
+
+  it('4-chord bar: each halfNotes event resolves its chord', () => {
+    // | Dm7 G7 Cmaj7 A7 | — 1+1+1+1 beats
+    // halfNotes: beat 1 (Dm7, beatStart=0) and beat 3 (Cmaj7, beatStart=2)
+    const a7 = makeChord('A', '', 'dominant');
+    const timeline = new ChordTimeline([
+      { barIndex: 0, beatStart: 0, beatEnd: 1, chord: dm7 },
+      { barIndex: 0, beatStart: 1, beatEnd: 2, chord: g7 },
+      { barIndex: 0, beatStart: 2, beatEnd: 3, chord: cmaj7 },
+      { barIndex: 0, beatStart: 3, beatEnd: 4, chord: a7 },
+    ]);
+    const inst = new RhodesInstrument(timeline);
+    inst.setHumanize(false);
+    inst.setMode('halfNotes');
+    const { ctx, chords } = makeCtx();
+
+    inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
+    expect(chords.length).toBe(2);
+    const beat1Event = chords.find((c) => c.at === 0);
+    const beat3Event = chords.find((c) => c.at === 2 * TPB);
+    expect(beat1Event).toBeDefined();
+    expect(beat3Event).toBeDefined();
+    // Dm7 vs Cmaj7 — different chords
+    expect(beat3Event!.notes).not.toEqual(beat1Event!.notes);
+  });
+});
