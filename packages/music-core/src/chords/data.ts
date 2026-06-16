@@ -36,6 +36,7 @@ export const QUALITY_MATCHERS: QualityMatcher[] = [
   { token: 'sus2', quality: 'suspended', sus: 'sus2' },
   { token: 'sus4', quality: 'suspended', sus: 'sus4' },
   { token: 'sus', quality: 'suspended', sus: 'sus4' },
+  { token: '6', quality: 'major', ext: ['6'] },
   { token: '5', quality: 'power' },
 ];
 
@@ -43,7 +44,7 @@ export const QUALITY_MATCHERS: QualityMatcher[] = [
 export const ALTERATION_TOKENS: Alteration[] = ['#11', 'b13', 'b5', '#5', 'b9', '#9'];
 
 /** Extension number tokens, longest-first (`13`/`11` before `9`/`7`). */
-export const EXTENSION_TOKENS: Extension[] = ['13', '11', '9', '7'];
+export const EXTENSION_TOKENS: Extension[] = ['13', '11', '9', '7', '6'];
 
 export const ROOT_NOTES = 'ABCDEFG';
 

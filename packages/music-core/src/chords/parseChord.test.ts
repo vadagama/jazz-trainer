@@ -20,6 +20,8 @@ describe('parseChord — base symbols (docs/06-dsl.md §3)', () => {
     ['C9', { quality: 'dominant', extensions: ['9'] }],
     ['C11', { quality: 'dominant', extensions: ['11'] }],
     ['C13', { quality: 'dominant', extensions: ['13'] }],
+    ['C6', { quality: 'major', extensions: ['6'] }],
+    ['Cm6', { quality: 'minor', extensions: ['6'] }],
   ];
 
   it.each(cases)('parses %s', (text, expected) => {

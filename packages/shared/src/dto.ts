@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { CLICK_SOUNDS, STYLES } from './constants.js';
+import { CLICK_SOUNDS, STYLES, KEYS, TIME_SIGNATURES } from './constants.js';
 
 /**
  * DTO types and Zod validation schemas for the auth + settings layer (F4).
@@ -107,6 +107,28 @@ export const UserSettingsDTOSchema = z.object({
   style: z.enum(STYLES).optional(),
   swingRatio: z.number().min(0.5).max(0.75).optional(),
   audioFormat: z.enum(['aac', 'mp3']).optional(),
+  practiceCards: z
+    .object({
+      lastExerciseType: z.enum(['chords', 'scales']).optional(),
+      lastSource: z.enum(['pattern', 'random', 'dsl', 'unified']).optional(),
+      lastPatternId: z.string().optional(),
+      lastKeys: z.array(z.enum(KEYS)).optional(),
+      lastTempo: z.number().int().min(40).max(300).optional(),
+      lastRepetitions: z.number().int().min(1).optional(),
+      lastInfinite: z.boolean().optional(),
+      cardMode: z.enum(['current', 'prev-current', 'prev-current-next']).optional(),
+      countInBars: z.number().int().min(0).max(4).optional(),
+      backingBass: z.boolean().optional(),
+      backingDrums: z.boolean().optional(),
+      backingPiano: z.boolean().optional(),
+      backingRhodes: z.boolean().optional(),
+      metronomeEnabled: z.boolean().optional(),
+      metronomeVolume: z.number().min(0).max(1).optional(),
+      barsPerChord: z.number().int().min(1).max(16).optional(),
+      timeSignature: z.enum(TIME_SIGNATURES).optional(),
+      playRandomly: z.boolean().optional(),
+    })
+    .optional(),
 });
 export type UserSettingsDTO = z.infer<typeof UserSettingsDTOSchema>;
 

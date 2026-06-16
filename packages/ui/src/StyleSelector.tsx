@@ -19,7 +19,7 @@ export function StyleSelector({ value, onChange }: StyleSelectorProps) {
   return (
     <Select value={value} onValueChange={(v) => onChange(v as Style)}>
       <SelectTrigger
-        className="h-5 min-w-[96px] border-none bg-transparent p-0 text-xs font-semibold text-foreground shadow-none focus:ring-0 [&>svg]:hidden"
+        className="h-5 min-w-[96px] justify-center border-none bg-transparent p-0 text-xs font-semibold text-foreground shadow-none focus:ring-0 [&>svg]:hidden"
         aria-label="Стиль"
       >
         <div className="flex items-center gap-1">

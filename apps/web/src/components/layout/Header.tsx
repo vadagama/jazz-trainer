@@ -44,6 +44,7 @@ export function Header() {
         <nav className="flex items-center gap-1 mr-2">
           {[
             { to: '/', label: 'Каталог', auth: false },
+            { to: '/practice-cards', label: 'Упражнения', auth: false },
             { to: '/my', label: 'Мои сетки', auth: true },
           ]
             .filter(({ auth }) => !auth || !!user)

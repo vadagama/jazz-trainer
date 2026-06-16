@@ -8,14 +8,7 @@ export function Logo({ className }: { className?: string }) {
       aria-hidden="true"
     >
       {/* Note head */}
-      <ellipse
-        cx="8"
-        cy="24"
-        rx="6"
-        ry="4.5"
-        fill="currentColor"
-        transform="rotate(-15 8 24)"
-      />
+      <ellipse cx="8" cy="24" rx="6" ry="4.5" fill="currentColor" transform="rotate(-15 8 24)" />
       {/* Stem */}
       <rect x="14" y="4" width="2.5" height="20" rx="1.25" fill="currentColor" />
       {/* Flag */}

@@ -39,7 +39,7 @@ export const CHORD_QUALITIES = [
 export const ChordQualitySchema = z.enum(CHORD_QUALITIES);
 export type ChordQuality = z.infer<typeof ChordQualitySchema>;
 
-export const EXTENSIONS = ['7', '9', '11', '13'] as const;
+export const EXTENSIONS = ['6', '7', '9', '11', '13'] as const;
 export const ExtensionSchema = z.enum(EXTENSIONS);
 export type Extension = z.infer<typeof ExtensionSchema>;
 
