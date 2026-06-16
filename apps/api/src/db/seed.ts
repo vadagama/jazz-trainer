@@ -73,7 +73,7 @@ export function seedDevUser(db: DrizzleDb): void {
       clickStrong: 'drum-stick',
       clickWeak: 'drum-stick',
       volume: 0.8,
-      countIn: 0,
+      countIn: 1,
       createdAt: now,
       updatedAt: now,
     })

@@ -20,6 +20,7 @@ interface PlayerToolbarProps {
   volume?: number;
   currentKey: Key;
   style?: Style;
+  showKey?: boolean;
   onPlay?: () => void;
   onPause?: () => void;
   onStop?: () => void;
@@ -53,6 +54,7 @@ export function PlayerToolbar({
   volume: volumeProp = 0.8,
   currentKey,
   style,
+  showKey = true,
   onPlay,
   onPause: _onPause,
   onStop,
@@ -142,24 +144,26 @@ export function PlayerToolbar({
         </div>
 
         {/* KEY */}
-        <div className="flex flex-col items-center justify-center rounded-md bg-secondary px-2 py-1">
-          <ToolbarLabel>KEY</ToolbarLabel>
-          <Select value={currentKey} onValueChange={(v) => onKeyChange?.(v as Key)}>
-            <SelectTrigger
-              className="h-5 min-w-[64px] border-none bg-transparent p-0 text-xs font-semibold text-foreground shadow-none focus:ring-0"
-              aria-label="Тональность"
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {KEYS.map((k) => (
-                <SelectItem key={k} value={k}>
-                  {k}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        {showKey && (
+          <div className="flex flex-col items-center justify-center rounded-md bg-secondary px-2 py-1">
+            <ToolbarLabel>KEY</ToolbarLabel>
+            <Select value={currentKey} onValueChange={(v) => onKeyChange?.(v as Key)}>
+              <SelectTrigger
+                className="h-5 min-w-[64px] border-none bg-transparent p-0 text-xs font-semibold text-foreground shadow-none focus:ring-0"
+                aria-label="Тональность"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {KEYS.map((k) => (
+                  <SelectItem key={k} value={k}>
+                    {k}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
 
         {/* STYLE */}
         {style !== undefined && onStyleChange && (

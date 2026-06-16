@@ -50,7 +50,7 @@ describe('GET /api/settings', () => {
     const res = await agent.get('/api/settings');
     expect(res.body.bpm).toBe(120);
     expect(res.body.volume).toBe(0.8);
-    expect(res.body.countIn).toBe(0);
+    expect(res.body.countIn).toBe(1);
   });
 });
 

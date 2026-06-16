@@ -33,6 +33,7 @@ export default defineConfig({
       '@jazz/plugin-admin-flags': r('./packages/plugins/admin-flags/src/index.ts'),
       '@jazz/plugin-admin-assets': r('./packages/plugins/admin-assets/src/index.ts'),
       '@jazz/plugin-admin-diagnostics': r('./packages/plugins/admin-diagnostics/src/index.ts'),
+      '@jazz/plugin-practice-cards': r('./packages/plugins/practice-cards/src/index.ts'),
     },
   },
   test: {

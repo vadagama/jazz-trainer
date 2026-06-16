@@ -7,34 +7,38 @@ function symbols(content: ReturnType<typeof generate>): string[] {
 }
 
 describe('generate — fixed patterns and transposition', () => {
-  it('ii–V–I major in C → Dm7 G7 Cmaj7', () => {
+  it('ii–V–I major in C → Dm7 G7 Cmaj7 Cmaj7 (tonic two bars)', () => {
     expect(symbols(generate({ patternId: 'ii-V-I-major', key: 'C' }))).toEqual([
       'Dm7',
       'G7',
       'Cmaj7',
+      'Cmaj7',
     ]);
   });
 
-  it('ii–V–I major in F → Gm7 C7 Fmaj7', () => {
+  it('ii–V–I major in F → Gm7 C7 Fmaj7 Fmaj7', () => {
     expect(symbols(generate({ patternId: 'ii-V-I-major', key: 'F' }))).toEqual([
       'Gm7',
       'C7',
       'Fmaj7',
+      'Fmaj7',
     ]);
   });
 
-  it('ii–V–I major in Eb uses flat spelling → Fm7 Bb7 Ebmaj7', () => {
+  it('ii–V–I major in Eb uses flat spelling → Fm7 Bb7 Ebmaj7 Ebmaj7', () => {
     expect(symbols(generate({ patternId: 'ii-V-I-major', key: 'Eb' }))).toEqual([
       'Fm7',
       'Bb7',
       'Ebmaj7',
+      'Ebmaj7',
     ]);
   });
 
-  it('ii–V–i minor in C → Dm7b5 G7b9 Cm7', () => {
+  it('ii–V–i minor in C → Dm7b5 G7b9 Cm7 Cm7 (tonic two bars)', () => {
     expect(symbols(generate({ patternId: 'ii-V-I-minor', key: 'C' }))).toEqual([
       'Dm7b5',
       'G7b9',
+      'Cm7',
       'Cm7',
     ]);
   });
@@ -71,7 +75,7 @@ describe('generate — length and structure', () => {
   it('tiles a fixed pattern to the requested length', () => {
     const content = generate({ patternId: 'ii-V-I-major', key: 'C', lengthBars: 6 });
     expect(content.bars).toHaveLength(6);
-    expect(symbols(content)).toEqual(['Dm7', 'G7', 'Cmaj7', 'Dm7', 'G7', 'Cmaj7']);
+    expect(symbols(content)).toEqual(['Dm7', 'G7', 'Cmaj7', 'Cmaj7', 'Dm7', 'G7']);
   });
 
   it('circle of fifths produces N dominant chords', () => {
@@ -120,7 +124,7 @@ describe('generate — random diatonic determinism', () => {
 });
 
 describe('listPatterns', () => {
-  it('lists the eight built-in patterns', () => {
+  it('lists the ten built-in patterns', () => {
     const ids = listPatterns().map((p) => p.id);
     expect(ids).toEqual(
       expect.arrayContaining([
@@ -131,9 +135,11 @@ describe('listPatterns', () => {
         'modal-vamp',
         'dominant-chain',
         'random-diatonic',
+        'diatonic',
+        'chromatic',
         'turnaround',
       ]),
     );
-    expect(ids).toHaveLength(8);
+    expect(ids).toHaveLength(10);
   });
 });

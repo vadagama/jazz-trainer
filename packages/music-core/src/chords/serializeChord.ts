@@ -1,12 +1,13 @@
 import type { Alteration, ChordSymbol, Extension } from '@jazz/shared';
 
-const EXTENSION_ORDER: Record<Extension, number> = { '7': 7, '9': 9, '11': 11, '13': 13 };
+const EXTENSION_ORDER: Record<Extension, number> = { '6': 6, '7': 7, '9': 9, '11': 11, '13': 13 };
 const ALTERATION_ORDER: Alteration[] = ['b5', '#5', 'b9', '#9', '#11', 'b13'];
 
 function qualityLetters(chord: ChordSymbol): string {
   switch (chord.quality) {
     case 'major':
-      return chord.extensions.length > 0 ? 'maj' : '';
+      // A bare 6th chord (C6) keeps no "maj" prefix; only true sevenths do (Cmaj7).
+      return chord.extensions.some((e) => e !== '6') ? 'maj' : '';
     case 'minor':
       return 'm';
     case 'dominant':

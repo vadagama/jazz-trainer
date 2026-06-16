@@ -59,7 +59,8 @@ const APP_SHELL_PATHS = new Set(['/', '/my', '/settings', '/profile']);
 export function App() {
   const shellRoutes = contributions.routes.filter((r) => APP_SHELL_PATHS.has(r.path));
   const editorRoutes = contributions.routes.filter(
-    (r) => r.path.startsWith('/grids') || r.path.startsWith('/play'),
+    (r) =>
+      r.path.startsWith('/grids') || r.path.startsWith('/play') || r.path === '/practice-cards',
   );
   const bareRoutes = contributions.routes.filter(
     (r) =>

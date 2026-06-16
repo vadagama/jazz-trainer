@@ -118,6 +118,7 @@ export async function settingsRoutes(
       patch.pianoRandomizationLevel = data.pianoRandomizationLevel;
     if (data.rhodesLayerMode !== undefined) patch.rhodesLayerMode = data.rhodesLayerMode;
     if (data.rhodesLayerVolume !== undefined) patch.rhodesLayerVolume = data.rhodesLayerVolume;
+    if (data.practiceCards !== undefined) patch.practiceCards = JSON.stringify(data.practiceCards);
 
     db.update(userSettings).set(patch).where(eq(userSettings.userId, user.id)).run();
     return reply.send(toSettingsDTO({ ...existing, ...patch }));

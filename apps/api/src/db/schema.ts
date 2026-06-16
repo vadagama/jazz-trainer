@@ -42,7 +42,7 @@ export const userSettings = sqliteTable('user_settings', {
   clickStrong2: text('click_strong_2').default('drum-stick'),
   clickWeak: text('click_weak').default('drum-stick'),
   volume: real('volume').notNull().default(0.8),
-  countIn: integer('count_in').notNull().default(0),
+  countIn: integer('count_in').notNull().default(1),
   metronomeEnabled: integer('metronome_enabled', { mode: 'boolean' }).notNull().default(true),
   metronomeVolume: real('metronome_volume').notNull().default(0.8),
   bassEnabled: integer('bass_enabled', { mode: 'boolean' }).notNull().default(true),
@@ -100,6 +100,7 @@ export const userSettings = sqliteTable('user_settings', {
   style: text('style').notNull().default('swing'),
   swingRatio: real('swing_ratio').notNull().default(0.5),
   audioFormat: text('audio_format').notNull().default('aac'),
+  practiceCards: text('practice_cards'),
   createdAt: integer('created_at').notNull(),
   updatedAt: integer('updated_at').notNull(),
 });

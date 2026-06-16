@@ -1,7 +1,7 @@
 # Jazz Trainer
 
 Браузерный тренажёр джазовой гармонии: гармонические сетки, точный метроном,
-DSL для ввода гармонии, генераторы прогрессий, аккомпанемент (бас, барабаны, Rhodes).
+DSL для ввода гармонии, генераторы прогрессий, аккомпанемент (бас, барабаны, фортепиано, Rhodes, гитара).
 
 > Приложение **публичное по умолчанию**: каталог и плеер доступны без входа.
 > Аутентификация добавляет персональные возможности (свой каталог, настройки, лайки).
@@ -29,6 +29,19 @@ docs/                     Документация
 - [ARCHITECTURE_BASE.md](docs/ARCHITECTURE_BASE.md) — текущая архитектура + архитектурные решения (ADR)
 - [ARCHITECTURE_VISION.md](docs/ARCHITECTURE_VISION.md) — целевое видение архитектуры
 - [FUNCTIONS.md](docs/FUNCTIONS.md) — каталог возможностей
+
+## Инструменты
+
+6 инструментов в `music-core/audio`, каждый со своим манифестом и рандомайзером:
+
+| Инструмент | Семплы                           | Документация                |
+| ---------- | -------------------------------- | --------------------------- |
+| Bass       | SneakyBass (контрабас)           | [BASS.md](docs/BASS.md)     |
+| Drums      | Swirly Drums v2 (8 звуков)       | [DRUMS.md](docs/DRUMS.md)   |
+| Piano      | Upright KW / Salamander Grand    | [PIANO.md](docs/PIANO.md)   |
+| Rhodes     | jRhodes3c (комплементарный слой) | [RHODES.md](docs/RHODES.md) |
+| Guitar     | Nylon / Steel                    | —                           |
+| Metronome  | 5 звуков                         | —                           |
 
 ## Требования
 
@@ -72,7 +85,7 @@ npm run dev          # поднять web (Vite :5173) и api (Fastify :3999) п
 | Ф0 — Границы        | ✅     | ESLint boundaries + strict, 0 нарушений                         |
 | Ф1 — SDK + Host     | ✅     | `plugin-sdk`, `plugin-host`, `plugin-registry`, shell bootstrap |
 | ФR — RBAC + аудит   | ✅     | 3 роли, 11 permissions, audit log                               |
-| Ф2 — AudioPort      | 🟢     | Адаптеры готовы (Tone.js, Web MIDI), wiring частичный           |
+| Ф2 — AudioPort      | 🟢     | Адаптеры готовы, 6 инструментов, манифесты, EventSink           |
 | Ф3 — Фичи → плагины | ✅     | `core-editor`, `core-player`, `catalog` вынесены                |
 | Ф4 — Новые домены   | 🟡     | 10 domain-плагинов созданы, наполнение в процессе               |
-| Ф5 — MIDI           | 🟡     | MIDI-плагины готовы, Desktop исключён из скоупа                 |
+| Ф5 — MIDI           | 🟡     | MIDI-плагины и `midiEval` готовы, Desktop исключён из скоупа    |

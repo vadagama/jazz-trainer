@@ -85,6 +85,9 @@ export function toSettingsDTO(s: UserSettingsRecord): UserSettingsDTO {
     drumsRidePattern: s.drumsRidePattern as UserSettingsDTO['drumsRidePattern'],
     swingRatio: Math.max(0.5, Math.min(0.75, s.swingRatio)),
     audioFormat: s.audioFormat as UserSettingsDTO['audioFormat'],
+    practiceCards: s.practiceCards
+      ? (JSON.parse(s.practiceCards) as UserSettingsDTO['practiceCards'])
+      : undefined,
   };
 }
 
@@ -156,7 +159,7 @@ export function ensureUserSettings(db: DrizzleDb, userId: string): void {
       clickStrong2: 'drum-stick',
       clickWeak: 'drum-stick',
       volume: 0.8,
-      countIn: 0,
+      countIn: 1,
       metronomeVolume: 0.8,
       bassComplexity: 1,
       createdAt: now,

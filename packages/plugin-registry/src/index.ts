@@ -14,6 +14,7 @@ import earTraining from '@jazz/plugin-ear-training';
 import rhythmDrills from '@jazz/plugin-rhythm-drills';
 import chordQuiz from '@jazz/plugin-chord-quiz';
 import progressionRecognition from '@jazz/plugin-progression-recognition';
+import practiceCards from '@jazz/plugin-practice-cards';
 
 export const PLUGINS: PluginDefinition[] = [
   coreEditor,
@@ -31,4 +32,5 @@ export const PLUGINS: PluginDefinition[] = [
   rhythmDrills,
   chordQuiz,
   progressionRecognition,
+  practiceCards,
 ];

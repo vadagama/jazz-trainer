@@ -42,24 +42,26 @@ export const PATTERNS: PatternDef[] = [
   {
     id: 'ii-V-I-major',
     name: 'ii–V–I (major)',
-    description: 'The defining major cadence: ii7 – V7 – Imaj7.',
-    defaultBars: 3,
+    description: 'The defining major cadence: ii7 – V7 – Imaj7 (tonic held for two bars).',
+    defaultBars: 4,
     variableLength: false,
     steps: [
       { degree: 2, quality: 'm7' },
       { degree: 7, quality: '7' },
+      { degree: 0, quality: 'maj7' },
       { degree: 0, quality: 'maj7' },
     ],
   },
   {
     id: 'ii-V-I-minor',
     name: 'ii–V–i (minor)',
-    description: 'Minor cadence: iiø7 – V7♭9 – i7.',
-    defaultBars: 3,
+    description: 'Minor cadence: iiø7 – V7♭9 – i7 (tonic held for two bars).',
+    defaultBars: 4,
     variableLength: false,
     steps: [
       { degree: 2, quality: 'm7b5' },
       { degree: 7, quality: '7b9' },
+      { degree: 0, quality: 'm7' },
       { degree: 0, quality: 'm7' },
     ],
   },
@@ -119,6 +121,22 @@ export const PATTERNS: PatternDef[] = [
         const idx = Math.floor(random() * DIATONIC_MAJOR.length);
         return DIATONIC_MAJOR[idx]!;
       }),
+  },
+  {
+    id: 'diatonic',
+    name: 'Diatonic',
+    description: 'All diatonic 7th chords of the major key in order: Imaj7 – ii7 – … – viiø7.',
+    defaultBars: 7,
+    variableLength: false,
+    steps: DIATONIC_MAJOR,
+  },
+  {
+    id: 'chromatic',
+    name: 'Chromatic',
+    description: 'Dominant 7th chords ascending through all twelve chromatic degrees.',
+    defaultBars: 12,
+    variableLength: false,
+    steps: Array.from({ length: 12 }, (_, i) => ({ degree: i, quality: '7' })),
   },
   {
     id: 'turnaround',

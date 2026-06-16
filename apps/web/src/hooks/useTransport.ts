@@ -889,7 +889,7 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     engine.scheduleWindow({ fromTicks: startTick, toTicks: firstWindowEnd });
     lastScheduledRef.current = firstWindowEnd;
 
-    const countInBars = optsRef.current.settings.countIn ?? 0;
+    const countInBars = optsRef.current.settings.countIn ?? 1;
     const bpmForCalc = optsRef.current.settings.bpm;
     const secondsPerBeat = 60 / bpmForCalc;
     const countInSeconds = countInBars * sig.beatsPerBar * secondsPerBeat;
