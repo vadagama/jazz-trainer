@@ -45,16 +45,44 @@
       "@jazz/plugin-admin-assets": ["packages/plugins/admin-assets/src/index.ts"],
       "@jazz/plugin-admin-diagnostics": ["packages/plugins/admin-diagnostics/src/index.ts"],
       "@jazz/plugin-template": ["packages/plugins/_template/src/index.ts"],
+      "@jazz/plugin-theory-chord-tones": ["packages/plugins/theory-chord-tones/src/index.ts"],
+      "@jazz/plugin-theory-approach-notes": ["packages/plugins/theory-approach-notes/src/index.ts"],
+      "@jazz/plugin-theory-arpeggios": ["packages/plugins/theory-arpeggios/src/index.ts"],
+      "@jazz/plugin-theory-blues": ["packages/plugins/theory-blues/src/index.ts"],
       "@jazz/plugin-theory-scales": ["packages/plugins/theory-scales/src/index.ts"],
       "@jazz/plugin-theory-chords": ["packages/plugins/theory-chords/src/index.ts"],
+      "@jazz/plugin-theory-rhythm": ["packages/plugins/theory-rhythm/src/index.ts"],
       "@jazz/plugin-theory-intervals": ["packages/plugins/theory-intervals/src/index.ts"],
+      "@jazz/plugin-theory-groove": ["packages/plugins/theory-groove/src/index.ts"],
+      "@jazz/plugin-theory-ii-v-i": ["packages/plugins/theory-ii-v-i/src/index.ts"],
+      "@jazz/plugin-theory-scales-jazz": ["packages/plugins/theory-scales-jazz/src/index.ts"],
+      "@jazz/plugin-theory-voicings": ["packages/plugins/theory-voicings/src/index.ts"],
+      "@jazz/plugin-theory-voice-leading": ["packages/plugins/theory-voice-leading/src/index.ts"],
+      "@jazz/plugin-theory-diminished-harmony": [
+        "packages/plugins/theory-diminished-harmony/src/index.ts"
+      ],
+      "@jazz/plugin-theory-coltrane-changes": [
+        "packages/plugins/theory-coltrane-changes/src/index.ts"
+      ],
+      "@jazz/plugin-theory-blues-advanced": ["packages/plugins/theory-blues-advanced/src/index.ts"],
+      "@jazz/plugin-theory-rhythm-changes": ["packages/plugins/theory-rhythm-changes/src/index.ts"],
+      "@jazz/plugin-theory-modal-interchange": [
+        "packages/plugins/theory-modal-interchange/src/index.ts"
+      ],
+      "@jazz/plugin-theory-secondary-dominants": [
+        "packages/plugins/theory-secondary-dominants/src/index.ts"
+      ],
+      "@jazz/plugin-theory-tritone-sub": ["packages/plugins/theory-tritone-sub/src/index.ts"],
+      "@jazz/plugin-theory-turnarounds": ["packages/plugins/theory-turnarounds/src/index.ts"],
+      "@jazz/plugin-theory-catalog": ["packages/plugins/theory-catalog/src/index.ts"],
       "@jazz/plugin-ear-training": ["packages/plugins/ear-training/src/index.ts"],
       "@jazz/plugin-rhythm-drills": ["packages/plugins/rhythm-drills/src/index.ts"],
       "@jazz/plugin-chord-quiz": ["packages/plugins/chord-quiz/src/index.ts"],
       "@jazz/plugin-progression-recognition": [
         "packages/plugins/progression-recognition/src/index.ts"
       ],
-      "@jazz/plugin-practice-cards": ["packages/plugins/practice-cards/src/index.ts"]
+      "@jazz/plugin-practice-cards": ["packages/plugins/practice-cards/src/index.ts"],
+      "@jazz/plugin-visual-midi-keyboard": ["packages/plugins/visual-midi-keyboard/src/index.ts"]
     }
   }
 }

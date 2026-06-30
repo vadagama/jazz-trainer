@@ -88,6 +88,11 @@ export function toSettingsDTO(s: UserSettingsRecord): UserSettingsDTO {
     practiceCards: s.practiceCards
       ? (JSON.parse(s.practiceCards) as UserSettingsDTO['practiceCards'])
       : undefined,
+    midiDeviceId: (s.midiDeviceId ?? undefined) as string | undefined,
+    midiChannel: (s.midiChannel ?? undefined) as number | undefined,
+    soloToneId: (s.soloToneId ?? undefined) as string | undefined,
+    soloVolume: s.soloVolume ?? undefined,
+    duckingEnabled: s.duckingEnabled ?? undefined,
   };
 }
 

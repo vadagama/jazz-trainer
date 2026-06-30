@@ -10,12 +10,7 @@ export interface SourceCardProps {
   children: ReactNode;
 }
 
-export function SourceCard({
-  title,
-  sourceType,
-  onSourceTypeChange,
-  children,
-}: SourceCardProps) {
+export function SourceCard({ title, sourceType, onSourceTypeChange, children }: SourceCardProps) {
   return (
     <Card>
       <CardHeader className="pb-3">

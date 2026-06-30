@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Trash2, Music2, Pencil, Globe } from 'lucide-react';
+import { Trash2, Music2, Globe } from 'lucide-react';
 import type { HarmonyGridSummaryDTO } from '@jazz/shared';
-import { useDeleteGrid } from '@/queries/useMyGrids';
+import { useDeleteGrid, usePublishGrid } from '@/queries/useMyGrids';
 import { Button } from '@/components/ui/button';
 import {
   AlertDialog,
@@ -30,13 +30,19 @@ function GridTag({ children }: { children: React.ReactNode }) {
 
 export function MyGridCard({ grid }: Props) {
   const deleteGrid = useDeleteGrid();
-  const [open, setOpen] = useState(false);
+  const publishGrid = usePublishGrid();
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [publishOpen, setPublishOpen] = useState(false);
 
   return (
     <div className="group flex flex-col rounded-lg border border-border bg-card transition-colors hover:border-primary/40">
       <div className="flex-1 p-5">
         <div className="flex items-start justify-between gap-2">
-          <h3 className="truncate font-semibold leading-snug">{grid.name}</h3>
+          <Link to={`/grids/${grid.id}`} className="block min-w-0">
+            <h3 className="truncate font-semibold leading-snug hover:text-primary transition-colors">
+              {grid.name}
+            </h3>
+          </Link>
           {grid.visibility === 'public' && (
             <Globe
               className="mt-0.5 size-3.5 shrink-0 text-muted-foreground"
@@ -55,18 +61,47 @@ export function MyGridCard({ grid }: Props) {
       </div>
 
       <div className="flex items-center justify-between border-t border-border px-5 py-3">
-        <Button
-          asChild
-          variant="ghost"
-          size="sm"
-          className="gap-1.5 text-muted-foreground hover:text-foreground"
-        >
-          <Link to={`/grids/${grid.id}`}>
-            <Pencil className="size-3.5" /> Редактировать
-          </Link>
-        </Button>
+        {grid.visibility !== 'public' ? (
+          <AlertDialog open={publishOpen} onOpenChange={setPublishOpen}>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="gap-1.5 text-muted-foreground hover:text-foreground"
+              >
+                <Globe className="size-3.5" /> Опубликовать
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Опубликовать сетку?</AlertDialogTitle>
+                <AlertDialogDescription asChild>
+                  <div className="space-y-2">
+                    <p>Сетка «{grid.name}» станет доступна в Каталоге для всех пользователей.</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      <GridTag>{grid.key}</GridTag>
+                      <GridTag>{grid.timeSignature}</GridTag>
+                      <GridTag>
+                        <Music2 className="mr-0.5 inline size-2.5" />
+                        {grid.barsCount} тактов
+                      </GridTag>
+                    </div>
+                  </div>
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Отмена</AlertDialogCancel>
+                <AlertDialogAction onClick={() => publishGrid.mutate(grid.id)}>
+                  Опубликовать
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        ) : (
+          <span />
+        )}
 
-        <AlertDialog open={open} onOpenChange={setOpen}>
+        <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
           <AlertDialogTrigger asChild>
             <Button
               variant="ghost"

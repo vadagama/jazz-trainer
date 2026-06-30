@@ -15,6 +15,7 @@ import {
   updateGrid,
   deleteGrid,
   copyGrid,
+  publishGrid,
   importGrid,
   exportGridDsl,
   getPublicGrids,
@@ -166,6 +167,19 @@ export async function gridsRoutes(
         return reply.status(404).send({ error: { code: 'NOT_FOUND', message: 'Grid not found' } });
       }
       return reply.status(201).send(grid);
+    },
+  );
+
+  // ── POST /api/grids/:id/publish — publish grid as public copy (auth required)
+  fastify.post<{ Params: { id: string } }>(
+    '/grids/:id/publish',
+    { preHandler: requireAuth },
+    async (request, reply) => {
+      const result = publishGrid(db, request.user!.id, request.params.id);
+      if (!result) {
+        return reply.status(404).send({ error: { code: 'NOT_FOUND', message: 'Grid not found' } });
+      }
+      return reply.status(201).send(result);
     },
   );
 

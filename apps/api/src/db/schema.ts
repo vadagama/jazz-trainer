@@ -101,6 +101,11 @@ export const userSettings = sqliteTable('user_settings', {
   swingRatio: real('swing_ratio').notNull().default(0.5),
   audioFormat: text('audio_format').notNull().default('aac'),
   practiceCards: text('practice_cards'),
+  midiDeviceId: text('midi_device_id'),
+  midiChannel: integer('midi_channel'),
+  soloToneId: text('solo_tone_id').default('rhodes-jrhodes3c'),
+  soloVolume: real('solo_volume'),
+  duckingEnabled: integer('ducking_enabled', { mode: 'boolean' }),
   createdAt: integer('created_at').notNull(),
   updatedAt: integer('updated_at').notNull(),
 });
@@ -226,6 +231,23 @@ export const auditLog = sqliteTable('audit_log', {
   reason: text('reason'),
 });
 
+// ── Lecture likes ────────────────────────────────────────────────────────
+
+export const lectureLikes = sqliteTable(
+  'lecture_likes',
+  {
+    lectureId: text('lecture_id').notNull(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    createdAt: integer('created_at').notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.lectureId, t.userId] }),
+    index('lecture_likes_user_id_idx').on(t.userId),
+  ],
+);
+
 // ── Feature flags (Phase R) ──────────────────────────────────────────────
 
 export const featureFlags = sqliteTable('feature_flags', {
@@ -250,4 +272,5 @@ export type GridLikeRecord = typeof gridLikes.$inferSelect;
 export type RoleRecord = typeof roles.$inferSelect;
 export type PermissionRecord = typeof permissions.$inferSelect;
 export type AuditLogRecord = typeof auditLog.$inferSelect;
+export type LectureLikeRecord = typeof lectureLikes.$inferSelect;
 export type FeatureFlagRecord = typeof featureFlags.$inferSelect;

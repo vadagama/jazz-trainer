@@ -9,12 +9,16 @@ import { WebMidiAdapter } from './WebMidiAdapter.js';
 interface MidiOutputLike {
   send(data: number[], timestamp?: number): void;
   clear(): void;
+  id?: string;
   name?: string;
 }
 
 interface MidiInputLike {
+  id?: string;
   name?: string;
-  onmidimessage: ((event: { data: Uint8Array; timeStamp: number }) => void) | null;
+  onmidimessage:
+    | ((event: { data: Uint8Array; timeStamp: number; target?: MidiInputLike }) => void)
+    | null;
 }
 
 interface MidiAccessLike {
@@ -27,25 +31,38 @@ interface MidiAccessLike {
 // Mock Web MIDI API
 // ---------------------------------------------------------------------------
 
-const { mockOutput, mockInput, mockAccess } = vi.hoisted(() => {
+type MidiMessageEvt = { data: Uint8Array; timeStamp: number; target?: MidiInputLike };
+
+const { mockOutput, mockInput, mockInput2, mockAccess } = vi.hoisted(() => {
   const mockOutput = {
     send: vi.fn(),
     clear: vi.fn(),
+    id: 'out-1',
     name: 'Mock Output',
   };
 
   const mockInput = {
+    id: 'in-1',
     name: 'Mock Input',
-    onmidimessage: null as ((event: { data: Uint8Array; timeStamp: number }) => void) | null,
+    onmidimessage: null as ((event: MidiMessageEvt) => void) | null,
+  };
+
+  const mockInput2 = {
+    id: 'in-2',
+    name: 'Second Input',
+    onmidimessage: null as ((event: MidiMessageEvt) => void) | null,
   };
 
   const mockAccess = {
     outputs: new Map([['out-1', mockOutput]]),
-    inputs: new Map([['in-1', mockInput]]),
+    inputs: new Map([
+      ['in-1', mockInput],
+      ['in-2', mockInput2],
+    ]),
     onstatechange: null as (() => void) | null,
   };
 
-  return { mockOutput, mockInput, mockAccess };
+  return { mockOutput, mockInput, mockInput2, mockAccess };
 });
 
 // ---------------------------------------------------------------------------
@@ -57,15 +74,18 @@ function createAdapter() {
 
   const access = mockAccess as unknown as MidiAccessLike;
   mockAccess.outputs = new Map([['out-1', mockOutput]]);
-  mockAccess.inputs = new Map([['in-1', mockInput]]);
+  mockAccess.inputs = new Map([
+    ['in-1', mockInput],
+    ['in-2', mockInput2],
+  ]);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return new WebMidiAdapter({ midiAccess: access as any });
 }
 
-function simulateMidiMessage(data: Uint8Array): void {
-  const event = { data, timeStamp: performance.now() };
-  mockInput.onmidimessage?.(event);
+function simulateMidiMessage(data: Uint8Array, input = mockInput): void {
+  const event: MidiMessageEvt = { data, timeStamp: performance.now(), target: input };
+  input.onmidimessage?.(event);
 }
 
 // ---------------------------------------------------------------------------
@@ -76,8 +96,12 @@ describe('WebMidiAdapter', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockAccess.outputs = new Map([['out-1', mockOutput]]);
-    mockAccess.inputs = new Map([['in-1', mockInput]]);
+    mockAccess.inputs = new Map([
+      ['in-1', mockInput],
+      ['in-2', mockInput2],
+    ]);
     mockInput.onmidimessage = null;
+    mockInput2.onmidimessage = null;
     mockAccess.onstatechange = null;
   });
 
@@ -242,7 +266,7 @@ describe('WebMidiAdapter', () => {
   it('devices returns input names when access is available', async () => {
     const adapter = createAdapter();
     const devs = await adapter.devices();
-    expect(devs).toEqual(['Mock Input']);
+    expect(devs).toEqual(['Mock Input', 'Second Input']);
   });
 
   it('devices returns empty when no MIDI access', async () => {
@@ -303,6 +327,135 @@ describe('WebMidiAdapter', () => {
     simulateMidiMessage(new Uint8Array([0x90]));
 
     expect(handler).not.toHaveBeenCalled();
+  });
+
+  // -- Extended InputPort tests (T-003) -----------------------------------
+
+  describe('listInputs', () => {
+    it('returns MidiDeviceInfo[] with metadata', async () => {
+      const adapter = createAdapter();
+      const devices = await adapter.listInputs();
+      expect(devices).toHaveLength(2);
+      expect(devices[0]).toEqual({
+        id: 'in-1',
+        name: 'Mock Input',
+        manufacturer: undefined,
+      });
+      expect(devices[1]).toEqual({
+        id: 'in-2',
+        name: 'Second Input',
+        manufacturer: undefined,
+      });
+    });
+
+    it('returns empty when no MIDI access', async () => {
+      const adapter = new WebMidiAdapter();
+      const devices = await adapter.listInputs();
+      expect(devices).toEqual([]);
+    });
+  });
+
+  describe('selectInput', () => {
+    it('filters events by selected device ID', () => {
+      const adapter = createAdapter();
+      const handler = vi.fn();
+      adapter.onNoteOn(handler);
+
+      adapter.selectInput('in-1');
+
+      // Message from in-1 → should be received
+      simulateMidiMessage(new Uint8Array([0x90, 60, 100]), mockInput);
+      expect(handler).toHaveBeenCalledTimes(1);
+
+      // Message from in-2 → should be filtered out
+      simulateMidiMessage(new Uint8Array([0x90, 62, 100]), mockInput2);
+      expect(handler).toHaveBeenCalledTimes(1); // still 1
+    });
+
+    it('activeDeviceId reflects selection', () => {
+      const adapter = createAdapter();
+      adapter.selectInput('in-1');
+      expect(adapter.activeDeviceId).toBe('in-1');
+
+      adapter.selectInput(null);
+      expect(adapter.activeDeviceId).toBeNull();
+    });
+  });
+
+  describe('setChannelFilter', () => {
+    it('filters events by channel', () => {
+      const adapter = createAdapter();
+      const handler = vi.fn();
+      adapter.onNoteOn(handler);
+
+      // Set filter to channel 3
+      adapter.setChannelFilter(3);
+
+      // Channel 0 note-on → filtered out
+      simulateMidiMessage(new Uint8Array([0x90, 60, 100])); // ch 0
+      expect(handler).not.toHaveBeenCalled();
+
+      // Channel 3 note-on → received
+      simulateMidiMessage(new Uint8Array([0x93, 60, 100])); // ch 3
+      expect(handler).toHaveBeenCalledTimes(1);
+    });
+
+    it('channelFilter returns current value', () => {
+      const adapter = createAdapter();
+      expect(adapter.channelFilter).toBe('all');
+
+      adapter.setChannelFilter(7);
+      expect(adapter.channelFilter).toBe(7);
+
+      adapter.setChannelFilter('all');
+      expect(adapter.channelFilter).toBe('all');
+    });
+
+    it('throws on invalid channel', () => {
+      const adapter = createAdapter();
+      expect(() => adapter.setChannelFilter(-1)).toThrow();
+      expect(() => adapter.setChannelFilter(16)).toThrow();
+    });
+  });
+
+  describe('connectionStatus', () => {
+    it('returns "available" when inputs exist but none selected', () => {
+      const adapter = createAdapter();
+      expect(adapter.connectionStatus).toBe('available');
+    });
+
+    it('returns "connected" when specific device is selected', () => {
+      const adapter = createAdapter();
+      adapter.selectInput('in-1');
+      expect(adapter.connectionStatus).toBe('connected');
+    });
+
+    it('returns "disconnected" when no inputs exist', () => {
+      const emptyAccess = {
+        outputs: new Map(),
+        inputs: new Map(),
+        onstatechange: null,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any;
+      const adapter = new WebMidiAdapter({ midiAccess: emptyAccess });
+      expect(adapter.connectionStatus).toBe('disconnected');
+    });
+  });
+
+  describe('onConnectionChange', () => {
+    it('notifies handlers on initial setup', () => {
+      const handler = vi.fn();
+      const adapter = createAdapter();
+      adapter.onConnectionChange(handler);
+    });
+
+    it('returns unsubscribe function', () => {
+      const adapter = createAdapter();
+      const handler = vi.fn();
+      const unsub = adapter.onConnectionChange(handler);
+      expect(typeof unsub).toBe('function');
+      unsub();
+    });
   });
 
   // -- noteToMidi / midiToNote edge cases ----------------------------------

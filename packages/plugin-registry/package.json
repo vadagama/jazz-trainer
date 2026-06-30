@@ -27,6 +27,7 @@
     "@jazz/plugin-sdk": "*",
     "@jazz/plugin-theory-chords": "*",
     "@jazz/plugin-theory-intervals": "*",
-    "@jazz/plugin-theory-scales": "*"
+    "@jazz/plugin-theory-scales": "*",
+    "@jazz/plugin-practice-cards": "*"
   }
 }

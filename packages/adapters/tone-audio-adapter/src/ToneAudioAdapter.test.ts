@@ -3,10 +3,9 @@ import { testAudioPortContract } from '../../../music-core/src/audio/ports.contr
 import { ToneAudioAdapter } from './ToneAudioAdapter.js';
 
 // Mock Tone.js — the adapter uses Tone.Transport for scheduling.
-// In Node environment there is no Web Audio API, so we replace the
-// transport with a lightweight stub.
-// Use vi.hoisted() so mock objects are available when vi.mock is hoisted.
-const { mockTransport, mockTone } = vi.hoisted(() => {
+// vi.hoisted ensures mocks are available when vi.mock runs (both are hoisted).
+
+const { mockTransport, MockGain, mockGainInstances } = vi.hoisted(() => {
   const mockTransport = {
     bpm: { value: 120 },
     seconds: 0,
@@ -21,22 +20,46 @@ const { mockTransport, mockTone } = vi.hoisted(() => {
     cancel: vi.fn(),
   };
 
-  const mockTone = {
-    Transport: mockTransport,
-    start: vi.fn().mockResolvedValue(undefined),
-  };
+  const mockGainInstances: Array<{
+    gain: { value: number; rampTo: ReturnType<typeof vi.fn> };
+    toDestination: ReturnType<typeof vi.fn>;
+    connect: ReturnType<typeof vi.fn>;
+  }> = [];
 
-  return { mockTransport, mockTone };
+  // Must be a real class (not vi.fn) so `new` works.
+  class MockGain {
+    gain: { value: number; rampTo: ReturnType<typeof vi.fn> };
+    toDestination: ReturnType<typeof vi.fn>;
+    connect: ReturnType<typeof vi.fn>;
+
+    constructor(value = 1) {
+      this.gain = { value, rampTo: vi.fn() };
+      this.toDestination = vi.fn();
+      this.connect = vi.fn();
+      mockGainInstances.push(this);
+    }
+  }
+
+  return { mockTransport, MockGain, mockGainInstances };
 });
 
 vi.mock('tone', () => ({
-  default: mockTone,
-  ...mockTone,
+  default: {
+    Transport: mockTransport,
+    Gain: MockGain,
+    start: vi.fn().mockResolvedValue(undefined),
+    gainToDb: vi.fn((db: number) => db),
+  },
+  Transport: mockTransport,
+  Gain: MockGain,
+  start: vi.fn().mockResolvedValue(undefined),
+  gainToDb: vi.fn((db: number) => db),
 }));
 
 describe('ToneAudioAdapter', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockGainInstances.length = 0;
     mockTransport.bpm.value = 120;
     mockTransport.seconds = 0;
     mockTransport.ticks = 0;
@@ -138,5 +161,47 @@ describe('ToneAudioAdapter', () => {
     const adapter = new ToneAudioAdapter();
     adapter.setLoop(false);
     expect(mockTransport.loop).toBe(false);
+  });
+
+  // -- Solo bus tests (T-009) ----------------------------------------------
+
+  it('creates solo, accomp, and ducking buses on construction', () => {
+    new ToneAudioAdapter();
+    expect(mockGainInstances.length).toBe(3);
+  });
+
+  it('getSoloBus returns the solo bus gain node', () => {
+    const adapter = new ToneAudioAdapter();
+    const bus = adapter.getSoloBus();
+    expect(bus).toBeDefined();
+    expect(bus.gain).toBeDefined();
+  });
+
+  it('getAccompBus returns the accompaniment bus', () => {
+    const adapter = new ToneAudioAdapter();
+    const bus = adapter.getAccompBus();
+    expect(bus).toBeDefined();
+    expect(bus.gain).toBeDefined();
+  });
+
+  it('setSoloVolume ramps solo bus gain', () => {
+    const adapter = new ToneAudioAdapter();
+    adapter.setSoloVolume(0.5);
+    const soloBus = adapter.getSoloBus();
+    expect(soloBus.gain.rampTo).toHaveBeenCalledWith(0.5, 0.05);
+  });
+
+  it('applyDucking reduces accompaniment gain', () => {
+    const adapter = new ToneAudioAdapter();
+    adapter.applyDucking(-8);
+    const duckingGain = mockGainInstances[2]!;
+    expect(duckingGain.gain.rampTo).toHaveBeenCalled();
+  });
+
+  it('releaseDucking restores accompaniment gain', () => {
+    const adapter = new ToneAudioAdapter();
+    adapter.releaseDucking();
+    const duckingGain = mockGainInstances[2]!;
+    expect(duckingGain.gain.rampTo).toHaveBeenCalledWith(1, 0.3);
   });
 });

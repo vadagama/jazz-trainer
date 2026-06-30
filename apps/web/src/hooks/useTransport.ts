@@ -15,6 +15,7 @@ import {
   METRONOME_SAMPLE_BY_ID,
   pickRhodesLayer,
   pickPianoLayer,
+  pickSalamanderLayer,
   DrumInstrument,
   type HumanizeIntensity,
   bassManifest,
@@ -36,6 +37,7 @@ import {
   ToneAudioAdapter,
   createPitchedResources,
   createOneshotResources,
+  createSoloInstrumentFactories,
 } from '@jazz/tone-audio-adapter';
 import type {
   TimeSignatureString,
@@ -140,6 +142,14 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     const adapter = new ToneAudioAdapter({ bpm: settings.bpm });
     adapterRef.current = adapter;
 
+    // Expose adapter to plugins via global window (Phase C wiring)
+    if (typeof window !== 'undefined') {
+      (window as unknown as Record<string, unknown>).__toneAudioAdapter = adapter;
+    }
+
+    // Reuse sampler map for solo instruments (Piano, Rhodes)
+    const reuseSamplers = new Map<string, Tone.Sampler>();
+
     const makePlayer = (sound: ClickSound | null, volumeDb: number): Tone.Player | null => {
       if (!sound) return null;
       const p = new Tone.Player(
@@ -227,6 +237,10 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     rhodesSamplersRef.current = rhodesRes.samplers;
     rhodesDisposeRef.current = rhodesRes.dispose;
 
+    // Register first Rhodes sampler for solo reuse
+    const rhodesFirstSampler = rhodesRes.samplers.values().next().value;
+    if (rhodesFirstSampler) reuseSamplers.set('rhodes', rhodesFirstSampler);
+
     const rhodesEventSink: EventSink = (payload, atTicks, velocity, durationTicks) => {
       if (!(optsRef.current.settings.rhodesEnabled ?? false)) return;
       const p = payload as RhodesEvent;
@@ -267,10 +281,18 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     pianoSamplersRef.current = pianoRes.samplers;
     pianoDisposeRef.current = pianoRes.dispose;
 
+    // Register first Piano sampler for solo reuse
+    const pianoFirstSampler = pianoRes.samplers.values().next().value;
+    if (pianoFirstSampler) reuseSamplers.set('piano', pianoFirstSampler);
+
     const pianoEventSink: EventSink = (payload, atTicks, velocity, durationTicks) => {
       if (!(optsRef.current.settings.pianoEnabled ?? false)) return;
       const p = payload as PianoEvent;
-      const layerName = pickPianoLayer(velocity);
+      const pickLayer =
+        optsRef.current.settings.pianoSampleLibrary === 'upright-kw'
+          ? pickPianoLayer
+          : pickSalamanderLayer;
+      const layerName = pickLayer(velocity);
       const sampler = pianoSamplersRef.current.get(layerName);
       if (!sampler) return;
       const durationSecs = ticksToSeconds(durationTicks, optsRef.current.settings.bpm);
@@ -440,6 +462,12 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     machineRef.current = machine;
     engineRef.current = engine;
 
+    // Create and expose solo instrument factories (Phase C wiring)
+    if (typeof window !== 'undefined') {
+      (window as unknown as Record<string, unknown>).__soloInstrumentFactories =
+        createSoloInstrumentFactories(reuseSamplers);
+    }
+
     const unsub = machine.subscribe((state) => {
       usePlaybackStore.getState()._setState(state);
     });
@@ -450,6 +478,13 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     adapter.setBpm(settings.bpm);
 
     return () => {
+      // Clean up global adapter references (Phase C wiring)
+      if (typeof window !== 'undefined') {
+        const w = window as unknown as Record<string, unknown>;
+        if (w.__toneAudioAdapter === adapter) delete w.__toneAudioAdapter;
+        delete w.__soloInstrumentFactories;
+      }
+
       document.removeEventListener('pointerdown', warmAudioContext);
       unsub();
       if (intervalRef.current !== null) clearInterval(intervalRef.current);

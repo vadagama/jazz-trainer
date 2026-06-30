@@ -120,6 +120,13 @@ export async function settingsRoutes(
     if (data.rhodesLayerVolume !== undefined) patch.rhodesLayerVolume = data.rhodesLayerVolume;
     if (data.practiceCards !== undefined) patch.practiceCards = JSON.stringify(data.practiceCards);
 
+    // -- MIDI & solo settings (Phase C) --
+    if (data.midiDeviceId !== undefined) patch.midiDeviceId = data.midiDeviceId;
+    if (data.midiChannel !== undefined) patch.midiChannel = data.midiChannel;
+    if (data.soloToneId !== undefined) patch.soloToneId = data.soloToneId;
+    if (data.soloVolume !== undefined) patch.soloVolume = data.soloVolume;
+    if (data.duckingEnabled !== undefined) patch.duckingEnabled = data.duckingEnabled;
+
     db.update(userSettings).set(patch).where(eq(userSettings.userId, user.id)).run();
     return reply.send(toSettingsDTO({ ...existing, ...patch }));
   });

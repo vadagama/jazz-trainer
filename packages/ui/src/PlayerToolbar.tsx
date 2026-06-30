@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Slider } from './slider';
 import { cn } from './utils';
 import { StyleSelector } from './StyleSelector';
+import { RepeatSelector } from './RepeatSelector';
 
 interface PlayerToolbarProps {
   status?: PlaybackStatus;
@@ -21,6 +22,8 @@ interface PlayerToolbarProps {
   currentKey: Key;
   style?: Style;
   showKey?: boolean;
+  repeatCount?: number | null;
+  onRepeatChange?: (value: number | null | undefined) => void;
   onPlay?: () => void;
   onPause?: () => void;
   onStop?: () => void;
@@ -30,6 +33,7 @@ interface PlayerToolbarProps {
   onKeyChange?: (key: Key) => void;
   onVolumeChange?: (volume: number) => void;
   onStyleChange?: (style: Style) => void;
+  children?: React.ReactNode;
 }
 
 function ToolbarLabel({ children }: { children: React.ReactNode }) {
@@ -55,6 +59,8 @@ export function PlayerToolbar({
   currentKey,
   style,
   showKey = true,
+  repeatCount,
+  onRepeatChange,
   onPlay,
   onPause: _onPause,
   onStop,
@@ -64,6 +70,7 @@ export function PlayerToolbar({
   onKeyChange,
   onVolumeChange,
   onStyleChange,
+  children,
 }: PlayerToolbarProps) {
   const volumePct = Math.round(volumeProp * 100);
   const isMuted = volumeProp === 0;
@@ -172,6 +179,14 @@ export function PlayerToolbar({
             <StyleSelector value={style} onChange={onStyleChange} />
           </div>
         )}
+
+        {/* REPEAT */}
+        {onRepeatChange && (
+          <div className="flex flex-col items-center justify-center rounded-md bg-secondary px-2 py-1">
+            <ToolbarLabel>Повтор</ToolbarLabel>
+            <RepeatSelector value={repeatCount} onChange={onRepeatChange} />
+          </div>
+        )}
       </div>
 
       <Divider />
@@ -257,6 +272,13 @@ export function PlayerToolbar({
           {volumePct}%
         </span>
       </div>
+
+      {children && (
+        <>
+          <Divider />
+          <div className="flex items-center gap-2">{children}</div>
+        </>
+      )}
     </footer>
   );
 }

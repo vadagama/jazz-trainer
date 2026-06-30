@@ -84,7 +84,23 @@ export {
   type AudioPort,
   type MidiInputEvent,
   type InputPort,
+  type MidiDeviceInfo,
 } from './ports.js';
+export { type SoloInstrument, type PolySynthLike, type SamplerLike } from './soloInstrument.js';
+export { SynthSoloInstrument, type SynthSoloInstrumentOptions } from './synthSoloInstrument.js';
+export {
+  SamplerSoloInstrument,
+  type SamplerSoloInstrumentOptions,
+} from './samplerSoloInstrument.js';
+export { ReuseSoloInstrument } from './reuseSoloInstrument.js';
+export {
+  type SoloInstrumentManifest,
+  type SoloInstrumentFactories,
+  type SoloInstrumentSamples,
+} from './soloInstrumentManifest.js';
+export { SOLO_INSTRUMENT_MANIFESTS } from './soloInstrumentRegistry.js';
+export { SoloInstrumentHost } from './soloInstrumentHost.js';
+export { DuckingCompressor, type DuckingCompressorOptions } from './duckingCompressor.js';
 export { testAudioPortContract } from './ports.contract.js';
 export {
   DRUM_SAMPLE_FILES,
@@ -114,6 +130,19 @@ export {
 } from './midiEval.js';
 export { type SampleManifest } from './sampleManifest.js';
 export { type InstrumentManifest } from './instrumentManifest.js';
+export {
+  getKeyboardKeys,
+  noteNameToMidi,
+  type KeyLayout,
+  type KeyboardLayoutOptions,
+} from './keyboardLayout.js';
+export {
+  buildKeyMap,
+  describeKeyMap,
+  DEFAULT_WHITE_KEYS,
+  DEFAULT_BLACK_KEYS,
+  type ComputerKeyMap,
+} from './computerKeyboardLayout.js';
 export { bassManifest } from './bassManifest.js';
 export { rhodesManifest } from './rhodesManifest.js';
 export { pianoManifest } from './pianoManifest.js';
@@ -129,6 +158,18 @@ export {
 } from './pianoRandomizer.js';
 export { buildPianoVoicing, type PianoVoicingDensity } from './pianoVoicing.js';
 export { avoidConflicts } from './pianoRhodesInteraction.js';
+export { testSoloInstrumentContract } from './soloInstrument.contract.js';
+
+// -- Solo instrument manifests --
+export { synthDefaultManifest } from './manifests/synthDefaultManifest.js';
+export { synthLeadManifest } from './manifests/synthLeadManifest.js';
+export { pianoSalamanderSoloManifest } from './manifests/pianoSalamanderSoloManifest.js';
+export { rhodesJRhodes3cSoloManifest } from './manifests/rhodesJRhodes3cSoloManifest.js';
+export { clarinetManifest } from './manifests/clarinetManifest.js';
+export { vibraphoneManifest } from './manifests/vibraphoneManifest.js';
+export { guitarNylonSoloManifest } from './manifests/guitarNylonSoloManifest.js';
+export { trumpetMutedManifest } from './manifests/trumpetMutedManifest.js';
+export { fluteManifest } from './manifests/fluteManifest.js';
 export {
   getCompPattern as getPianoCompPattern,
   getCompingProfile,

@@ -8,11 +8,7 @@ export interface SourceTypeTabsProps {
   onChange: (type: ChordSource['type']) => void;
 }
 
-export function SourceTypeTabs({
-  value,
-  types = SOURCE_TYPES,
-  onChange,
-}: SourceTypeTabsProps) {
+export function SourceTypeTabs({ value, types = SOURCE_TYPES, onChange }: SourceTypeTabsProps) {
   return (
     <div className="flex flex-wrap gap-2">
       {types.map((st) => (

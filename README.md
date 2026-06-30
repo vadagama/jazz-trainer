@@ -17,8 +17,8 @@ packages/
   shared/                 DTO (Zod), константы, общие типы
   plugin-sdk/             Контракты плагинов (extension points, хуки, apiClient)
   plugin-host/            Загрузка плагинов, агрегация вкладов
-  plugin-registry/        Build-time реестр (16 плагинов)
-  plugins/                16 плагинов (вся фичевая логика)
+  plugin-registry/        Build-time реестр (17 плагинов)
+  plugins/                17 плагинов (вся фичевая логика)
   adapters/               Платформенные адаптеры (Tone.js → AudioPort, Web MIDI)
   ui/                     Общие UI-компоненты
 docs/                     Документация
@@ -43,19 +43,35 @@ docs/                     Документация
 | Guitar     | Nylon / Steel                    | —                           |
 | Metronome  | 5 звуков                         | —                           |
 
+Раздел «Упражнения» (плагин `practice-cards`) — интерактивные карточки
+для тренировки аккордов и гамм с аккомпанементом. См. [EXERSISE-VISION.md](docs/EXERSISE-VISION.md) и [EXERSISE-ARCHITECTURE.md](docs/EXERSISE-ARCHITECTURE.md).
+
 ## Требования
 
 - Node.js >= 20.11
 - npm >= 10
 
-## Установка и запуск
+## Установка
 
 ```bash
 npm install          # установить зависимости всех workspaces
 cp .env.example .env # настроить окружение (значения по умолчанию рабочие для dev)
-npm run dev          # поднять web (Vite :5173) и api (Fastify :3999) параллельно
 ```
 
+## Запуск в терминале
+
+```bash
+# Всё вместе (фронтенд + бэкенд параллельно)
+npm run dev
+
+# Только бэкенд (Fastify API на порту 3999)
+npm run dev:api
+
+# Только фронтенд (Vite на порту 5173)
+npm run dev:web
+```
+
+После запуска:
 - Web: http://localhost:5173
 - API health: http://localhost:3999/api/health → `{ "status": "ok" }`
 
@@ -87,5 +103,5 @@ npm run dev          # поднять web (Vite :5173) и api (Fastify :3999) п
 | ФR — RBAC + аудит   | ✅     | 3 роли, 11 permissions, audit log                               |
 | Ф2 — AudioPort      | 🟢     | Адаптеры готовы, 6 инструментов, манифесты, EventSink           |
 | Ф3 — Фичи → плагины | ✅     | `core-editor`, `core-player`, `catalog` вынесены                |
-| Ф4 — Новые домены   | 🟡     | 10 domain-плагинов созданы, наполнение в процессе               |
+| Ф4 — Новые домены   | 🟡     | 11 domain-плагинов + `practice-cards`, наполнение в процессе    |
 | Ф5 — MIDI           | 🟡     | MIDI-плагины и `midiEval` готовы, Desktop исключён из скоупа    |

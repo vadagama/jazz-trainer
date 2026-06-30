@@ -32,3 +32,15 @@ export function useDeleteGrid() {
     },
   });
 }
+
+export function usePublishGrid() {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => apiClient.post(`/api/grids/${id}/publish`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: MINE_KEY });
+      qc.invalidateQueries({ queryKey: ['grids', 'public'] });
+    },
+  });
+}

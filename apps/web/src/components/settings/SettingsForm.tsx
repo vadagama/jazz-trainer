@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { UserSettingsDTOSchema, type UserSettingsDTO } from '@jazz/shared';
@@ -16,6 +16,8 @@ import {
 import { Slider } from '@/components/ui/slider';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { LiveMidiControls } from '@/components/midi/LiveMidiControls';
+import { ComputerKeyboardSettings } from '@/components/settings/ComputerKeyboardSettings';
 
 interface Props {
   defaultValues: UserSettingsDTO;
@@ -49,6 +51,15 @@ export function SettingsForm({ defaultValues, onSave, themeControl }: Props) {
   });
 
   const savedRef = React.useRef(false);
+  const [audioLoading, setAudioLoading] = useState(false);
+  const previewTimersRef = React.useRef<ReturnType<typeof setTimeout>[]>([]);
+  const [previewError, setPreviewError] = useState<string | null>(null);
+
+  function clearPreviewTimers() {
+    for (const t of previewTimersRef.current) clearTimeout(t);
+    previewTimersRef.current = [];
+  }
+
   const doSave = React.useCallback(
     (data: UserSettingsDTO) => {
       savedRef.current = true;
@@ -56,6 +67,11 @@ export function SettingsForm({ defaultValues, onSave, themeControl }: Props) {
     },
     [onSave],
   );
+
+  // Cleanup preview timers on unmount
+  useEffect(() => {
+    return () => clearPreviewTimers();
+  }, []);
 
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout>;
@@ -108,6 +124,9 @@ export function SettingsForm({ defaultValues, onSave, themeControl }: Props) {
           </TabsTrigger>
           <TabsTrigger value="system" className="flex-1">
             Системные
+          </TabsTrigger>
+          <TabsTrigger value="midi" className="flex-1">
+            MIDI
           </TabsTrigger>
         </TabsList>
 
@@ -1471,6 +1490,250 @@ export function SettingsForm({ defaultValues, onSave, themeControl }: Props) {
               </p>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* ── MIDI ── */}
+        <TabsContent
+          value="midi"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-start"
+        >
+          {/* MIDI-устройство (live) */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
+                MIDI-устройство
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Controller
+                name="midiDeviceId"
+                control={form.control}
+                render={({ field }) => (
+                  <LiveMidiControls
+                    midiDeviceId={field.value}
+                    onDeviceChange={(id) => field.onChange(id)}
+                  />
+                )}
+              />
+            </CardContent>
+          </Card>
+
+          {/* MIDI-канал */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
+                MIDI-канал
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Controller
+                name="midiChannel"
+                control={form.control}
+                render={({ field }) => (
+                  <Select
+                    value={field.value?.toString() ?? 'all'}
+                    onValueChange={(v) => {
+                      field.onChange(v === 'all' ? undefined : parseInt(v, 10));
+                    }}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Все каналы</SelectItem>
+                      {Array.from({ length: 16 }, (_, i) => (
+                        <SelectItem key={i} value={i.toString()}>
+                          Канал {i + 1}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              <p className="mt-2 text-xs text-muted-foreground">
+                Фильтр MIDI-канала (0–15) или «все».
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Соло-тембр по умолчанию */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
+                Соло-тембр
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Controller
+                name="soloToneId"
+                control={form.control}
+                render={({ field }) => (
+                  <Select
+                    value={field.value ?? 'rhodes-jrhodes3c'}
+                    onValueChange={(v) => field.onChange(v === 'rhodes-jrhodes3c' ? undefined : v)}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="synth-default">Synth (Default)</SelectItem>
+                      <SelectItem value="synth-lead">Synth Lead</SelectItem>
+                      <SelectItem value="piano-salamander">Piano (Salamander)</SelectItem>
+                      <SelectItem value="rhodes-jrhodes3c">Rhodes (jRhodes3c)</SelectItem>
+                      <SelectItem value="clarinet">Clarinet</SelectItem>
+                      <SelectItem value="vibraphone">Vibraphone</SelectItem>
+                      <SelectItem value="guitar-nylon">Guitar (Nylon)</SelectItem>
+                      <SelectItem value="trumpet-muted">Trumpet (Muted)</SelectItem>
+                      <SelectItem value="flute">Flute</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              <p className="mt-2 text-xs text-muted-foreground">
+                Тембр соло-инструмента по умолчанию.
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Громкость соло */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
+                Громкость соло
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Controller
+                name="soloVolume"
+                control={form.control}
+                render={({ field }) => (
+                  <div className="flex items-center gap-3">
+                    <Slider
+                      value={[Math.round((field.value ?? 0.8) * 100)]}
+                      onValueChange={([v]) => field.onChange(v !== undefined ? v / 100 : undefined)}
+                      min={0}
+                      max={100}
+                      step={1}
+                    />
+                    <span className="w-10 text-right text-sm tabular-nums">
+                      {Math.round((field.value ?? 0.8) * 100)}%
+                    </span>
+                  </div>
+                )}
+              />
+            </CardContent>
+          </Card>
+
+          {/* Auto-duck */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
+                Auto-duck
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Controller
+                name="duckingEnabled"
+                control={form.control}
+                render={({ field }) => (
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={field.value ?? false}
+                      onChange={(e) => field.onChange(e.target.checked)}
+                      className="size-4 rounded accent-primary"
+                    />
+                    <span className="text-sm">
+                      Автоматически приглушать аккомпанемент при игре соло
+                    </span>
+                  </label>
+                )}
+              />
+            </CardContent>
+          </Card>
+
+          {/* Тест звука */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
+                Тест звука
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <button
+                type="button"
+                disabled={audioLoading}
+                onClick={async () => {
+                  clearPreviewTimers();
+                  setAudioLoading(true);
+                  setPreviewError(null);
+                  try {
+                    const w = window as unknown as Record<string, unknown>;
+
+                    // Ensure audio infra is ready (creates adapter + host on first call)
+                    const ensureAudio = w.__ensureAudioReady as (() => Promise<void>) | undefined;
+                    if (ensureAudio) await ensureAudio();
+
+                    const host = w.__soloInstrumentHost as {
+                      selectTone: (id: string) => void;
+                      handleNoteOn: (n: number, v: number) => void;
+                      handleNoteOff: (n: number) => void;
+                    } | null;
+                    if (!host) return;
+
+                    const toneId = form.getValues('soloToneId') ?? 'rhodes-jrhodes3c';
+                    try {
+                      host.selectTone(toneId);
+                    } catch (err) {
+                      setPreviewError(err instanceof Error ? err.message : 'Инструмент недоступен');
+                      // Fall back to synth-default which always works
+                      host.selectTone('synth-default');
+                    }
+
+                    // Give sampled instruments a moment to load
+                    await new Promise((r) => setTimeout(r, 100));
+
+                    // C4-E4-G4-C5 arpeggio (MIDI velocity 80 ≈ mezzoforte)
+                    const notes = [60, 64, 67, 72];
+                    const stepMs = 150;
+                    const noteDurationMs = 600;
+                    const velocity = 80;
+
+                    notes.forEach((note, i) => {
+                      const t1 = setTimeout(() => host.handleNoteOn(note, velocity), i * stepMs);
+                      const t2 = setTimeout(
+                        () => host.handleNoteOff(note),
+                        i * stepMs + noteDurationMs,
+                      );
+                      previewTimersRef.current.push(t1, t2);
+                    });
+
+                    // Keep button disabled while arpeggio plays
+                    const lastNoteEnd = (notes.length - 1) * stepMs + noteDurationMs;
+                    previewTimersRef.current.push(
+                      setTimeout(() => setAudioLoading(false), lastNoteEnd + 100),
+                    );
+                  } catch {
+                    setAudioLoading(false);
+                  }
+                }}
+                className="rounded bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-60"
+              >
+                {audioLoading ? 'Загрузка…' : '▶ Прослушать'}
+              </button>
+              {previewError && (
+                <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
+                  {previewError}. Использован синтезатор по умолчанию.
+                </p>
+              )}
+              <p className="mt-2 text-xs text-muted-foreground">
+                Проиграть арпеджио Cmaj7 выбранным тембром.
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Клавиатура компьютера */}
+          <ComputerKeyboardSettings />
         </TabsContent>
       </Tabs>
     </div>

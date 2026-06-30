@@ -40,6 +40,20 @@ export {
   DialogDescription,
 } from './dialog';
 
+export {
+  AlertDialog,
+  AlertDialogTrigger,
+  AlertDialogPortal,
+  AlertDialogOverlay,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from './alert-dialog';
+
 export { Textarea } from './textarea';
 export type { TextareaProps } from './textarea';
 
@@ -56,7 +70,42 @@ export {
 export { Slider } from './slider';
 
 export { Label } from './label';
+export { PianoKeysIcon } from './PianoKeysIcon';
+export { VirtualKeyboardPanel, type VirtualKeyboardPanelProps } from './VirtualKeyboardPanel';
+export { PlayerMidiControls, type PlayerMidiControlsProps } from './PlayerMidiControls';
 
 export { HarmonyGrid } from './HarmonyGrid';
 export { PlayerToolbar } from './PlayerToolbar';
 export { StyleSelector } from './StyleSelector';
+export { RepeatSelector, type RepeatSelectorProps } from './RepeatSelector';
+export { MidiDeviceSelector, type MidiDeviceSelectorProps } from './MidiDeviceSelector';
+export { MidiIndicator, type MidiIndicatorProps } from './MidiIndicator';
+export {
+  VirtualKeyboard,
+  type VirtualKeyboardProps,
+  type VirtualKeyState,
+  type KeyboardMode,
+} from './VirtualKeyboard';
+export {
+  LectureRenderer,
+  type LectureRendererProps,
+  type LectureProgress,
+  type LectureResult,
+} from './LectureRenderer';
+export { OSMDSheetMusic, type OSMDSheetMusicProps } from './OSMDSheetMusic';
+export { MiniTrainer, type MiniTrainerProps } from './MiniTrainer';
+export { ActiveQuiz, type ActiveQuizProps } from './ActiveQuiz';
+export { NotationStaff, type NotationStaffProps } from './NotationStaff';
+export { ChordPlayer, type ChordPlayerProps } from './ChordPlayer';
+export { MermaidDiagram, type MermaidDiagramProps } from './MermaidDiagram';
+export { AudioPlayer, type AudioPlayerProps } from './AudioPlayer';
+export { VideoPlayer, type VideoPlayerProps } from './VideoPlayer';
+export { SoloInstrumentSelector, type SoloInstrumentSelectorProps } from './SoloInstrumentSelector';
+export { SoloVolumeSlider, type SoloVolumeSliderProps } from './SoloVolumeSlider';
+export { DuckingToggle, type DuckingToggleProps } from './DuckingToggle';
+export {
+  SoloSettingsDialog,
+  SoloSettingsTrigger,
+  type SoloSettingsDialogProps,
+  type SoloSettingsTone,
+} from './SoloSettingsDialog';

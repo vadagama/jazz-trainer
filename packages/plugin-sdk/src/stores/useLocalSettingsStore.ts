@@ -66,6 +66,13 @@ const DEFAULT_SETTINGS: LocalSettings = {
   style: 'swing' as const,
   swingRatio: 0.5,
   audioFormat: 'aac' as const,
+
+  // -- MIDI & solo defaults (Phase C) --
+  midiDeviceId: undefined,
+  midiChannel: undefined,
+  soloToneId: 'rhodes-jrhodes3c',
+  soloVolume: undefined,
+  duckingEnabled: undefined,
 };
 
 export const useLocalSettingsStore = create<LocalSettingsStore>()(
