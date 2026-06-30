@@ -4,10 +4,21 @@ import {
   usePlaybackStore,
   useEffectiveSettings,
   useUpdateSettings,
+  useMidiConnection,
+  useMidiVisualizer,
+  type KeyboardMode,
 } from '@jazz/plugin-sdk';
 import type { Section, Style, TimeSignatureString } from '@jazz/shared';
 import { parseTimeSignature } from '@jazz/music-core';
-import { PlayerToolbar } from '@jazz/ui';
+import type { InputPort } from '@jazz/music-core';
+import type { SoloInstrumentManifest } from '@jazz/music-core/audio';
+import { SOLO_INSTRUMENT_MANIFESTS } from '@jazz/music-core/audio';
+import {
+  PlayerToolbar,
+  VirtualKeyboardPanel,
+  PlayerMidiControls,
+  SoloSettingsDialog,
+} from '@jazz/ui';
 import { Settings } from 'lucide-react';
 import { CardDisplay } from './CardDisplay.js';
 import type { PracticeBar, ExerciseConfig } from '../generators/types.js';
@@ -44,6 +55,25 @@ function buildSections(
   ];
 }
 
+// ── Global adapter helpers ──────────────────────────────────────────────────
+
+function getInputPort(): InputPort | null {
+  if (typeof window !== 'undefined') {
+    return (window as unknown as Record<string, unknown>).__midiInputPort as InputPort | null;
+  }
+  return null;
+}
+
+function getToneAdapter() {
+  if (typeof window !== 'undefined') {
+    return (window as unknown as Record<string, unknown>).__toneAudioAdapter as {
+      setSoloVolume: (v: number) => void;
+      setDucking: (enabled: boolean) => void;
+    } | null;
+  }
+  return null;
+}
+
 // ── Component ────────────────────────────────────────────────────────────────
 
 export function ExerciseRunner({ bars, config, onComplete, onReconfigure }: ExerciseRunnerProps) {
@@ -54,9 +84,118 @@ export function ExerciseRunner({ bars, config, onComplete, onReconfigure }: Exer
   const [localBpm, setLocalBpm] = useState<number | null>(null);
   const [localVolume, setLocalVolume] = useState<number | null>(null);
 
+  // ── MIDI ----------------------------------------------------------------
+  const [midiInitAttempted, setMidiInitAttempted] = useState(() =>
+    typeof window !== 'undefined'
+      ? !!(window as unknown as Record<string, unknown>).__midiInitialized
+      : false,
+  );
+  const [midiConnecting, setMidiConnecting] = useState(false);
+  const [soloDialogOpen, setSoloDialogOpen] = useState(false);
+
+  const inputPort = getInputPort();
+
+  const { connectionStatus, indicatorFlash } = useMidiConnection(inputPort);
+
+  // ── Virtual keyboard state ──────────────────────────────────────────────
+  const [keyboardMode, setKeyboardMode] = useState<KeyboardMode>('free');
+
+  const { activeKeys } = useMidiVisualizer(inputPort, { mode: keyboardMode });
+
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [showKeyLabels, setShowKeyLabels] = useState(false);
+  const [baseOctave, setBaseOctave] = useState(0);
+  const [containerWidth, setContainerWidth] = useState(
+    typeof window !== 'undefined' ? window.innerWidth : 0,
+  );
+
+  useEffect(() => {
+    const onResize = () => setContainerWidth(window.innerWidth);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  const WHITE_W = 42;
+  const displayedOctaves = Math.max(1, Math.floor(containerWidth / (7 * WHITE_W)));
+  const maxBase = Math.max(0, 8 - displayedOctaves);
+  const clampedBase = Math.min(baseOctave, maxBase);
+  const octaveLow = clampedBase;
+  const octaveHigh = Math.min(7, clampedBase + displayedOctaves - 1);
+  const keyboardWidth = displayedOctaves * 7 * WHITE_W;
+
+  const keyboardAutoOpenedRef = useRef(false);
+
+  // ── Auto-open virtual keyboard when MIDI connects ───────────────────────
+  useEffect(() => {
+    if (connectionStatus === 'connected' && !keyboardAutoOpenedRef.current) {
+      keyboardAutoOpenedRef.current = true;
+      setKeyboardVisible(true);
+    }
+    if (connectionStatus !== 'connected') {
+      keyboardAutoOpenedRef.current = false;
+    }
+  }, [connectionStatus]);
+
+  // ── Solo state ──────────────────────────────────────────────────────────
+  const soloVolume = serverSettings.soloVolume ?? 0.8;
+
+  const handleToneSelect = useCallback(
+    (manifestId: string) => {
+      updateSettings.mutate({
+        soloToneId: manifestId === 'rhodes-jrhodes3c' ? undefined : manifestId,
+      });
+    },
+    [updateSettings],
+  );
+
+  const handleSoloVolumeChange = useCallback(
+    (value: number) => {
+      getToneAdapter()?.setSoloVolume(value);
+      updateSettings.mutate({ soloVolume: value });
+    },
+    [updateSettings],
+  );
+
+  const toggleKeyboard = useCallback(() => {
+    setKeyboardVisible((v) => !v);
+  }, []);
+
+  const shiftOctave = useCallback(
+    (delta: number) => {
+      setBaseOctave((b) => Math.max(0, Math.min(maxBase, b + delta)));
+    },
+    [maxBase],
+  );
+
+  const handleMidiKeyDown = useCallback((midiNote: number) => {
+    const host = (window as unknown as Record<string, unknown>).__soloInstrumentHost as {
+      handleNoteOn(n: number, v: number): void;
+    } | null;
+    host?.handleNoteOn(midiNote, 100);
+  }, []);
+
+  const handleMidiKeyUp = useCallback((midiNote: number) => {
+    const host = (window as unknown as Record<string, unknown>).__soloInstrumentHost as {
+      handleNoteOff(n: number): void;
+    } | null;
+    host?.handleNoteOff(midiNote);
+  }, []);
+
+  const triggerMidiInit = useCallback(async () => {
+    setMidiConnecting(true);
+    try {
+      const initFn = (window as unknown as Record<string, () => Promise<void>>).__midiInitMidi;
+      if (initFn) await initFn();
+    } catch {
+      /* handled internally */
+    } finally {
+      setMidiInitAttempted(true);
+      setMidiConnecting(false);
+    }
+  }, []);
+
   const effectiveBpm = localBpm ?? config.tempo;
   const effectiveVolume = localVolume ?? serverSettings.volume;
-  // Style is a global user setting — single source of truth across all sections.
   const effectiveStyle = (serverSettings.style as Style) ?? 'swing';
 
   const timeSignature = config.timeSignature ?? '4/4';
@@ -93,8 +232,6 @@ export function ExerciseRunner({ bars, config, onComplete, onReconfigure }: Exer
   const { status, currentBar, currentBeat, countInActive, countInBeat } = usePlaybackStore();
 
   // ── Completion detection ───────────────────────────────────────────────
-  // seenIdleRef guards against stale 'playing' state from a previous exercise
-  // leaking into this mount and triggering onComplete before the user even starts.
   const seenIdleRef = useRef(false);
   const wasPlayingRef = useRef(false);
   const onCompleteRef = useRef(onComplete);
@@ -123,6 +260,9 @@ export function ExerciseRunner({ bars, config, onComplete, onReconfigure }: Exer
     (style: Style) => updateSettings.mutate({ style }),
     [updateSettings],
   );
+
+  const availableTones: SoloInstrumentManifest[] = SOLO_INSTRUMENT_MANIFESTS;
+
   // ── Render ─────────────────────────────────────────────────────────────
   const barIndex = config.infinite ? currentBar % bars.length : currentBar;
   const displayStatus = countInActive ? ('playing' as const) : status;
@@ -169,6 +309,21 @@ export function ExerciseRunner({ bars, config, onComplete, onReconfigure }: Exer
         )}
       </main>
 
+      {keyboardVisible && (
+        <VirtualKeyboardPanel
+          keyboardMode={keyboardMode}
+          onKeyboardModeChange={setKeyboardMode}
+          showKeyLabels={showKeyLabels}
+          onToggleKeyLabels={() => setShowKeyLabels((v) => !v)}
+          octaveLow={octaveLow}
+          octaveHigh={octaveHigh}
+          onShiftOctave={shiftOctave}
+          keyboardWidth={keyboardWidth}
+          activeKeys={activeKeys}
+          onKeyClick={handleMidiKeyDown}
+          onKeyRelease={handleMidiKeyUp}
+        />
+      )}
       {/* Player toolbar */}
       <PlayerToolbar
         status={displayStatus}
@@ -189,6 +344,26 @@ export function ExerciseRunner({ bars, config, onComplete, onReconfigure }: Exer
         onVolumeChange={setLocalVolume}
         onStyleChange={handleStyleChange}
         onKeyChange={undefined}
+      >
+        <PlayerMidiControls
+          midiConnectionStatus={connectionStatus}
+          midiIndicatorFlash={indicatorFlash}
+          midiInitAttempted={midiInitAttempted}
+          midiConnecting={midiConnecting}
+          onMidiClick={midiInitAttempted ? () => setSoloDialogOpen(true) : triggerMidiInit}
+          keyboardVisible={keyboardVisible}
+          onToggleKeyboard={toggleKeyboard}
+        />
+      </PlayerToolbar>
+
+      <SoloSettingsDialog
+        open={soloDialogOpen}
+        onOpenChange={setSoloDialogOpen}
+        tones={availableTones}
+        selectedToneId={serverSettings.soloToneId ?? 'rhodes-jrhodes3c'}
+        onToneSelect={handleToneSelect}
+        soloVolume={soloVolume}
+        onSoloVolumeChange={handleSoloVolumeChange}
       />
     </div>
   );

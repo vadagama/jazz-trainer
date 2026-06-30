@@ -32,9 +32,7 @@ export function RepetitionsCard({
               min={1}
               disabled={infinite}
               value={repetitions}
-              onChange={(e) =>
-                onRepetitionsChange(Math.max(1, parseInt(e.target.value, 10) || 1))
-              }
+              onChange={(e) => onRepetitionsChange(Math.max(1, parseInt(e.target.value, 10) || 1))}
               className="w-20"
             />
           </div>

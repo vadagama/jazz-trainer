@@ -64,6 +64,17 @@ export function Header() {
                 </Link>
               );
             })}
+
+          <Link
+            to="/theory"
+            className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+              location.pathname === '/theory' || location.pathname.startsWith('/theory/')
+                ? 'bg-accent text-foreground'
+                : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+            }`}
+          >
+            Теория
+          </Link>
         </nav>
         <button
           onClick={toggle}

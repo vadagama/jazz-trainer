@@ -113,6 +113,15 @@ export default tseslint.config(
               ],
             },
             {
+              from: 'packages/ui',
+              allow: [
+                'packages/ui',
+                'packages/plugin-sdk',
+                'packages/music-core',
+                'packages/shared',
+              ],
+            },
+            {
               from: 'packages/adapters',
               allow: ['packages/plugin-sdk', 'packages/music-core', 'packages/shared'],
             },

@@ -1,24 +1,87 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Music4, LayoutGrid, Library, Settings, LogOut, Sun, Moon, User } from 'lucide-react';
+import {
+  Music4,
+  Settings,
+  LogOut,
+  Sun,
+  Moon,
+  User,
+  BookOpen,
+  Dumbbell,
+  Shield,
+  LayoutGrid,
+  Pencil,
+  Home,
+  type LucideIcon,
+} from 'lucide-react';
 import { useAuth, useLogout } from '@/queries/useAuth';
 import { useTheme } from '@/hooks/useTheme';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
+import { contributions } from '@/shell/bootstrap';
+import type { NavItemContribution } from '@jazz/plugin-sdk';
 
-interface NavItem {
-  to: string;
-  icon: React.ElementType;
-  label: string;
+// ── Icon mapping ────────────────────────────────────────────────────────
+const SECTION_ICONS: Record<string, LucideIcon> = {
+  main: Home,
+  create: Pencil,
+  learn: BookOpen,
+  practice: Dumbbell,
+  play: Music4,
+  admin: Shield,
+};
+
+const SECTION_LABELS: Record<string, string> = {
+  main: 'Главное',
+  create: 'Создать',
+  learn: 'Теория',
+  practice: 'Практика',
+  play: 'Инструменты',
+  admin: 'Админка',
+};
+
+const ICON_NAME_MAP: Record<string, LucideIcon> = {
+  music: Music4,
+  'book-open': BookOpen,
+  dumbbell: Dumbbell,
+  shield: Shield,
+  disc: Music4,
+  home: Home,
+  edit: Pencil,
+  grid: LayoutGrid,
+  'help-circle': Music4,
+  'list-music': Music4,
+  drum: Music4,
+  piano: Music4,
+  image: Music4,
+  'file-text': Music4,
+  activity: Music4,
+  flag: Music4,
+  users: Music4,
+  radio: Music4,
+};
+
+function resolveIcon(iconName?: string): LucideIcon {
+  if (iconName && ICON_NAME_MAP[iconName]) return ICON_NAME_MAP[iconName]!;
+  return BookOpen;
 }
 
-const PUBLIC_NAV: NavItem[] = [{ to: '/', icon: LayoutGrid, label: 'Каталог' }];
-const AUTH_NAV: NavItem[] = [{ to: '/my', icon: Library, label: 'Мои сетки' }];
+// ── NavLink ─────────────────────────────────────────────────────────────
 
-function NavLink({ item, active }: { item: NavItem; active: boolean }) {
-  const Icon = item.icon;
+function NavLink({
+  to,
+  icon: Icon,
+  label,
+  active,
+}: {
+  to: string;
+  icon: LucideIcon;
+  label: string;
+  active: boolean;
+}) {
   return (
     <Link
-      to={item.to}
+      to={to}
       className={cn(
         'flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors',
         active
@@ -27,10 +90,12 @@ function NavLink({ item, active }: { item: NavItem; active: boolean }) {
       )}
     >
       <Icon className="size-4 shrink-0" />
-      {item.label}
+      {label}
     </Link>
   );
 }
+
+// ── Main Sidebar ────────────────────────────────────────────────────────
 
 export function Sidebar() {
   const { user } = useAuth();
@@ -39,7 +104,19 @@ export function Sidebar() {
   const { pathname } = useLocation();
   const { theme, toggle } = useTheme();
 
-  const navItems = user ? [...PUBLIC_NAV, ...AUTH_NAV] : PUBLIC_NAV;
+  // Group plugin-contributed nav items by section
+  const navBySection = new Map<string, NavItemContribution[]>();
+  for (const item of contributions.navItems) {
+    const list = navBySection.get(item.section);
+    if (list) {
+      list.push(item);
+    } else {
+      navBySection.set(item.section, [item]);
+    }
+  }
+
+  // Section order
+  const sectionOrder = ['main', 'create', 'learn', 'practice', 'play', 'admin'];
 
   const initials = user?.name
     ? user.name
@@ -58,11 +135,41 @@ export function Sidebar() {
         <span className="font-semibold tracking-tight">Jazz Trainer</span>
       </div>
 
-      {/* Primary navigation */}
+      {/* Plugin-contributed navigation by section */}
       <nav className="flex flex-1 flex-col gap-1 overflow-y-auto p-2">
-        {navItems.map((item) => (
-          <NavLink key={item.to} item={item} active={pathname === item.to} />
-        ))}
+        {sectionOrder.map((section) => {
+          const items = navBySection.get(section);
+          if (!items || items.length === 0) return null;
+
+          const SectionIcon = SECTION_ICONS[section] ?? BookOpen;
+          const sectionLabel = SECTION_LABELS[section] ?? section;
+
+          return (
+            <div key={section} className="mb-3">
+              {/* Section header */}
+              <div className="flex items-center gap-2 px-3 py-1.5">
+                <SectionIcon className="size-3.5 shrink-0 text-muted-foreground/60" />
+                <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground/60">
+                  {sectionLabel}
+                </span>
+              </div>
+
+              {/* Section items */}
+              {items.map((item) => {
+                const Icon = resolveIcon(item.icon);
+                return (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    icon={Icon}
+                    label={item.label}
+                    active={pathname === item.to}
+                  />
+                );
+              })}
+            </div>
+          );
+        })}
       </nav>
 
       {/* Bottom section */}

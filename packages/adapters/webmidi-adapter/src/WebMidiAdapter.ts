@@ -4,6 +4,7 @@ import type {
   ScheduledClick,
   InputPort,
   MidiInputEvent,
+  MidiDeviceInfo,
 } from '@jazz/music-core/audio';
 
 // ---------------------------------------------------------------------------
@@ -25,17 +26,20 @@ declare global {
 interface MidiOutput {
   send(data: number[], timestamp?: number): void;
   clear(): void;
+  readonly id?: string;
   readonly name?: string;
 }
 
 interface MidiInput {
-  onmidimessage: ((event: MidiMessageEvent) => void) | null;
+  readonly id?: string;
   readonly name?: string;
+  onmidimessage: ((event: MidiMessageEvent) => void) | null;
 }
 
 interface MidiMessageEvent {
   readonly data: Uint8Array;
   readonly timeStamp: number;
+  readonly target?: MidiInput;
 }
 
 interface MidiAccess {
@@ -129,6 +133,12 @@ export class WebMidiAdapter implements AudioPort, InputPort {
   private noteOnHandlers: Array<(event: MidiInputEvent) => void> = [];
   private noteOffHandlers: Array<(event: MidiInputEvent) => void> = [];
 
+  // -- Extended InputPort state (T-002) ------------------------------------
+  private activeInputId: string | null = null;
+  private channelMask: number | 'all' = 'all';
+  private connectionHandlers: Array<(status: 'disconnected' | 'available' | 'connected') => void> =
+    [];
+
   constructor(options: WebMidiAdapterOptions = {}) {
     this.channel = options.channel ?? DEFAULT_CHANNEL;
     this.clickNote = options.clickNote ?? DEFAULT_CLICK_NOTE;
@@ -185,9 +195,17 @@ export class WebMidiAdapter implements AudioPort, InputPort {
       for (const input of this.inputs) {
         input.onmidimessage = this.handleMidiMessage;
       }
+
+      // Auto-switch if active device disconnected
+      if (this.activeInputId && !this.inputs.some((i) => (i.id ?? '') === this.activeInputId)) {
+        this.activeInputId = null;
+      }
+
+      this.notifyConnectionStatus();
     };
 
     this.initialized = true;
+    this.notifyConnectionStatus();
   }
 
   // -- AudioPort -----------------------------------------------------------
@@ -274,7 +292,7 @@ export class WebMidiAdapter implements AudioPort, InputPort {
     this.allNotesOff();
   }
 
-  // -- InputPort -----------------------------------------------------------
+  // -- InputPort (core) ----------------------------------------------------
 
   /** @inheritdoc */
   onNoteOn(handler: (event: MidiInputEvent) => void): () => void {
@@ -300,19 +318,86 @@ export class WebMidiAdapter implements AudioPort, InputPort {
     return Array.from(this.access.inputs.values()).map((input) => input.name ?? 'Unnamed');
   }
 
+  // -- Extended InputPort (T-002) ------------------------------------------
+
+  async listInputs(): Promise<MidiDeviceInfo[]> {
+    if (!this.access) return [];
+    return Array.from(this.access.inputs.values()).map((input) => ({
+      id: input.id ?? '',
+      name: input.name ?? 'Unnamed',
+      manufacturer: undefined,
+    }));
+  }
+
+  selectInput(deviceId: string | null): void {
+    this.activeInputId = deviceId;
+    this.notifyConnectionStatus();
+  }
+
+  get activeDeviceId(): string | null {
+    return this.activeInputId;
+  }
+
+  setChannelFilter(channel: number | 'all'): void {
+    if (channel !== 'all' && (channel < 0 || channel > 15)) {
+      throw new Error(`Invalid MIDI channel: ${channel}. Must be 0–15 or 'all'.`);
+    }
+    this.channelMask = channel;
+  }
+
+  get channelFilter(): number | 'all' {
+    return this.channelMask;
+  }
+
+  get connectionStatus(): 'disconnected' | 'available' | 'connected' {
+    if (this.inputs.length === 0) return 'disconnected';
+    if (this.activeInputId !== null) {
+      return this.inputs.some((i) => (i.id ?? '') === this.activeInputId)
+        ? 'connected'
+        : 'available';
+    }
+    return 'available';
+  }
+
+  onConnectionChange(
+    handler: (status: 'disconnected' | 'available' | 'connected') => void,
+  ): () => void {
+    this.connectionHandlers.push(handler);
+    return () => {
+      const idx = this.connectionHandlers.indexOf(handler);
+      if (idx !== -1) this.connectionHandlers.splice(idx, 1);
+    };
+  }
+
   // -- Internal ------------------------------------------------------------
+
+  private notifyConnectionStatus(): void {
+    const status = this.connectionStatus;
+    for (const handler of this.connectionHandlers) {
+      handler(status);
+    }
+  }
 
   private handleMidiMessage = (event: MidiMessageEvent): void => {
     const data = event.data;
     if (!data || data.length < 3) return;
 
     const status = data[0]!;
+    const channel = status & 0x0f;
+
+    // Filter by channel
+    if (this.channelMask !== 'all' && channel !== this.channelMask) return;
+
+    // Filter by device ID
+    if (this.activeInputId !== null && event.target) {
+      const deviceId = event.target.id ?? '';
+      if (deviceId !== this.activeInputId) return;
+    }
+
     const note = data[1]!;
     const velocity = data[2]!;
 
     const command = status & 0xf0;
-    // Channel is unused for now but extracted for clarity
-    // const channel = status & 0x0f;
 
     const midiEvent: MidiInputEvent = {
       note: midiToNote(note),

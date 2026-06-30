@@ -5,7 +5,7 @@
   "type": "module",
   "main": "./dist/index.js",
   "scripts": {
-    "dev": "tsx watch --env-file=.env src/index.ts",
+    "dev": "tsx watch --env-file=.env --ignore=./data --ignore=./dist --ignore=./node_modules src/index.ts",
     "build": "tsup",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit",

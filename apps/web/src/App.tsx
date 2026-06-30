@@ -8,6 +8,7 @@ import { contributions } from './shell/bootstrap';
 import type { RouteContribution } from '@jazz/plugin-sdk';
 import { PluginProvider } from '@jazz/plugin-sdk';
 import { useTransport } from '@/hooks/useTransport';
+import { MidiSoloProvider } from './shell/MidiSoloProvider';
 
 /**
  * Создаёт ленивый компонент из RouteContribution.element().
@@ -54,45 +55,51 @@ function wrapRoute(r: RouteContribution, child: React.ReactNode): React.ReactNod
 }
 
 /** Маршруты, которые рендерятся внутри AppShell (Header + GridContainer). */
-const APP_SHELL_PATHS = new Set(['/', '/my', '/settings', '/profile']);
+const APP_SHELL_PATHS = new Set(['/', '/my', '/theory', '/settings', '/profile']);
+
+function isAppShellRoute(path: string): boolean {
+  return APP_SHELL_PATHS.has(path) || path.startsWith('/theory/');
+}
 
 export function App() {
-  const shellRoutes = contributions.routes.filter((r) => APP_SHELL_PATHS.has(r.path));
+  const shellRoutes = contributions.routes.filter((r) => isAppShellRoute(r.path));
   const editorRoutes = contributions.routes.filter(
     (r) =>
       r.path.startsWith('/grids') || r.path.startsWith('/play') || r.path === '/practice-cards',
   );
   const bareRoutes = contributions.routes.filter(
     (r) =>
-      !APP_SHELL_PATHS.has(r.path) && !r.path.startsWith('/grids') && !r.path.startsWith('/play'),
+      !isAppShellRoute(r.path) && !r.path.startsWith('/grids') && !r.path.startsWith('/play') && r.path !== '/practice-cards',
   );
 
   return (
     <PluginProvider useTransport={useTransport}>
-      <Routes>
-        {/* Header + scrollable GridContainer */}
-        <Route element={<AppShell />}>
-          {shellRoutes.map((r) => {
+      <MidiSoloProvider>
+        <Routes>
+          {/* Header + scrollable GridContainer */}
+          <Route element={<AppShell />}>
+            {shellRoutes.map((r) => {
+              const element = <LazyRoute key={r.path} importer={r.element} />;
+              return <Route key={r.path} path={r.path} element={wrapRoute(r, element)} />;
+            })}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Route>
+
+          {/* Header + full-height editor */}
+          <Route element={<EditorShell />}>
+            {editorRoutes.map((r) => {
+              const element = <LazyRoute key={r.path} importer={r.element} />;
+              return <Route key={r.path} path={r.path} element={wrapRoute(r, element)} />;
+            })}
+          </Route>
+
+          {/* Bare routes (login, etc.) */}
+          {bareRoutes.map((r) => {
             const element = <LazyRoute key={r.path} importer={r.element} />;
             return <Route key={r.path} path={r.path} element={wrapRoute(r, element)} />;
           })}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Route>
-
-        {/* Header + full-height editor */}
-        <Route element={<EditorShell />}>
-          {editorRoutes.map((r) => {
-            const element = <LazyRoute key={r.path} importer={r.element} />;
-            return <Route key={r.path} path={r.path} element={wrapRoute(r, element)} />;
-          })}
-        </Route>
-
-        {/* Bare routes (login, etc.) */}
-        {bareRoutes.map((r) => {
-          const element = <LazyRoute key={r.path} importer={r.element} />;
-          return <Route key={r.path} path={r.path} element={wrapRoute(r, element)} />;
-        })}
-      </Routes>
+        </Routes>
+      </MidiSoloProvider>
     </PluginProvider>
   );
 }

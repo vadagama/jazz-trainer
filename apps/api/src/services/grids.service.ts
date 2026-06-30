@@ -80,7 +80,7 @@ export function getUserGrids(db: DrizzleDb, userId: string): HarmonyGridSummaryD
   const rows = db
     .select()
     .from(harmonyGrids)
-    .where(eq(harmonyGrids.userId, userId))
+    .where(and(eq(harmonyGrids.userId, userId), eq(harmonyGrids.visibility, 'private')))
     .orderBy(desc(harmonyGrids.updatedAt))
     .all();
   return rows.map(toSummaryDTO);
@@ -190,6 +190,40 @@ export function copyGrid(
   };
   db.insert(harmonyGrids).values(row).run();
   return toDTO(row);
+}
+
+// ── Publish (create public copy) ───────────────────────────────────────────
+
+export function publishGrid(
+  db: DrizzleDb,
+  userId: string,
+  sourceId: string,
+): { id: string; name: string } | null {
+  const source = db
+    .select()
+    .from(harmonyGrids)
+    .where(and(eq(harmonyGrids.id, sourceId), eq(harmonyGrids.userId, userId)))
+    .get();
+  if (!source) return null;
+
+  const now = Date.now();
+  const id = crypto.randomUUID();
+  db.insert(harmonyGrids)
+    .values({
+      id,
+      userId,
+      name: source.name,
+      timeSignature: source.timeSignature,
+      key: source.key,
+      visibility: 'public',
+      content: source.content,
+      sourceGridId: sourceId,
+      likeCount: 0,
+      createdAt: now,
+      updatedAt: now,
+    })
+    .run();
+  return { id, name: source.name };
 }
 
 // ── DSL import / export ───────────────────────────────────────────────────

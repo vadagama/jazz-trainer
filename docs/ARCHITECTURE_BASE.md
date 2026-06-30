@@ -107,15 +107,15 @@ export default definePlugin({
 | `instruments` / `generators` / `theoryProviders` | Звуковые движки, генераторы, теория                | 🔴 Тип `unknown[]`            |
 | `settingsSchema`                                 | Декларация настроек плагина                        | 🟡 Тип есть, не используется  |
 
-### 3.3. Категории и плагины (16 шт.)
+### 3.3. Категории и плагины (17 шт.)
 
-| Категория  | Плагины                                                                            |
-| ---------- | ---------------------------------------------------------------------------------- |
-| `core`     | `core-editor` (грид-редактор), `core-player` (плеер), `catalog` (каталог)          |
-| `theory`   | `theory-scales`, `theory-chords`, `theory-intervals`                               |
-| `practice` | `ear-training` (MIDI, слух), `rhythm-drills` (MIDI, ритм)                          |
-| `assess`   | `chord-quiz`, `progression-recognition`                                            |
-| `admin`    | `admin-users`, `admin-content`, `admin-flags`, `admin-assets`, `admin-diagnostics` |
+| Категория  | Плагины                                                                                |
+| ---------- | -------------------------------------------------------------------------------------- |
+| `core`     | `core-editor` (грид-редактор), `core-player` (плеер), `catalog` (каталог)              |
+| `theory`   | `theory-scales`, `theory-chords`, `theory-intervals`                                   |
+| `practice` | `ear-training` (MIDI, слух), `rhythm-drills` (MIDI, ритм), `practice-cards` (карточки) |
+| `assess`   | `chord-quiz`, `progression-recognition`                                                |
+| `admin`    | `admin-users`, `admin-content`, `admin-flags`, `admin-assets`, `admin-diagnostics`     |
 
 ### 3.4. Реестр и загрузка
 
@@ -323,7 +323,7 @@ jazz-trainer/
 │   ├── plugin-sdk/             # Контракты: extension points, хуки, apiClient
 │   ├── plugin-host/            # Загрузка плагинов, агрегация вкладов
 │   ├── plugin-registry/        # Build-time реестр всех плагинов
-│   ├── plugins/                # 16 плагинов (вся фичевая логика)
+│   ├── plugins/                # 17 плагинов (вся фичевая логика)
 │   │   ├── _template/          # Эталон для копирования
 │   │   ├── core-editor/
 │   │   ├── core-player/
@@ -339,6 +339,7 @@ jazz-trainer/
 │   │   ├── admin-content/
 │   │   ├── admin-flags/
 │   │   ├── admin-assets/
+│   │   ├── practice-cards/
 │   │   └── admin-diagnostics/
 │   ├── adapters/               # Платформенные адаптеры
 │   │   ├── tone-audio-adapter/
@@ -349,10 +350,17 @@ jazz-trainer/
 │   ├── ARCHITECTURE_VISION.md  # Целевое видение (агент architect)
 │   ├── FUNCTIONS.md            # Каталог возможностей
 │   ├── TECH_DEPT.md            # План улучшения кодовой базы (агент architect)
+│   ├── CHORDS.md               # Multi-chord бары и ChordTimeline
+│   ├── ALL_CHORDS.md            # Полный каталог аккордов
 │   ├── BASS.md                 # Спецификация баса (walking bass, стили, рандомайзер)
 │   ├── PIANO.md                # Спецификация фортепиано (профили, voicing, голосоведение)
 │   ├── RHODES.md               # Спецификация Rhodes (комплементарный слой)
-│   └── DRUMS.md                # Спецификация барабанов (Swirly Drums v2, стили)
+│   ├── DRUMS.md                # Спецификация барабанов (Swirly Drums v2, стили)
+│   ├── SCALES-VISION.md         # Видение модуля гамм
+│   ├── EXERSISE-VISION.md       # Видение модуля упражнений
+│   ├── EXERSISE-ARCHITECTURE.md # Архитектура модуля упражнений
+│   ├── EXERSISE-PLAN.md         # План реализации упражнений
+│   └── EXERSISE-TODO.md          ← Список задач по упражнениям
 ├── CLAUDE.md                   # Навигатор для AI-агентов
 └── README.md                   # Первое знакомство с проектом
 ```
@@ -487,6 +495,15 @@ jazz-trainer/
 **Альтернативы:** Оба инструмента с равными правами (конфликты), только один инструмент (потеря текстуры), радио-кнопка «или Piano или Rhodes» (менее гибко). Отклонено.
 **Последствия:** Rhodes-движок получил второй режим `RhodesLayerMode` (pads, subtle-offbeats, high-comping, ambient-swells, stab-accents). Legacy-режим `RhodesCompingMode` сохранён для обратной совместимости. Добавлен модуль `pianoRhodesInteraction.ts`.
 
+### ADR-015: MIDI как внутреннее представление конкретных нот
+
+**Дата:** 2026-06-19
+**Статус:** 🟢 Принято
+**Контекст:** Ноты представлены двумя способами: строки (`"C4"`) и MIDI-номера (`60`). Виртуальная клавиатура, Solo-инструменты и midiEval уже на MIDI. Аккомпанемент (Bass, Piano, Rhodes, Guitar) генерирует строки. Конверсия note ↔ MIDI дублирована в 6 местах.
+**Решение:** Принять MIDI-номер как каноническое внутреннее представление **конкретных нот** (результат voicing'а). Сохранить `ChordSymbol` как доменную абстракцию для аккордов. Миграция в 4 фазы: унификация конверсии → EventPayload на MIDI → `ScheduledNote.midiNote` → нотный стан.
+**Альтернативы:** Оставить всё на строках (отклонено — дублирование и двойная конверсия). Всё на MIDI включая ChordSymbol (отклонено — потеря семантики качества аккордов).
+**Последствия:** Единый модуль `noteConverter.ts` вместо 6 дубликатов. WebMidiAdapter без конверсии на горячем пути. Виртуальная клавиатура, нотный стан, оценка игры — на одном языке. Подробнее: `docs/MIDI_ARCHITECTURE.md`.
+
 ## 10. Фазы миграции — статус
 
 | Фаза                | Статус | Ключевой результат                                                                    |
@@ -501,4 +518,4 @@ jazz-trainer/
 
 ---
 
-_Документ описывает текущую архитектуру. Обновлён 2026-06-15. Фазы 0, 1, R, 3 готовы ✅, Фаза 2 готова (6 инструментов + манифесты), Фазы 4, 5 частично 🟡. 8 ADR принято (ADR-001–014). Целевое видение — в `ARCHITECTURE_VISION.md`._
+_Документ описывает текущую архитектуру. Обновлён 2026-06-19. Фазы 0, 1, R, 2, 3 готовы ✅, Фазы 4, 5 частично 🟡. 15 ADR принято (ADR-001–015). Плагинов: 17. Целевое видение — в `ARCHITECTURE_VISION.md`._

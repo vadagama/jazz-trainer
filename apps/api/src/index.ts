@@ -6,6 +6,15 @@ import { seedSystemUser, seedDevUser, seedDemoGrids, seedRbac } from './db/seed.
 import fs from 'node:fs';
 import path from 'node:path';
 
+// Log unhandled rejections and exceptions so we can diagnose silent crashes
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[api] unhandledRejection at:', promise, 'reason:', reason);
+});
+process.on('uncaughtException', (error) => {
+  console.error('[api] uncaughtException:', error);
+  process.exit(1);
+});
+
 async function main(): Promise<void> {
   const config = loadConfig();
 
@@ -14,7 +23,7 @@ async function main(): Promise<void> {
     fs.mkdirSync(path.dirname(path.resolve(config.databaseUrl)), { recursive: true });
   }
 
-  const { db } = createDb(config.databaseUrl);
+  const { db, sqlite } = createDb(config.databaseUrl);
   runMigrations(db);
   seedSystemUser(db);
   seedRbac(db);
@@ -30,6 +39,16 @@ async function main(): Promise<void> {
     app.log.error(err);
     process.exit(1);
   }
+
+  // Graceful shutdown: close DB and server on SIGTERM/SIGINT
+  const shutdown = async (signal: string) => {
+    console.log(`[api] received ${signal}, shutting down...`);
+    await app.close();
+    sqlite.close();
+    process.exit(0);
+  };
+  process.once('SIGTERM', () => shutdown('SIGTERM'));
+  process.once('SIGINT', () => shutdown('SIGINT'));
 }
 
 void main();

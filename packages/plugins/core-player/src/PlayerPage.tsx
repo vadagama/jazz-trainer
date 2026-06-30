@@ -1,16 +1,52 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Loader2, AlertCircle } from 'lucide-react';
 import type { Key, Section, Style } from '@jazz/shared';
 import { transposeSections } from '@jazz/music-core';
+import type { InputPort } from '@jazz/music-core';
+import type { SoloInstrumentManifest } from '@jazz/music-core/audio';
+import { SOLO_INSTRUMENT_MANIFESTS } from '@jazz/music-core/audio';
 import { usePublicGrid } from './queries/usePublicGrids';
 import {
   useEffectiveSettings,
   usePlaybackStore,
   usePluginTransport,
   useUpdateSettings,
+  useMidiVisualizer,
+  useMidiConnection,
+  type KeyboardMode,
 } from '@jazz/plugin-sdk';
-import { HarmonyGrid, PlayerToolbar } from '@jazz/ui';
+import {
+  HarmonyGrid,
+  PlayerToolbar,
+  VirtualKeyboardPanel,
+  PlayerMidiControls,
+  SoloSettingsDialog,
+} from '@jazz/ui';
+
+// ---------------------------------------------------------------------------
+// -- Global adapter reference (for immediate solo volume/ducking feedback) --
+
+function getInputPort(): InputPort | null {
+  if (typeof window !== 'undefined') {
+    return (window as unknown as Record<string, unknown>).__midiInputPort as InputPort | null;
+  }
+  return null;
+}
+
+function getToneAdapter() {
+  if (typeof window !== 'undefined') {
+    return (window as unknown as Record<string, unknown>).__toneAudioAdapter as {
+      setSoloVolume: (v: number) => void;
+      setDucking: (enabled: boolean) => void;
+    } | null;
+  }
+  return null;
+}
+
+// ---------------------------------------------------------------------------
+// PlayerPage
+// ---------------------------------------------------------------------------
 
 export function PlayerPage() {
   const { id } = useParams<{ id: string }>();
@@ -21,9 +57,115 @@ export function PlayerPage() {
   const displayBeat = countInActive ? countInBeat : currentBeat;
   const countingInBarIndex = countInActive ? currentBar : undefined;
 
+  const [soloDialogOpen, setSoloDialogOpen] = useState(false);
   const [localBpm, setLocalBpm] = useState<number | null>(null);
   const [localKey, setLocalKey] = useState<Key | null>(null);
   const [localVolume, setLocalVolume] = useState<number | null>(null);
+  const [keyboardMode, setKeyboardMode] = useState<KeyboardMode>('free');
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [showKeyLabels, setShowKeyLabels] = useState(false);
+  const [baseOctave, setBaseOctave] = useState(0);
+  const [containerWidth, setContainerWidth] = useState(
+    typeof window !== 'undefined' ? window.innerWidth : 0,
+  );
+
+  const [midiInitAttempted, setMidiInitAttempted] = useState(() =>
+    typeof window !== 'undefined'
+      ? !!(window as unknown as Record<string, unknown>).__midiInitialized
+      : false,
+  );
+  const [midiConnecting, setMidiConnecting] = useState(false);
+  // Track viewport width for responsive octave count
+  useEffect(() => {
+    const onResize = () => setContainerWidth(window.innerWidth);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  const WHITE_W = 42;
+  const displayedOctaves = Math.max(1, Math.floor(containerWidth / (7 * WHITE_W)));
+  const maxBase = Math.max(0, 8 - displayedOctaves);
+  const clampedBase = Math.min(baseOctave, maxBase);
+  const octaveLow = clampedBase;
+  const octaveHigh = Math.min(7, clampedBase + displayedOctaves - 1);
+  const keyboardWidth = displayedOctaves * 7 * WHITE_W;
+
+  const keyboardAutoOpenedRef = useRef(false);
+
+  // -- Solo state (from settings, reactively updated by MidiSoloProvider) --
+  const soloVolume = settings.soloVolume ?? 0.8;
+
+  const inputPort = getInputPort();
+
+  const { connectionStatus, indicatorFlash } = useMidiConnection(inputPort);
+  const { activeKeys } = useMidiVisualizer(inputPort, { mode: keyboardMode });
+
+  // -- Auto-open virtual keyboard when MIDI connects ------------------------
+  useEffect(() => {
+    if (connectionStatus === 'connected' && !keyboardAutoOpenedRef.current) {
+      keyboardAutoOpenedRef.current = true;
+      setKeyboardVisible(true);
+    }
+    if (connectionStatus !== 'connected') {
+      keyboardAutoOpenedRef.current = false;
+    }
+  }, [connectionStatus]);
+
+  // -- Solo control handlers (settings persistence) -------------------------
+  const handleToneSelect = useCallback(
+    (manifestId: string) => {
+      updateSettings.mutate({
+        soloToneId: manifestId === 'rhodes-jrhodes3c' ? undefined : manifestId,
+      });
+    },
+    [updateSettings],
+  );
+
+  const handleSoloVolumeChange = useCallback(
+    (value: number) => {
+      getToneAdapter()?.setSoloVolume(value);
+      updateSettings.mutate({ soloVolume: value });
+    },
+    [updateSettings],
+  );
+
+  const toggleKeyboard = useCallback(() => {
+    setKeyboardVisible((v) => !v);
+  }, []);
+
+  const shiftOctave = useCallback(
+    (delta: number) => {
+      setBaseOctave((b) => Math.max(0, Math.min(maxBase, b + delta)));
+    },
+    [maxBase],
+  );
+
+  const handleKeyDown = useCallback((midiNote: number) => {
+    const host = (window as unknown as Record<string, unknown>).__soloInstrumentHost as {
+      handleNoteOn(n: number, v: number): void;
+    } | null;
+    host?.handleNoteOn(midiNote, 100);
+  }, []);
+
+  const handleKeyUp = useCallback((midiNote: number) => {
+    const host = (window as unknown as Record<string, unknown>).__soloInstrumentHost as {
+      handleNoteOff(n: number): void;
+    } | null;
+    host?.handleNoteOff(midiNote);
+  }, []);
+
+  const triggerMidiInit = useCallback(async () => {
+    setMidiConnecting(true);
+    try {
+      const initFn = (window as unknown as Record<string, () => Promise<void>>).__midiInitMidi;
+      if (initFn) await initFn();
+    } catch {
+      /* handled internally */
+    } finally {
+      setMidiInitAttempted(true);
+      setMidiConnecting(false);
+    }
+  }, []);
 
   const handleStyleChange = (style: Style) => {
     updateSettings.mutate({ style });
@@ -48,14 +190,50 @@ export function PlayerPage() {
             },
           ]
         : [];
+
+  // Repeat override — allows changing loop count during playback
+  const [repeatOverridden, setRepeatOverridden] = useState(false);
+  const [repeatOverride, setRepeatOverride] = useState<number | null | undefined>(undefined);
+
+  const repeatCount = useMemo(() => {
+    if (repeatOverridden) return repeatOverride;
+    if (sections.length === 0) return undefined;
+    const lastSection = sections[sections.length - 1]!;
+    const lastBar = lastSection.bars[lastSection.bars.length - 1];
+    return lastBar?.repeatEnd?.count;
+  }, [sections, repeatOverridden, repeatOverride]);
+
+  const handleRepeatChange = useCallback((value: number | null | undefined) => {
+    setRepeatOverridden(true);
+    setRepeatOverride(value);
+  }, []);
+
+  // Apply repeat override to sections for transport
+  const effectiveSections = useMemo(() => {
+    if (!repeatOverridden || sections.length === 0) return sections;
+    return sections.map((s, si) => {
+      if (si !== sections.length - 1) return s;
+      const bars = s.bars.map((b, bi) => {
+        if (bi !== s.bars.length - 1) return b;
+        if (repeatOverride === undefined) {
+          const { repeatEnd: _, ...rest } = b;
+          return rest as typeof b;
+        }
+        return { ...b, repeatEnd: { count: repeatOverride } };
+      });
+      return { ...s, bars };
+    });
+  }, [sections, repeatOverridden, repeatOverride]);
+
   const originalKey = grid?.key ?? 'C';
   const displaySections = useMemo(
-    () => transposeSections(sections, originalKey, effectiveKey),
-    [sections, originalKey, effectiveKey],
+    () => transposeSections(effectiveSections, originalKey, effectiveKey),
+    [effectiveSections, originalKey, effectiveKey],
   );
+
   const totalBars =
-    sections.length > 0
-      ? sections.reduce((s, sec) => s + sec.bars.length, 0)
+    effectiveSections.length > 0
+      ? effectiveSections.reduce((s, sec) => s + sec.bars.length, 0)
       : (grid?.barsCount ?? 0);
 
   const transport = usePluginTransport({
@@ -66,6 +244,8 @@ export function PlayerPage() {
   });
 
   const playingBarIndex = !countInActive && status !== 'idle' ? currentBar : undefined;
+
+  const availableTones: SoloInstrumentManifest[] = SOLO_INSTRUMENT_MANIFESTS;
 
   if (isLoading) {
     return (
@@ -119,6 +299,21 @@ export function PlayerPage() {
         </div>
       </main>
 
+      {keyboardVisible && (
+        <VirtualKeyboardPanel
+          keyboardMode={keyboardMode}
+          onKeyboardModeChange={setKeyboardMode}
+          showKeyLabels={showKeyLabels}
+          onToggleKeyLabels={() => setShowKeyLabels((v) => !v)}
+          octaveLow={octaveLow}
+          octaveHigh={octaveHigh}
+          onShiftOctave={shiftOctave}
+          keyboardWidth={keyboardWidth}
+          activeKeys={activeKeys}
+          onKeyClick={handleKeyDown}
+          onKeyRelease={handleKeyUp}
+        />
+      )}
       <PlayerToolbar
         status={countInActive ? 'playing' : status}
         currentBeat={displayBeat}
@@ -138,6 +333,28 @@ export function PlayerPage() {
         onVolumeChange={setLocalVolume}
         style={(settings.style ?? 'swing') as Style}
         onStyleChange={handleStyleChange}
+        repeatCount={repeatCount}
+        onRepeatChange={handleRepeatChange}
+      >
+        <PlayerMidiControls
+          midiConnectionStatus={connectionStatus}
+          midiIndicatorFlash={indicatorFlash}
+          midiInitAttempted={midiInitAttempted}
+          midiConnecting={midiConnecting}
+          onMidiClick={midiInitAttempted ? () => setSoloDialogOpen(true) : triggerMidiInit}
+          keyboardVisible={keyboardVisible}
+          onToggleKeyboard={toggleKeyboard}
+        />
+      </PlayerToolbar>
+
+      <SoloSettingsDialog
+        open={soloDialogOpen}
+        onOpenChange={setSoloDialogOpen}
+        tones={availableTones}
+        selectedToneId={settings.soloToneId ?? 'rhodes-jrhodes3c'}
+        onToneSelect={handleToneSelect}
+        soloVolume={soloVolume}
+        onSoloVolumeChange={handleSoloVolumeChange}
       />
     </div>
   );

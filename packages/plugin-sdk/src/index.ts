@@ -39,3 +39,50 @@ export type { PluginDefinition } from './definePlugin';
 
 export { usePermission } from './hooks/usePermission';
 export { useFlag } from './hooks/useFlag';
+
+export type {
+  LectureMeta,
+  TopicId,
+  LectureBlock,
+  TextBlock,
+  ImageBlock,
+  DiagramBlock,
+  SheetMusicBlock,
+  PlaybackConfig,
+  KeyboardBlock,
+  ChordAudioBlock,
+  AudioBlock,
+  VideoBlock,
+  MiniTrainerBlock,
+  QuizBlock,
+  DividerBlock,
+  CalloutBlock,
+  MiniExercise,
+  PlayArpeggioExercise,
+  PlayScaleExercise,
+  PlayChordExercise,
+  PlayProgressionExercise,
+  PlayRhythmExercise,
+  ImproviseExercise,
+  ActiveQuiz,
+  PlayTheNoteQuiz,
+  PlayNoteQuestion,
+  PlayTheChordQuiz,
+  PlayChordQuestion,
+  CompleteThePhraseQuiz,
+  CompletePhraseQuestion,
+  TranscribeQuiz,
+  TranscribeQuestion,
+  LectureSection,
+  LectureDefinition,
+} from './lecture-engine/types';
+export {
+  useMidiVisualizer,
+  type KeyState,
+  type KeyboardMode,
+  type RecentNote,
+  type UseMidiVisualizerOptions,
+  type UseMidiVisualizerResult,
+} from './hooks/useMidiVisualizer';
+export { useMidiConnection, type UseMidiConnectionResult } from './hooks/useMidiConnection';
+export { useComputerKeyboardStore } from './stores/useComputerKeyboardStore';

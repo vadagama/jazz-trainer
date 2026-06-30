@@ -107,6 +107,14 @@ export const UserSettingsDTOSchema = z.object({
   style: z.enum(STYLES).optional(),
   swingRatio: z.number().min(0.5).max(0.75).optional(),
   audioFormat: z.enum(['aac', 'mp3']).optional(),
+
+  // ── MIDI settings (Phase C) ──
+  midiDeviceId: z.string().optional(),
+  midiChannel: z.number().int().min(0).max(15).optional(),
+  soloToneId: z.string().optional(),
+  soloVolume: z.number().min(0).max(1).optional(),
+  duckingEnabled: z.boolean().optional(),
+
   practiceCards: z
     .object({
       lastExerciseType: z.enum(['chords', 'scales']).optional(),

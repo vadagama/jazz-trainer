@@ -5,3 +5,4 @@ export {
   type PitchedInstrumentResources,
   type OneshotInstrumentResources,
 } from './InstrumentResources.js';
+export { createSoloInstrumentFactories } from './SoloInstrumentFactories.js';

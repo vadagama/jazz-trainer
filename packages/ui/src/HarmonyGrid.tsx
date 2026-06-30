@@ -115,6 +115,23 @@ function SectionNameEditor({ name, onChange }: { name: string; onChange: (name: 
 
 const REPEAT_COUNTS = [2, 3, 4, 8] as const;
 
+function RepeatEndIndicator({ repeatEnd }: { repeatEnd: RepeatEnd }) {
+  return (
+    <div
+      className={cn(
+        'absolute right-0 top-0 bottom-0 flex w-5 flex-col items-center justify-center',
+        'rounded-r-lg border-l-2 border-muted-foreground/20 text-muted-foreground/50',
+      )}
+      title={`Повтор ×${repeatEnd.count ?? '∞'}`}
+    >
+      <span className="font-mono text-[10px] font-bold leading-none">‖</span>
+      <span className="mt-0.5 text-[8px] leading-none">
+        {repeatEnd.count === null ? '∞' : `×${repeatEnd.count}`}
+      </span>
+    </div>
+  );
+}
+
 function RepeatEndDropdown({
   repeatEnd,
   onChange,
@@ -137,9 +154,11 @@ function RepeatEndDropdown({
           className={cn(
             'absolute right-0 top-0 bottom-0 flex w-5 flex-col items-center justify-center',
             'rounded-r-lg border-l-2 transition-colors',
-            repeatEnd
+            open
               ? 'border-primary/70 bg-primary/10 text-primary'
-              : 'border-transparent text-muted-foreground/30 hover:border-muted-foreground/30 hover:text-muted-foreground',
+              : repeatEnd
+                ? 'border-muted-foreground/25 bg-muted/40 text-muted-foreground/60'
+                : 'border-transparent text-muted-foreground/20 hover:border-muted-foreground/30 hover:text-muted-foreground/50',
           )}
           title={repeatEnd ? `Повтор ×${repeatEnd.count ?? '∞'}` : 'Добавить знак повторения'}
         >
@@ -287,7 +306,11 @@ function BarCard({
         Bar {String(index + 1).padStart(2, '0')}
       </span>
 
-      {!readonly && <RepeatEndDropdown repeatEnd={bar.repeatEnd} onChange={onSetRepeatEnd} />}
+      {!readonly ? (
+        <RepeatEndDropdown repeatEnd={bar.repeatEnd} onChange={onSetRepeatEnd} />
+      ) : bar.repeatEnd ? (
+        <RepeatEndIndicator repeatEnd={bar.repeatEnd} />
+      ) : null}
     </div>
   );
 }

@@ -33,7 +33,10 @@ export function DslSourceEditor({
         placeholder="| I6 | IIm7 V7 | Imaj7 |"
         className={cn(
           dslError && 'border-destructive focus-visible:ring-destructive',
-          parsedPreview && parsedPreview.length > 0 && !dslError && 'border-green-500 focus-visible:ring-green-500',
+          parsedPreview &&
+            parsedPreview.length > 0 &&
+            !dslError &&
+            'border-green-500 focus-visible:ring-green-500',
         )}
       />
       {parsedPreview && parsedPreview.length > 0 && !dslError && (
@@ -45,9 +48,7 @@ export function DslSourceEditor({
           />
           {keys.length > 0 && (
             <div className="flex flex-wrap items-center gap-x-1 gap-y-1">
-              <span className="mr-1 text-xs text-muted-foreground">
-                В тональности {keys[0]}:
-              </span>
+              <span className="mr-1 text-xs text-muted-foreground">В тональности {keys[0]}:</span>
               {parsedPreview.flatMap((bar) =>
                 bar.map((step, ci) => (
                   <span key={`${ci}`} className="inline-flex items-center gap-0.5">
@@ -73,12 +74,10 @@ export function DslSourceEditor({
       )}
       <p className="text-xs text-muted-foreground">
         Формат:{' '}
-        <code className="rounded bg-muted px-1 py-0.5 text-xs">
-          | I6 | IIm7 V7 | Imaj7 |
-        </code>{' '}
-        — ступени римскими цифрами (I–VII), качество суффиксом (m7, maj7, 7, m7b5, 6). Хроматика —
-        ♭/♯ перед ступенью (♭II, ♯IV), вторичные доминанты — через слэш (V7/V). Такты разделены
-        «|», ступени внутри такта — пробелами или запятыми.
+        <code className="rounded bg-muted px-1 py-0.5 text-xs">| I6 | IIm7 V7 | Imaj7 |</code> —
+        ступени римскими цифрами (I–VII), качество суффиксом (m7, maj7, 7, m7b5, 6). Хроматика — ♭/♯
+        перед ступенью (♭II, ♯IV), вторичные доминанты — через слэш (V7/V). Такты разделены «|»,
+        ступени внутри такта — пробелами или запятыми.
       </p>
     </div>
   );

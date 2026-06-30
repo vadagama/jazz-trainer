@@ -1,6 +1,7 @@
 {
   "extends": "../../../tsconfig.base.json",
   "compilerOptions": {
+    "lib": ["ES2022", "DOM"],
     "baseUrl": ".",
     "paths": {
       "@jazz/music-core": ["../../music-core/src/index.ts"],

@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Loader2, AlertCircle, Pencil, Save } from 'lucide-react';
+import { Loader2, AlertCircle, Pencil } from 'lucide-react';
 import type { TimeSignatureString, Key, Style } from '@jazz/shared';
 import { transposeSections } from '@jazz/music-core';
+import type { InputPort } from '@jazz/music-core';
+import { SOLO_INSTRUMENT_MANIFESTS } from '@jazz/music-core/audio';
 import { useGrid, useUpdateGrid } from './queries/useGrid';
 import {
   useEditorStore,
@@ -10,9 +12,32 @@ import {
   useEffectiveSettings,
   usePluginTransport,
   useUpdateSettings,
+  useMidiConnection,
+  useMidiVisualizer,
+  type KeyboardMode,
 } from '@jazz/plugin-sdk';
-import { HarmonyGrid, PlayerToolbar, Button, cn } from '@jazz/ui';
+import {
+  HarmonyGrid,
+  PlayerToolbar,
+  Button,
+  cn,
+  VirtualKeyboardPanel,
+  PlayerMidiControls,
+  SoloSettingsDialog,
+} from '@jazz/ui';
 import { ChordPalette } from './components/ChordPalette';
+
+// -- Global adapter reference (for immediate solo volume/ducking feedback) --
+
+function getToneAdapter() {
+  if (typeof window !== 'undefined') {
+    return (window as unknown as Record<string, unknown>).__toneAudioAdapter as {
+      setSoloVolume: (v: number) => void;
+      setDucking: (enabled: boolean) => void;
+    } | null;
+  }
+  return null;
+}
 
 // ── Inline composition title editor ──────────────────────────────────────────
 
@@ -108,15 +133,176 @@ export function EditorPage() {
   const content = localContent ?? grid?.content ?? { version: 1 as const, bars: [], sections: [] };
   const sections = content.sections ?? [];
 
+  const [soloDialogOpen, setSoloDialogOpen] = useState(false);
   const [playerKey, setPlayerKey] = useState<Key>(grid?.key ?? 'C');
   const [localBpm, setLocalBpm] = useState<number | null>(null);
   const [localVolume, setLocalVolume] = useState<number | null>(null);
+
+  // -- MIDI ----------------------------------------------------------------
+  const [midiInitAttempted, setMidiInitAttempted] = useState(() =>
+    typeof window !== 'undefined'
+      ? !!(window as unknown as Record<string, unknown>).__midiInitialized
+      : false,
+  );
+  const [midiConnecting, setMidiConnecting] = useState(false);
+
+  const inputPort: InputPort | null =
+    typeof window !== 'undefined'
+      ? ((window as unknown as Record<string, unknown>).__midiInputPort as InputPort | null)
+      : null;
+
+  const { connectionStatus, indicatorFlash } = useMidiConnection(inputPort);
+
+  const triggerMidiInit = useCallback(async () => {
+    setMidiConnecting(true);
+    try {
+      const initFn = (window as unknown as Record<string, () => Promise<void>>).__midiInitMidi;
+      if (initFn) await initFn();
+    } catch {
+      /* handled internally */
+    } finally {
+      setMidiInitAttempted(true);
+      setMidiConnecting(false);
+    }
+  }, []);
+
+  // -- Virtual keyboard state --
+  const [keyboardMode, setKeyboardMode] = useState<KeyboardMode>('free');
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [showKeyLabels, setShowKeyLabels] = useState(false);
+  const [baseOctave, setBaseOctave] = useState(0);
+  const [containerWidth, setContainerWidth] = useState(
+    typeof window !== 'undefined' ? window.innerWidth : 0,
+  );
+
+  useEffect(() => {
+    const onResize = () => setContainerWidth(window.innerWidth);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  const WHITE_W = 42;
+  const displayedOctaves = Math.max(1, Math.floor(containerWidth / (7 * WHITE_W)));
+  const maxBase = Math.max(0, 8 - displayedOctaves);
+  const clampedBase = Math.min(baseOctave, maxBase);
+  const octaveLow = clampedBase;
+  const octaveHigh = Math.min(7, clampedBase + displayedOctaves - 1);
+  const keyboardWidth = displayedOctaves * 7 * WHITE_W;
+
+  const keyboardAutoOpenedRef = useRef(false);
+
+  // -- Solo state (from settings, reactively updated by MidiSoloProvider) --
+  const soloVolume = settings.soloVolume ?? 0.8;
+
+  const { activeKeys } = useMidiVisualizer(inputPort, { mode: keyboardMode });
+
+  // -- Auto-open virtual keyboard when MIDI connects --
+  useEffect(() => {
+    if (connectionStatus === 'connected' && !keyboardAutoOpenedRef.current) {
+      keyboardAutoOpenedRef.current = true;
+      setKeyboardVisible(true);
+    }
+    if (connectionStatus !== 'connected') {
+      keyboardAutoOpenedRef.current = false;
+    }
+  }, [connectionStatus]);
+
+  // -- Solo control handlers (settings persistence) --
+  const handleToneSelect = useCallback(
+    (manifestId: string) => {
+      updateSettings.mutate({
+        soloToneId: manifestId === 'rhodes-jrhodes3c' ? undefined : manifestId,
+      });
+    },
+    [updateSettings],
+  );
+
+  const handleSoloVolumeChange = useCallback(
+    (value: number) => {
+      getToneAdapter()?.setSoloVolume(value);
+      updateSettings.mutate({ soloVolume: value });
+    },
+    [updateSettings],
+  );
+
+  const toggleKeyboard = useCallback(() => {
+    setKeyboardVisible((v) => !v);
+  }, []);
+
+  const shiftOctave = useCallback(
+    (delta: number) => {
+      setBaseOctave((b) => Math.max(0, Math.min(maxBase, b + delta)));
+    },
+    [maxBase],
+  );
+
+  const handleMidiKeyDown = useCallback((midiNote: number) => {
+    const host = (window as unknown as Record<string, unknown>).__soloInstrumentHost as {
+      handleNoteOn(n: number, v: number): void;
+    } | null;
+    host?.handleNoteOn(midiNote, 100);
+  }, []);
+
+  const handleMidiKeyUp = useCallback((midiNote: number) => {
+    const host = (window as unknown as Record<string, unknown>).__soloInstrumentHost as {
+      handleNoteOff(n: number): void;
+    } | null;
+    host?.handleNoteOff(midiNote);
+  }, []);
+
+  const availableTones = SOLO_INSTRUMENT_MANIFESTS;
 
   useEffect(() => {
     if (grid?.content) {
       setContent(grid.content, grid.timeSignature);
     }
   }, [grid?.content, setContent]);
+
+  // Auto-save debounced: saves content when isDirty becomes true
+  const contentRef = useRef(content);
+  contentRef.current = content;
+  const gridRef = useRef(grid);
+  gridRef.current = grid;
+  const isDirtyRef = useRef(isDirty);
+  isDirtyRef.current = isDirty;
+  const autoSavePendingRef = useRef(false);
+
+  useEffect(() => {
+    if (!isDirty || !gridRef.current) return;
+    const timer = setTimeout(async () => {
+      const g = gridRef.current;
+      if (!g) return;
+      autoSavePendingRef.current = true;
+      try {
+        await updateMutation.mutateAsync({
+          name: g.name,
+          timeSignature: g.timeSignature,
+          key: g.key,
+          content: contentRef.current,
+        });
+        markClean();
+      } finally {
+        autoSavePendingRef.current = false;
+      }
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [isDirty]);
+
+  // Flush pending auto-save on unmount
+  useEffect(() => {
+    return () => {
+      if (autoSavePendingRef.current) return;
+      const g = gridRef.current;
+      if (isDirtyRef.current && g) {
+        updateMutation.mutate({
+          name: g.name,
+          timeSignature: g.timeSignature,
+          key: g.key,
+          content: contentRef.current,
+        });
+      }
+    };
+  }, []);
 
   useEffect(() => {
     function colsForSection(ts: string): number {
@@ -235,6 +421,32 @@ export function EditorPage() {
   const selectedBarFlatIndex =
     selectedBarId != null ? allBars.findIndex((b) => b.id === selectedBarId) : undefined;
 
+  const lastBarId = useMemo(() => {
+    if (sections.length === 0) return undefined;
+    const lastSection = sections[sections.length - 1]!;
+    const lastBar = lastSection.bars[lastSection.bars.length - 1];
+    return lastBar?.id;
+  }, [sections]);
+
+  const repeatCount = useMemo(() => {
+    if (sections.length === 0) return undefined;
+    const lastSection = sections[sections.length - 1]!;
+    const lastBar = lastSection.bars[lastSection.bars.length - 1];
+    return lastBar?.repeatEnd?.count;
+  }, [sections]);
+
+  const handleRepeatChange = useCallback(
+    (value: number | null | undefined) => {
+      if (!lastBarId) return;
+      if (value === undefined) {
+        setBarRepeatEnd(lastBarId, undefined);
+      } else {
+        setBarRepeatEnd(lastBarId, { count: value });
+      }
+    },
+    [lastBarId, setBarRepeatEnd],
+  );
+
   const handlePrevBar = useCallback(() => {
     const effectiveIndex =
       selectedBarFlatIndex !== undefined && selectedBarFlatIndex >= 0
@@ -281,16 +493,6 @@ export function EditorPage() {
   const handleStyleChange = (style: Style) => {
     updateSettings.mutate({ style });
   };
-
-  async function handleSave() {
-    await updateMutation.mutateAsync({
-      name: grid!.name,
-      timeSignature: grid!.timeSignature,
-      key: grid!.key,
-      content,
-    });
-    markClean();
-  }
 
   async function handleSaveTitle(name: string) {
     await updateMutation.mutateAsync({ name });
@@ -350,21 +552,8 @@ export function EditorPage() {
                 <div className="flex items-start justify-between gap-4">
                   <CompositionTitle name={grid.name} onSave={handleSaveTitle} />
                   <div className="flex shrink-0 items-center gap-2">
-                    {(isDirty || updateMutation.isPending) && (
-                      <Button
-                        size="sm"
-                        className="gap-1.5"
-                        onClick={handleSave}
-                        disabled={updateMutation.isPending}
-                        data-testid="save-button"
-                      >
-                        {updateMutation.isPending ? (
-                          <Loader2 className="size-3.5 animate-spin" />
-                        ) : (
-                          <Save className="size-3.5" />
-                        )}
-                        Save
-                      </Button>
+                    {updateMutation.isPending && (
+                      <Loader2 className="size-4 animate-spin text-muted-foreground" />
                     )}
                   </div>
                 </div>
@@ -396,6 +585,22 @@ export function EditorPage() {
         </main>
       </div>
 
+      {keyboardVisible && (
+        <VirtualKeyboardPanel
+          keyboardMode={keyboardMode}
+          onKeyboardModeChange={setKeyboardMode}
+          showKeyLabels={showKeyLabels}
+          onToggleKeyLabels={() => setShowKeyLabels((v) => !v)}
+          octaveLow={octaveLow}
+          octaveHigh={octaveHigh}
+          onShiftOctave={shiftOctave}
+          keyboardWidth={keyboardWidth}
+          activeKeys={activeKeys}
+          onKeyClick={handleMidiKeyDown}
+          onKeyRelease={handleMidiKeyUp}
+        />
+      )}
+
       <PlayerToolbar
         status={countInActive ? 'playing' : status}
         currentBeat={displayBeat}
@@ -420,6 +625,28 @@ export function EditorPage() {
         onVolumeChange={setLocalVolume}
         style={(settings.style ?? 'swing') as Style}
         onStyleChange={handleStyleChange}
+        repeatCount={repeatCount}
+        onRepeatChange={handleRepeatChange}
+      >
+        <PlayerMidiControls
+          midiConnectionStatus={connectionStatus}
+          midiIndicatorFlash={indicatorFlash}
+          midiInitAttempted={midiInitAttempted}
+          midiConnecting={midiConnecting}
+          onMidiClick={midiInitAttempted ? () => setSoloDialogOpen(true) : triggerMidiInit}
+          keyboardVisible={keyboardVisible}
+          onToggleKeyboard={toggleKeyboard}
+        />
+      </PlayerToolbar>
+
+      <SoloSettingsDialog
+        open={soloDialogOpen}
+        onOpenChange={setSoloDialogOpen}
+        tones={availableTones}
+        selectedToneId={settings.soloToneId ?? 'rhodes-jrhodes3c'}
+        onToneSelect={handleToneSelect}
+        soloVolume={soloVolume}
+        onSoloVolumeChange={handleSoloVolumeChange}
       />
     </div>
   );

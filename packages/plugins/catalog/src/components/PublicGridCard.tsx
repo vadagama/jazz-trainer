@@ -1,9 +1,21 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Play, Music2 } from 'lucide-react';
+import { Music2, Trash2 } from 'lucide-react';
 import type { PublicGridSummaryDTO } from '@jazz/shared';
-import { Button } from '@jazz/ui';
+import { useAuth } from '@jazz/plugin-sdk';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@jazz/ui';
 import { LikeButton } from './LikeButton';
-import { CopyToMineButton } from './CopyToMineButton';
+import { useDeleteGrid } from '../queries/useDeleteGrid';
 
 interface Props {
   grid: PublicGridSummaryDTO;
@@ -18,10 +30,18 @@ function GridTag({ children }: { children: React.ReactNode }) {
 }
 
 export function PublicGridCard({ grid }: Props) {
+  const { user } = useAuth();
+  const deleteGrid = useDeleteGrid();
+  const [open, setOpen] = useState(false);
+
   return (
     <div className="group flex flex-col rounded-lg border border-border bg-card transition-colors hover:border-primary/40">
       <div className="flex-1 p-5">
-        <h3 className="truncate font-semibold leading-snug">{grid.name}</h3>
+        <Link to={`/play/${grid.id}`} className="block">
+          <h3 className="truncate font-semibold leading-snug hover:text-primary transition-colors">
+            {grid.name}
+          </h3>
+        </Link>
         <div className="mt-3 flex flex-wrap items-center gap-1.5">
           <GridTag>{grid.key}</GridTag>
           <GridTag>{grid.timeSignature}</GridTag>
@@ -34,14 +54,34 @@ export function PublicGridCard({ grid }: Props) {
 
       <div className="flex items-center justify-between border-t border-border px-5 py-3">
         <LikeButton gridId={grid.id} likeCount={grid.likeCount} likedByMe={grid.likedByMe} />
-        <div className="flex items-center gap-2">
-          <CopyToMineButton gridId={grid.id} gridName={grid.name} />
-          <Button asChild size="sm" className="gap-1.5">
-            <Link to={`/play/${grid.id}`}>
-              <Play className="size-3.5" /> Играть
-            </Link>
-          </Button>
-        </div>
+        {user && (
+          <AlertDialog open={open} onOpenChange={setOpen}>
+            <AlertDialogTrigger asChild>
+              <button
+                type="button"
+                className="rounded p-1 text-muted-foreground transition-colors hover:text-destructive"
+                disabled={deleteGrid.isPending}
+                aria-label="Удалить сетку"
+              >
+                <Trash2 className="size-3.5" />
+              </button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Удалить сетку?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  «{grid.name}» будет удалена без возможности восстановления.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Отмена</AlertDialogCancel>
+                <AlertDialogAction onClick={() => deleteGrid.mutate(grid.id)}>
+                  Удалить
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
       </div>
     </div>
   );

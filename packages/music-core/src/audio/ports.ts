@@ -58,18 +58,58 @@ export interface MidiInputEvent {
   timestamp: number;
 }
 
+/** Information about a MIDI input device. */
+export interface MidiDeviceInfo {
+  /** Unique device ID (from Web MIDI API). */
+  id: string;
+  /** Human-readable name. */
+  name: string;
+  /** Optional manufacturer string. */
+  manufacturer?: string;
+}
+
 /**
  * Abstraction over MIDI input.
  *
  * Implementations wrap Web MIDI API or other input sources.
  */
 export interface InputPort {
+  // ── Existing methods (unchanged) ──
+
   /** Register a note-on handler. Returns an unsubscribe function. */
   onNoteOn: (handler: (event: MidiInputEvent) => void) => () => void;
 
   /** Register a note-off handler. Returns an unsubscribe function. */
   onNoteOff: (handler: (event: MidiInputEvent) => void) => () => void;
 
-  /** List available MIDI input device names. */
+  /** @deprecated Use {@link listInputs} instead. */
   devices: () => Promise<string[]>;
+
+  // ── New methods (device selection, channel filter, connection status) ──
+
+  /** List available MIDI input devices with metadata. */
+  listInputs(): Promise<MidiDeviceInfo[]>;
+
+  /**
+   * Select the active input device by ID.
+   * Pass `null` to listen to all devices.
+   */
+  selectInput(deviceId: string | null): void;
+
+  /** ID of the currently selected input device, or `null` for all. */
+  readonly activeDeviceId: string | null;
+
+  /** Set MIDI channel filter: 0–15 or 'all'. */
+  setChannelFilter(channel: number | 'all'): void;
+
+  /** Current channel filter. */
+  readonly channelFilter: number | 'all';
+
+  /** Connection status: 'disconnected' | 'available' | 'connected'. */
+  readonly connectionStatus: 'disconnected' | 'available' | 'connected';
+
+  /** Callback on connection state change (hot-plug). Returns unsubscribe. */
+  onConnectionChange(
+    handler: (status: 'disconnected' | 'available' | 'connected') => void,
+  ): () => void;
 }
