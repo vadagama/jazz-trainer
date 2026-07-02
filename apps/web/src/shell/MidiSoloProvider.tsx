@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import type { InputPort } from '@jazz/music-core';
+import type { InputPort, MidiInputEvent } from '@jazz/music-core';
 import {
   noteToMidi,
   SoloInstrumentHost,
@@ -8,6 +8,15 @@ import {
 import { useLocalSettingsStore, useComputerKeyboardStore } from '@jazz/plugin-sdk';
 import { buildKeyMap } from '@jazz/music-core/audio';
 import type { ComputerKeyboardAdapter } from './ComputerKeyboardAdapter';
+
+/** Fallback: extract MIDI note number from note name string (regex). */
+function midiNoteFromEvent(event: MidiInputEvent): number | undefined {
+  try {
+    return noteToMidi(event.note);
+  } catch {
+    return undefined;
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Helpers to read adapters from window globals
@@ -64,6 +73,14 @@ export function MidiSoloProvider({ children }: { children: React.ReactNode }) {
   const midiDeviceId = useLocalSettingsStore((s) => s.settings.midiDeviceId);
   const midiChannel = useLocalSettingsStore((s) => s.settings.midiChannel);
 
+  // Refs to avoid stale closures in polling effect
+  const soloToneIdRef = useRef(soloToneId);
+  soloToneIdRef.current = soloToneId;
+  const soloVolumeRef = useRef(soloVolume);
+  soloVolumeRef.current = soloVolume;
+  const duckingEnabledRef = useRef(duckingEnabled);
+  duckingEnabledRef.current = duckingEnabled;
+
   // ── Create / dispose SoloInstrumentHost when adapters appear/disappear ──
   useEffect(() => {
     const toneAdapter = getToneAdapter();
@@ -77,15 +94,17 @@ export function MidiSoloProvider({ children }: { children: React.ReactNode }) {
     setHostReady(true);
 
     // Apply current settings
-    const toneId = soloToneId ?? 'rhodes-jrhodes3c';
+    const vol = soloVolumeRef.current ?? 0.8;
+    host.setVolume(vol);
+    const toneId = soloToneIdRef.current ?? 'rhodes-jrhodes3c';
     try {
       host.selectTone(toneId);
     } catch {
       host.selectTone('synth-default');
     }
 
-    toneAdapter.setSoloVolume(soloVolume ?? 0.8);
-    toneAdapter.setDucking(duckingEnabled ?? false);
+    toneAdapter.setSoloVolume(vol);
+    toneAdapter.setDucking(duckingEnabledRef.current ?? false);
 
     return () => {
       host.dispose();
@@ -97,30 +116,44 @@ export function MidiSoloProvider({ children }: { children: React.ReactNode }) {
 
   // ── React to adapters appearing / disappearing (transport init / teardown) ──
   useEffect(() => {
+    let prevFactories: SoloInstrumentFactories | null = null;
+
     const poll = setInterval(() => {
       const ta = getToneAdapter();
       const f = getSoloInstrumentFactories();
 
       if (ta && f) {
-        // Adapters available — create host if needed
-        if (!hostRef.current) {
+        // Recreate host when factories change (e.g., reuseSamplers become available)
+        const factoriesChanged = f !== prevFactories;
+        prevFactories = f;
+
+        if (!hostRef.current || factoriesChanged) {
+          if (hostRef.current && factoriesChanged) {
+            hostRef.current.dispose();
+            hostRef.current = null;
+            delete (window as unknown as Record<string, unknown>).__soloInstrumentHost;
+          }
+
           const soloBus = ta.getSoloBus();
           const host = new SoloInstrumentHost(soloBus, f);
           hostRef.current = host;
           (window as unknown as Record<string, unknown>).__soloInstrumentHost = host;
           setHostReady(true);
 
-          const toneId = soloToneId ?? 'rhodes-jrhodes3c';
+          const vol = soloVolumeRef.current ?? 0.8;
+          host.setVolume(vol);
+          const toneId = soloToneIdRef.current ?? 'rhodes-jrhodes3c';
           try {
             host.selectTone(toneId);
           } catch {
             host.selectTone('synth-default');
           }
-          ta.setSoloVolume(soloVolume ?? 0.8);
-          ta.setDucking(duckingEnabled ?? false);
+          ta.setSoloVolume(vol);
+          ta.setDucking(duckingEnabledRef.current ?? false);
         }
       } else if (hostRef.current) {
         // Adapters disappeared (e.g. transport torn down) — dispose host
+        prevFactories = null;
         hostRef.current.dispose();
         hostRef.current = null;
         delete (window as unknown as Record<string, unknown>).__soloInstrumentHost;
@@ -140,13 +173,11 @@ export function MidiSoloProvider({ children }: { children: React.ReactNode }) {
     const toneAdapter = getToneAdapter();
 
     const unsubNoteOn = inputPort.onNoteOn((event) => {
-      let midiNote: number;
-      try {
-        midiNote = noteToMidi(event.note);
-      } catch {
-        return;
+      const midiNote = event.midiNote ?? midiNoteFromEvent(event);
+      if (midiNote === undefined) return;
+      if (import.meta.env.DEV) {
+        console.debug('[MidiSoloProvider] noteOn:', event.note, 'vel=', event.velocity);
       }
-      console.debug('[MidiSoloProvider] noteOn:', event.note, 'vel=', event.velocity);
       host.handleNoteOn(midiNote, event.velocity);
       if (toneAdapter) {
         toneAdapter.noteOnDucking(toneAdapter.now());
@@ -154,12 +185,8 @@ export function MidiSoloProvider({ children }: { children: React.ReactNode }) {
     });
 
     const unsubNoteOff = inputPort.onNoteOff((event) => {
-      let midiNote: number;
-      try {
-        midiNote = noteToMidi(event.note);
-      } catch {
-        return;
-      }
+      const midiNote = event.midiNote ?? midiNoteFromEvent(event);
+      if (midiNote === undefined) return;
       host.handleNoteOff(midiNote);
       if (toneAdapter) {
         toneAdapter.noteOffDucking(toneAdapter.now());
@@ -204,8 +231,13 @@ export function MidiSoloProvider({ children }: { children: React.ReactNode }) {
 
   // ── Apply volume changes ──
   useEffect(() => {
+    const vol = soloVolume ?? 0.8;
+    const host = hostRef.current;
+    // Host applies velocity scaling for reuse instruments
+    if (host) host.setVolume(vol);
+    // Adapter applies gain to soloBus (affects synth/sampled instruments)
     const ta = getToneAdapter();
-    if (ta) ta.setSoloVolume(soloVolume ?? 0.8);
+    if (ta) ta.setSoloVolume(vol);
   }, [soloVolume]);
 
   // ── Sync Computer Keyboard store → adapter ──

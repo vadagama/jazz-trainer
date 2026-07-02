@@ -16,7 +16,7 @@ export interface PolySynthLike {
   triggerAttack(note: string, time?: number, velocity?: number): void;
   triggerRelease(note: string, time?: number): void;
   connect(destination: unknown): void;
-  disconnect(): void;
+  disconnect(destination?: unknown): void;
   dispose(): void;
   set(params: Record<string, unknown>): void;
   readonly volume: { value: number };
@@ -63,8 +63,8 @@ export interface SoloInstrument {
    */
   connect(destination: unknown): void;
 
-  /** Disconnect from the audio node. */
-  disconnect(): void;
+  /** Disconnect from the audio node (or a specific destination). */
+  disconnect(destination?: unknown): void;
 
   /** Release resources (samples, oscillators). */
   dispose(): void;

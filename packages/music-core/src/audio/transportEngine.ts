@@ -11,6 +11,7 @@ import type {
   InstrumentEventPayload,
 } from './instrument.js';
 import type { DrumSound } from './drumSampleRegistry.js';
+import type { StyleProfile } from '../styleProfile.js';
 
 /** Three-level beat accent: first downbeat, secondary accent, or ordinary weak beat. */
 export type BeatType = 'strong' | 'strong2' | 'weak';
@@ -139,6 +140,17 @@ export class TransportEngine {
 
   setSwingRatio(ratio: number): void {
     this.swingRatio = Math.max(0.5, Math.min(0.75, ratio));
+  }
+
+  /**
+   * Apply a full style profile: tempo and instrument defaults.
+   * Does NOT override swing ratio — that is a user-controlled setting.
+   */
+  setStyleProfile(profile: StyleProfile): void {
+    this.setBpm(profile.defaultTempo);
+    for (const instrument of this.instruments) {
+      instrument.setStyleProfile?.(profile);
+    }
   }
 
   setTimeSignature(sig: TimeSignature | string): void {

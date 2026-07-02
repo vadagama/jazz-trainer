@@ -9,3 +9,31 @@ export * from './time/index.js';
 export * from './playback/index.js';
 export * from './audio/index.js';
 export * from './generator/index.js';
+export {
+  getStyleProfile,
+  getAllStyleProfiles,
+  getRoster,
+  getVisibleInstruments,
+  getVisibleInstrumentGroups,
+  getInstrumentGroup,
+  getDefaultVariant,
+  resolveGroupInstrumentId,
+  getDefaultEnsemble,
+  getEnsemblePreset,
+  getEnsemblePresets,
+  applyEnsemble,
+  INSTRUMENT_GROUPS,
+} from './styleProfile.js';
+export type {
+  InstrumentId,
+  InstrumentGroupId,
+  InstrumentVariantDef,
+  InstrumentGroupDef,
+  InstrumentRoster,
+  InstrumentStyleDefaults,
+  DisplayGroup,
+  EnsembleType,
+  EnsembleSettings,
+  EnsemblePreset,
+  StyleProfile,
+} from './styleProfile.js';

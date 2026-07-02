@@ -214,17 +214,20 @@ Jazz Trainer — браузерный тренажёр джазовой гарм
 - **Sub-bar chord resolution:** корректная смена аккордов внутри такта (multi-chord бары)
 - Встроенный рандомайзер с вариантами approach (chromatic above/below, diatonic), sparse-режимом и октавными прыжками
 - Использование сэмплов контрабаса
+- Подробнее: `docs/BASS.md`
 
-**Барабаны (DrumInstrument):**
+**Барабаны (DrumInstrument) 🟢:**
 
-- Джазовые паттерны для всех размеров (4/4 swing, 3/4 waltz, 6/8 и др.)
-- Компоненты: ride, хай-хэт (stir), hi-hat foot
-- Round-robin сэмплы для естественного звучания
-- Humanization (рандомизация timing и velocity)
-- Встроенный рандомайзер с уровнями вариативности
+- Два набора сэмплов: Swirly Drums v2 (акустическая джазовая установка) и Modern Kit (универсальная установка с toms и stir)
+- Стиле-специфичные паттерны: swing (ride + hi-hat), bossa (rim/clave), funk (16-е синкопы)
+- 8–10 звуков на установку, каждый с 4 round-robin вариантами
+- Per-sound настройки: раздельное включение/громкость для каждого звука
+- Humanization (timing jitter ±3–8 мс) и рандомайзер (off/subtle/moderate/high)
+- Fills каждые N тактов (4/8/16) с настраиваемой сложностью
+- Modern Kit: per-style defaults (bossa: snare off, rim on; ballad: громкость 0.6)
 - Подробнее: `docs/DRUMS.md`
 
-**Piano (PianoInstrument) 🟢:**
+**Grand Piano (PianoInstrument) 🟢:**
 
 - Основной гармонический инструмент — ведущая партия компинга
 - 5 составных 4-тактовых профилей: swing-sparse, swing-medium, basie-light, offbeat-push, beginner-safe
@@ -238,13 +241,72 @@ Jazz Trainer — браузерный тренажёр джазовой гарм
 
 **Rhodes (RhodesInstrument) 🟢 — комплементарный слой:**
 
-- Текстурный слой поверх Piano — добавляет окраску и плотность
+- Текстурный слой поверх Grand Piano — добавляет окраску и плотность
 - Комплементарные режимы: pads (wholeNotes), subtle-offbeats (offbeat-2-4), high-comping, ambient-swells (halfNotes), stab-accents (basie-2-4)
 - Sub-bar chord resolution: каждый event резолвит аккорд на момент звучания
-- Верхний регистр (C4–C6), избегает конфликтов с Piano (проверка `avoidConflicts`)
+- Верхний регистр (C4–C6), избегает конфликтов с Grand Piano (проверка `avoidConflicts`)
 - Rootless voicings (shell2, rootless3, rootless4)
 - Voice leading между аккордами (включая внутритактовые переходы)
 - Подробнее: `docs/RHODES.md`
+
+**Гитара (GuitarInstrument) 🟢:**
+
+- Два варианта сэмплов: nylon (Spanish Classical) и steel (steel-string)
+- Два режима: comp (четверти, downstroke/upstroke) и fingerstyle (арпеджио половинными)
+- Стиле-специфичные паттерны: bossa-comping (bossa), funk-chops (funk), freddie-green (swing)
+- Два типа voicing'ов: open (5–6 нот) и jazz (shell: root, 3, 7)
+- Диапазон E2–E5, голосоведение в пределах гитарного диапазона
+- Подробнее: `docs/GUITAR.md`
+
+**Электрогитара (ElectricGuitarManifest) 🟢:**
+
+- Использует тот же `GuitarInstrument`, электрические сэмплы
+- 2 velocity-слоя (normal — полный пик, soft — finger/palm mute)
+- Диапазон E2–C#6, per-style defaults для всех 5 стилей
+- Подробнее: `docs/GUITAR.md`
+
+**Вибрафон (VibraphoneInstrument) 🟢:**
+
+- Полифонический инструмент, два паттерна: pads (целые ноты с vibrato) и inserts (арпеджио)
+- Использует voicing-движок Grand Piano (rootless3/rootless4)
+- Стиле-зависимый выбор паттерна: latin → inserts, остальные → pads
+- Humanization ±6 мс, velocity variation ±0.05
+- Подробнее: `docs/VIBRAPHONE.md`
+
+**Орган (OrganInstrument) 🟢:**
+
+- Hammond-style полифонический инструмент, три паттерна: pads (целые ноты), stabs (короткие аккорды на offbeat'ах), pads-stabs (комбинированный)
+- Использует voicing-движок Grand Piano, плотность rootless4 по умолчанию
+- Стиле-зависимый выбор: funk → pads-stabs, остальные → pads
+- Humanization ±6 мс, velocity variation ±0.05
+- Подробнее: `docs/ORGAN.md`
+
+**Перкуссия (PercussionInstrument) 🟢:**
+
+- Unpitched инструмент для латиноамериканской перкуссии
+- 16 звуков: core (conga high/low, timbales, cowbell, clave, shaker, guiro, triangle) + extended (bongo low, tumba, cabasa, tambourine, vibraslap, belltree, whistle, sleighBells)
+- Три паттерна: cascara-clave (latin/swing), bossa-texture, funk-accents
+- Humanization ±2–6 мс, per-sound настройки включения/громкости
+- Подробнее: `docs/PERCUSSION.md`
+
+**Кларнет (ClarinetInstrument) 🟢:**
+
+- Монофонический деревянный духовой инструмент
+- Два паттерна: counterpoint (контрапункт — 3 ноты на такт, cycling через voicing) и melodicPhrases (мелодические фразы из chord tones и passing tones)
+- Использует voicing-движок Grand Piano для пула нот
+- Стиле-зависимый выбор: swing/funk/ballad → counterpoint, bossa/latin → melodicPhrases
+- Humanization ±6 мс, velocity variation ±0.05
+- Подробнее: `docs/CLARINET.md`
+
+### 6.5. Сольные инструменты (SoloInstrument) 🟢
+
+- Подсистема для live MIDI-ввода — реагирует на события noteOn/noteOff в реальном времени
+- Интерфейс `SoloInstrument` (в отличие от `Instrument`, который планирует ноты в будущее через `TransportEngine`)
+- Три категории: `synth` (синтезаторные тембры), `sampled` (сэмплированные), `reuse` (переиспользование сэмплера аккомпанирующего инструмента)
+- 9 доступных тембров: synthDefault, synthLead, pianoSalamanderSolo, rhodesJRhodes3cSolo, clarinetSolo, vibraphoneSolo, guitarNylonSolo, trumpetMuted, flute
+- `SoloInstrumentManifest` — самодостаточное описание (аналог `InstrumentManifest` для сольных)
+- `SoloInstrumentHost` — управление жизненным циклом (создание, переключение, dispose)
+- Подробнее: `docs/MIDI_INSTRUMENT_ARCHITECTURE.md`, `docs/MIDI_ARCHITECTURE.md`
 
 ### 6.4. Транспорт, метроном и глобальный стиль 🟢
 

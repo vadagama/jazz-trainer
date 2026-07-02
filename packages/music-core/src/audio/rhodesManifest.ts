@@ -22,4 +22,11 @@ export const rhodesManifest: InstrumentManifest = {
     mode: 'halfNotes',
     voicingDensity: 'rootless3',
   },
+  perStyleDefaults: {
+    swing: { mode: 'subtleOffbeats', voicingDensity: 'rootless3' },
+    bossa: { mode: 'ambientSwells', voicingDensity: 'shell2' },
+    funk: { mode: 'stabAccents', voicingDensity: 'rootless4' },
+    latin: { mode: 'highComping', voicingDensity: 'rootless3' },
+    ballad: { mode: 'pads', voicingDensity: 'shell2' },
+  },
 };

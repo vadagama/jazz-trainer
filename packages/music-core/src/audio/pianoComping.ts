@@ -27,6 +27,8 @@ export type CompPatternId =
   | 'two-and-four'
   | 'one-three'
   | 'wholeNotes'
+  | 'montuno'
+  | 'montuno-variant'
   | 'rest';
 
 export type CompingProfileId =
@@ -35,7 +37,8 @@ export type CompingProfileId =
   | 'swing-dense'
   | 'basie-light'
   | 'offbeat-push'
-  | 'beginner-safe';
+  | 'beginner-safe'
+  | 'latin-montuno';
 
 export interface CompingProfile {
   readonly id: CompingProfileId;
@@ -109,6 +112,17 @@ export const COMP_PATTERNS: Record<CompPatternId, readonly CompEvent[]> = {
     { beat: 3, durationBeats: 0.75, velocity: 0.48 },
   ],
   wholeNotes: [{ beat: 1, durationBeats: 3.6, velocity: 0.54 }],
+  montuno: [
+    { beat: 1, subdivision: 0, durationBeats: 0.45, velocity: 0.55 },
+    { beat: 2, subdivision: 0.5, durationBeats: 0.45, velocity: 0.5 },
+    { beat: 3, subdivision: 0, durationBeats: 0.45, velocity: 0.52 },
+    { beat: 4, subdivision: 0.5, durationBeats: 0.45, velocity: 0.48, chordRef: 'next' },
+  ],
+  'montuno-variant': [
+    { beat: 2, subdivision: 0.5, durationBeats: 0.45, velocity: 0.5 },
+    { beat: 3, subdivision: 0, durationBeats: 0.45, velocity: 0.53 },
+    { beat: 4, subdivision: 0.5, durationBeats: 0.45, velocity: 0.48, chordRef: 'next' },
+  ],
   rest: [],
 };
 
@@ -154,6 +168,12 @@ export const COMPING_PROFILES: Record<CompingProfileId, CompingProfile> = {
     name: 'Swing Dense',
     complexity: 3,
     bars: ['quarter-comp', 'two-and-four', 'quarter-comp', 'one-three'],
+  },
+  'latin-montuno': {
+    id: 'latin-montuno',
+    name: 'Latin Montuno',
+    complexity: 3,
+    bars: ['montuno', 'montuno-variant', 'basie-2-4', 'montuno'],
   },
 };
 

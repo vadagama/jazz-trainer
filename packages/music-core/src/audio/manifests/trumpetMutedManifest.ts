@@ -7,7 +7,7 @@ import type { SoloInstrumentManifest } from '../soloInstrumentManifest.js';
  */
 export const trumpetMutedManifest: SoloInstrumentManifest = {
   id: 'trumpet-muted',
-  name: 'Trumpet (Muted)',
+  name: 'Trumpet',
   category: 'sampled',
   priority: 'low',
   samples: {
@@ -27,6 +27,6 @@ export const trumpetMutedManifest: SoloInstrumentManifest = {
   createInstrument(factories) {
     const samples = this.samples!;
     const sampler = factories.createSampler(samples.notes, samples.baseUrl);
-    return new SamplerSoloInstrument('trumpet-muted', 'Trumpet (Muted)', sampler);
+    return new SamplerSoloInstrument('trumpet-muted', 'Trumpet', sampler);
   },
 };

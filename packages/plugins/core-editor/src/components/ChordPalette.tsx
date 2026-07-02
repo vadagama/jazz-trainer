@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Search, Eraser, Trash2 } from 'lucide-react';
 import { Input, cn } from '@jazz/ui';
 
-const ROOT_NOTES = ['C', 'C#', 'D', 'Db', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'] as const;
+const ROOT_NOTES = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'] as const;
 type RootNote = (typeof ROOT_NOTES)[number];
 
 const CHORD_GROUPS = [

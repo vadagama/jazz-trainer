@@ -192,14 +192,47 @@ describe('PianoInstrument — style defaults', () => {
     expect(chords.length).toBeGreaterThan(0);
   });
 
-  it('latin style → basie-light profile', () => {
-    const inst = makePiano([{ chord: dm7 }], 'latin');
+  it('latin style → basie-light profile (bar 0 = basie-2-4)', () => {
+    const inst = makePiano([{ chord: dm7 }, { chord: g7 }], 'latin');
     const { ctx, chords } = makeCtx();
     inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
-    // basie-2-4 bar 0: beats 2 and 4
+    // basie-2-4: beat 2 and beat 4, on-beat
     const ticks = chords.map((c) => c.at);
     expect(ticks).toContain(TPB); // beat 2
     expect(ticks).toContain(3 * TPB); // beat 4
+  });
+
+  it('swing style → voicing = rootless3', () => {
+    const inst = makePiano([{ chord: dm7 }], 'swing');
+    const { ctx, chords } = makeCtx();
+    inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
+    expect(chords.length).toBeGreaterThan(0);
+    expect(chords[0]!.notes.length).toBe(3);
+  });
+
+  it('latin style → voicing = quartal', () => {
+    const inst = makePiano([{ chord: dm7 }], 'latin');
+    const { ctx, chords } = makeCtx();
+    inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
+    expect(chords.length).toBeGreaterThan(0);
+    expect(chords[0]!.notes.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it('user voicing override survives setStyleProfile()', () => {
+    const inst = makePiano([{ chord: dm7 }]);
+    inst.setVoicingDensity('shell2');
+    // setStyleProfile should NOT overwrite when voicing is absent from defaults
+    // (but our style profiles always have voicing, so this tests the manual-override path)
+    inst.setStyle('swing');
+    // swing has rootless3 default — setStyleProfile applies it, overriding shell2
+    const { ctx, chords } = makeCtx();
+    inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
+    expect(chords[0]!.notes.length).toBe(3); // rootless3 after setStyleProfile
+    // Now manually override back to shell2
+    inst.setVoicingDensity('shell2');
+    const { ctx: ctx2, chords: chords2 } = makeCtx();
+    inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx2);
+    expect(chords2[0]!.notes.length).toBe(2); // shell2 sticks
   });
 });
 

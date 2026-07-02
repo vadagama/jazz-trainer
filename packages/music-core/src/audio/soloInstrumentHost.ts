@@ -18,6 +18,9 @@ export class SoloInstrumentHost {
   private activeManifestId: string | null = null;
   private disposed = false;
 
+  /** Current solo volume (0–1), reserved for future per-instrument volume control. */
+  private soloVolume = 1.0;
+
   constructor(soloBus: unknown, factories: SoloInstrumentFactories) {
     this.soloBus = soloBus;
     this.factories = factories;
@@ -29,6 +32,11 @@ export class SoloInstrumentHost {
 
   get currentToneId(): string | null {
     return this.activeManifestId;
+  }
+
+  /** Update the solo volume (0–1). */
+  setVolume(volume: number): void {
+    this.soloVolume = Math.max(0, Math.min(1, volume));
   }
 
   selectTone(manifestId: string): SoloInstrument {

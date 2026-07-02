@@ -18,16 +18,13 @@ const DEFAULT_SYNTH_PRESET = {
 } satisfies ConstructorParameters<typeof Tone.PolySynth>[0];
 
 function wrapForLivePlay<T extends PolySynthLike>(instrument: T): PolySynthLike {
+  const ctx = Tone.getContext().rawContext;
   return {
     triggerAttack(note, time, velocity) {
-      return instrument.triggerAttack(
-        note,
-        time ?? Tone.getContext().rawContext.currentTime,
-        velocity,
-      );
+      return instrument.triggerAttack(note, time ?? ctx.currentTime, velocity);
     },
     triggerRelease(note, time) {
-      return instrument.triggerRelease(note, time ?? Tone.getContext().rawContext.currentTime);
+      return instrument.triggerRelease(note, time ?? ctx.currentTime);
     },
     triggerAttackRelease: instrument.triggerAttackRelease.bind(instrument),
     connect: instrument.connect.bind(instrument),

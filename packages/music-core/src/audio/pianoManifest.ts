@@ -23,4 +23,11 @@ export const pianoManifest: InstrumentManifest = {
     voicingDensity: 'rootless3',
     sampleLibrary: 'upright-kw',
   },
+  perStyleDefaults: {
+    swing: { profile: 'swing-sparse', voicingDensity: 'rootless3' },
+    bossa: { profile: 'swing-sparse', voicingDensity: 'shell2' },
+    funk: { profile: 'offbeat-push', voicingDensity: 'rootless4' },
+    latin: { profile: 'basie-light', voicingDensity: 'quartal' },
+    ballad: { profile: 'beginner-safe', voicingDensity: 'rootless4' },
+  },
 };

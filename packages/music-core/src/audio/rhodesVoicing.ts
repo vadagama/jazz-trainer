@@ -46,6 +46,7 @@ export interface RhodesRhythmPattern {
 
 /** Comping register bounds (MIDI note numbers). */
 const RANGE_MIN = 48; // C3
+export const RANGE_MIN_HIGH = 60; // C4 — high-comping starts one octave up
 const RANGE_MAX = 84; // C6
 
 const SEMITONE: Record<string, number> = {
@@ -162,13 +163,17 @@ function permute<T>(arr: readonly T[]): T[][] {
  * Build root-position voicing (first interval as bass) at the lowest
  * fitting octave starting from C3. Used when no previous voicing is available.
  */
-function buildDefaultVoicing(chord: ChordSymbol, density: RhodesVoicingDensity): number[] {
+function buildDefaultVoicing(
+  chord: ChordSymbol,
+  density: RhodesVoicingDensity,
+  rangeMin = RANGE_MIN,
+): number[] {
   const intervals = voicingIntervals(chord, density);
   const rootPc = chordRootPc(chord);
   const bassPc = (rootPc + intervals[0]!) % 12;
   const restPcs = intervals.slice(1).map((i) => (rootPc + i) % 12);
 
-  for (let bassMidi = RANGE_MIN; bassMidi <= RANGE_MAX; bassMidi++) {
+  for (let bassMidi = rangeMin; bassMidi <= RANGE_MAX; bassMidi++) {
     if (((bassMidi % 12) + 12) % 12 !== bassPc) continue;
     const upper = stackAbove(bassMidi, restPcs);
     if (!upper) continue;
@@ -187,7 +192,11 @@ function buildDefaultVoicing(chord: ChordSymbol, density: RhodesVoicingDensity):
  * Tries every unique pitch class as the bass note and every permutation of
  * the remaining pitch classes stacked above it.
  */
-function generateCandidates(chord: ChordSymbol, density: RhodesVoicingDensity): number[][] {
+function generateCandidates(
+  chord: ChordSymbol,
+  density: RhodesVoicingDensity,
+  rangeMin = RANGE_MIN,
+): number[][] {
   const intervals = voicingIntervals(chord, density);
   const rootPc = chordRootPc(chord);
   const allPcs = [...new Set(intervals.map((i) => (rootPc + i) % 12))];
@@ -200,7 +209,7 @@ function generateCandidates(chord: ChordSymbol, density: RhodesVoicingDensity): 
     const restPcs = allPcs.filter((pc) => pc !== bassPc);
     const restPerms = permute(restPcs);
 
-    for (let bassMidi = RANGE_MIN; bassMidi <= RANGE_MAX; bassMidi++) {
+    for (let bassMidi = rangeMin; bassMidi <= RANGE_MAX; bassMidi++) {
       if (((bassMidi % 12) + 12) % 12 !== bassPc) continue;
 
       for (const perm of restPerms) {
@@ -267,14 +276,16 @@ export function buildVoicing(
   chord: ChordSymbol,
   density: RhodesVoicingDensity,
   prevVoicing: readonly string[] | null,
+  rangeMin?: number,
 ): string[] {
+  const min = rangeMin ?? RANGE_MIN;
   if (!prevVoicing) {
-    return buildDefaultVoicing(chord, density).map(midiToNote);
+    return buildDefaultVoicing(chord, density, min).map(midiToNote);
   }
 
-  const candidates = generateCandidates(chord, density);
+  const candidates = generateCandidates(chord, density, min);
   if (candidates.length === 0) {
-    return buildDefaultVoicing(chord, density).map(midiToNote);
+    return buildDefaultVoicing(chord, density, min).map(midiToNote);
   }
 
   const prevMidi = prevVoicing.map(noteToMidi);
@@ -295,7 +306,7 @@ export function buildVoicing(
   // Hard emergency brake: if voicing is pushed against the ceiling, reset to default
   const HARD_CEIL = RANGE_MAX - 4; // 80
   if (best[best.length - 1]! > HARD_CEIL) {
-    return buildDefaultVoicing(chord, density).map(midiToNote);
+    return buildDefaultVoicing(chord, density, min).map(midiToNote);
   }
 
   return best.map(midiToNote);

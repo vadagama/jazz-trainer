@@ -14,6 +14,6 @@ export const synthLeadManifest: SoloInstrumentManifest = {
       maxVoices: 8,
       envelope: { attack: 0.005, decay: 0.3, sustain: 0.4, release: 0.4 },
     });
-    return new SynthSoloInstrument(synth);
+    return new SynthSoloInstrument('synth-lead', 'Synth Lead', synth);
   },
 };

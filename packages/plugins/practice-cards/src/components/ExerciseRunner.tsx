@@ -141,9 +141,17 @@ export function ExerciseRunner({ bars, config, onComplete, onReconfigure }: Exer
 
   const handleToneSelect = useCallback(
     (manifestId: string) => {
-      updateSettings.mutate({
-        soloToneId: manifestId === 'rhodes-jrhodes3c' ? undefined : manifestId,
-      });
+      // Apply immediately for instant audio feedback
+      const host = (window as unknown as Record<string, unknown>).__soloInstrumentHost as {
+        selectTone(id: string): void;
+      } | null;
+      try {
+        host?.selectTone(manifestId);
+      } catch {
+        /* will sync via settings */
+      }
+      // Persist to settings
+      updateSettings.mutate({ soloToneId: manifestId });
     },
     [updateSettings],
   );

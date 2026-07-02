@@ -14,6 +14,7 @@ import {
   type PianoRandomizationLevel,
   type PianoBarContext,
 } from './pianoRandomizer.js';
+import { getStyleProfile, type StyleProfile } from '../styleProfile.js';
 
 const PPQ = 480;
 
@@ -22,7 +23,7 @@ const STYLE_DEFAULT_PROFILE: Record<Style, CompingProfileId> = {
   swing: 'swing-sparse',
   bossa: 'swing-sparse',
   funk: 'offbeat-push',
-  latin: 'basie-light',
+  latin: 'latin-montuno',
   ballad: 'beginner-safe',
 };
 
@@ -62,9 +63,17 @@ export class PianoInstrument implements Instrument {
     this.humanize = enabled;
   }
 
+  setStyleProfile(profile: StyleProfile): void {
+    this.style = profile.id;
+    const pat = profile.instrumentDefaults.piano.pattern as CompingProfileId | undefined;
+    this.profile = pat ?? STYLE_DEFAULT_PROFILE[profile.id] ?? 'swing-sparse';
+    const voicing = profile.instrumentDefaults.piano.voicing;
+    if (voicing) this.density = voicing as PianoVoicingDensity;
+  }
+
+  /** @deprecated Use {@link setStyleProfile}(getStyleProfile(style)) instead. */
   setStyle(style: Style): void {
-    this.style = style;
-    this.profile = STYLE_DEFAULT_PROFILE[style] ?? 'swing-sparse';
+    this.setStyleProfile(getStyleProfile(style));
   }
 
   setRandomizationLevel(level: PianoRandomizationLevel): void {

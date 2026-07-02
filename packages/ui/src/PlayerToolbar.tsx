@@ -1,4 +1,4 @@
-import { Play, Square, Volume2, VolumeX, SkipBack, SkipForward } from 'lucide-react';
+import { Play, Square, Volume2, VolumeX, SkipBack, SkipForward, Music } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { KEYS } from '@jazz/shared';
 import type { Key, Style } from '@jazz/shared';
@@ -9,6 +9,14 @@ import { Slider } from './slider';
 import { cn } from './utils';
 import { StyleSelector } from './StyleSelector';
 import { RepeatSelector } from './RepeatSelector';
+
+const STYLE_LABELS: Record<Style, string> = {
+  swing: 'Swing',
+  bossa: 'Bossa Nova',
+  funk: 'Funk',
+  latin: 'Latin',
+  ballad: 'Ballad',
+} as const;
 
 interface PlayerToolbarProps {
   status?: PlaybackStatus;
@@ -33,6 +41,7 @@ interface PlayerToolbarProps {
   onKeyChange?: (key: Key) => void;
   onVolumeChange?: (volume: number) => void;
   onStyleChange?: (style: Style) => void;
+  onInstrumentsClick?: () => void;
   children?: React.ReactNode;
 }
 
@@ -70,6 +79,7 @@ export function PlayerToolbar({
   onKeyChange,
   onVolumeChange,
   onStyleChange,
+  onInstrumentsClick,
   children,
 }: PlayerToolbarProps) {
   const volumePct = Math.round(volumeProp * 100);
@@ -116,8 +126,8 @@ export function PlayerToolbar({
   }
 
   return (
-    <footer className="flex h-24 shrink-0 items-center gap-3 border-t border-border bg-card px-4">
-      {/* Left: BPM / SIG / KEY labeled blocks */}
+    <footer className="flex h-24 shrink-0 items-center gap-3 overflow-x-auto border-t border-border bg-card px-4">
+      {/* Left: BPM / KEY / STYLE / REPEAT / INSTRUMENTS — uniform height (T-026) */}
       <div className="flex items-stretch gap-1.5">
         {/* BPM */}
         <div className="flex items-center gap-1 rounded-md bg-secondary px-2 py-1">
@@ -172,11 +182,22 @@ export function PlayerToolbar({
           </div>
         )}
 
-        {/* STYLE */}
+        {/* STYLE — combined control: opens instruments modal, or dropdown fallback */}
         {style !== undefined && onStyleChange && (
           <div className="flex flex-col items-center justify-center rounded-md bg-secondary px-2 py-1">
             <ToolbarLabel>STYLE</ToolbarLabel>
-            <StyleSelector value={style} onChange={onStyleChange} />
+            {onInstrumentsClick ? (
+              <button
+                onClick={onInstrumentsClick}
+                className="flex items-center gap-1 hover:opacity-80"
+                aria-label="Стиль и инструменты"
+              >
+                <Music className="size-3 text-muted-foreground" />
+                <span className="text-xs font-semibold text-foreground">{STYLE_LABELS[style]}</span>
+              </button>
+            ) : (
+              <StyleSelector value={style} onChange={onStyleChange} />
+            )}
           </div>
         )}
 
@@ -249,7 +270,7 @@ export function PlayerToolbar({
       <Divider />
 
       {/* Right: Volume */}
-      <div className="flex items-center gap-2">
+      <div className="flex shrink-0 items-center gap-2">
         <Button
           variant="ghost"
           size="icon"

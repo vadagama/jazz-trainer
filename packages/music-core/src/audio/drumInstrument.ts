@@ -8,15 +8,9 @@ import type { Instrument, ScheduleContext, ScheduleWindow } from './instrument.j
 import type { DrumSound } from './drumSampleRegistry.js';
 import { DrumRandomizer, type DrumHit, type BarContext, type DrumStyle } from './drumRandomizer.js';
 import type { Style } from '@jazz/shared';
+import { getStyleProfile, type StyleProfile } from '../styleProfile.js';
 
 const PPQ = 480;
-
-// ─── Pattern types ────────────────────────────────────────────────────────────
-
-export type DrumsPattern = 'swing' | 'bossa' | 'funk';
-
-/** @deprecated Use DrumsPattern instead. */
-export type DrumRidePattern = 'quarters' | 'swingRide';
 
 export type HumanizeIntensity = 'off' | 'low' | 'med' | 'high';
 
@@ -34,8 +28,6 @@ export interface DrumInstrumentSettings {
   enabled: boolean;
   /** Master volume 0–1 */
   volume: number;
-  /** Pattern: swing, bossa, funk */
-  pattern: DrumsPattern;
 
   // Per-sound
   bassDrumEnabled: boolean;
@@ -54,6 +46,8 @@ export interface DrumInstrumentSettings {
   crashFrequency: number;
   rimEnabled: boolean;
   rimVolume: number;
+  tomEnabled: boolean;
+  tomVolume: number;
 
   humanizeIntensity: HumanizeIntensity;
 
@@ -78,7 +72,6 @@ export interface DrumInstrumentSettings {
 export const DEFAULT_DRUM_SETTINGS: DrumInstrumentSettings = {
   enabled: true,
   volume: 0.7,
-  pattern: 'swing',
   bassDrumEnabled: true,
   bassDrumVolume: 0.7,
   snareEnabled: true,
@@ -93,6 +86,8 @@ export const DEFAULT_DRUM_SETTINGS: DrumInstrumentSettings = {
   crashFrequency: 4,
   rimEnabled: false,
   rimVolume: 0.6,
+  tomEnabled: true,
+  tomVolume: 0.7,
   humanizeIntensity: 'med',
   funkComplexity: 'medium',
   randomizationLevel: 'off',
@@ -164,18 +159,20 @@ export class DrumInstrument implements Instrument {
     ballad: 'swing',
   };
 
+  setStyleProfile(profile: StyleProfile): void {
+    const pat = profile.instrumentDefaults.drums.pattern as DrumStyle | undefined;
+    this.currentStyle = pat ?? DrumInstrument.STYLE_TO_PATTERN[profile.id] ?? 'swing';
+  }
+
+  /** @deprecated Use {@link setStyleProfile}(getStyleProfile(style)) instead. */
   setStyle(style: Style): void {
-    this.currentStyle = DrumInstrument.STYLE_TO_PATTERN[style];
+    this.setStyleProfile(getStyleProfile(style));
   }
 
   /* ── Setters ─────────────────────────────────────────────────────────────── */
 
   updateSettings(patch: Partial<DrumInstrumentSettings>): void {
     Object.assign(this.settings, patch);
-    // Backward compat: sync pattern → currentStyle
-    if (patch.pattern !== undefined) {
-      this.currentStyle = patch.pattern;
-    }
     this.randomizer.updateSettings({
       randomizationLevel: this.settings.randomizationLevel,
       fillFrequency: this.settings.fillFrequency,
@@ -183,22 +180,13 @@ export class DrumInstrument implements Instrument {
       rideVariation: this.settings.rideVariation,
       snareGhosts: this.settings.snareGhosts,
       bassDrumVariation: this.settings.bassDrumVariation,
+      tomEnabled: this.settings.tomEnabled,
+      tomVolume: this.settings.tomVolume,
     });
-  }
-
-  /** @deprecated Use setStyle() instead. */
-  setPattern(pattern: DrumsPattern): void {
-    this.currentStyle = pattern;
   }
 
   setHumanizeIntensity(intensity: HumanizeIntensity): void {
     this.settings.humanizeIntensity = intensity;
-  }
-
-  /** @deprecated Use setPattern('swing') or setPattern('bossa') instead. */
-  setRidePattern(pattern: DrumRidePattern): void {
-    if (pattern === 'swingRide') this.settings.pattern = 'swing';
-    else if (pattern === 'quarters') this.settings.pattern = 'swing';
   }
 
   /** @deprecated Use setHumanizeIntensity() instead. */
@@ -265,7 +253,7 @@ export class DrumInstrument implements Instrument {
 
       // Crash: first beat of crashFrequency-th bar
       if (s.crashEnabled && s.crashFrequency > 0 && bar % s.crashFrequency === 0) {
-        hits.push({ sound: 'crash', atTick: 0, velocity: s.crashVolume, durationTicks: tpBeat });
+        hits.push({ sound: 'crash', atTick: 0, velocity: 0.95, durationTicks: tpBeat });
       }
 
       // Build base hits per beat
@@ -280,21 +268,21 @@ export class DrumInstrument implements Instrument {
             hits.push({
               sound: 'bassDrum',
               atTick: atTicks,
-              velocity: 0.6 * s.bassDrumVolume,
+              velocity: 0.85,
               durationTicks: tpBeat,
             });
           } else if (!isBackbeat) {
             hits.push({
               sound: 'bassDrum',
               atTick: atTicks,
-              velocity: 0.5 * s.bassDrumVolume,
+              velocity: 0.7,
               durationTicks: tpBeat,
             });
           } else {
             hits.push({
               sound: 'bassDrum',
               atTick: atTicks,
-              velocity: 0.3 * s.bassDrumVolume,
+              velocity: 0.5,
               durationTicks: tpBeat,
             });
           }
@@ -305,7 +293,7 @@ export class DrumInstrument implements Instrument {
           hits.push({
             sound: 'snare',
             atTick: atTicks,
-            velocity: 0.8 * s.snareVolume,
+            velocity: 0.9,
             durationTicks: tpBeat,
           });
         }
@@ -315,18 +303,18 @@ export class DrumInstrument implements Instrument {
           hits.push({
             sound: hihatSoundForOpenness(0), // tight closed
             atTick: atTicks,
-            velocity: 0.8 * s.hihatVolume,
+            velocity: 0.8,
             durationTicks: tpBeat,
           });
         }
 
         // Ride — classic swing pattern (ding ding-a-ding)
         if (s.rideEnabled) {
-          const baseVel = isFirstBeat ? 0.75 : isBackbeat ? 0.65 : 0.7;
+          const baseVel = isFirstBeat ? 0.85 : isBackbeat ? 0.75 : 0.8;
           hits.push({
             sound: 'ride',
             atTick: atTicks,
-            velocity: baseVel * s.rideVolume,
+            velocity: baseVel,
             durationTicks: 20,
           });
 
@@ -335,7 +323,7 @@ export class DrumInstrument implements Instrument {
             hits.push({
               sound: 'ride',
               atTick: offTick,
-              velocity: 0.55 * s.rideVolume,
+              velocity: 0.65,
               durationTicks: 20,
             });
           }
@@ -346,7 +334,7 @@ export class DrumInstrument implements Instrument {
           hits.push({
             sound: 'rim',
             atTick: atTicks,
-            velocity: 0.5 * s.rimVolume,
+            velocity: 0.7,
             durationTicks: tpBeat,
           });
         }
@@ -398,7 +386,7 @@ export class DrumInstrument implements Instrument {
 
       // Crash: first beat of crashFrequency-th bar
       if (s.crashEnabled && s.crashFrequency > 0 && bar % s.crashFrequency === 0) {
-        hits.push({ sound: 'crash', atTick: 0, velocity: s.crashVolume, durationTicks: tpBeat });
+        hits.push({ sound: 'crash', atTick: 0, velocity: 0.95, durationTicks: tpBeat });
       }
 
       for (let beat = 0; beat < 4; beat++) {
@@ -411,11 +399,11 @@ export class DrumInstrument implements Instrument {
         // Rim cross-stick: clave pattern X . X . X . . .
         if (s.rimEnabled) {
           if (isFirstBeat || isBeatTwo || isBeatThree) {
-            const baseVel = isFirstBeat ? 0.8 : 0.7;
+            const baseVel = isFirstBeat ? 0.85 : 0.75;
             hits.push({
               sound: 'rim',
               atTick: atTicks,
-              velocity: baseVel * s.rimVolume,
+              velocity: baseVel,
               durationTicks: tpBeat,
             });
           }
@@ -427,7 +415,7 @@ export class DrumInstrument implements Instrument {
             hits.push({
               sound: 'bassDrum',
               atTick: atTicks,
-              velocity: 0.8 * s.bassDrumVolume,
+              velocity: 0.85,
               durationTicks: tpBeat,
             });
           }
@@ -436,7 +424,7 @@ export class DrumInstrument implements Instrument {
             hits.push({
               sound: 'bassDrum',
               atTick: offTick,
-              velocity: 0.65 * s.bassDrumVolume,
+              velocity: 0.7,
               durationTicks: tpBeat,
             });
           }
@@ -448,11 +436,11 @@ export class DrumInstrument implements Instrument {
             const subTicks = sub === 0 ? 0 : swingOffset;
             const isChick = (isBeatTwo || isBeatFour) && sub === 0;
             const sound = isChick ? hihatSoundForOpenness(0) : hihatSoundForOpenness(1);
-            const baseVel = isChick ? 0.8 : 0.45;
+            const baseVel = isChick ? 0.8 : 0.5;
             hits.push({
               sound,
               atTick: atTicks + subTicks,
-              velocity: baseVel * s.hihatVolume,
+              velocity: baseVel,
               durationTicks: tpBeat,
             });
           }
@@ -508,7 +496,7 @@ export class DrumInstrument implements Instrument {
 
       // Crash: first beat of crashFrequency-th bar
       if (s.crashEnabled && s.crashFrequency > 0 && bar % s.crashFrequency === 0) {
-        hits.push({ sound: 'crash', atTick: 0, velocity: s.crashVolume, durationTicks: tpBeat });
+        hits.push({ sound: 'crash', atTick: 0, velocity: 0.95, durationTicks: tpBeat });
       }
 
       for (let beat = 0; beat < 4; beat++) {
@@ -525,11 +513,11 @@ export class DrumInstrument implements Instrument {
             else if (sub === 1) subTick = sub16th;
             else subTick = sub16th * 3;
 
-            const baseVel = sub === 0 ? 0.7 : 0.45;
+            const baseVel = sub === 0 ? 0.7 : 0.5;
             hits.push({
               sound: hihatSoundForOpenness(0),
               atTick: atTicks + subTick,
-              velocity: baseVel * s.hihatVolume,
+              velocity: baseVel,
               durationTicks: tpBeat,
             });
           }
@@ -547,25 +535,25 @@ export class DrumInstrument implements Instrument {
             hits.push({
               sound: 'bassDrum',
               atTick: atTicks + tickOffset,
-              velocity: vel * s.bassDrumVolume,
+              velocity: vel,
               durationTicks: tpBeat,
             });
           };
 
           if (beat === 0) {
-            bd(0, 0.8);
-            if (complexity === 'complex') bd(1, 0.5);
-            if (complexity === 'medium') bd(2, 0.65);
+            bd(0, 0.85);
+            if (complexity === 'complex') bd(1, 0.55);
+            if (complexity === 'medium') bd(2, 0.7);
           }
           if (beat === 1) {
-            if (complexity === 'complex') bd(2, 0.65);
+            if (complexity === 'complex') bd(2, 0.7);
           }
           if (beat === 2) {
-            if (complexity === 'simple') bd(0, 0.8);
-            if (complexity === 'complex') bd(2, 0.65);
+            if (complexity === 'simple') bd(0, 0.85);
+            if (complexity === 'complex') bd(2, 0.7);
           }
           if (beat === 3) {
-            if (complexity === 'medium' || complexity === 'complex') bd(0, 0.7);
+            if (complexity === 'medium' || complexity === 'complex') bd(0, 0.75);
           }
         }
 
@@ -576,7 +564,7 @@ export class DrumInstrument implements Instrument {
             hits.push({
               sound: 'snare',
               atTick: atTicks,
-              velocity: 0.85 * s.snareVolume,
+              velocity: 0.9,
               durationTicks: tpBeat,
             });
           }
@@ -629,12 +617,12 @@ export class DrumInstrument implements Instrument {
 
         // Bass drum on strong beats
         if (s.bassDrumEnabled && isStrong && atTicks >= window.fromTicks) {
-          ctx.scheduleEvent('drums', { sound: 'bassDrum' }, t, 0.55 * s.bassDrumVolume, tpBeat);
+          ctx.scheduleEvent('drums', { sound: 'bassDrum' }, t, 0.7, tpBeat);
         }
 
         // Snare on backbeats (non-strong, non-first)
         if (s.snareEnabled && !isStrong && !isFirstBeat && atTicks >= window.fromTicks) {
-          ctx.scheduleEvent('drums', { sound: 'snare' }, t, 0.7 * s.snareVolume, tpBeat);
+          ctx.scheduleEvent('drums', { sound: 'snare' }, t, 0.8, tpBeat);
         }
 
         // Hihat: eighth note feel
@@ -650,19 +638,19 @@ export class DrumInstrument implements Instrument {
             const sound = isBackbeat
               ? hihatSoundForOpenness(Math.min(s.hihatOpenness, 2))
               : hihatSoundForOpenness(s.hihatOpenness);
-            ctx.scheduleEvent('drums', { sound }, ht, 0.55 * s.hihatVolume, tpBeat);
+            ctx.scheduleEvent('drums', { sound }, ht, 0.6, tpBeat);
           }
         }
 
         // Ride on all beats
         if (s.rideEnabled && atTicks >= window.fromTicks) {
-          ctx.scheduleEvent('drums', { sound: 'ride' }, t, 0.65 * s.rideVolume, 20);
+          ctx.scheduleEvent('drums', { sound: 'ride' }, t, 0.75, 20);
         }
 
         // Crash on first beat
         if (s.crashEnabled && s.crashFrequency > 0 && bar % s.crashFrequency === 0 && isFirstBeat) {
           if (atTicks >= window.fromTicks) {
-            ctx.scheduleEvent('drums', { sound: 'crash' }, t, s.crashVolume, tpBeat);
+            ctx.scheduleEvent('drums', { sound: 'crash' }, t, 0.95, tpBeat);
           }
         }
       }

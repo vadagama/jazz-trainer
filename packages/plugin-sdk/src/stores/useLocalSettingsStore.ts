@@ -53,7 +53,6 @@ const DEFAULT_SETTINGS: LocalSettings = {
   drumsCrashFrequency: 4,
   drumsRimEnabled: false,
   drumsRimVolume: 0.6,
-  drumsPattern: 'swing' as const,
   drumsHumanizeIntensity: 'med' as const,
   drumsFunkComplexity: 'medium' as const,
   drumsFillFrequency: '8bars' as const,
@@ -62,10 +61,15 @@ const DEFAULT_SETTINGS: LocalSettings = {
   drumsRideVariation: true,
   drumsSnareGhosts: true,
   drumsBassDrumVariation: true,
-  drumsRidePattern: 'swingRide' as const,
+  drumKit: 'jazz-kit' as const,
+  drumsTomEnabled: true,
+  drumsTomVolume: 0.7,
   style: 'swing' as const,
   swingRatio: 0.5,
   audioFormat: 'aac' as const,
+
+  // -- Per-style overrides --
+  perStyleOverrides: {} as Record<string, Record<string, unknown>>,
 
   // -- MIDI & solo defaults (Phase C) --
   midiDeviceId: undefined,
@@ -84,10 +88,14 @@ export const useLocalSettingsStore = create<LocalSettingsStore>()(
     }),
     {
       name: 'jazz-local-settings',
-      version: 1,
-      migrate: (persisted) => {
-        const s = { ...DEFAULT_SETTINGS, ...(persisted as Partial<LocalSettings> | undefined) };
-        return { settings: s } as unknown as LocalSettingsStore;
+      version: 2,
+      migrate: (persisted: unknown, _version: number) => {
+        // Zustand persist v4+ wraps state as { state: ..., version: ... }
+        const wrapper = persisted as { state?: { settings?: Partial<LocalSettings> } } | undefined;
+        // Also handle legacy format where settings were stored directly on the wrapper
+        const raw = (wrapper?.state?.settings ??
+          (persisted as Partial<LocalSettings> | undefined)) as Partial<LocalSettings> | undefined;
+        return { settings: { ...DEFAULT_SETTINGS, ...raw } } as LocalSettingsStore;
       },
     },
   ),

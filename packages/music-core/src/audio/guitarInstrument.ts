@@ -1,12 +1,16 @@
 import { ticksPerBar, ticksPerBeat } from '../time/timeSignature.js';
 import type { Instrument, ScheduleContext, ScheduleWindow, GuitarStrum } from './instrument.js';
 import type { ChordTimeline } from './chordTimeline.js';
-import type { ChordSymbol } from '@jazz/shared';
+import type { ChordSymbol, Style } from '@jazz/shared';
+import { getStyleProfile, type StyleProfile } from '../styleProfile.js';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type GuitarMode = 'comp' | 'fingerstyle';
 export type GuitarVoicing = 'open' | 'jazz';
+
+/** Style-specific guitar pattern from {@link StyleProfile.instrumentDefaults.guitar.pattern}. */
+export type GuitarPattern = 'bossa-comping' | 'funk-chops' | 'freddie-green';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -120,6 +124,19 @@ const FINGERSTYLE_PATTERN: StrumEvent[] = [
   { beat: 3, strum: 'down', velocity: 0.65, durationBeats: 1.8 },
 ];
 
+// ─── Bass note helpers ────────────────────────────────────────────────────────
+
+/** Resolve chord root as a note name at the given octave. */
+function rootNote(chord: ChordSymbol, octave = 2): string {
+  return midiToNote(chordRootMidi(chord, octave));
+}
+
+/** Resolve chord fifth as a note name at the given octave. */
+function fifthNote(chord: ChordSymbol, octave = 2): string {
+  const rootMidi = chordRootMidi(chord, octave);
+  return midiToNote(rootMidi + 7);
+}
+
 // ─── Instrument ───────────────────────────────────────────────────────────────
 
 export class GuitarInstrument implements Instrument {
@@ -127,9 +144,14 @@ export class GuitarInstrument implements Instrument {
   private mode: GuitarMode = 'comp';
   private voicing: GuitarVoicing = 'jazz';
   private humanize = true;
+  private style: Style = 'swing';
+  /** Active guitar pattern from {@link StyleProfile.instrumentDefaults.guitar.pattern}. */
+  private pattern: GuitarPattern | undefined;
+  private readonly instrumentId: string;
 
-  constructor(timeline: ChordTimeline) {
+  constructor(timeline: ChordTimeline, instrumentId = 'guitar') {
     this.timeline = timeline;
+    this.instrumentId = instrumentId;
   }
 
   setTimeline(timeline: ChordTimeline): void {
@@ -146,6 +168,44 @@ export class GuitarInstrument implements Instrument {
 
   setHumanize(enabled: boolean): void {
     this.humanize = enabled;
+  }
+
+  setStyleProfile(profile: StyleProfile): void {
+    this.style = profile.id;
+    const pat = profile.instrumentDefaults.guitar.pattern as GuitarPattern | undefined;
+    this.pattern = pat ?? this.styleToPattern(profile.id);
+
+    if (this.mode === 'comp') {
+      if (this.pattern === 'bossa-comping' || this.pattern === 'funk-chops') {
+        this.voicing = 'jazz';
+      } else if (this.pattern === 'freddie-green') {
+        this.voicing = 'jazz';
+      }
+    }
+  }
+
+  /** Fallback: resolve pattern from style when profile doesn't specify one. */
+  private styleToPattern(style: Style): GuitarPattern | undefined {
+    switch (style) {
+      case 'swing':
+        return 'freddie-green';
+      case 'bossa':
+        return 'bossa-comping';
+      case 'funk':
+        return 'funk-chops';
+      default:
+        return undefined;
+    }
+  }
+
+  /** Expose current pattern for testing. */
+  getPattern(): GuitarPattern | undefined {
+    return this.pattern;
+  }
+
+  /** @deprecated Use {@link setStyleProfile}(getStyleProfile(style)) instead. */
+  setStyle(style: Style): void {
+    this.setStyleProfile(getStyleProfile(style));
   }
 
   schedule(window: ScheduleWindow, ctx: ScheduleContext): void {
@@ -166,6 +226,23 @@ export class GuitarInstrument implements Instrument {
       const barStartTicks = bar * tpBar;
       const chord = this.timeline.getChordAtTick(barStartTicks, sig);
       if (!chord) continue;
+
+      // Dispatch to style-specific scheduling when in standard comp mode
+      if (this.mode === 'comp') {
+        switch (this.pattern) {
+          case 'bossa-comping':
+            this.scheduleBossaComping(window, ctx, bar, barStartTicks, chord, maxJitter);
+            continue;
+          case 'funk-chops':
+            this.scheduleFunkChops(window, ctx, bar, barStartTicks, chord, maxJitter);
+            continue;
+          case 'freddie-green':
+            this.scheduleFreddieGreen(window, ctx, bar, barStartTicks, chord, maxJitter);
+            continue;
+          default:
+            break;
+        }
+      }
 
       const voicingNotes = buildGuitarVoicing(chord, this.voicing);
 
@@ -196,7 +273,7 @@ export class GuitarInstrument implements Instrument {
         if (this.mode === 'fingerstyle') {
           const noteIdx = beatIdx % voicingNotes.length;
           ctx.scheduleEvent(
-            'guitar',
+            this.instrumentId,
             { notes: [voicingNotes[noteIdx]!], strum: event.strum },
             atTicks,
             velocity,
@@ -204,7 +281,7 @@ export class GuitarInstrument implements Instrument {
           );
         } else {
           ctx.scheduleEvent(
-            'guitar',
+            this.instrumentId,
             { notes: voicingNotes, strum: event.strum },
             atTicks,
             velocity,
@@ -212,6 +289,179 @@ export class GuitarInstrument implements Instrument {
           );
         }
       }
+    }
+  }
+
+  /** Bossa nova comping: bass note (root/5th) on downbeats, chord on offbeats. */
+  private scheduleBossaComping(
+    window: ScheduleWindow,
+    ctx: ScheduleContext,
+    bar: number,
+    barStartTicks: number,
+    chord: ChordSymbol,
+    maxJitter: number,
+  ): void {
+    const sig = ctx.timeSignature;
+    const tpBeat = ticksPerBeat(sig);
+
+    const voicingNotes = buildGuitarVoicing(chord, this.voicing);
+
+    for (let beatIdx = 0; beatIdx < sig.beatsPerBar; beatIdx++) {
+      const beatNum = beatIdx + 1;
+
+      // Bass note on downbeat (root on odd beats, fifth on even beats)
+      const bassTicks = barStartTicks + beatIdx * tpBeat;
+      if (bassTicks >= window.fromTicks && bassTicks < window.toTicks) {
+        const isFifth = beatNum % 2 === 0;
+        const note = isFifth ? fifthNote(chord, 2) : rootNote(chord, 2);
+        const durationTicks = Math.round(0.45 * tpBeat * GATE_RATIO);
+
+        let atTicks = bassTicks;
+        let velocity = isFifth ? 0.6 : 0.7;
+
+        if (this.humanize) {
+          atTicks = Math.max(
+            window.fromTicks,
+            atTicks + Math.round((Math.random() * 2 - 1) * maxJitter),
+          );
+          velocity = Math.max(0.02, Math.min(1, velocity + (Math.random() * 2 - 1) * 0.04));
+        }
+
+        ctx.scheduleEvent(
+          this.instrumentId,
+          { notes: [note], strum: 'down' },
+          atTicks,
+          velocity,
+          durationTicks,
+        );
+      }
+
+      // Chord on offbeat (the "and" of each beat)
+      const offbeatTicks = barStartTicks + beatIdx * tpBeat + Math.round(tpBeat / 2);
+      if (offbeatTicks >= window.fromTicks && offbeatTicks < window.toTicks) {
+        const durationTicks = Math.round(0.3 * tpBeat * GATE_RATIO);
+
+        let atTicks = offbeatTicks;
+        let velocity = beatNum % 2 === 1 ? 0.55 : 0.5;
+
+        if (this.humanize) {
+          atTicks = Math.max(
+            window.fromTicks,
+            atTicks + Math.round((Math.random() * 2 - 1) * maxJitter),
+          );
+          velocity = Math.max(0.02, Math.min(1, velocity + (Math.random() * 2 - 1) * 0.04));
+        }
+
+        ctx.scheduleEvent(
+          this.instrumentId,
+          { notes: voicingNotes, strum: 'up' },
+          atTicks,
+          velocity,
+          durationTicks,
+        );
+      }
+    }
+  }
+
+  /**
+   * Freddie Green comping: quarter-note chords on every beat.
+   * Typical of Count Basie's rhythm guitarist — tight 3-note voicings
+   * in the C3–C4 range with muted, even attack. All down strokes.
+   */
+  private scheduleFreddieGreen(
+    window: ScheduleWindow,
+    ctx: ScheduleContext,
+    bar: number,
+    barStartTicks: number,
+    chord: ChordSymbol,
+    maxJitter: number,
+  ): void {
+    const sig = ctx.timeSignature;
+    const tpBeat = ticksPerBeat(sig);
+
+    // Build a tight voicing clamped to C3–C4 (MIDI 48–60)
+    const rootMidi = chordRootMidi(chord, 2);
+    const intervals = chordIntervals(chord, this.voicing);
+    const voicingNotes: number[] = [];
+
+    for (const interval of intervals) {
+      let midi = rootMidi + interval;
+      while (midi < 48) midi += 12;
+      while (midi > 60) midi -= 12;
+      if (!voicingNotes.includes(midi)) {
+        voicingNotes.push(midi);
+      }
+    }
+    voicingNotes.sort((a, b) => a - b);
+
+    const noteNames = voicingNotes.map(midiToNote);
+
+    for (let beatIdx = 0; beatIdx < sig.beatsPerBar; beatIdx++) {
+      const eventTicks = barStartTicks + beatIdx * tpBeat;
+      if (eventTicks < window.fromTicks || eventTicks >= window.toTicks) continue;
+
+      let atTicks = eventTicks;
+      let velocity = 0.55;
+
+      if (this.humanize) {
+        atTicks = Math.max(
+          window.fromTicks,
+          atTicks + Math.round((Math.random() * 2 - 1) * maxJitter),
+        );
+        velocity = Math.max(0.02, Math.min(1, velocity + (Math.random() * 2 - 1) * 0.04));
+      }
+
+      const durationTicks = Math.round(0.35 * tpBeat * GATE_RATIO);
+
+      ctx.scheduleEvent(
+        this.instrumentId,
+        { notes: noteNames, strum: 'down' },
+        atTicks,
+        velocity,
+        durationTicks,
+      );
+    }
+  }
+
+  /** Funk chops: sharp offbeat chords on every eighth-note offbeat (1&, 2&, 3&, 4&). */
+  private scheduleFunkChops(
+    window: ScheduleWindow,
+    ctx: ScheduleContext,
+    bar: number,
+    barStartTicks: number,
+    chord: ChordSymbol,
+    maxJitter: number,
+  ): void {
+    const sig = ctx.timeSignature;
+    const tpBeat = ticksPerBeat(sig);
+
+    const voicingNotes = buildGuitarVoicing(chord, this.voicing);
+
+    for (let beatIdx = 0; beatIdx < sig.beatsPerBar; beatIdx++) {
+      // Short accented chord on the offbeat (the "and" of each beat)
+      const offbeatTicks = barStartTicks + beatIdx * tpBeat + Math.round(tpBeat / 2);
+      if (offbeatTicks < window.fromTicks || offbeatTicks >= window.toTicks) continue;
+
+      const durationTicks = Math.round(0.15 * tpBeat * GATE_RATIO);
+
+      let atTicks = offbeatTicks;
+      let velocity = 0.7;
+
+      if (this.humanize) {
+        atTicks = Math.max(
+          window.fromTicks,
+          atTicks + Math.round((Math.random() * 2 - 1) * maxJitter),
+        );
+        velocity = Math.max(0.02, Math.min(1, velocity + (Math.random() * 2 - 1) * 0.04));
+      }
+
+      ctx.scheduleEvent(
+        this.instrumentId,
+        { notes: voicingNotes, strum: 'down' },
+        atTicks,
+        velocity,
+        durationTicks,
+      );
     }
   }
 

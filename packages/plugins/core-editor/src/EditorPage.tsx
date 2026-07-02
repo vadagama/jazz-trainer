@@ -24,6 +24,7 @@ import {
   VirtualKeyboardPanel,
   PlayerMidiControls,
   SoloSettingsDialog,
+  InstrumentsDialog,
 } from '@jazz/ui';
 import { ChordPalette } from './components/ChordPalette';
 
@@ -134,6 +135,7 @@ export function EditorPage() {
   const sections = content.sections ?? [];
 
   const [soloDialogOpen, setSoloDialogOpen] = useState(false);
+  const [instrumentsDialogOpen, setInstrumentsDialogOpen] = useState(false);
   const [playerKey, setPlayerKey] = useState<Key>(grid?.key ?? 'C');
   const [localBpm, setLocalBpm] = useState<number | null>(null);
   const [localVolume, setLocalVolume] = useState<number | null>(null);
@@ -210,9 +212,17 @@ export function EditorPage() {
   // -- Solo control handlers (settings persistence) --
   const handleToneSelect = useCallback(
     (manifestId: string) => {
-      updateSettings.mutate({
-        soloToneId: manifestId === 'rhodes-jrhodes3c' ? undefined : manifestId,
-      });
+      // Apply immediately for instant audio feedback
+      const host = (window as unknown as Record<string, unknown>).__soloInstrumentHost as {
+        selectTone(id: string): void;
+      } | null;
+      try {
+        host?.selectTone(manifestId);
+      } catch {
+        /* will sync via settings if host isn't ready */
+      }
+      // Persist to settings
+      updateSettings.mutate({ soloToneId: manifestId });
     },
     [updateSettings],
   );
@@ -491,9 +501,11 @@ export function EditorPage() {
   }
 
   const handleStyleChange = (style: Style) => {
-    updateSettings.mutate({ style });
+    updateSettings.mutate({
+      style,
+      drumKit: style === 'funk' ? 'modern-kit' : 'jazz-kit',
+    });
   };
-
   async function handleSaveTitle(name: string) {
     await updateMutation.mutateAsync({ name });
   }
@@ -627,6 +639,7 @@ export function EditorPage() {
         onStyleChange={handleStyleChange}
         repeatCount={repeatCount}
         onRepeatChange={handleRepeatChange}
+        onInstrumentsClick={() => setInstrumentsDialogOpen(true)}
       >
         <PlayerMidiControls
           midiConnectionStatus={connectionStatus}
@@ -647,6 +660,12 @@ export function EditorPage() {
         onToneSelect={handleToneSelect}
         soloVolume={soloVolume}
         onSoloVolumeChange={handleSoloVolumeChange}
+      />
+
+      <InstrumentsDialog
+        open={instrumentsDialogOpen}
+        onClose={() => setInstrumentsDialogOpen(false)}
+        onStyleChange={handleStyleChange}
       />
     </div>
   );

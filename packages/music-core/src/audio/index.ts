@@ -11,6 +11,10 @@ export {
   type DrumEvent,
   type GuitarEvent,
   type GuitarStrum,
+  type VibraphoneEvent,
+  type OrganEvent,
+  type ClarinetEvent,
+  type PercussionEvent,
   type InstrumentEventPayload,
 } from './instrument.js';
 export {
@@ -69,6 +73,7 @@ export {
   LAYER_PATTERNS,
   noteToMidi,
   midiToNote,
+  RANGE_MIN_HIGH,
   SWING_PATTERNS,
   type RhodesVoicingDensity,
   type RhodesCompingMode,
@@ -111,11 +116,20 @@ export {
 export {
   DrumInstrument,
   DEFAULT_DRUM_SETTINGS,
-  type DrumRidePattern,
-  type DrumsPattern,
   type HumanizeIntensity,
   type DrumInstrumentSettings,
 } from './drumInstrument.js';
+export {
+  PercussionInstrument,
+  DEFAULT_PERCUSSION_SETTINGS,
+  type PercussionPattern,
+  type PercussionInstrumentSettings,
+} from './percussionInstrument.js';
+export {
+  PERCUSSION_SAMPLE_FILES,
+  PERCUSSION_BASE_URL,
+  type PercussionSound,
+} from './percussionSampleRegistry.js';
 export {
   evaluateNote,
   evaluateNoteSequence,
@@ -129,7 +143,28 @@ export {
   type BeatEval,
 } from './midiEval.js';
 export { type SampleManifest } from './sampleManifest.js';
-export { type InstrumentManifest } from './instrumentManifest.js';
+export { type InstrumentManifest, resolveInstrumentDefaults } from './instrumentManifest.js';
+export {
+  VIBRAPHONE_LAYERS,
+  VIBRAPHONE_SAMPLER_BASE_URL,
+  pickVibraphoneLayer,
+  type VibraphoneVelocityLayer,
+} from './vibraphoneSampleRegistry.js';
+export { VibraphoneInstrument, type VibraphonePattern } from './vibraphoneInstrument.js';
+export {
+  ORGAN_LAYERS,
+  ORGAN_SAMPLER_BASE_URL,
+  pickOrganLayer,
+  type OrganVelocityLayer,
+} from './organSampleRegistry.js';
+export { OrganInstrument, type OrganPattern } from './organInstrument.js';
+export {
+  CLARINET_LAYERS,
+  CLARINET_SAMPLER_BASE_URL,
+  pickClarinetLayer,
+  type ClarinetVelocityLayer,
+} from './clarinetSampleRegistry.js';
+export { ClarinetInstrument, type ClarinetPattern } from './clarinetInstrument.js';
 export {
   getKeyboardKeys,
   noteNameToMidi,
@@ -148,7 +183,13 @@ export { rhodesManifest } from './rhodesManifest.js';
 export { pianoManifest } from './pianoManifest.js';
 export { salamanderManifest } from './salamanderManifest.js';
 export { drumsManifest } from './drumsManifest.js';
+export { modernKitManifest } from './modernKitManifest.js';
 export { guitarManifest } from './guitarManifest.js';
+export { electricGuitarManifest } from './electricGuitarManifest.js';
+export { vibraphoneManifest } from './vibraphoneManifest.js';
+export { organManifest } from './organManifest.js';
+export { clarinetManifest } from './clarinetManifest.js';
+export { percussionManifest } from './percussionManifest.js';
 export { GuitarInstrument, type GuitarMode, type GuitarVoicing } from './guitarInstrument.js';
 export { PianoInstrument } from './pianoInstrument.js';
 export {
@@ -162,14 +203,12 @@ export { testSoloInstrumentContract } from './soloInstrument.contract.js';
 
 // -- Solo instrument manifests --
 export { synthDefaultManifest } from './manifests/synthDefaultManifest.js';
-export { synthLeadManifest } from './manifests/synthLeadManifest.js';
+export { pianoUprightSoloManifest } from './manifests/pianoUprightSoloManifest.js';
 export { pianoSalamanderSoloManifest } from './manifests/pianoSalamanderSoloManifest.js';
 export { rhodesJRhodes3cSoloManifest } from './manifests/rhodesJRhodes3cSoloManifest.js';
-export { clarinetManifest } from './manifests/clarinetManifest.js';
-export { vibraphoneManifest } from './manifests/vibraphoneManifest.js';
+export { clarinetManifest as clarinetSoloManifest } from './manifests/clarinetManifest.js';
+export { vibraphoneManifest as vibraphoneSoloManifest } from './manifests/vibraphoneManifest.js';
 export { guitarNylonSoloManifest } from './manifests/guitarNylonSoloManifest.js';
-export { trumpetMutedManifest } from './manifests/trumpetMutedManifest.js';
-export { fluteManifest } from './manifests/fluteManifest.js';
 export {
   getCompPattern as getPianoCompPattern,
   getCompingProfile,

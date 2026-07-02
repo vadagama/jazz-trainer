@@ -464,17 +464,17 @@ export function SettingsForm({ defaultValues, onSave, themeControl }: Props) {
             </CardContent>
           </Card>
 
-          {/* Piano */}
+          {/* Grand Piano */}
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
-                Piano
+                Grand Piano
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between gap-4">
                 <Label htmlFor="pianoEnabled" className="text-sm text-foreground">
-                  Включить Piano
+                  Включить Grand Piano
                 </Label>
                 <Controller
                   control={form.control}
@@ -496,7 +496,7 @@ export function SettingsForm({ defaultValues, onSave, themeControl }: Props) {
                   <Label
                     className={`text-sm ${pianoOn ? 'text-foreground' : 'text-muted-foreground'}`}
                   >
-                    Громкость Piano
+                    Громкость Grand Piano
                   </Label>
                   <span className="text-sm tabular-nums text-muted-foreground">
                     {Math.round((form.watch('pianoVolume') ?? 0.7) * 100)}%
@@ -839,34 +839,6 @@ export function SettingsForm({ defaultValues, onSave, themeControl }: Props) {
                 <Label
                   className={`text-sm ${drumsOn ? 'text-foreground' : 'text-muted-foreground'}`}
                 >
-                  Паттерн
-                </Label>
-                <Controller
-                  control={form.control}
-                  name="drumsPattern"
-                  render={({ field }) => (
-                    <Select
-                      value={field.value ?? 'swing'}
-                      onValueChange={field.onChange}
-                      disabled={!drumsOn}
-                    >
-                      <SelectTrigger className="w-44">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="swing">Swing</SelectItem>
-                        <SelectItem value="bossa">Bossa Nova</SelectItem>
-                        <SelectItem value="funk">Funk</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-              </div>
-
-              <div className="flex items-center justify-between gap-4">
-                <Label
-                  className={`text-sm ${drumsOn ? 'text-foreground' : 'text-muted-foreground'}`}
-                >
                   Humanize
                 </Label>
                 <Controller
@@ -892,8 +864,8 @@ export function SettingsForm({ defaultValues, onSave, themeControl }: Props) {
                 />
               </div>
 
-              {/* Funk settings — only shown when pattern is funk */}
-              {(form.watch('drumsPattern') ?? 'swing') === 'funk' && (
+              {/* Funk settings — only shown when style is funk */}
+              {(form.watch('style') ?? 'swing') === 'funk' && (
                 <>
                   <div className="flex items-center justify-between gap-4">
                     <Label
@@ -1570,21 +1542,19 @@ export function SettingsForm({ defaultValues, onSave, themeControl }: Props) {
                 render={({ field }) => (
                   <Select
                     value={field.value ?? 'rhodes-jrhodes3c'}
-                    onValueChange={(v) => field.onChange(v === 'rhodes-jrhodes3c' ? undefined : v)}
+                    onValueChange={(v) => field.onChange(v)}
                   >
                     <SelectTrigger className="w-full">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="synth-default">Synth (Default)</SelectItem>
-                      <SelectItem value="synth-lead">Synth Lead</SelectItem>
-                      <SelectItem value="piano-salamander">Piano (Salamander)</SelectItem>
-                      <SelectItem value="rhodes-jrhodes3c">Rhodes (jRhodes3c)</SelectItem>
+                      <SelectItem value="synth-default">Synth</SelectItem>
+                      <SelectItem value="piano-upright">Upright Piano</SelectItem>
+                      <SelectItem value="piano-salamander">Grand Piano</SelectItem>
+                      <SelectItem value="rhodes-jrhodes3c">Rhodes</SelectItem>
                       <SelectItem value="clarinet">Clarinet</SelectItem>
                       <SelectItem value="vibraphone">Vibraphone</SelectItem>
-                      <SelectItem value="guitar-nylon">Guitar (Nylon)</SelectItem>
-                      <SelectItem value="trumpet-muted">Trumpet (Muted)</SelectItem>
-                      <SelectItem value="flute">Flute</SelectItem>
+                      <SelectItem value="guitar-nylon">Acoustic Guitar</SelectItem>
                     </SelectContent>
                   </Select>
                 )}

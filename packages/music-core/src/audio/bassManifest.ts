@@ -31,4 +31,11 @@ export const bassManifest: InstrumentManifest = {
     complexity: 3,
     octaveUp: false,
   },
+  perStyleDefaults: {
+    swing: { complexity: 5 }, // walking bass — четверти + approach notes
+    bossa: { complexity: 3 }, // root-5th — половинные
+    funk: { complexity: 5 }, // syncopated eighths — пропуск 1-й доли
+    latin: { complexity: 4 }, // montuno — нота-пауза-нота
+    ballad: { complexity: 7 }, // two-feel — половинные
+  },
 };

@@ -35,6 +35,7 @@ import progressionRecognition from '@jazz/plugin-progression-recognition';
 import practiceCards from '@jazz/plugin-practice-cards';
 import visualMidiKeyboard from '@jazz/plugin-visual-midi-keyboard';
 import theoryCatalog from '@jazz/plugin-theory-catalog';
+import coreSettings from '@jazz/plugin-core-settings';
 
 export const PLUGINS: PluginDefinition[] = [
   coreEditor,
@@ -73,4 +74,5 @@ export const PLUGINS: PluginDefinition[] = [
   practiceCards,
   visualMidiKeyboard,
   theoryCatalog,
+  coreSettings,
 ];
