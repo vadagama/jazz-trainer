@@ -49,6 +49,8 @@ export async function ensureAudioReady(): Promise<void> {
     }
 
     if (!w.__soloInstrumentFactories) {
+      // All solo instruments are now "sampled" category — each loads its own
+      // samples independently. No reuseSamplers needed.
       w.__soloInstrumentFactories = createSoloInstrumentFactories();
     }
 

@@ -40,14 +40,22 @@ const DEFAULT_ENVELOPE = {
  * Does not import Tone.js directly — the synth is injected via constructor.
  */
 export class SynthSoloInstrument implements SoloInstrument {
-  readonly id = 'synth-default';
-  readonly name = 'Synth (Default)';
+  readonly id: string;
+  readonly name: string;
   readonly category = 'synth' as const;
 
   private synth: PolySynthLike;
   private disposed = false;
+  private connectedDest: unknown | null = null;
 
-  constructor(synth: PolySynthLike, options?: SynthSoloInstrumentOptions) {
+  constructor(
+    id: string,
+    name: string,
+    synth: PolySynthLike,
+    options?: SynthSoloInstrumentOptions,
+  ) {
+    this.id = id;
+    this.name = name;
     this.synth = synth;
 
     const maxVoices = options?.maxVoices ?? DEFAULT_MAX_VOICES;
@@ -75,11 +83,15 @@ export class SynthSoloInstrument implements SoloInstrument {
   connect(destination: unknown): void {
     if (this.disposed) return;
     this.synth.connect(destination);
+    this.connectedDest = destination;
   }
 
   disconnect(): void {
     if (this.disposed) return;
-    this.synth.disconnect();
+    if (this.connectedDest !== null) {
+      this.synth.disconnect(this.connectedDest);
+      this.connectedDest = null;
+    }
   }
 
   dispose(): void {

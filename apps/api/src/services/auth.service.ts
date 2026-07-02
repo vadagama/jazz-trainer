@@ -1,8 +1,9 @@
 import { eq, and } from 'drizzle-orm';
-import type { UserDTO, UserSettingsDTO } from '@jazz/shared';
+import type { UserDTO, UserSettingsDTO, Style } from '@jazz/shared';
 import { users, userSettings, sessions } from '../db/schema.js';
 import type { DrizzleDb } from '../db/index.js';
 import type { UserRecord, UserSettingsRecord } from '../db/schema.js';
+import { getStyleProfile } from '@jazz/music-core';
 
 // ── DTO mapping ────────────────────────────────────────────────────────────
 
@@ -19,12 +20,21 @@ export function toUserDTO(u: UserRecord): UserDTO {
   };
 }
 
-function clampVolume(v: number): number {
+function clampVolume(v: number | undefined | null): number {
+  if (v == null) return 0.7;
   return Math.max(0, Math.min(1, v));
 }
 
 export function toSettingsDTO(s: UserSettingsRecord): UserSettingsDTO {
-  return {
+  // Populate scalar instrument fields from perStyleOverrides[style]
+  // so the UI always shows the current style's saved preferences.
+  const style = (s.style ?? 'swing') as string;
+  const perStyle: Record<string, Record<string, unknown>> | undefined = s.perStyleOverrides
+    ? (JSON.parse(s.perStyleOverrides) as Record<string, Record<string, unknown>>)
+    : undefined;
+  const so = perStyle?.[style];
+
+  const dto: UserSettingsDTO = {
     bpm: Math.max(20, Math.min(400, s.bpm)),
     clickStrong: (s.clickStrong ?? null) as UserSettingsDTO['clickStrong'],
     clickStrong2: (s.clickStrong2 ?? null) as UserSettingsDTO['clickStrong2'],
@@ -68,11 +78,7 @@ export function toSettingsDTO(s: UserSettingsRecord): UserSettingsDTO {
     drumsCrashFrequency: s.drumsCrashFrequency,
     drumsRimEnabled: s.drumsRimEnabled,
     drumsRimVolume: clampVolume(s.drumsRimVolume),
-    style:
-      (s.style as UserSettingsDTO['style']) ??
-      (s.drumsPattern as UserSettingsDTO['style']) ??
-      'swing',
-    drumsPattern: s.drumsPattern as UserSettingsDTO['drumsPattern'],
+    style: (s.style as UserSettingsDTO['style']) ?? 'swing',
     drumsHumanizeIntensity: s.drumsHumanizeIntensity as UserSettingsDTO['drumsHumanizeIntensity'],
     drumsFunkComplexity: s.drumsFunkComplexity as UserSettingsDTO['drumsFunkComplexity'],
     drumsFillFrequency: s.drumsFillFrequency as UserSettingsDTO['drumsFillFrequency'],
@@ -82,7 +88,9 @@ export function toSettingsDTO(s: UserSettingsRecord): UserSettingsDTO {
     drumsRideVariation: s.drumsRideVariation,
     drumsSnareGhosts: s.drumsSnareGhosts,
     drumsBassDrumVariation: s.drumsBassDrumVariation,
-    drumsRidePattern: s.drumsRidePattern as UserSettingsDTO['drumsRidePattern'],
+    drumKit: (s.drumKit as UserSettingsDTO['drumKit']) ?? 'jazz-kit',
+    drumsTomEnabled: s.drumsTomEnabled,
+    drumsTomVolume: clampVolume(s.drumsTomVolume),
     swingRatio: Math.max(0.5, Math.min(0.75, s.swingRatio)),
     audioFormat: s.audioFormat as UserSettingsDTO['audioFormat'],
     practiceCards: s.practiceCards
@@ -93,7 +101,51 @@ export function toSettingsDTO(s: UserSettingsRecord): UserSettingsDTO {
     soloToneId: (s.soloToneId ?? undefined) as string | undefined,
     soloVolume: s.soloVolume ?? undefined,
     duckingEnabled: s.duckingEnabled ?? undefined,
+    perStyleOverrides: s.perStyleOverrides
+      ? (JSON.parse(s.perStyleOverrides) as UserSettingsDTO['perStyleOverrides'])
+      : undefined,
+    // Fields stored only in perStyleOverrides (no scalar columns):
+    percussionEnabled: undefined,
+    percussionVolume: undefined,
+    percussionHumanizeIntensity: undefined,
+    guitarEnabled: undefined,
+    guitarVolume: undefined,
   };
+
+  // Overlay per-style overrides on top of scalar defaults
+  if (so) {
+    for (const [key, value] of Object.entries(so)) {
+      if (value !== undefined) {
+        (dto as Record<string, unknown>)[key] = value;
+      }
+    }
+  }
+
+  // Fix per-style isolation: for style-specific fields without a per-style override,
+  // use profile defaults instead of scalar column values (which leak across styles).
+  const profile = getStyleProfile(style as Style);
+  const pd = profile.instrumentDefaults;
+  const activeBass = (profile.defaultVariants.bass ?? 'upright-bass') as keyof typeof pd;
+  const activeDrums = (profile.defaultVariants.drums ?? 'drums') as keyof typeof pd;
+  const activeGuitar = (profile.defaultVariants.guitar ?? 'guitar') as keyof typeof pd;
+  // Helper: check if key exists in so (not just truthy — false is a valid override)
+  const has = (k: string) => so != null && k in so;
+
+  if (!has('bassEnabled')) dto.bassEnabled = pd[activeBass]?.enabled;
+  if (!has('bassVolume')) dto.bassVolume = pd[activeBass]?.volume ?? 0.7;
+  if (!has('pianoEnabled')) dto.pianoEnabled = pd.piano?.enabled;
+  if (!has('pianoVolume')) dto.pianoVolume = pd.piano?.volume ?? 0.7;
+  if (!has('rhodesEnabled')) dto.rhodesEnabled = pd.rhodes?.enabled;
+  if (!has('rhodesVolume')) dto.rhodesVolume = pd.rhodes?.volume ?? 0.5;
+  if (!has('drumsEnabled')) dto.drumsEnabled = pd[activeDrums]?.enabled;
+  if (!has('drumsVolume')) dto.drumsVolume = pd[activeDrums]?.volume ?? 0.7;
+  if (!has('percussionEnabled')) dto.percussionEnabled = pd.percussion?.enabled;
+  if (!has('percussionVolume')) dto.percussionVolume = pd.percussion?.volume ?? 0.7;
+  if (!has('guitarEnabled')) dto.guitarEnabled = pd[activeGuitar]?.enabled;
+  if (!has('guitarVolume')) dto.guitarVolume = pd[activeGuitar]?.volume ?? 0.6;
+  if (!has('swingRatio')) dto.swingRatio = profile.swingRatio;
+
+  return dto;
 }
 
 // ── User management ─────────────────────────────────────────────────────────

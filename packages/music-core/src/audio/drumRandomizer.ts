@@ -25,6 +25,8 @@ export interface DrumRandomizerSettings {
   rideVariation: boolean;
   snareGhosts: boolean;
   bassDrumVariation: boolean;
+  tomEnabled: boolean;
+  tomVolume: number;
 }
 
 export const DEFAULT_RANDOMIZER_SETTINGS: DrumRandomizerSettings = {
@@ -34,6 +36,8 @@ export const DEFAULT_RANDOMIZER_SETTINGS: DrumRandomizerSettings = {
   rideVariation: true,
   snareGhosts: true,
   bassDrumVariation: true,
+  tomEnabled: true,
+  tomVolume: 0.7,
 };
 
 // ─── Bar context ───────────────────────────────────────────────────────────────
@@ -105,17 +109,23 @@ function generateSwingFill(
   fillsPerBar: number,
   complexity: FillComplexity,
   barIndex: number,
+  tomEnabled: boolean,
+  _tomVolume: number,
 ): DrumHit[] {
   const hits: DrumHit[] = [];
   const seed = barIndex * 41 + 7;
   const rand = pseudoRandom(seed);
   const count = complexity === 'simple' ? 3 : complexity === 'medium' ? 5 : 8;
 
-  // Snare + bass drum triplet bursts
+  // Snare + bass drum triplet bursts, with tom substitutions
+  const hasToms = tomEnabled && complexity !== 'simple';
+  const sounds: DrumSound[] = hasToms
+    ? ['snare', 'bassDrum', 'highTom', 'lowTom']
+    : ['snare', 'bassDrum'];
   for (let i = 0; i < count; i++) {
     const pos = Math.floor(rand() * fillsPerBar);
-    const subTick = pos * (fillsPerBar / 4); // distribute across 4 beats
-    const sound: DrumSound = rand() < 0.6 ? 'snare' : 'bassDrum';
+    const subTick = pos * (fillsPerBar / 4);
+    const sound: DrumSound = sounds[Math.floor(rand() * sounds.length)]!;
     hits.push({
       sound,
       atTick: Math.round(subTick),
@@ -130,6 +140,8 @@ function generateBossaFill(
   fillsPerBar: number,
   complexity: FillComplexity,
   barIndex: number,
+  tomEnabled: boolean,
+  _tomVolume: number,
 ): DrumHit[] {
   const hits: DrumHit[] = [];
   const seed = barIndex * 53 + 11;
@@ -156,6 +168,21 @@ function generateBossaFill(
       velocity: 0.5 + rand() * 0.3,
       durationTicks: 240,
     });
+    // Tom accents on complex fills
+    if (tomEnabled && complexity === 'complex') {
+      hits.push({
+        sound: 'highTom',
+        atTick: Math.round((fillsPerBar / 8) * 11), // late offbeat
+        velocity: 0.6,
+        durationTicks: 200,
+      });
+      hits.push({
+        sound: 'lowTom',
+        atTick: Math.round((fillsPerBar * 7) / 8), // beat 4&
+        velocity: 0.65,
+        durationTicks: 200,
+      });
+    }
   }
   return hits;
 }
@@ -164,6 +191,8 @@ function generateFunkFill(
   fillsPerBar: number,
   complexity: FillComplexity,
   barIndex: number,
+  tomEnabled: boolean,
+  _tomVolume: number,
 ): DrumHit[] {
   const hits: DrumHit[] = [];
   const seed = barIndex * 67 + 13;
@@ -178,7 +207,26 @@ function generateFunkFill(
   });
 
   const count = complexity === 'simple' ? 4 : complexity === 'medium' ? 7 : 12;
-  for (let i = 0; i < count; i++) {
+
+  // Tom run on medium+ fills when toms are enabled
+  const useToms = tomEnabled && complexity !== 'simple';
+  if (useToms) {
+    // Descending tom run: highTom → lowTom with snare ghosting
+    const tomSteps = complexity === 'complex' ? 4 : 2;
+    for (let i = 0; i < tomSteps; i++) {
+      const pos = (fillsPerBar / (tomSteps + 1)) * (i + 1);
+      hits.push({
+        sound: i % 2 === 0 ? 'highTom' : 'lowTom',
+        atTick: Math.round(pos),
+        velocity: 0.5 + rand() * 0.35,
+        durationTicks: 120,
+      });
+    }
+  }
+
+  // Fill remaining slots with snare hits
+  const remaining = useToms ? Math.max(0, count - (complexity === 'complex' ? 4 : 2)) : count;
+  for (let i = 0; i < remaining; i++) {
     const pos = Math.floor(rand() * fillsPerBar);
     hits.push({
       sound: 'snare',
@@ -335,15 +383,34 @@ export class DrumRandomizer {
     // ── Fills ──
     if (this.shouldFill(ctx.barIndex)) {
       let fillHits: DrumHit[];
+      const { fillComplexity, tomEnabled, tomVolume } = this.settings;
       switch (ctx.style) {
         case 'bossa':
-          fillHits = generateBossaFill(fillsPerBar, this.settings.fillComplexity, ctx.barIndex);
+          fillHits = generateBossaFill(
+            fillsPerBar,
+            fillComplexity,
+            ctx.barIndex,
+            tomEnabled,
+            tomVolume,
+          );
           break;
         case 'funk':
-          fillHits = generateFunkFill(fillsPerBar, this.settings.fillComplexity, ctx.barIndex);
+          fillHits = generateFunkFill(
+            fillsPerBar,
+            fillComplexity,
+            ctx.barIndex,
+            tomEnabled,
+            tomVolume,
+          );
           break;
         default:
-          fillHits = generateSwingFill(fillsPerBar, this.settings.fillComplexity, ctx.barIndex);
+          fillHits = generateSwingFill(
+            fillsPerBar,
+            fillComplexity,
+            ctx.barIndex,
+            tomEnabled,
+            tomVolume,
+          );
       }
 
       // Remove existing snare/rim/bassDrum hits on beat 4 to avoid clashes
@@ -381,6 +448,8 @@ export function randomizerSettingsFrom(
     rideVariation?: boolean;
     snareGhosts?: boolean;
     bassDrumVariation?: boolean;
+    tomEnabled?: boolean;
+    tomVolume?: number;
   },
 ): DrumRandomizerSettings {
   return {
@@ -390,5 +459,7 @@ export function randomizerSettingsFrom(
     rideVariation: drums.rideVariation ?? true,
     snareGhosts: drums.snareGhosts ?? true,
     bassDrumVariation: drums.bassDrumVariation ?? true,
+    tomEnabled: drums.tomEnabled ?? true,
+    tomVolume: drums.tomVolume ?? 0.7,
   };
 }

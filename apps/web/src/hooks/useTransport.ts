@@ -6,6 +6,7 @@ import {
   BassInstrument,
   RhodesInstrument,
   PianoInstrument,
+  GuitarInstrument,
   ChordTimeline,
   RoundRobinCounter,
   PlaybackStateMachine,
@@ -17,18 +18,26 @@ import {
   pickPianoLayer,
   pickSalamanderLayer,
   DrumInstrument,
+  PercussionInstrument,
+  getStyleProfile,
   type HumanizeIntensity,
   bassManifest,
   rhodesManifest,
   pianoManifest,
   salamanderManifest,
   drumsManifest,
+  modernKitManifest,
+  percussionManifest,
+  guitarManifest,
+  electricGuitarManifest,
   type BeatType,
   type EventSink,
   type BassEvent,
   type RhodesEvent,
   type PianoEvent,
   type DrumEvent,
+  type PercussionEvent,
+  type GuitarEvent,
   buildFlatSequence,
   buildChordTimelineEntries,
   type FlatSequence,
@@ -47,7 +56,7 @@ import type {
   Style,
 } from '@jazz/shared';
 import { audioUrl } from '@jazz/shared';
-import { usePlaybackStore } from '@jazz/plugin-sdk';
+import { usePlaybackStore, useLocalSettingsStore } from '@jazz/plugin-sdk';
 
 const LOOKAHEAD_TICKS = 480 * 4;
 const PPQ = 480;
@@ -74,6 +83,44 @@ export interface TransportControls {
 
 export function useTransport(opts: UseTransportOptions): TransportControls {
   const { settings, timeSignature, totalBars } = opts;
+
+  // Build a DrumInstrumentSettings patch from per-style override object
+  function buildDrumSettingsPatch(o: Record<string, unknown>) {
+    const patch: Record<string, unknown> = {};
+    const boolFields = [
+      'enabled',
+      'bassDrumEnabled',
+      'snareEnabled',
+      'hihatEnabled',
+      'rideEnabled',
+      'crashEnabled',
+      'rimEnabled',
+      'rideVariation',
+      'snareGhosts',
+      'bassDrumVariation',
+      'tomEnabled',
+    ];
+    const numFields = [
+      'volume',
+      'bassDrumVolume',
+      'snareVolume',
+      'hihatVolume',
+      'rideVolume',
+      'crashVolume',
+      'rimVolume',
+      'hihatOpenness',
+      'crashFrequency',
+      'tomVolume',
+    ];
+    for (const f of boolFields) if (o[f] !== undefined) patch[f] = o[f];
+    for (const f of numFields) if (o[f] !== undefined) patch[f] = o[f];
+    if (o.humanizeIntensity !== undefined) patch.humanizeIntensity = o.humanizeIntensity;
+    if (o.funkComplexity !== undefined) patch.funkComplexity = o.funkComplexity;
+    if (o.fillFrequency !== undefined) patch.fillFrequency = o.fillFrequency;
+    if (o.randomizationLevel !== undefined) patch.randomizationLevel = o.randomizationLevel;
+    if (o.fillComplexity !== undefined) patch.fillComplexity = o.fillComplexity;
+    return patch;
+  }
 
   const engineRef = useRef<TransportEngine | null>(null);
   const machineRef = useRef<PlaybackStateMachine | null>(null);
@@ -115,9 +162,22 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
   const drumsRideChannelRef = useRef<Tone.Channel | null>(null);
   const drumsCrashChannelRef = useRef<Tone.Channel | null>(null);
   const drumsRimChannelRef = useRef<Tone.Channel | null>(null);
+  const drumsHighTomChannelRef = useRef<Tone.Channel | null>(null);
+  const drumsLowTomChannelRef = useRef<Tone.Channel | null>(null);
   const drumsMasterChannelRef = useRef<Tone.Channel | null>(null);
   const drumInstrumentRef = useRef<DrumInstrument | null>(null);
   const drumsRrRef = useRef<Record<string, number>>({});
+  // Percussion: oneshot players
+  const percussionPlayersRef = useRef<Map<string, Tone.Player[]>>(new Map());
+  const percussionDisposeRef = useRef<() => void>(() => {});
+  const percussionMasterChannelRef = useRef<Tone.Channel | null>(null);
+  const percussionInstrumentRef = useRef<PercussionInstrument | null>(null);
+  const percussionRrRef = useRef<Record<string, number>>({});
+  // Guitar: nylon/steel samplers + channel + instrument
+  const guitarSamplersRef = useRef<Map<string, Tone.Sampler>>(new Map());
+  const guitarDisposeRef = useRef<() => void>(() => {});
+  const guitarChannelRef = useRef<Tone.Channel | null>(null);
+  const guitarInstrumentRef = useRef<GuitarInstrument | null>(null);
   const rrCounterRef = useRef(new RoundRobinCounter());
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastScheduledRef = useRef(0);
@@ -307,9 +367,20 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
 
     const pianoInstrument = new PianoInstrument(new ChordTimeline());
     pianoInstrument.setStyle((settings.style ?? 'swing') as Style);
-    pianoInstrument.setVoicingDensity(settings.pianoVoicingDensity ?? 'rootless3');
-    pianoInstrument.setProfile(settings.pianoProfile ?? 'swing-sparse');
-    pianoInstrument.setHumanize((settings.pianoRandomizationLevel ?? 'off') !== 'off');
+    // Only override style defaults when user explicitly set a preference
+    if (settings.pianoVoicingDensity) {
+      pianoInstrument.setVoicingDensity(settings.pianoVoicingDensity);
+    }
+    if (settings.pianoProfile) {
+      pianoInstrument.setProfile(settings.pianoProfile);
+    }
+    const pianoRandLevel = (settings.pianoRandomizationLevel ?? 'off') as
+      | 'off'
+      | 'subtle'
+      | 'moderate'
+      | 'high';
+    pianoInstrument.setHumanize(pianoRandLevel !== 'off');
+    pianoInstrument.setRandomizationLevel(pianoRandLevel);
     pianoInstrumentRef.current = pianoInstrument;
 
     // ── Drums setup ─────────────────────────────────────────────────────────
@@ -348,7 +419,22 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     }).connect(drumsMasterChannel);
     drumsRimChannelRef.current = drumsRimChannel;
 
-    const drumsRes = createOneshotResources(drumsManifest.sampleManifest, settings.audioFormat);
+    const drumsHighTomChannel = new Tone.Channel({
+      volume: Tone.gainToDb(settings.drumsTomVolume ?? 0.7),
+    }).connect(drumsMasterChannel);
+    drumsHighTomChannelRef.current = drumsHighTomChannel;
+
+    const drumsLowTomChannel = new Tone.Channel({
+      volume: Tone.gainToDb(settings.drumsTomVolume ?? 0.7),
+    }).connect(drumsMasterChannel);
+    drumsLowTomChannelRef.current = drumsLowTomChannel;
+
+    const drumSampleManifest =
+      settings.drumKit === 'modern-kit'
+        ? modernKitManifest.sampleManifest
+        : drumsManifest.sampleManifest;
+
+    const drumsRes = createOneshotResources(drumSampleManifest, settings.audioFormat);
     for (const [sound, arr] of drumsRes.players) {
       const ch =
         sound === 'bassDrum'
@@ -363,7 +449,11 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
                   ? drumsCrashChannel
                   : sound === 'rim'
                     ? drumsRimChannel
-                    : drumsMasterChannel;
+                    : sound === 'highTom'
+                      ? drumsHighTomChannel
+                      : sound === 'lowTom'
+                        ? drumsLowTomChannel
+                        : drumsMasterChannel;
       for (const p of arr) p.connect(ch);
     }
     drumsPlayersRef.current = drumsRes.players;
@@ -383,6 +473,7 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
       if (p.sound === 'ride' && !(s.drumsRideEnabled ?? true)) return;
       if (p.sound === 'crash' && !(s.drumsCrashEnabled ?? true)) return;
       if (p.sound === 'rim' && !(s.drumsRimEnabled ?? true)) return;
+      if ((p.sound === 'highTom' || p.sound === 'lowTom') && !(s.drumsTomEnabled ?? true)) return;
       const pool = drumsPlayersRef.current.get(p.sound);
       if (!pool) return;
       const rr = (drumsRrRef.current[p.sound] ?? 0) % 4;
@@ -402,7 +493,7 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     };
 
     const drumInstrument = new DrumInstrument();
-    drumInstrument.setStyle((settings.style ?? settings.drumsPattern ?? 'swing') as Style);
+    drumInstrument.setStyle((settings.style ?? 'swing') as Style);
     drumInstrument.updateSettings({
       enabled: settings.drumsEnabled ?? true,
       volume: settings.drumsVolume ?? 0.7,
@@ -436,20 +527,121 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
       rideVariation: settings.drumsRideVariation ?? true,
       snareGhosts: settings.drumsSnareGhosts ?? true,
       bassDrumVariation: settings.drumsBassDrumVariation ?? true,
+      tomEnabled: settings.drumsTomEnabled ?? true,
+      tomVolume: settings.drumsTomVolume ?? 0.7,
     });
     drumInstrumentRef.current = drumInstrument;
 
+    // ── Percussion setup ───────────────────────────────────────────────────
+    const percussionMasterChannel = new Tone.Channel({
+      volume: Tone.gainToDb(settings.percussionVolume ?? 0.7),
+    }).toDestination();
+    percussionMasterChannelRef.current = percussionMasterChannel;
+
+    const percussionRes = createOneshotResources(
+      percussionManifest.sampleManifest,
+      settings.audioFormat,
+    );
+    for (const [, arr] of percussionRes.players) {
+      for (const p of arr) p.connect(percussionMasterChannel);
+    }
+    percussionPlayersRef.current = percussionRes.players;
+    percussionDisposeRef.current = percussionRes.dispose;
+
+    const percussionEventSink: EventSink = (payload, atTicks, velocity, _durationTicks) => {
+      const s = optsRef.current.settings;
+      if (!(s.percussionEnabled ?? false)) return;
+      const p = payload as PercussionEvent;
+      const pool = percussionPlayersRef.current.get(p.sound);
+      if (!pool) return;
+      const rrCount = pool.length;
+      const rr = (percussionRrRef.current[p.sound] ?? 0) % rrCount;
+      percussionRrRef.current[p.sound] = (percussionRrRef.current[p.sound] ?? 0) + 1;
+      const player = pool[rr];
+      if (!player) return;
+      const velDb = velocity < 1.0 ? Tone.gainToDb(velocity) : 0;
+      tone.scheduleOnce((time: number) => {
+        if (player.loaded) {
+          if (velocity < 1.0) player.volume.value = velDb;
+          player.start(time);
+        }
+      }, `${atTicks}i`);
+    };
+
+    const percussionInstrument = new PercussionInstrument();
+    percussionInstrument.setStyle((settings.style ?? 'swing') as Style);
+    percussionInstrument.updateSettings({
+      enabled: settings.percussionEnabled ?? false,
+      volume: settings.percussionVolume ?? 0.7,
+      humanizeIntensity: (settings.percussionHumanizeIntensity ?? 'low') as HumanizeIntensity,
+    });
+    percussionInstrumentRef.current = percussionInstrument;
+
+    // ── Guitar ──────────────────────────────────────────────────────────
+    const guitarVariant = (getStyleProfile((settings.style ?? 'swing') as Style).defaultVariants
+      .guitar ?? 'guitar') as string;
+    const guitarManifestToUse =
+      guitarVariant === 'electric-guitar' ? electricGuitarManifest : guitarManifest;
+    const guitarLayer = guitarVariant === 'electric-guitar' ? 'normal' : 'nylon';
+
+    const guitarChannel = new Tone.Channel({
+      volume: Tone.gainToDb(settings.guitarVolume ?? 0.6),
+    }).toDestination();
+    guitarChannelRef.current = guitarChannel;
+
+    const guitarRes = createPitchedResources(
+      guitarManifestToUse.sampleManifest,
+      settings.audioFormat,
+    );
+    for (const s of guitarRes.samplers.values()) s.connect(guitarChannel);
+    guitarSamplersRef.current = guitarRes.samplers;
+    guitarDisposeRef.current = guitarRes.dispose;
+
+    const guitarEventSink: EventSink = (payload, atTicks, velocity, durationTicks) => {
+      if (!(optsRef.current.settings.guitarEnabled ?? false)) return;
+      const p = payload as GuitarEvent;
+      const sampler = guitarSamplersRef.current.get(guitarLayer);
+      if (!sampler) return;
+      const durationSecs = ticksToSeconds(durationTicks, optsRef.current.settings.bpm);
+      tone.scheduleOnce((time: number) => {
+        if (sampler.loaded) {
+          for (const note of p.notes) {
+            sampler.triggerAttackRelease(note, durationSecs, time, velocity);
+          }
+        }
+      }, `${atTicks}i`);
+    };
+
+    const guitarInstrument = new GuitarInstrument(new ChordTimeline(), guitarVariant);
+    guitarInstrument.setStyle((settings.style ?? 'swing') as Style);
+    guitarInstrument.setHumanize(true);
+    guitarInstrumentRef.current = guitarInstrument;
+
     // ── Transport engine ───────────────────────────────────────────────────
+    // Read swingRatio per-style, falling back to Zustand and profile default.
+    const style = (settings.style ?? 'swing') as Style;
+    const profile = getStyleProfile(style);
+    const perStyleSwing = (
+      settings.perStyleOverrides?.[style] as Record<string, unknown> | undefined
+    )?.swingRatio as number | undefined;
+    const zustandStore = useLocalSettingsStore.getState().settings;
+    const zustandPerStyleSwing = (
+      zustandStore.perStyleOverrides?.[style] as Record<string, unknown> | undefined
+    )?.swingRatio as number | undefined;
+    const effectiveSwingRatio = perStyleSwing ?? zustandPerStyleSwing ?? profile.swingRatio;
+
     const engine = new TransportEngine({
       bpm: settings.bpm,
       timeSignature,
-      swingRatio: settings.swingRatio ?? 0.5,
+      swingRatio: effectiveSwingRatio,
       sink,
     });
     engine.registerSink('bass', bassEventSink);
     engine.registerSink('rhodes', rhodesEventSink);
     engine.registerSink('piano', pianoEventSink);
     engine.registerSink('drums', drumsEventSink);
+    engine.registerSink('percussion', percussionEventSink);
+    engine.registerSink(guitarVariant, guitarEventSink);
 
     const metronome = new MetronomeInstrument();
     engine.addInstrument(metronome);
@@ -457,6 +649,13 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     engine.addInstrument(rhodesInstrument);
     engine.addInstrument(pianoInstrument);
     engine.addInstrument(drumInstrument);
+    engine.addInstrument(percussionInstrument);
+    engine.addInstrument(guitarInstrument);
+
+    // Apply the initial style profile to engine + all instruments
+    engine.setStyleProfile(
+      getStyleProfile((settings.style ?? 'swing') as import('@jazz/shared').Style),
+    );
 
     const machine = new PlaybackStateMachine(totalBars);
     machineRef.current = machine;
@@ -540,6 +739,17 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
       drumsMasterChannelRef.current = null;
       drumInstrumentRef.current = null;
       drumsRrRef.current = {};
+      percussionDisposeRef.current();
+      percussionPlayersRef.current = new Map();
+      percussionMasterChannelRef.current?.dispose();
+      percussionMasterChannelRef.current = null;
+      percussionInstrumentRef.current = null;
+      percussionRrRef.current = {};
+      guitarDisposeRef.current();
+      guitarSamplersRef.current = new Map();
+      guitarChannelRef.current?.dispose();
+      guitarChannelRef.current = null;
+      guitarInstrumentRef.current = null;
       rrCounterRef.current.reset();
       engineRef.current = null;
       machineRef.current = null;
@@ -619,6 +829,12 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     if (weakPlayerRef.current) weakPlayerRef.current.volume.value = db - 6;
   }, [settings.metronomeVolume]);
 
+  // Update style profile on engine — propagates tempo, swing, and style to all instruments
+  useEffect(() => {
+    if (!engineRef.current) return;
+    engineRef.current.setStyleProfile(getStyleProfile((settings.style ?? 'swing') as Style));
+  }, [settings.style]);
+
   // Update bass volume
   useEffect(() => {
     if (!bassChannelRef.current) return;
@@ -626,12 +842,6 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
       Math.max(0.001, settings.bassVolume ?? 0.7),
     );
   }, [settings.bassVolume]);
-
-  // Update bass style (before complexity so user setting overrides)
-  useEffect(() => {
-    if (!bassInstrumentRef.current) return;
-    bassInstrumentRef.current.setStyle((settings.style ?? 'swing') as Style);
-  }, [settings.style]);
 
   // Update bass complexity
   useEffect(() => {
@@ -654,35 +864,132 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     );
   }, [settings.rhodesVolume]);
 
-  // Update Rhodes style (before mode so user setting overrides)
-  useEffect(() => {
-    if (!rhodesInstrumentRef.current) return;
-    rhodesInstrumentRef.current.setStyle((settings.style ?? 'swing') as Style);
-  }, [settings.style]);
-
+  // Update Rhodes volume
   // Update Rhodes comping mode (legacy — used only when layerMode is 'none')
   useEffect(() => {
     if (!rhodesInstrumentRef.current) return;
     rhodesInstrumentRef.current.setMode(settings.rhodesMode ?? 'halfNotes');
   }, [settings.rhodesMode]);
 
-  // Update Rhodes complementary layer mode
+  // Apply per-style user overrides on top of engine style defaults.
+  // Also mutates optsRef.current.settings so event sinks see per-style values.
   useEffect(() => {
-    if (!rhodesInstrumentRef.current) return;
-    rhodesInstrumentRef.current.setLayerMode(settings.rhodesLayerMode ?? 'none');
-  }, [settings.rhodesLayerMode]);
+    if (!engineRef.current) return;
+    const style = (settings.style ?? 'swing') as Style;
+    const overrides = settings.perStyleOverrides?.[style];
+    if (!overrides) return;
 
-  // Update Rhodes layer volume
+    // Mutate optsRef so event sinks pick up per-style enabled/volume
+    const s = optsRef.current.settings as Record<string, unknown>;
+    for (const [key, value] of Object.entries(overrides)) {
+      if (value !== undefined) s[key] = value;
+    }
+
+    // ── Bass ──
+    if (bassInstrumentRef.current) {
+      if (overrides.bassComplexity !== undefined)
+        bassInstrumentRef.current.setComplexity(
+          overrides.bassComplexity as 1 | 2 | 3 | 4 | 5 | 6 | 7,
+        );
+      if (overrides.bassOctaveUp !== undefined)
+        bassInstrumentRef.current.setOctaveShift(overrides.bassOctaveUp ? 1 : 0);
+    }
+    if (bassChannelRef.current && overrides.bassVolume !== undefined) {
+      bassChannelRef.current.volume.value = Tone.gainToDb(
+        Math.max(0.001, overrides.bassVolume as number),
+      );
+    }
+
+    // ── Piano ──
+    if (pianoInstrumentRef.current) {
+      if (overrides.pianoProfile)
+        pianoInstrumentRef.current.setProfile(
+          overrides.pianoProfile as import('@jazz/music-core').CompingProfileId,
+        );
+      if (overrides.pianoVoicingDensity)
+        pianoInstrumentRef.current.setVoicingDensity(
+          overrides.pianoVoicingDensity as import('@jazz/music-core').PianoVoicingDensity,
+        );
+      if (overrides.pianoRandomizationLevel !== undefined) {
+        const lvl = overrides.pianoRandomizationLevel as string;
+        pianoInstrumentRef.current.setHumanize(lvl !== 'off');
+        pianoInstrumentRef.current.setRandomizationLevel(
+          lvl as 'off' | 'subtle' | 'moderate' | 'high',
+        );
+      }
+    }
+    if (pianoChannelRef.current && overrides.pianoVolume !== undefined) {
+      pianoChannelRef.current.volume.value = Tone.gainToDb(
+        Math.max(0.001, overrides.pianoVolume as number),
+      );
+    }
+
+    // ── Rhodes ──
+    if (rhodesInstrumentRef.current) {
+      if (overrides.rhodesLayerMode)
+        rhodesInstrumentRef.current.setLayerMode(
+          overrides.rhodesLayerMode as import('@jazz/music-core').RhodesLayerMode,
+        );
+      if (overrides.rhodesVoicingDensity)
+        rhodesInstrumentRef.current.setVoicingDensity(
+          overrides.rhodesVoicingDensity as import('@jazz/music-core').RhodesVoicingDensity,
+        );
+      if (overrides.rhodesLayerVolume !== undefined)
+        rhodesInstrumentRef.current.setLayerVolume(overrides.rhodesLayerVolume as number);
+      if (overrides.rhodesMode)
+        rhodesInstrumentRef.current.setMode(
+          overrides.rhodesMode as import('@jazz/music-core').RhodesCompingMode,
+        );
+    }
+    if (rhodesChannelRef.current && overrides.rhodesVolume !== undefined) {
+      rhodesChannelRef.current.volume.value = Tone.gainToDb(
+        Math.max(0.001, overrides.rhodesVolume as number),
+      );
+    }
+
+    // ── Drums ──
+    if (drumInstrumentRef.current) {
+      drumInstrumentRef.current.updateSettings(buildDrumSettingsPatch(overrides));
+    }
+    if (drumsMasterChannelRef.current && overrides.drumsVolume !== undefined) {
+      drumsMasterChannelRef.current.volume.value = Tone.gainToDb(
+        Math.max(0.001, overrides.drumsVolume as number),
+      );
+    }
+
+    // ── Percussion ──
+    if (percussionInstrumentRef.current) {
+      percussionInstrumentRef.current.updateSettings({
+        ...(overrides.percussionEnabled !== undefined && {
+          enabled: overrides.percussionEnabled as boolean,
+        }),
+        ...(overrides.percussionVolume !== undefined && {
+          volume: overrides.percussionVolume as number,
+        }),
+        ...(overrides.percussionHumanizeIntensity !== undefined && {
+          humanizeIntensity: overrides.percussionHumanizeIntensity as HumanizeIntensity,
+        }),
+      });
+    }
+    if (percussionMasterChannelRef.current && overrides.percussionVolume !== undefined) {
+      percussionMasterChannelRef.current.volume.value = Tone.gainToDb(
+        Math.max(0.001, overrides.percussionVolume as number),
+      );
+    }
+
+    // ── Guitar ──
+    if (guitarChannelRef.current && overrides.guitarVolume !== undefined) {
+      guitarChannelRef.current.volume.value = Tone.gainToDb(
+        Math.max(0.001, overrides.guitarVolume as number),
+      );
+    }
+  }, [settings.style, settings.perStyleOverrides]);
+
+  // Update Rhodes layer volume (not style-specific)
   useEffect(() => {
     if (!rhodesInstrumentRef.current) return;
     rhodesInstrumentRef.current.setLayerVolume(settings.rhodesLayerVolume ?? 0.5);
   }, [settings.rhodesLayerVolume]);
-
-  // Update Rhodes voicing density
-  useEffect(() => {
-    if (!rhodesInstrumentRef.current) return;
-    rhodesInstrumentRef.current.setVoicingDensity(settings.rhodesVoicingDensity ?? 'rootless3');
-  }, [settings.rhodesVoicingDensity]);
 
   // Update Piano volume
   useEffect(() => {
@@ -692,38 +999,53 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     );
   }, [settings.pianoVolume]);
 
-  // Update Piano profile
-  useEffect(() => {
-    if (!pianoInstrumentRef.current) return;
-    pianoInstrumentRef.current.setProfile(settings.pianoProfile ?? 'swing-sparse');
-  }, [settings.pianoProfile]);
-
-  // Update Piano voicing density
-  useEffect(() => {
-    if (!pianoInstrumentRef.current) return;
-    pianoInstrumentRef.current.setVoicingDensity(settings.pianoVoicingDensity ?? 'rootless3');
-  }, [settings.pianoVoicingDensity]);
-
-  // Update Piano style (re-apply user's profile after style default override)
-  useEffect(() => {
-    if (!pianoInstrumentRef.current) return;
-    pianoInstrumentRef.current.setStyle((settings.style ?? 'swing') as Style);
-    pianoInstrumentRef.current.setProfile(settings.pianoProfile ?? 'swing-sparse');
-  }, [settings.style, settings.pianoProfile]);
-
   // Update Piano randomization level
   useEffect(() => {
     if (!pianoInstrumentRef.current) return;
-    const level = settings.pianoRandomizationLevel ?? 'off';
+    const level = (settings.pianoRandomizationLevel ?? 'off') as
+      | 'off'
+      | 'subtle'
+      | 'moderate'
+      | 'high';
     pianoInstrumentRef.current.setHumanize(level !== 'off');
+    pianoInstrumentRef.current.setRandomizationLevel(level);
   }, [settings.pianoRandomizationLevel]);
+
+  // Update Guitar volume
+  useEffect(() => {
+    if (!guitarChannelRef.current) return;
+    guitarChannelRef.current.volume.value = Tone.gainToDb(
+      Math.max(0.001, settings.guitarVolume ?? 0.6),
+    );
+  }, [settings.guitarVolume]);
+
+  // Reload piano sample library when pianoSampleLibrary changes
+  useEffect(() => {
+    if (!initializedRef.current) return;
+
+    const activePianoManifest =
+      settings.pianoSampleLibrary === 'upright-kw' ? pianoManifest : salamanderManifest;
+    const pianoRes = createPitchedResources(
+      activePianoManifest.sampleManifest,
+      settings.audioFormat,
+    );
+
+    // Dispose old samplers before replacing
+    pianoDisposeRef.current();
+
+    // Connect new samplers to the existing EQ3
+    const eq3 = pianoEQ3Ref.current;
+    for (const s of pianoRes.samplers.values()) {
+      if (eq3) s.connect(eq3);
+    }
+
+    pianoSamplersRef.current = pianoRes.samplers;
+    pianoDisposeRef.current = pianoRes.dispose;
+  }, [settings.pianoSampleLibrary, settings.audioFormat]);
 
   // Update drum instrument settings + per-sound channel volumes
   useEffect(() => {
     if (!drumInstrumentRef.current) return;
-    drumInstrumentRef.current.setStyle(
-      (settings.style ?? settings.drumsPattern ?? 'swing') as Style,
-    );
     drumInstrumentRef.current.updateSettings({
       enabled: settings.drumsEnabled ?? true,
       volume: settings.drumsVolume ?? 0.7,
@@ -757,6 +1079,8 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
       rideVariation: settings.drumsRideVariation ?? true,
       snareGhosts: settings.drumsSnareGhosts ?? true,
       bassDrumVariation: settings.drumsBassDrumVariation ?? true,
+      tomEnabled: settings.drumsTomEnabled ?? true,
+      tomVolume: settings.drumsTomVolume ?? 0.7,
     });
     // Sync per-sound channel volumes
     if (drumsMasterChannelRef.current)
@@ -775,11 +1099,13 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
       drumsCrashChannelRef.current.volume.value = Tone.gainToDb(settings.drumsCrashVolume ?? 0.8);
     if (drumsRimChannelRef.current)
       drumsRimChannelRef.current.volume.value = Tone.gainToDb(settings.drumsRimVolume ?? 0.6);
+    if (drumsHighTomChannelRef.current)
+      drumsHighTomChannelRef.current.volume.value = Tone.gainToDb(settings.drumsTomVolume ?? 0.7);
+    if (drumsLowTomChannelRef.current)
+      drumsLowTomChannelRef.current.volume.value = Tone.gainToDb(settings.drumsTomVolume ?? 0.7);
   }, [
-    settings.style,
     settings.drumsEnabled,
     settings.drumsVolume,
-    settings.drumsPattern,
     settings.drumsBassDrumEnabled,
     settings.drumsBassDrumVolume,
     settings.drumsSnareEnabled,
@@ -797,14 +1123,69 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     settings.drumsHumanizeIntensity,
     settings.drumsFunkComplexity,
     settings.drumsFillFrequency,
-    settings.drumsRidePattern,
+    settings.drumsRandomizationLevel,
+    settings.drumsFillComplexity,
+    settings.drumsRideVariation,
+    settings.drumsSnareGhosts,
+    settings.drumsBassDrumVariation,
+    settings.drumsTomEnabled,
+    settings.drumsTomVolume,
   ]);
 
-  // Update swing ratio
+  // Reload drum sample resources when kit changes (jazz-kit ↔ modern-kit)
+  const prevDrumKitRef = useRef(settings.drumKit);
+  useEffect(() => {
+    if (!initializedRef.current) return;
+    if (settings.drumKit === prevDrumKitRef.current) return;
+    prevDrumKitRef.current = settings.drumKit;
+
+    const kit = settings.drumKit ?? 'jazz-kit';
+    const manifest =
+      kit === 'modern-kit' ? modernKitManifest.sampleManifest : drumsManifest.sampleManifest;
+
+    // Dispose old players
+    drumsDisposeRef.current?.();
+
+    const drumsRes = createOneshotResources(manifest, settings.audioFormat);
+    for (const [sound, arr] of drumsRes.players) {
+      const ch =
+        sound === 'bassDrum'
+          ? drumsBassDrumChannelRef.current
+          : sound === 'snare'
+            ? drumsSnareChannelRef.current
+            : sound === 'hihat' || sound === 'hihatHalf' || sound === 'hihatOpen'
+              ? drumsHihatChannelRef.current
+              : sound === 'ride'
+                ? drumsRideChannelRef.current
+                : sound === 'crash'
+                  ? drumsCrashChannelRef.current
+                  : sound === 'rim'
+                    ? drumsRimChannelRef.current
+                    : sound === 'highTom'
+                      ? drumsHighTomChannelRef.current
+                      : sound === 'lowTom'
+                        ? drumsLowTomChannelRef.current
+                        : drumsMasterChannelRef.current;
+      if (ch) for (const p of arr) p.connect(ch);
+    }
+    drumsPlayersRef.current = drumsRes.players;
+    drumsDisposeRef.current = drumsRes.dispose;
+  }, [settings.drumKit, settings.audioFormat]);
+
+  // Update swing ratio — read per-style from settings + Zustand
   useEffect(() => {
     if (!engineRef.current) return;
-    engineRef.current.setSwingRatio(settings.swingRatio ?? 0.5);
-  }, [settings.swingRatio]);
+    const style = (settings.style ?? 'swing') as Style;
+    const profile = getStyleProfile(style);
+    const perStyleSwing = (
+      settings.perStyleOverrides?.[style] as Record<string, unknown> | undefined
+    )?.swingRatio as number | undefined;
+    const zs = useLocalSettingsStore.getState().settings;
+    const zustandPerStyleSwing = (
+      zs.perStyleOverrides?.[style] as Record<string, unknown> | undefined
+    )?.swingRatio as number | undefined;
+    engineRef.current.setSwingRatio(perStyleSwing ?? zustandPerStyleSwing ?? profile.swingRatio);
+  }, [settings.style, settings.perStyleOverrides]);
 
   // Update time signature on the engine when it changes
   useEffect(() => {
@@ -892,6 +1273,15 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     if (pianoInstrumentRef.current) {
       pianoInstrumentRef.current.setTimeline(new ChordTimeline(timelineEntries));
       pianoInstrumentRef.current.reset();
+    }
+
+    // When resuming from pause, cancel any pending transport events left over
+    // from before the pause. Otherwise they will fire alongside the newly
+    // scheduled events and trigger Tone.js "Start time must be strictly
+    // greater than previous start time" errors (same player started twice at
+    // the same audio time).
+    if (currentState.status === 'paused') {
+      Tone.Transport.cancel();
     }
 
     // Find virtual start tick for selectedBar (first occurrence in flat sequence)

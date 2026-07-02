@@ -2,8 +2,8 @@ import { SamplerSoloInstrument } from '../samplerSoloInstrument.js';
 import type { SoloInstrumentManifest } from '../soloInstrumentManifest.js';
 
 /**
- * Vibraphone — metallic, jazzy, ~F3–F6 range.
- * Samples from Salamander/FreePats.
+ * Vibraphone — metallic, jazzy, ~F2–E5 range.
+ * Samples from Salamander/FreePats, hard velocity layer.
  */
 export const vibraphoneManifest: SoloInstrumentManifest = {
   id: 'vibraphone',
@@ -11,21 +11,19 @@ export const vibraphoneManifest: SoloInstrumentManifest = {
   category: 'sampled',
   priority: 'normal',
   samples: {
-    baseUrl: '/samples/solo/vibraphone/',
+    baseUrl: '/samples/aac/vibraphone/',
     notes: {
-      F3: 'vibraphone_F3.m4a',
-      A3: 'vibraphone_A3.m4a',
-      C4: 'vibraphone_C4.m4a',
-      Eb4: 'vibraphone_Eb4.m4a',
-      F4: 'vibraphone_F4.m4a',
-      A4: 'vibraphone_A4.m4a',
-      C5: 'vibraphone_C5.m4a',
-      Eb5: 'vibraphone_Eb5.m4a',
-      F5: 'vibraphone_F5.m4a',
-      A5: 'vibraphone_A5.m4a',
-      C6: 'vibraphone_C6.m4a',
-      Eb6: 'vibraphone_Eb6.m4a',
-      F6: 'vibraphone_F6.m4a',
+      F2: 'vibraphone_F2_hard.m4a',
+      A2: 'vibraphone_A2_hard.m4a',
+      C3: 'vibraphone_C3_hard.m4a',
+      E3: 'vibraphone_E3_hard.m4a',
+      G3: 'vibraphone_G3_hard.m4a',
+      B3: 'vibraphone_B3_hard.m4a',
+      D4: 'vibraphone_D4_hard.m4a',
+      F4: 'vibraphone_F4_hard.m4a',
+      A4: 'vibraphone_A4_hard.m4a',
+      C5: 'vibraphone_C5_hard.m4a',
+      E5: 'vibraphone_E5_hard.m4a',
     },
   },
   createInstrument(factories) {

@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { eq } from 'drizzle-orm';
-import { UpdateSettingsSchema } from '@jazz/shared';
+import { UpdateSettingsSchema, STYLES } from '@jazz/shared';
 import type { DrizzleDb } from '../db/index.js';
 import { userSettings } from '../db/schema.js';
 import { requireAuth } from '../plugins/auth.plugin.js';
@@ -91,7 +91,6 @@ export async function settingsRoutes(
     if (data.drumsRimEnabled !== undefined) patch.drumsRimEnabled = data.drumsRimEnabled;
     if (data.drumsRimVolume !== undefined) patch.drumsRimVolume = data.drumsRimVolume;
     if (data.style !== undefined) patch.style = data.style;
-    if (data.drumsPattern !== undefined) patch.drumsPattern = data.drumsPattern;
     if (data.drumsHumanizeIntensity !== undefined)
       patch.drumsHumanizeIntensity = data.drumsHumanizeIntensity;
     if (data.drumsFunkComplexity !== undefined)
@@ -105,7 +104,9 @@ export async function settingsRoutes(
     if (data.drumsSnareGhosts !== undefined) patch.drumsSnareGhosts = data.drumsSnareGhosts;
     if (data.drumsBassDrumVariation !== undefined)
       patch.drumsBassDrumVariation = data.drumsBassDrumVariation;
-    if (data.drumsRidePattern !== undefined) patch.drumsRidePattern = data.drumsRidePattern;
+    if (data.drumKit !== undefined) patch.drumKit = data.drumKit;
+    if (data.drumsTomEnabled !== undefined) patch.drumsTomEnabled = data.drumsTomEnabled;
+    if (data.drumsTomVolume !== undefined) patch.drumsTomVolume = data.drumsTomVolume;
     if (data.swingRatio !== undefined) patch.swingRatio = data.swingRatio;
     if (data.audioFormat !== undefined) patch.audioFormat = data.audioFormat;
     if (data.pianoEnabled !== undefined) patch.pianoEnabled = data.pianoEnabled;
@@ -119,6 +120,84 @@ export async function settingsRoutes(
     if (data.rhodesLayerMode !== undefined) patch.rhodesLayerMode = data.rhodesLayerMode;
     if (data.rhodesLayerVolume !== undefined) patch.rhodesLayerVolume = data.rhodesLayerVolume;
     if (data.practiceCards !== undefined) patch.practiceCards = JSON.stringify(data.practiceCards);
+    // Merge style-specific overrides from both perStyleOverrides AND scalar fields
+    const existingOverrides: Record<string, Record<string, unknown>> = existing.perStyleOverrides
+      ? (JSON.parse(existing.perStyleOverrides) as Record<string, Record<string, unknown>>)
+      : {};
+
+    if (data.perStyleOverrides !== undefined) {
+      for (const [style, overrides] of Object.entries(data.perStyleOverrides)) {
+        existingOverrides[style] = { ...existingOverrides[style], ...overrides };
+      }
+    }
+
+    // Auto-sync ALL instrument scalar fields → perStyleOverrides[currentStyle]
+    // so that per-style preferences persist across style switches.
+    const currentStyle = (data.style ?? existing.style) as string;
+    if (currentStyle) {
+      const PER_STYLE_FIELDS = [
+        'bassEnabled',
+        'bassVolume',
+        'bassComplexity',
+        'bassOctaveUp',
+        'pianoEnabled',
+        'pianoVolume',
+        'pianoProfile',
+        'pianoVoicingDensity',
+        'pianoRandomizationLevel',
+        'rhodesEnabled',
+        'rhodesVolume',
+        'rhodesMode',
+        'rhodesLayerMode',
+        'rhodesLayerVolume',
+        'rhodesVoicingDensity',
+        'drumsEnabled',
+        'drumsVolume',
+        'drumsRideEnabled',
+        'drumsRideVolume',
+        'drumsHihatEnabled',
+        'drumsHihatVolume',
+        'drumsHihatOpenness',
+        'drumsBassDrumEnabled',
+        'drumsBassDrumVolume',
+        'drumsSnareEnabled',
+        'drumsSnareVolume',
+        'drumsCrashEnabled',
+        'drumsCrashVolume',
+        'drumsCrashFrequency',
+        'drumsRimEnabled',
+        'drumsRimVolume',
+        'drumsHumanizeIntensity',
+        'drumsFunkComplexity',
+        'drumsFillFrequency',
+        'drumsRandomizationLevel',
+        'drumsFillComplexity',
+        'drumsRideVariation',
+        'drumsSnareGhosts',
+        'drumsBassDrumVariation',
+        'drumsTomEnabled',
+        'drumsTomVolume',
+        'percussionEnabled',
+        'percussionVolume',
+        'percussionHumanizeIntensity',
+        'guitarEnabled',
+        'guitarVolume',
+        'swingRatio',
+      ] as const;
+      const scalarOverrides: Record<string, unknown> = {};
+      for (const field of PER_STYLE_FIELDS) {
+        const val = (data as Record<string, unknown>)[field];
+        if (val !== undefined) scalarOverrides[field] = val;
+      }
+      if (Object.keys(scalarOverrides).length > 0) {
+        existingOverrides[currentStyle] = {
+          ...existingOverrides[currentStyle],
+          ...scalarOverrides,
+        };
+      }
+    }
+
+    patch.perStyleOverrides = JSON.stringify(existingOverrides);
 
     // -- MIDI & solo settings (Phase C) --
     if (data.midiDeviceId !== undefined) patch.midiDeviceId = data.midiDeviceId;
@@ -129,5 +208,42 @@ export async function settingsRoutes(
 
     db.update(userSettings).set(patch).where(eq(userSettings.userId, user.id)).run();
     return reply.send(toSettingsDTO({ ...existing, ...patch }));
+  });
+
+  // ── DELETE /api/settings/style/:style ─────────────────────────────────────
+  fastify.delete('/settings/style/:style', { preHandler: requireAuth }, async (request, reply) => {
+    const user = request.user!;
+    const { style } = request.params as { style: string };
+
+    if (!(STYLES as readonly string[]).includes(style)) {
+      return reply.status(400).send({
+        error: { code: 'VALIDATION_ERROR', message: `Unknown style: ${style}` },
+      });
+    }
+
+    const existing = db.select().from(userSettings).where(eq(userSettings.userId, user.id)).get();
+    if (!existing) {
+      return reply
+        .status(404)
+        .send({ error: { code: 'NOT_FOUND', message: 'Settings not found' } });
+    }
+
+    const overrides: Record<string, unknown> = existing.perStyleOverrides
+      ? JSON.parse(existing.perStyleOverrides)
+      : {};
+    delete overrides[style];
+
+    const now = Date.now();
+    db.update(userSettings)
+      .set({
+        perStyleOverrides: JSON.stringify(overrides),
+        updatedAt: now,
+      })
+      .where(eq(userSettings.userId, user.id))
+      .run();
+
+    return reply.send(
+      toSettingsDTO({ ...existing, perStyleOverrides: JSON.stringify(overrides), updatedAt: now }),
+    );
   });
 }

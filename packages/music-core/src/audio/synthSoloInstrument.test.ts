@@ -32,12 +32,12 @@ describe('SynthSoloInstrument', () => {
   });
 
   // -- Contract tests -------------------------------------------------------
-  testSoloInstrumentContract(() => new SynthSoloInstrument(mockSynth));
+  testSoloInstrumentContract(() => new SynthSoloInstrument('test', 'Test', mockSynth));
 
   // -- Specific tests -------------------------------------------------------
 
   it('sets maxPolyphony and envelope on construction', () => {
-    void new SynthSoloInstrument(mockSynth, {
+    void new SynthSoloInstrument('test', 'Test', mockSynth, {
       maxVoices: 8,
       envelope: { attack: 0.02, decay: 0.2, sustain: 0.5, release: 0.5 },
     });
@@ -49,7 +49,7 @@ describe('SynthSoloInstrument', () => {
   });
 
   it('uses default values when no options provided', () => {
-    void new SynthSoloInstrument(mockSynth);
+    void new SynthSoloInstrument('test', 'Test', mockSynth);
 
     expect(mockSynth.set).toHaveBeenCalledWith({
       maxPolyphony: 16,
@@ -58,7 +58,7 @@ describe('SynthSoloInstrument', () => {
   });
 
   it('noteOn calls triggerAttack with correct note name', () => {
-    const inst = new SynthSoloInstrument(mockSynth);
+    const inst = new SynthSoloInstrument('test', 'Test', mockSynth);
     inst.noteOn(69, 100); // A4 = 440 Hz
 
     expect(mockSynth.triggerAttack).toHaveBeenCalledTimes(1);
@@ -69,7 +69,7 @@ describe('SynthSoloInstrument', () => {
   });
 
   it('noteOff calls triggerRelease with correct note name', () => {
-    const inst = new SynthSoloInstrument(mockSynth);
+    const inst = new SynthSoloInstrument('test', 'Test', mockSynth);
     inst.noteOn(60, 80);
     inst.noteOff(60);
 
@@ -78,7 +78,7 @@ describe('SynthSoloInstrument', () => {
   });
 
   it('velocity is clamped to 0..127', () => {
-    const inst = new SynthSoloInstrument(mockSynth);
+    const inst = new SynthSoloInstrument('test', 'Test', mockSynth);
 
     inst.noteOn(60, -10);
     expect(vi.mocked(mockSynth.triggerAttack).mock.calls[0]![2]).toBe(0);
@@ -89,20 +89,28 @@ describe('SynthSoloInstrument', () => {
   });
 
   it('connect delegates to synth', () => {
-    const inst = new SynthSoloInstrument(mockSynth);
+    const inst = new SynthSoloInstrument('test', 'Test', mockSynth);
     const dest = {} as unknown;
     inst.connect(dest);
     expect(mockSynth.connect).toHaveBeenCalledWith(dest);
   });
 
-  it('disconnect delegates to synth', () => {
-    const inst = new SynthSoloInstrument(mockSynth);
+  it('disconnect delegates to synth with tracked destination', () => {
+    const inst = new SynthSoloInstrument('test', 'Test', mockSynth);
+    const dest = {} as unknown;
+    inst.connect(dest);
     inst.disconnect();
-    expect(mockSynth.disconnect).toHaveBeenCalled();
+    expect(mockSynth.disconnect).toHaveBeenCalledWith(dest);
+  });
+
+  it('disconnect without prior connect is a no-op', () => {
+    const inst = new SynthSoloInstrument('test', 'Test', mockSynth);
+    inst.disconnect();
+    expect(mockSynth.disconnect).not.toHaveBeenCalled();
   });
 
   it('dispose calls synth.dispose and sets disposed flag', () => {
-    const inst = new SynthSoloInstrument(mockSynth);
+    const inst = new SynthSoloInstrument('test', 'Test', mockSynth);
     inst.dispose();
     expect(mockSynth.dispose).toHaveBeenCalled();
 
@@ -112,9 +120,9 @@ describe('SynthSoloInstrument', () => {
   });
 
   it('has correct id, name, category', () => {
-    const inst = new SynthSoloInstrument(mockSynth);
-    expect(inst.id).toBe('synth-default');
-    expect(inst.name).toBe('Synth (Default)');
+    const inst = new SynthSoloInstrument('my-id', 'My Name', mockSynth);
+    expect(inst.id).toBe('my-id');
+    expect(inst.name).toBe('My Name');
     expect(inst.category).toBe('synth');
   });
 });

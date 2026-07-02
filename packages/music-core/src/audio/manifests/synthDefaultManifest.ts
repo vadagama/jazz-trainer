@@ -7,13 +7,13 @@ import type { SoloInstrumentManifest } from '../soloInstrumentManifest.js';
  */
 export const synthDefaultManifest: SoloInstrumentManifest = {
   id: 'synth-default',
-  name: 'Synth (Default)',
+  name: 'Synth',
   category: 'synth',
   priority: 'high',
   createInstrument(factories) {
     const synth = factories.createPolySynth({
       envelope: { attack: 0.01, decay: 0.1, sustain: 0.7, release: 0.2 },
     });
-    return new SynthSoloInstrument(synth);
+    return new SynthSoloInstrument('synth-default', 'Synth', synth);
   },
 };

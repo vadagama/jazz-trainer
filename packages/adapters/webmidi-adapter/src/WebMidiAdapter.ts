@@ -401,6 +401,7 @@ export class WebMidiAdapter implements AudioPort, InputPort {
 
     const midiEvent: MidiInputEvent = {
       note: midiToNote(note),
+      midiNote: note,
       velocity,
       timestamp: event.timeStamp,
     };

@@ -70,6 +70,7 @@ export default defineConfig({
       '@jazz/plugin-visual-midi-keyboard': r(
         '../../packages/plugins/visual-midi-keyboard/src/index.ts',
       ),
+      '@jazz/plugin-core-settings': r('../../packages/plugins/core-settings/src/index.ts'),
     },
   },
   server: {

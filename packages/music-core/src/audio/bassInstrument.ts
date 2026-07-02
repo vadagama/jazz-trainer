@@ -12,6 +12,18 @@ import {
   type BassRandomizationLevel,
   type ApproachVariant,
 } from './bassRandomizer.js';
+import { getStyleProfile, type StyleProfile } from '../styleProfile.js';
+
+/** Bass pattern names from {@link StyleProfile.instrumentDefaults.bass.pattern}. */
+export type BassPattern = 'walking' | 'root-5th' | 'syncopated' | 'montuno' | 'two-feel';
+
+const PATTERN_DEFAULT_COMPLEXITY: Record<BassPattern, 1 | 2 | 3 | 4 | 5 | 6 | 7> = {
+  walking: 5,
+  'root-5th': 3,
+  syncopated: 5,
+  montuno: 3,
+  'two-feel': 7,
+};
 
 const NOTE_SEMITONES: Record<string, number> = {
   C: 0,
@@ -31,20 +43,13 @@ const GATE_RATIO = 0.92;
 /** Velocity per beat index (0-based). Source: BASS.md §Velocity и акценты. */
 const BEAT_VELOCITY = [0.82, 0.68, 0.76, 0.7] as const;
 
-/** Style → default complexity level. */
-const STYLE_DEFAULT_COMPLEXITY: Record<Style, 1 | 2 | 3 | 4 | 5 | 6 | 7> = {
-  swing: 5, // walking bass
-  bossa: 3, // root-5th half notes
-  funk: 5, // syncopated eighth-notes
-  latin: 3, // montuno
-  ballad: 7, // two-feel
-};
-
 export class BassInstrument implements Instrument {
   private timeline: ChordTimeline;
   private complexity: 1 | 2 | 3 | 4 | 5 | 6 | 7 = 5;
   private octaveShift = 0;
   private style: Style = 'swing';
+  /** Active bass pattern from {@link StyleProfile.instrumentDefaults.bass.pattern}. */
+  private pattern: BassPattern = 'walking';
   readonly randomizer = new BassRandomizer();
 
   constructor(timeline: ChordTimeline) {
@@ -55,9 +60,36 @@ export class BassInstrument implements Instrument {
     this.timeline = timeline;
   }
 
+  setStyleProfile(profile: StyleProfile): void {
+    this.style = profile.id;
+    const bassKey =
+      (['electric-bass', 'upright-bass'] as const).find(
+        (k) => profile.instrumentDefaults[k]?.enabled,
+      ) ?? 'upright-bass';
+    const pat = profile.instrumentDefaults[bassKey].pattern as BassPattern | undefined;
+    this.pattern = pat ?? this.styleToPattern(profile.id);
+    this.complexity = PATTERN_DEFAULT_COMPLEXITY[this.pattern] ?? 5;
+  }
+
+  /** Fallback: resolve pattern from style when profile doesn't specify one. */
+  private styleToPattern(style: Style): BassPattern {
+    switch (style) {
+      case 'swing':
+        return 'walking';
+      case 'bossa':
+        return 'root-5th';
+      case 'funk':
+        return 'syncopated';
+      case 'latin':
+        return 'montuno';
+      case 'ballad':
+        return 'two-feel';
+    }
+  }
+
+  /** @deprecated Use {@link setStyleProfile}(getStyleProfile(style)) instead. */
   setStyle(style: Style): void {
-    this.style = style;
-    this.complexity = STYLE_DEFAULT_COMPLEXITY[style] ?? 5;
+    this.setStyleProfile(getStyleProfile(style));
   }
 
   setComplexity(level: 1 | 2 | 3 | 4 | 5 | 6 | 7): void {
@@ -75,20 +107,20 @@ export class BassInstrument implements Instrument {
   /* ── Scheduling ──────────────────────────────────────────────────────────── */
 
   schedule(window: ScheduleWindow, ctx: ScheduleContext): void {
-    switch (this.style) {
-      case 'swing':
+    switch (this.pattern) {
+      case 'walking':
         this.scheduleSwing(window, ctx);
         break;
-      case 'bossa':
+      case 'root-5th':
         this.scheduleBossa(window, ctx);
         break;
-      case 'funk':
+      case 'syncopated':
         this.scheduleFunk(window, ctx);
         break;
-      case 'latin':
+      case 'montuno':
         this.scheduleLatin(window, ctx);
         break;
-      case 'ballad':
+      case 'two-feel':
         this.scheduleBallad(window, ctx);
         break;
     }

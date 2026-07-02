@@ -4,19 +4,20 @@ import { GuitarInstrument } from './guitarInstrument.js';
 import { ChordTimeline } from './chordTimeline.js';
 
 /**
- * Anchor notes for nylon-string guitar: open strings + 5th/12th fret harmonics.
- * Every 4–5 semitones across E2–E5. Tone.js interpolates ≤ ±2 semitones.
+ * Anchor notes for nylon-string guitar (Spanish Classical, FreePats CC0).
+ * Full chromatic samples G1–C6 available; anchors every 4–5 semitones.
+ * Tone.js interpolates ≤ ±2 semitones between anchors.
  */
 const GUITAR_NYLON_NOTES: Record<string, string> = {
-  E2: 'nylon_e2.m4a',
-  A2: 'nylon_a2.m4a',
-  D3: 'nylon_d3.m4a',
-  G3: 'nylon_g3.m4a',
-  B3: 'nylon_b3.m4a',
-  E4: 'nylon_e4.m4a',
-  G4: 'nylon_g4.m4a',
-  B4: 'nylon_b4.m4a',
-  E5: 'nylon_e5.m4a',
+  E2: 'nylon-guitar/e2.m4a',
+  A2: 'nylon-guitar/a2.m4a',
+  D3: 'nylon-guitar/d3.m4a',
+  G3: 'nylon-guitar/g3.m4a',
+  B3: 'nylon-guitar/b3.m4a',
+  E4: 'nylon-guitar/e4.m4a',
+  G4: 'nylon-guitar/g4.m4a',
+  B4: 'nylon-guitar/b4.m4a',
+  E5: 'nylon-guitar/e5.m4a',
 };
 
 /**
@@ -47,7 +48,7 @@ const GUITAR_SAMPLE_MANIFEST: SampleManifest = {
 export const guitarManifest: InstrumentManifest = {
   id: 'guitar',
   name: 'Guitar',
-  createInstrument: () => new GuitarInstrument(new ChordTimeline()),
+  createInstrument: () => new GuitarInstrument(new ChordTimeline(), 'guitar'),
   sampleManifest: GUITAR_SAMPLE_MANIFEST,
   defaultSettings: {
     enabled: false,
@@ -55,5 +56,12 @@ export const guitarManifest: InstrumentManifest = {
     mode: 'comp',
     voicing: 'jazz',
     stringType: 'nylon',
+  },
+  perStyleDefaults: {
+    swing: { mode: 'comp', voicing: 'jazz', stringType: 'steel' }, // Freddie Green comping
+    bossa: { mode: 'comp', voicing: 'jazz', stringType: 'nylon' }, // bossa-comping
+    funk: { mode: 'comp', voicing: 'jazz', stringType: 'steel' }, // if enabled in funk (usually OFF; use electric-guitar)
+    latin: { mode: 'fingerstyle', voicing: 'open', stringType: 'nylon' },
+    ballad: { mode: 'fingerstyle', voicing: 'open', stringType: 'nylon' },
   },
 };

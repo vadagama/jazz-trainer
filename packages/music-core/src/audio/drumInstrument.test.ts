@@ -38,7 +38,6 @@ function makeDefaultSettings(
   return {
     enabled: true,
     volume: 0.7,
-    pattern: 'swing',
     bassDrumEnabled: true,
     bassDrumVolume: 0.7,
     snareEnabled: true,
@@ -53,6 +52,8 @@ function makeDefaultSettings(
     crashFrequency: 4,
     rimEnabled: false,
     rimVolume: 0.6,
+    tomEnabled: true,
+    tomVolume: 0.7,
     humanizeIntensity: 'off',
     funkComplexity: 'medium',
     randomizationLevel: 'off',
@@ -297,14 +298,6 @@ describe('DrumInstrument — humanization', () => {
 describe('DrumInstrument — backward compatibility', () => {
   const sig = parseTimeSignature('4/4');
 
-  it('setRidePattern("swingRide") sets pattern to swing', () => {
-    const drum = new DrumInstrument();
-    drum.setRidePattern('swingRide');
-    const hits: Hit[] = [];
-    drum.schedule(oneBar(sig), makeCtx(sig, hits));
-    expect(hits.length).toBeGreaterThan(0);
-  });
-
   it('setHumanize(true) enables med intensity', () => {
     const drum = new DrumInstrument();
     drum.updateSettings(makeDefaultSettings({ humanizeIntensity: 'off' }));
@@ -346,7 +339,8 @@ describe('DrumInstrument — bossa nova', () => {
 
   it('bass drum on beat 1 and offbeat of beat 2 (3&)', () => {
     const drum = new DrumInstrument();
-    drum.updateSettings(makeDefaultSettings({ pattern: 'bossa', rimEnabled: true }));
+    drum.setStyle('bossa');
+    drum.updateSettings(makeDefaultSettings({ rimEnabled: true }));
     const hits: Hit[] = [];
     drum.schedule(oneBar(sig), makeCtx(sig, hits));
     const bdHits = hits.filter((h) => h.sound === 'bassDrum').map((h) => h.atTicks);
@@ -356,7 +350,8 @@ describe('DrumInstrument — bossa nova', () => {
 
   it('rim cross-stick clave pattern on beats 1, 2, 3', () => {
     const drum = new DrumInstrument();
-    drum.updateSettings(makeDefaultSettings({ pattern: 'bossa', rimEnabled: true }));
+    drum.setStyle('bossa');
+    drum.updateSettings(makeDefaultSettings({ rimEnabled: true }));
     const hits: Hit[] = [];
     drum.schedule(oneBar(sig), makeCtx(sig, hits));
     const rimHits = hits.filter((h) => h.sound === 'rim').map((h) => h.atTicks);
@@ -366,7 +361,8 @@ describe('DrumInstrument — bossa nova', () => {
 
   it('hihat fires eighth notes', () => {
     const drum = new DrumInstrument();
-    drum.updateSettings(makeDefaultSettings({ pattern: 'bossa', rimEnabled: true }));
+    drum.setStyle('bossa');
+    drum.updateSettings(makeDefaultSettings({ rimEnabled: true }));
     const hits: Hit[] = [];
     drum.schedule(oneBar(sig), makeCtx(sig, hits));
     const hhHits = hits.filter(
@@ -377,9 +373,8 @@ describe('DrumInstrument — bossa nova', () => {
 
   it('ride does not fire regardless of rideEnabled', () => {
     const drum = new DrumInstrument();
-    drum.updateSettings(
-      makeDefaultSettings({ pattern: 'bossa', rimEnabled: true, rideEnabled: true }),
-    );
+    drum.setStyle('bossa');
+    drum.updateSettings(makeDefaultSettings({ rimEnabled: true, rideEnabled: true }));
     const hits: Hit[] = [];
     drum.schedule(oneBar(sig), makeCtx(sig, hits));
     expect(hits.filter((h) => h.sound === 'ride')).toHaveLength(0);
@@ -387,9 +382,8 @@ describe('DrumInstrument — bossa nova', () => {
 
   it('snare does not fire regardless of snareEnabled', () => {
     const drum = new DrumInstrument();
-    drum.updateSettings(
-      makeDefaultSettings({ pattern: 'bossa', rimEnabled: true, snareEnabled: true }),
-    );
+    drum.setStyle('bossa');
+    drum.updateSettings(makeDefaultSettings({ rimEnabled: true, snareEnabled: true }));
     const hits: Hit[] = [];
     drum.schedule(oneBar(sig), makeCtx(sig, hits));
     expect(hits.filter((h) => h.sound === 'snare')).toHaveLength(0);
@@ -397,9 +391,8 @@ describe('DrumInstrument — bossa nova', () => {
 
   it('crash fires on first beat of crashFrequency-th bar', () => {
     const drum = new DrumInstrument();
-    drum.updateSettings(
-      makeDefaultSettings({ pattern: 'bossa', rimEnabled: true, crashFrequency: 4 }),
-    );
+    drum.setStyle('bossa');
+    drum.updateSettings(makeDefaultSettings({ rimEnabled: true, crashFrequency: 4 }));
     const hits: Hit[] = [];
     drum.schedule(oneBar(sig), makeCtx(sig, hits));
     const crashHits = hits.filter((h) => h.sound === 'crash');
@@ -410,7 +403,8 @@ describe('DrumInstrument — bossa nova', () => {
   it('degraded to scheduleDegradedSwing for non-4/4', () => {
     const sig34 = parseTimeSignature('3/4');
     const drum = new DrumInstrument();
-    drum.updateSettings(makeDefaultSettings({ pattern: 'bossa', rimEnabled: true }));
+    drum.setStyle('bossa');
+    drum.updateSettings(makeDefaultSettings({ rimEnabled: true }));
     const hits: Hit[] = [];
     drum.schedule(oneBar(sig34), makeCtx(sig34, hits));
     expect(hits.filter((h) => h.sound === 'ride').length).toBe(3);
@@ -427,7 +421,8 @@ describe('DrumInstrument — funk', () => {
 
   it('hihat plays 16th notes (16 per bar)', () => {
     const drum = new DrumInstrument();
-    drum.updateSettings(makeDefaultSettings({ pattern: 'funk' }));
+    drum.setStyle('funk');
+    drum.updateSettings(makeDefaultSettings({}));
     const hits: Hit[] = [];
     drum.schedule(oneBar(sig), makeCtx(sig, hits));
     const hhHits = hits.filter(
@@ -438,7 +433,8 @@ describe('DrumInstrument — funk', () => {
 
   it('snare plays backbeat on beats 2 and 4', () => {
     const drum = new DrumInstrument();
-    drum.updateSettings(makeDefaultSettings({ pattern: 'funk' }));
+    drum.setStyle('funk');
+    drum.updateSettings(makeDefaultSettings({}));
     const hits: Hit[] = [];
     drum.schedule(oneBar(sig), makeCtx(sig, hits));
     const snareHits = hits.filter((h) => h.sound === 'snare').map((h) => h.atTicks);
@@ -448,7 +444,8 @@ describe('DrumInstrument — funk', () => {
 
   it('bass drum simple plays on beats 1 and 3', () => {
     const drum = new DrumInstrument();
-    drum.updateSettings(makeDefaultSettings({ pattern: 'funk', funkComplexity: 'simple' }));
+    drum.setStyle('funk');
+    drum.updateSettings(makeDefaultSettings({ funkComplexity: 'simple' }));
     const hits: Hit[] = [];
     drum.schedule(oneBar(sig), makeCtx(sig, hits));
     const bdHits = hits.filter((h) => h.sound === 'bassDrum').map((h) => h.atTicks);
@@ -458,7 +455,8 @@ describe('DrumInstrument — funk', () => {
 
   it('bass drum medium adds offbeat on beat 1 and beat 4', () => {
     const drum = new DrumInstrument();
-    drum.updateSettings(makeDefaultSettings({ pattern: 'funk', funkComplexity: 'medium' }));
+    drum.setStyle('funk');
+    drum.updateSettings(makeDefaultSettings({ funkComplexity: 'medium' }));
     const hits: Hit[] = [];
     drum.schedule(oneBar(sig), makeCtx(sig, hits));
     const bdTicks = new Set(hits.filter((h) => h.sound === 'bassDrum').map((h) => h.atTicks));
@@ -470,7 +468,8 @@ describe('DrumInstrument — funk', () => {
 
   it('bass drum complex has 5 hits', () => {
     const drum = new DrumInstrument();
-    drum.updateSettings(makeDefaultSettings({ pattern: 'funk', funkComplexity: 'complex' }));
+    drum.setStyle('funk');
+    drum.updateSettings(makeDefaultSettings({ funkComplexity: 'complex' }));
     const hits: Hit[] = [];
     drum.schedule(oneBar(sig), makeCtx(sig, hits));
     expect(hits.filter((h) => h.sound === 'bassDrum').length).toBe(5);
@@ -478,9 +477,8 @@ describe('DrumInstrument — funk', () => {
 
   it('fill frequency never has no fills (just backbeat snare)', () => {
     const drum = new DrumInstrument();
-    drum.updateSettings(
-      makeDefaultSettings({ pattern: 'funk', fillFrequency: 'never', randomizationLevel: 'off' }),
-    );
+    drum.setStyle('funk');
+    drum.updateSettings(makeDefaultSettings({ fillFrequency: 'never', randomizationLevel: 'off' }));
     const hits: Hit[] = [];
     const window: ScheduleWindow = { fromTicks: 0, toTicks: ticksPerBar(sig) * 16 };
     drum.schedule(window, makeCtx(sig, hits));
@@ -492,7 +490,6 @@ describe('DrumInstrument — funk', () => {
     const drum = new DrumInstrument();
     drum.updateSettings(
       makeDefaultSettings({
-        pattern: 'funk',
         fillFrequency: '4bars',
         randomizationLevel: 'high',
       }),
@@ -509,7 +506,8 @@ describe('DrumInstrument — funk', () => {
 
   it('ride does not fire regardless of rideEnabled', () => {
     const drum = new DrumInstrument();
-    drum.updateSettings(makeDefaultSettings({ pattern: 'funk', rideEnabled: true }));
+    drum.setStyle('funk');
+    drum.updateSettings(makeDefaultSettings({ rideEnabled: true }));
     const hits: Hit[] = [];
     drum.schedule(oneBar(sig), makeCtx(sig, hits));
     expect(hits.filter((h) => h.sound === 'ride')).toHaveLength(0);
@@ -518,7 +516,8 @@ describe('DrumInstrument — funk', () => {
   it('degraded to scheduleDegradedSwing for non-4/4', () => {
     const sig34 = parseTimeSignature('3/4');
     const drum = new DrumInstrument();
-    drum.updateSettings(makeDefaultSettings({ pattern: 'funk' }));
+    drum.setStyle('funk');
+    drum.updateSettings(makeDefaultSettings({}));
     const hits: Hit[] = [];
     drum.schedule(oneBar(sig34), makeCtx(sig34, hits));
     expect(hits.filter((h) => h.sound === 'ride').length).toBeGreaterThan(0);

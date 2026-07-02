@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Loader2, AlertCircle } from 'lucide-react';
 import type { Key, Section, Style } from '@jazz/shared';
-import { transposeSections } from '@jazz/music-core';
+import { transposeSections, getStyleProfile } from '@jazz/music-core';
 import type { InputPort } from '@jazz/music-core';
 import type { SoloInstrumentManifest } from '@jazz/music-core/audio';
 import { SOLO_INSTRUMENT_MANIFESTS } from '@jazz/music-core/audio';
@@ -23,6 +23,7 @@ import {
   PlayerMidiControls,
   SoloSettingsDialog,
 } from '@jazz/ui';
+import { InstrumentsDialog } from '@jazz/ui';
 
 // ---------------------------------------------------------------------------
 // -- Global adapter reference (for immediate solo volume/ducking feedback) --
@@ -58,6 +59,7 @@ export function PlayerPage() {
   const countingInBarIndex = countInActive ? currentBar : undefined;
 
   const [soloDialogOpen, setSoloDialogOpen] = useState(false);
+  const [instrumentsDialogOpen, setInstrumentsDialogOpen] = useState(false);
   const [localBpm, setLocalBpm] = useState<number | null>(null);
   const [localKey, setLocalKey] = useState<Key | null>(null);
   const [localVolume, setLocalVolume] = useState<number | null>(null);
@@ -114,9 +116,17 @@ export function PlayerPage() {
   // -- Solo control handlers (settings persistence) -------------------------
   const handleToneSelect = useCallback(
     (manifestId: string) => {
-      updateSettings.mutate({
-        soloToneId: manifestId === 'rhodes-jrhodes3c' ? undefined : manifestId,
-      });
+      // Apply immediately for instant audio feedback
+      const host = (window as unknown as Record<string, unknown>).__soloInstrumentHost as {
+        selectTone(id: string): void;
+      } | null;
+      try {
+        host?.selectTone(manifestId);
+      } catch {
+        /* will sync via settings if host isn't ready */
+      }
+      // Persist to settings
+      updateSettings.mutate({ soloToneId: manifestId });
     },
     [updateSettings],
   );
@@ -168,7 +178,13 @@ export function PlayerPage() {
   }, []);
 
   const handleStyleChange = (style: Style) => {
-    updateSettings.mutate({ style });
+    const profile = getStyleProfile(style);
+    const drumVariant = profile.defaultVariants.drums ?? 'drums';
+    updateSettings.mutate({
+      style,
+      bpm: profile.defaultTempo,
+      drumKit: drumVariant === 'modern-kit' ? 'modern-kit' : 'jazz-kit',
+    });
   };
 
   const effectiveBpm = localBpm ?? settings.bpm;
@@ -335,6 +351,7 @@ export function PlayerPage() {
         onStyleChange={handleStyleChange}
         repeatCount={repeatCount}
         onRepeatChange={handleRepeatChange}
+        onInstrumentsClick={() => setInstrumentsDialogOpen(true)}
       >
         <PlayerMidiControls
           midiConnectionStatus={connectionStatus}
@@ -355,6 +372,12 @@ export function PlayerPage() {
         onToneSelect={handleToneSelect}
         soloVolume={soloVolume}
         onSoloVolumeChange={handleSoloVolumeChange}
+      />
+
+      <InstrumentsDialog
+        open={instrumentsDialogOpen}
+        onClose={() => setInstrumentsDialogOpen(false)}
+        onStyleChange={handleStyleChange}
       />
     </div>
   );

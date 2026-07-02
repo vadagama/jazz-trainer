@@ -33,13 +33,13 @@ describe('ReuseSoloInstrument', () => {
 
   // -- Contract tests -------------------------------------------------------
   testSoloInstrumentContract(
-    () => new ReuseSoloInstrument('piano-salamander', 'Piano', mockSampler),
+    () => new ReuseSoloInstrument('piano-salamander', 'Grand Piano', mockSampler),
   );
 
   // -- Specific tests -------------------------------------------------------
 
   it('noteOn calls triggerAttack with note name', () => {
-    const inst = new ReuseSoloInstrument('piano-salamander', 'Piano', mockSampler);
+    const inst = new ReuseSoloInstrument('piano-salamander', 'Grand Piano', mockSampler);
     inst.noteOn(60, 100);
 
     expect(mockSampler.triggerAttack).toHaveBeenCalledTimes(1);
@@ -47,7 +47,7 @@ describe('ReuseSoloInstrument', () => {
   });
 
   it('noteOff calls triggerRelease with note name', () => {
-    const inst = new ReuseSoloInstrument('piano-salamander', 'Piano', mockSampler);
+    const inst = new ReuseSoloInstrument('piano-salamander', 'Grand Piano', mockSampler);
     inst.noteOn(60, 80);
     inst.noteOff(60);
 
@@ -55,21 +55,22 @@ describe('ReuseSoloInstrument', () => {
     expect(vi.mocked(mockSampler.triggerRelease).mock.calls[0]![0]).toBe('C4');
   });
 
-  it('connect delegates to shared sampler', () => {
-    const inst = new ReuseSoloInstrument('piano-salamander', 'Piano', mockSampler);
+  it('connect is a no-op (shared sampler stays in accompaniment chain)', () => {
+    const inst = new ReuseSoloInstrument('piano-salamander', 'Grand Piano', mockSampler);
     const dest = {} as unknown;
     inst.connect(dest);
-    expect(mockSampler.connect).toHaveBeenCalledWith(dest);
+    // Shared sampler should NOT be connected to soloBus — it stays in the accompaniment chain
+    expect(mockSampler.connect).not.toHaveBeenCalled();
   });
 
-  it('disconnect delegates to shared sampler', () => {
-    const inst = new ReuseSoloInstrument('piano-salamander', 'Piano', mockSampler);
+  it('disconnect is a no-op', () => {
+    const inst = new ReuseSoloInstrument('piano-salamander', 'Grand Piano', mockSampler);
     inst.disconnect();
-    expect(mockSampler.disconnect).toHaveBeenCalled();
+    expect(mockSampler.disconnect).not.toHaveBeenCalled();
   });
 
   it('dispose does NOT destroy the shared sampler', () => {
-    const inst = new ReuseSoloInstrument('piano-salamander', 'Piano', mockSampler);
+    const inst = new ReuseSoloInstrument('piano-salamander', 'Grand Piano', mockSampler);
     inst.dispose();
 
     // The sampler should NOT be disposed — it's shared
@@ -77,7 +78,7 @@ describe('ReuseSoloInstrument', () => {
   });
 
   it('after dispose, noteOn/noteOff are no-ops', () => {
-    const inst = new ReuseSoloInstrument('piano-salamander', 'Piano', mockSampler);
+    const inst = new ReuseSoloInstrument('piano-salamander', 'Grand Piano', mockSampler);
     inst.dispose();
     vi.clearAllMocks();
 
@@ -96,7 +97,7 @@ describe('ReuseSoloInstrument', () => {
   });
 
   it('multiple reuse instruments share the same sampler without destroying it', () => {
-    const inst1 = new ReuseSoloInstrument('piano-salamander', 'Piano', mockSampler);
+    const inst1 = new ReuseSoloInstrument('piano-salamander', 'Grand Piano', mockSampler);
     const inst2 = new ReuseSoloInstrument('rhodes-jrhodes3c', 'Rhodes', mockSampler);
 
     inst1.noteOn(60, 100);

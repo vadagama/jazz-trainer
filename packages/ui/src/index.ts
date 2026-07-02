@@ -100,6 +100,24 @@ export { ChordPlayer, type ChordPlayerProps } from './ChordPlayer';
 export { MermaidDiagram, type MermaidDiagramProps } from './MermaidDiagram';
 export { AudioPlayer, type AudioPlayerProps } from './AudioPlayer';
 export { VideoPlayer, type VideoPlayerProps } from './VideoPlayer';
+export { InstrumentTile, type InstrumentTileProps } from './InstrumentTile';
+export {
+  INSTRUMENT_ICONS,
+  DrumsIcon,
+  ModernKitIcon,
+  BassIcon,
+  PianoIcon,
+  RhodesIcon,
+  GuitarIcon,
+  ElectricGuitarIcon,
+  VibraphoneIcon,
+  OrganIcon,
+  ClarinetIcon,
+  PercussionIcon,
+  TrumpetIcon,
+  FluteIcon,
+  SaxophoneIcon,
+} from './instrument-icons';
 export { SoloInstrumentSelector, type SoloInstrumentSelectorProps } from './SoloInstrumentSelector';
 export { SoloVolumeSlider, type SoloVolumeSliderProps } from './SoloVolumeSlider';
 export { DuckingToggle, type DuckingToggleProps } from './DuckingToggle';
@@ -109,3 +127,4 @@ export {
   type SoloSettingsDialogProps,
   type SoloSettingsTone,
 } from './SoloSettingsDialog';
+export { InstrumentsDialog, type InstrumentsDialogProps } from './InstrumentsDialog';

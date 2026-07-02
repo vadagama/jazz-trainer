@@ -1,7 +1,7 @@
 # Jazz Trainer
 
 Браузерный тренажёр джазовой гармонии: гармонические сетки, точный метроном,
-DSL для ввода гармонии, генераторы прогрессий, аккомпанемент (бас, барабаны, фортепиано, Rhodes, гитара).
+DSL для ввода гармонии, генераторы прогрессий, аккомпанемент (12 инструментов + сольные MIDI-тембры).
 
 > Приложение **публичное по умолчанию**: каталог и плеер доступны без входа.
 > Аутентификация добавляет персональные возможности (свой каталог, настройки, лайки).
@@ -32,16 +32,24 @@ docs/                     Документация
 
 ## Инструменты
 
-6 инструментов в `music-core/audio`, каждый со своим манифестом и рандомайзером:
+12 инструментов аккомпанемента в `music-core/audio`, каждый со своим манифестом и рандомайзером:
 
-| Инструмент | Семплы                           | Документация                |
-| ---------- | -------------------------------- | --------------------------- |
-| Bass       | SneakyBass (контрабас)           | [BASS.md](docs/BASS.md)     |
-| Drums      | Swirly Drums v2 (8 звуков)       | [DRUMS.md](docs/DRUMS.md)   |
-| Piano      | Upright KW / Salamander Grand    | [PIANO.md](docs/PIANO.md)   |
-| Rhodes     | jRhodes3c (комплементарный слой) | [RHODES.md](docs/RHODES.md) |
-| Guitar     | Nylon / Steel                    | —                           |
-| Metronome  | 5 звуков                         | —                           |
+| Инструмент       | Семплы                           | Документация                      |
+| ---------------- | -------------------------------- | --------------------------------- |
+| Bass             | SneakyBass (контрабас)           | [BASS.md](docs/BASS.md)           |
+| Drums            | Swirly Drums v2 (8 звуков)       | [DRUMS.md](docs/DRUMS.md)         |
+| Modern Kit       | Modern Kit (10 звуков + stir)    | [DRUMS.md](docs/DRUMS.md)         |
+| Grand Piano      | Upright KW / Salamander Grand    | [PIANO.md](docs/PIANO.md)         |
+| Rhodes           | jRhodes3c (комплементарный слой) | [RHODES.md](docs/RHODES.md)       |
+| Guitar           | Nylon / Steel                    | [GUITAR.md](docs/GUITAR.md)       |
+| Electric Guitar  | Electric (2 velocity-слоя)       | [GUITAR.md](docs/GUITAR.md)       |
+| Vibraphone       | Vibraphone (2 velocity-слоя)     | [VIBRAPHONE.md](docs/VIBRAPHONE.md) |
+| Organ            | Hammond-style (2 velocity-слоя)  | [ORGAN.md](docs/ORGAN.md)         |
+| Percussion       | Latin perc (16 звуков)           | [PERCUSSION.md](docs/PERCUSSION.md) |
+| Clarinet         | Clarinet (2 velocity-слоя)       | [CLARINET.md](docs/CLARINET.md)   |
+| Metronome        | 5 звуков                         | —                                 |
+
+**Сольные инструменты** — 9 MIDI-тембров для live-ввода: `synthDefault`, `synthLead`, `pianoSalamanderSolo`, `rhodesJRhodes3cSolo`, `clarinetSolo`, `vibraphoneSolo`, `guitarNylonSolo`, `trumpetMuted`, `flute`. Подробнее: [MIDI_INSTRUMENT_ARCHITECTURE.md](docs/MIDI_INSTRUMENT_ARCHITECTURE.md).
 
 Раздел «Упражнения» (плагин `practice-cards`) — интерактивные карточки
 для тренировки аккордов и гамм с аккомпанементом. См. [EXERSISE-VISION.md](docs/EXERSISE-VISION.md) и [EXERSISE-ARCHITECTURE.md](docs/EXERSISE-ARCHITECTURE.md).

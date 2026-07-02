@@ -7,7 +7,9 @@ export type DrumSound =
   | 'hihatOpen'
   | 'ride'
   | 'crash'
-  | 'rim';
+  | 'rim'
+  | 'highTom'
+  | 'lowTom';
 
 /** Maps each drum sound to its 4 round-robin OGG filenames (Swirly Drums library). */
 export const DRUM_SAMPLE_FILES: Record<DrumSound, string[]> = {
@@ -24,6 +26,8 @@ export const DRUM_SAMPLE_FILES: Record<DrumSound, string[]> = {
     'crash_accent_rr4.m4a',
   ],
   rim: ['rim_click_rr1.m4a', 'rim_click_rr2.m4a', 'rim_click_rr3.m4a', 'rim_click_rr4.m4a'],
+  highTom: [],
+  lowTom: [],
 };
 
 /** Base URL for the legacy drum sample set. */

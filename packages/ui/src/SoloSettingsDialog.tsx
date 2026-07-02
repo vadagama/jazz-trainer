@@ -1,7 +1,17 @@
-import type { ReactNode } from 'react';
+import type { ReactNode, ComponentType, SVGProps } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './dialog';
 import { Slider } from './slider';
 import { cn } from './utils';
+import {
+  SaxophoneIcon,
+  PianoIcon,
+  RhodesIcon,
+  ClarinetIcon,
+  VibraphoneIcon,
+  GuitarIcon,
+  FluteIcon,
+  TrumpetIcon,
+} from './instrument-icons';
 
 /** Minimal shape for solo instrument manifest — only what this component needs. */
 export interface SoloSettingsTone {
@@ -20,44 +30,28 @@ export interface SoloSettingsDialogProps {
   onSoloVolumeChange: (value: number) => void;
 }
 
-// ---------------------------------------------------------------------------
-// Saxophone SVG icon
-// ---------------------------------------------------------------------------
+// ─── Icon mapping ────────────────────────────────────────────────────────────
 
-function SaxophoneIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-    >
-      {/* Bell (bottom-right, wider section) */}
-      <path d="M18 8c0 4-2 7-4 7h-1c-2 0-4-3-4-7V4" />
-      {/* Neck (curved top) */}
-      <path d="M9 4C9 1 7 1 6 3l-1 3c-1 2 0 4 2 4h1" />
-      {/* Mouthpiece */}
-      <line x1="5" y1="2" x2="4" y2="1" />
-      {/* Keys */}
-      <circle cx="14" cy="11" r="0.8" fill="currentColor" stroke="none" />
-      <circle cx="12" cy="9" r="0.8" fill="currentColor" stroke="none" />
-      <circle cx="14" cy="7" r="0.8" fill="currentColor" stroke="none" />
-    </svg>
-  );
+type IconComponent = ComponentType<SVGProps<SVGSVGElement>>;
+
+const TONE_ICONS: Record<string, IconComponent> = {
+  'synth-default': SaxophoneIcon,
+  'synth-lead': SaxophoneIcon,
+  'piano-upright': PianoIcon,
+  'piano-salamander': PianoIcon,
+  'rhodes-jrhodes3c': RhodesIcon,
+  clarinet: ClarinetIcon,
+  vibraphone: VibraphoneIcon,
+  'guitar-nylon': GuitarIcon,
+  flute: FluteIcon,
+  'trumpet-muted': TrumpetIcon,
+};
+
+function getToneIcon(id: string): IconComponent {
+  return TONE_ICONS[id] ?? SaxophoneIcon;
 }
 
-// ---------------------------------------------------------------------------
-// SoloSettingsDialog
-// ---------------------------------------------------------------------------
-
-const CATEGORIES: Array<{ key: SoloSettingsTone['category']; label: string }> = [
-  { key: 'synth', label: 'Synth' },
-  { key: 'reuse', label: 'Accomp. Reuse' },
-  { key: 'sampled', label: 'Sampled' },
-];
+// ─── SoloSettingsDialog ─────────────────────────────────────────────────────
 
 export function SoloSettingsDialog({
   open,
@@ -72,7 +66,7 @@ export function SoloSettingsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm">
+      <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <SaxophoneIcon className="size-5 text-primary" />
@@ -81,37 +75,31 @@ export function SoloSettingsDialog({
         </DialogHeader>
 
         <div className="space-y-5 pt-2">
-          {/* Tone selection */}
+          {/* Tone selection — grid of icon buttons */}
           <div className="space-y-2">
-            <label htmlFor="solo-tone-dialog" className="text-sm font-medium text-foreground">
-              Инструмент
-            </label>
-            <select
-              id="solo-tone-dialog"
-              value={selectedToneId ?? ''}
-              onChange={(e) => {
-                const id = e.target.value;
-                if (id) onToneSelect(id);
-              }}
-              className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-            >
-              <option value="" disabled>
-                Выберите тембр…
-              </option>
-              {CATEGORIES.map((cat) => {
-                const catTones = tones.filter((t) => t.category === cat.key);
-                if (catTones.length === 0) return null;
+            <p className="text-sm font-medium text-foreground">Инструмент</p>
+            <div className="grid grid-cols-3 gap-2">
+              {tones.map((tone) => {
+                const Icon = getToneIcon(tone.id);
+                const isSelected = selectedToneId === tone.id;
                 return (
-                  <optgroup key={cat.key} label={cat.label}>
-                    {catTones.map((t) => (
-                      <option key={t.id} value={t.id}>
-                        {t.name}
-                      </option>
-                    ))}
-                  </optgroup>
+                  <button
+                    key={tone.id}
+                    type="button"
+                    onClick={() => onToneSelect(tone.id)}
+                    className={cn(
+                      'flex flex-col items-center gap-1.5 rounded-lg border px-2 py-3 text-center transition-colors',
+                      isSelected
+                        ? 'border-primary bg-primary/10 text-primary'
+                        : 'border-border bg-card text-muted-foreground hover:border-primary/50 hover:text-foreground',
+                    )}
+                  >
+                    <Icon className="size-7" />
+                    <span className="text-xs leading-tight">{tone.name}</span>
+                  </button>
                 );
               })}
-            </select>
+            </div>
           </div>
 
           {/* Volume slider */}
@@ -138,9 +126,7 @@ export function SoloSettingsDialog({
   );
 }
 
-// ---------------------------------------------------------------------------
-// Trigger button (saxophone icon, to be used in PlayerToolbar children)
-// ---------------------------------------------------------------------------
+// ─── Trigger button ─────────────────────────────────────────────────────────
 
 export function SoloSettingsTrigger({
   className,

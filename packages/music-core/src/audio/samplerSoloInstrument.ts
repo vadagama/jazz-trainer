@@ -29,6 +29,7 @@ export class SamplerSoloInstrument implements SoloInstrument {
 
   private sampler: SamplerLike;
   private disposed = false;
+  private connectedDest: unknown | null = null;
 
   constructor(
     id: string,
@@ -57,11 +58,15 @@ export class SamplerSoloInstrument implements SoloInstrument {
   connect(destination: unknown): void {
     if (this.disposed) return;
     this.sampler.connect(destination);
+    this.connectedDest = destination;
   }
 
   disconnect(): void {
     if (this.disposed) return;
-    this.sampler.disconnect();
+    if (this.connectedDest !== null) {
+      this.sampler.disconnect(this.connectedDest);
+      this.connectedDest = null;
+    }
   }
 
   /** Release sampler resources. */

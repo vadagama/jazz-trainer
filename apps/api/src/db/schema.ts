@@ -83,7 +83,6 @@ export const userSettings = sqliteTable('user_settings', {
   drumsCrashFrequency: integer('drums_crash_frequency').notNull().default(4),
   drumsRimEnabled: integer('drums_rim_enabled', { mode: 'boolean' }).notNull().default(false),
   drumsRimVolume: real('drums_rim_volume').notNull().default(0.6),
-  drumsPattern: text('drums_pattern').notNull().default('swing'),
   drumsHumanizeIntensity: text('drums_humanize_intensity').notNull().default('med'),
   drumsFunkComplexity: text('drums_funk_complexity').notNull().default('medium'),
   drumsFillFrequency: text('drums_fill_frequency').notNull().default('8bars'),
@@ -94,10 +93,13 @@ export const userSettings = sqliteTable('user_settings', {
   drumsBassDrumVariation: integer('drums_bass_drum_variation', { mode: 'boolean' })
     .notNull()
     .default(true),
-  /** @deprecated — use drumsPattern instead */
-  drumsRidePattern: text('drums_ride_pattern').notNull().default('swingRide'),
+  drumKit: text('drum_kit').notNull().default('jazz-kit'),
+  drumsTomEnabled: integer('drums_tom_enabled', { mode: 'boolean' }).notNull().default(true),
+  drumsTomVolume: real('drums_tom_volume').notNull().default(0.7),
   /** Global playback style — single source of truth for all instruments. */
   style: text('style').notNull().default('swing'),
+  /** Per-style user overrides for instrument settings (JSON). See T-004 / ARANGEMENT_PLAN. */
+  perStyleOverrides: text('per_style_overrides'),
   swingRatio: real('swing_ratio').notNull().default(0.5),
   audioFormat: text('audio_format').notNull().default('aac'),
   practiceCards: text('practice_cards'),

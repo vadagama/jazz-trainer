@@ -9,8 +9,9 @@ import {
   type RhodesCompingMode,
   type RhodesLayerMode,
 } from './rhodesVoicing.js';
-import { noteToMidi, midiToNote } from './rhodesVoicing.js';
+import { noteToMidi, midiToNote, RANGE_MIN_HIGH } from './rhodesVoicing.js';
 import type { Style } from '@jazz/shared';
+import { getStyleProfile, type StyleProfile } from '../styleProfile.js';
 
 const PPQ = 480;
 
@@ -46,9 +47,21 @@ export class RhodesInstrument implements Instrument {
     this.timeline = timeline;
   }
 
+  setStyleProfile(profile: StyleProfile): void {
+    this.style = profile.id;
+    this.mode = STYLE_DEFAULT_MODE[profile.id] ?? 'halfNotes';
+    const voicing = profile.instrumentDefaults.rhodes.voicing;
+    if (voicing) this.density = voicing as RhodesVoicingDensity;
+    const layerMode = profile.instrumentDefaults.rhodes.mode as RhodesLayerMode | undefined;
+    if (layerMode) {
+      this.layerMode = layerMode;
+      this.layerModeSet = true;
+    }
+  }
+
+  /** @deprecated Use {@link setStyleProfile}(getStyleProfile(style)) instead. */
   setStyle(style: Style): void {
-    this.style = style;
-    this.mode = STYLE_DEFAULT_MODE[style] ?? 'halfNotes';
+    this.setStyleProfile(getStyleProfile(style));
   }
 
   /** @deprecated Use setLayerMode() for the complementary layer API. */
@@ -164,6 +177,7 @@ export class RhodesInstrument implements Instrument {
 
     const maxJitterTicks = this.humanize ? Math.round(0.006 * (ctx.bpm / 60) * PPQ) : 0;
     const octaveShift = this.layerMode === 'high-comping' ? 12 : 0;
+    const voicingRangeMin = this.layerMode === 'high-comping' ? RANGE_MIN_HIGH : undefined;
 
     const firstBar = Math.floor(window.fromTicks / tpBar);
     const lastBar = Math.floor((window.toTicks - 1) / tpBar);
@@ -192,7 +206,7 @@ export class RhodesInstrument implements Instrument {
             : this.timeline.getChordAtTick(eventTicks, sig);
         if (!chord) continue;
 
-        const voicing = buildVoicing(chord, this.density, this.prevVoicing);
+        const voicing = buildVoicing(chord, this.density, this.prevVoicing, voicingRangeMin);
         this.prevVoicing = voicing;
 
         // Apply octave shift for high-comping

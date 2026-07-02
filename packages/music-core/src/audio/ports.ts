@@ -56,6 +56,8 @@ export interface MidiInputEvent {
   velocity: number;
   /** High-resolution timestamp (performance.now() in browsers). */
   timestamp: number;
+  /** Raw MIDI note number (0–127). Populated by adapters that have direct access. */
+  midiNote?: number;
 }
 
 /** Information about a MIDI input device. */

@@ -68,7 +68,7 @@ describe('SamplerSoloInstrument', () => {
     expect(vi.mocked(mockSampler.triggerAttack).mock.calls[0]![2]).toBe(1);
   });
 
-  it('connect and disconnect delegate to sampler', () => {
+  it('connect and disconnect delegate to sampler with tracked destination', () => {
     const inst = new SamplerSoloInstrument('clarinet', 'Clarinet', mockSampler);
     const dest = {} as unknown;
 
@@ -76,7 +76,13 @@ describe('SamplerSoloInstrument', () => {
     expect(mockSampler.connect).toHaveBeenCalledWith(dest);
 
     inst.disconnect();
-    expect(mockSampler.disconnect).toHaveBeenCalled();
+    expect(mockSampler.disconnect).toHaveBeenCalledWith(dest);
+  });
+
+  it('disconnect without prior connect is a no-op', () => {
+    const inst = new SamplerSoloInstrument('clarinet', 'Clarinet', mockSampler);
+    inst.disconnect();
+    expect(mockSampler.disconnect).not.toHaveBeenCalled();
   });
 
   it('dispose disposes the sampler', () => {

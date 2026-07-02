@@ -194,18 +194,28 @@ graph LR
 - `tone-audio-adapter` — оборачивает Tone.js в `AudioPort`, изолирует браузерное API от ядра.
 - `webmidi-adapter` — предоставляет MIDI-ввод (оценка игры) и MIDI-вывод.
 
-### 4.1. Инструменты (6 шт.)
+### 4.1. Инструменты (12 шт.)
 
 Все инструменты реализуют интерфейс `Instrument` из `instrument.ts` и регистрируются через `InstrumentManifest`:
 
-| Инструмент | Класс                 | Манифест                               | Семплы                                      | Стилей | Рандомайзер       |
-| ---------- | --------------------- | -------------------------------------- | ------------------------------------------- | ------ | ----------------- |
-| Bass       | `BassInstrument`      | `bassManifest`                         | SneakyBass, pluck/mute ×4 RR                | 5      | `BassRandomizer`  |
-| Drums      | `DrumInstrument`      | `drumsManifest`                        | Swirly Drums v2, 8 звуков ×4 RR             | 3      | `DrumRandomizer`  |
-| Piano      | `PianoInstrument`     | `pianoManifest` / `salamanderManifest` | Upright KW / Salamander Grand               | 5      | `PianoRandomizer` |
-| Rhodes     | `RhodesInstrument`    | `rhodesManifest`                       | jRhodes3c, 4 velocity-слоя                  | 5      | —                 |
-| Guitar     | `GuitarInstrument`    | `guitarManifest`                       | Nylon/Steel, E2–E5                          | 2      | —                 |
-| Metronome  | `MetronomeInstrument` | —                                      | 5 звуков (analog/button/stick/retro/switch) | —      | —                 |
+| Инструмент       | Класс                   | Манифест                                  | Семплы                                            | Стилей | Рандомайзер       |
+| ---------------- | ----------------------- | ----------------------------------------- | ------------------------------------------------- | ------ | ----------------- |
+| Bass             | `BassInstrument`        | `bassManifest`                            | SneakyBass, pluck/mute ×4 RR                      | 5      | `BassRandomizer`  |
+| Drums            | `DrumInstrument`        | `drumsManifest`                           | Swirly Drums v2, 8 звуков ×4 RR                   | 3      | `DrumRandomizer`  |
+| Modern Kit       | `DrumInstrument`        | `modernKitManifest`                       | Modern Kit, 10 звуков ×4 RR + stir                 | 5      | `DrumRandomizer`  |
+| Grand Piano      | `PianoInstrument`       | `pianoManifest` / `salamanderManifest`    | Upright KW / Salamander Grand                     | 5      | `PianoRandomizer` |
+| Rhodes           | `RhodesInstrument`      | `rhodesManifest`                          | jRhodes3c, 4 velocity-слоя                        | 5      | —                 |
+| Guitar           | `GuitarInstrument`      | `guitarManifest`                          | Nylon/Steel, E2–E5, 9 анкерных нот                | 5      | —                 |
+| Electric Guitar  | `GuitarInstrument`      | `electricGuitarManifest`                  | Electric, 2 velocity-слоя (normal/soft), E2–C#6    | 5      | —                 |
+| Vibraphone       | `VibraphoneInstrument`  | `vibraphoneManifest`                      | Vibraphone, 2 velocity-слоя, C3–C6                | 5      | —                 |
+| Organ            | `OrganInstrument`       | `organManifest`                           | Hammond-style, 2 velocity-слоя, C2–C7              | 5      | —                 |
+| Percussion       | `PercussionInstrument`  | `percussionManifest`                      | Latin perc, 16 звуков (conga, clave, shaker, …)   | 5      | —                 |
+| Clarinet         | `ClarinetInstrument`    | `clarinetManifest`                        | Clarinet, 2 velocity-слоя, D3–C6                  | 5      | —                 |
+| Metronome        | `MetronomeInstrument`   | —                                         | 5 звуков (analog/button/stick/retro/switch)        | —      | —                 |
+
+**Сольные инструменты (SoloInstrument):** отдельная подсистема для live MIDI-ввода (см. §4.5). 9 манифестов: `synthDefault`, `synthLead`, `pianoSalamanderSolo`, `rhodesJRhodes3cSolo`, `clarinetSolo`, `vibraphoneSolo`, `guitarNylonSolo`, `trumpetMuted`, `flute`.
+
+**StyleProfile** (`packages/music-core/src/styleProfile.ts`): централизованные стиле-специфичные настройки — ростеры инструментов (required/recommended/optional/hidden), per-instrument дефолты (pattern, voicing, mode) и ансамбли-предсеты (duet/trio/quartet/quintet/full).
 
 ### 4.2. Система манифестов
 
@@ -213,18 +223,21 @@ graph LR
 
 ```ts
 interface InstrumentManifest {
-  id: string; // 'bass' | 'drums' | 'piano' | 'rhodes' | 'guitar'
+  id: string; // уникальный ID: 'bass' | 'drums' | 'modern-kit' | 'piano' | ...
   name: string; // читаемое имя
   createInstrument(): Instrument; // фабрика (чистая логика, без Tone.js)
   sampleManifest: SampleManifest; // раскладка аудиофайлов
   defaultSettings?: Record<string, unknown>;
+  perStyleDefaults?: Partial<Record<Style, Record<string, unknown>>>; // стиле-специфичные оверрайды
 }
 ```
 
+`perStyleDefaults` — опциональные per-style оверрайды для `defaultSettings`. При выборе стиля значения из `perStyleDefaults[style]` накладываются поверх `defaultSettings` через `resolveInstrumentDefaults()`. Например, Modern Kit в bossa отключает snare и включает rim.
+
 `SampleManifest` унифицирует pitched (слои `layers`) и unpitched (`oneshots`) инструменты:
 
-- **Pitched** (Bass, Piano, Rhodes, Guitar): `layers` — `{ [layerName]: { [note]: filename } }`
-- **Unpitched** (Drums): `oneshots` — `{ [soundName]: [filename_rr1, ...] }` + `rrCount`
+- **Pitched** (Bass, Grand Piano, Rhodes, Guitar, Electric Guitar, Vibraphone, Organ, Clarinet): `layers` — `{ [layerName]: { [note]: filename } }`
+- **Unpitched** (Drums, Modern Kit, Percussion): `oneshots` — `{ [soundName]: [filename_rr1, ...] }` + `rrCount`
 
 ### 4.3. ChordTimeline
 
@@ -232,9 +245,52 @@ interface InstrumentManifest {
 
 ### 4.4. Взаимодействие инструментов
 
-- **Bass ↔ Drums:** независимы (разные частотные диапазоны)
-- **Piano ↔ Rhodes:** комплементарная модель (ADR-014). Piano — основной слой, Rhodes — фоновый. Конфликты разрешаются через `pianoRhodesInteraction.ts`: сдвиг Rhodes на 1/16 при пересечении с Piano.
-- **Piano/Rhodes ↔ Bass:** Rhodes/Piano избегают нижнего регистра (C3–C4), оставляя его басу.
+- **Bass ↔ Drums/Modern Kit/Percussion:** независимы (разные частотные диапазоны и EventSink'и)
+- **Grand Piano ↔ Rhodes:** комплементарная модель (ADR-014). Grand Piano — основной слой, Rhodes — фоновый. Конфликты разрешаются через `pianoRhodesInteraction.ts`: сдвиг Rhodes на 1/16 при пересечении с Grand Piano.
+- **Grand Piano/Rhodes/Vibraphone/Organ ↔ Bass:** гармонические инструменты избегают нижнего регистра (C3–C4), оставляя его басу.
+- **Clarinet:** монофонический — не конфликтует с полифоническими инструментами.
+- **Guitar/Electric Guitar:** собственный EventSink, не пересекается с Grand Piano/Rhodes.
+
+### 4.5. Сольные инструменты (SoloInstrument)
+
+Отдельная подсистема для live MIDI-ввода. В отличие от `Instrument` (планирование нот в будущее через `TransportEngine`), `SoloInstrument` реагирует на события `noteOn`/`noteOff` в реальном времени.
+
+**Интерфейс `SoloInstrument`** (`soloInstrument.ts`):
+```ts
+interface SoloInstrument {
+  readonly id: string;
+  readonly name: string;
+  readonly category: 'synth' | 'sampled' | 'reuse';
+  noteOn(midiNote: number, velocity: number, time?: number): void;
+  noteOff(midiNote: number, time?: number): void;
+  connect(destination: unknown): void;
+  disconnect(): void;
+  dispose(): void;
+}
+```
+
+**Три категории:**
+- `synth` — синтезаторные тембры (SynthSoloInstrument, Tone.js PolySynth)
+- `sampled` — сэмплированные инструменты (SamplerSoloInstrument, Tone.js Sampler)
+- `reuse` — переиспользование сэмплера аккомпанирующего инструмента (ReuseSoloInstrument)
+
+**9 манифестов** в `manifests/`:
+
+| Категория | ID                        | Название           |
+| --------- | ------------------------- | ------------------ |
+| synth     | `synth-default`           | Default Synth      |
+| synth     | `synth-lead`              | Lead Synth         |
+| sampled   | `piano-salamander`        | Grand Piano (Salamander) |
+| sampled   | `rhodes-jrhodes3c`        | Rhodes             |
+| sampled   | `clarinet`                | Clarinet           |
+| sampled   | `vibraphone`              | Vibraphone         |
+| sampled   | `guitar-nylon`            | Nylon Guitar       |
+| sampled   | `trumpet-muted`           | Muted Trumpet      |
+| sampled   | `flute`                   | Flute              |
+
+**Жизненный цикл:** `SoloInstrumentHost` управляет созданием, переключением тембров и dispose. Каждый тембр — один экземпляр; смена тембра = dispose старого + create нового.
+
+Подробнее: `docs/MIDI_INSTRUMENT_ARCHITECTURE.md`, `docs/MIDI_ARCHITECTURE.md`.
 
 ---
 
@@ -313,7 +369,7 @@ jazz-trainer/
 │   └── api/                    # Fastify + SQLite + Drizzle
 ├── packages/
 │   ├── music-core/             # Чистая музыкальная логика
-│   │   ├── audio/              # TransportEngine, инструменты, AudioPort
+│   │   ├── audio/              # TransportEngine, инструменты, AudioPort, манифесты
 │   │   ├── chords/             # parseChord
 │   │   ├── dsl/                # parseGrid
 │   │   ├── time/               # Время, длительности
@@ -355,7 +411,12 @@ jazz-trainer/
 │   ├── BASS.md                 # Спецификация баса (walking bass, стили, рандомайзер)
 │   ├── PIANO.md                # Спецификация фортепиано (профили, voicing, голосоведение)
 │   ├── RHODES.md               # Спецификация Rhodes (комплементарный слой)
-│   ├── DRUMS.md                # Спецификация барабанов (Swirly Drums v2, стили)
+│   ├── DRUMS.md                # Спецификация барабанов (Swirly Drums v2, Modern Kit)
+│   ├── GUITAR.md               # Спецификация гитары (nylon/steel/electric, паттерны)
+│   ├── VIBRAPHONE.md           # Спецификация вибрафона (pads/inserts)
+│   ├── ORGAN.md                # Спецификация органа (pads/stabs/pads-stabs)
+│   ├── PERCUSSION.md           # Спецификация перкуссии (16 звуков, 3 паттерна)
+│   ├── CLARINET.md             # Спецификация кларнета (counterpoint/melodicPhrases)
 │   ├── SCALES-VISION.md         # Видение модуля гамм
 │   ├── EXERSISE-VISION.md       # Видение модуля упражнений
 │   ├── EXERSISE-ARCHITECTURE.md # Архитектура модуля упражнений
@@ -486,13 +547,13 @@ jazz-trainer/
 **Альтернативы:** Electron с самого начала. Отклонено — удваивает сложность, веб покрывает потребности.
 **Последствия:** Нет Desktop-оболочки. Адаптеры готовы к добавлению десктопа в будущем.
 
-### ADR-014: Piano + Rhodes: комплементарная модель (основной + фоновый слой)
+### ADR-014: Grand Piano + Rhodes: комплементарная модель (основной + фоновый слой)
 
 **Дата:** 2026-06
 **Статус:** 🟢 Принято
-**Контекст:** Изначально Rhodes был основным гармоническим инструментом. С добавлением Piano встал вопрос: как двум гармоническим инструментам сосуществовать, не создавая «кашу»?
-**Решение:** Разделение ролей: **Piano — основной слой** (активный компинг, профили, полный регистр C3–C6), **Rhodes — комплементарный слой** (разреженный ритм, верхний регистр C4–C6, низкие velocity). Конфликты разрешаются автоматически через `pianoRhodesInteraction.ts`.
-**Альтернативы:** Оба инструмента с равными правами (конфликты), только один инструмент (потеря текстуры), радио-кнопка «или Piano или Rhodes» (менее гибко). Отклонено.
+**Контекст:** Изначально Rhodes был основным гармоническим инструментом. С добавлением Grand Piano встал вопрос: как двум гармоническим инструментам сосуществовать, не создавая «кашу»?
+**Решение:** Разделение ролей: **Grand Piano — основной слой** (активный компинг, профили, полный регистр C3–C6), **Rhodes — комплементарный слой** (разреженный ритм, верхний регистр C4–C6, низкие velocity). Конфликты разрешаются автоматически через `pianoRhodesInteraction.ts`.
+**Альтернативы:** Оба инструмента с равными правами (конфликты), только один инструмент (потеря текстуры), радио-кнопка «или Grand Piano или Rhodes» (менее гибко). Отклонено.
 **Последствия:** Rhodes-движок получил второй режим `RhodesLayerMode` (pads, subtle-offbeats, high-comping, ambient-swells, stab-accents). Legacy-режим `RhodesCompingMode` сохранён для обратной совместимости. Добавлен модуль `pianoRhodesInteraction.ts`.
 
 ### ADR-015: MIDI как внутреннее представление конкретных нот
@@ -511,11 +572,11 @@ jazz-trainer/
 | Ф0 — Границы        | ✅     | ESLint boundaries + strict, 0 нарушений                                               |
 | Ф1 — SDK + Host     | ✅     | `plugin-sdk`, `plugin-host`, `plugin-registry`, shell bootstrap                       |
 | ФR — RBAC + аудит   | ✅     | 3 роли, 11 permissions, audit log, `usePermission`/`useFlag`                          |
-| Ф2 — AudioPort      | 🟢     | `tone-audio-adapter` + `webmidi-adapter` готовы, 6 инструментов, манифесты, EventSink |
+| Ф2 — AudioPort      | 🟢     | `tone-audio-adapter` + `webmidi-adapter` готовы, 12 инструментов, манифесты, EventSink |
 | Ф3 — Фичи → плагины | ✅     | `core-editor`, `core-player`, `catalog` вынесены                                      |
 | Ф4 — Новые домены   | 🟡     | 10 domain-плагинов созданы. Наполнение контентом — в процессе                         |
 | Ф5 — MIDI           | 🟡     | `webmidi-adapter`, `midiEval`, MIDI-плагины. Desktop исключён                         |
 
 ---
 
-_Документ описывает текущую архитектуру. Обновлён 2026-06-19. Фазы 0, 1, R, 2, 3 готовы ✅, Фазы 4, 5 частично 🟡. 15 ADR принято (ADR-001–015). Плагинов: 17. Целевое видение — в `ARCHITECTURE_VISION.md`._
+_Документ описывает текущую архитектуру. Обновлён 2026-07-01. Фазы 0, 1, R, 2, 3 готовы ✅, Фазы 4, 5 частично 🟡. 15 ADR принято (ADR-001–015). Плагинов: 17. Инструментов: 12 аккомпанемента + 9 сольных. Целевое видение — в `ARCHITECTURE_VISION.md`._

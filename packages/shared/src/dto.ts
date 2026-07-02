@@ -71,6 +71,8 @@ export const UserSettingsDTOSchema = z.object({
   pianoVoicingDensity: z.enum(['shell2', 'rootless3', 'rootless4', 'quartal']).optional(),
   pianoSampleLibrary: z.enum(['salamander', 'upright-kw']).optional(),
   pianoRandomizationLevel: z.enum(['off', 'subtle', 'moderate', 'high']).optional(),
+  /** Drum sample kit: 'jazz-kit' (Jazz Drum Kit) or 'modern-kit' (Modern Drum Kit). */
+  drumKit: z.enum(['jazz-kit', 'modern-kit']).optional(),
   drumsEnabled: z.boolean().optional(),
   drumsVolume: z.number().min(0).max(1).optional(),
   drumsRideEnabled: z.boolean().optional(),
@@ -99,12 +101,21 @@ export const UserSettingsDTOSchema = z.object({
   drumsRideVariation: z.boolean().optional(),
   drumsSnareGhosts: z.boolean().optional(),
   drumsBassDrumVariation: z.boolean().optional(),
-  /** @deprecated Use style instead */
-  drumsPattern: z.enum(STYLES.slice(0, 3) as [string, ...string[]]).optional(),
-  /** @deprecated Use drumsPattern instead */
-  drumsRidePattern: z.enum(['quarters', 'swingRide']).optional(),
-  /** Global playback style — replaces drumsPattern as the single source of style truth. */
+  drumsTomEnabled: z.boolean().optional(),
+  drumsTomVolume: z.number().min(0).max(1).optional(),
+  /** Percussion Kit settings */
+  percussionEnabled: z.boolean().optional(),
+  percussionVolume: z.number().min(0).max(1).optional(),
+  percussionHumanizeIntensity: z.enum(['off', 'low', 'med', 'high']).optional(),
+  /** Guitar settings */
+  guitarEnabled: z.boolean().optional(),
+  guitarVolume: z.number().min(0).max(1).optional(),
+  /** Global playback style — single source of truth for all instruments. */
   style: z.enum(STYLES).optional(),
+  /** Per-style user overrides for instrument settings (JSON). See T-004 / ARANGEMENT_PLAN. */
+  perStyleOverrides: z.record(z.enum(STYLES), z.record(z.string(), z.unknown())).optional(),
+  /** Active ensemble preset (last applied by user). Cleared on reset. */
+  activeEnsemble: z.enum(['duet', 'trio', 'quartet', 'quintet', 'full']).optional(),
   swingRatio: z.number().min(0.5).max(0.75).optional(),
   audioFormat: z.enum(['aac', 'mp3']).optional(),
 

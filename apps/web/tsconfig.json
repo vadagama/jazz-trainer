@@ -27,7 +27,7 @@
       "@jazz/plugin-admin-diagnostics": ["../../packages/plugins/admin-diagnostics/src/index.ts"],
       "@jazz/plugin-theory-chord-tones": ["../../packages/plugins/theory-chord-tones/src/index.ts"],
       "@jazz/plugin-theory-approach-notes": [
-        "../../packages/plugins/theory-approach-notes/src/index.ts"
+        "../../packages/plugins/theory-approach-notes/src/index.ts",
       ],
       "@jazz/plugin-theory-arpeggios": ["../../packages/plugins/theory-arpeggios/src/index.ts"],
       "@jazz/plugin-theory-blues": ["../../packages/plugins/theory-blues/src/index.ts"],
@@ -38,38 +38,39 @@
       "@jazz/plugin-theory-scales-jazz": ["../../packages/plugins/theory-scales-jazz/src/index.ts"],
       "@jazz/plugin-theory-voicings": ["../../packages/plugins/theory-voicings/src/index.ts"],
       "@jazz/plugin-theory-voice-leading": [
-        "../../packages/plugins/theory-voice-leading/src/index.ts"
+        "../../packages/plugins/theory-voice-leading/src/index.ts",
       ],
       "@jazz/plugin-theory-groove": ["../../packages/plugins/theory-groove/src/index.ts"],
       "@jazz/plugin-practice-cards": ["../../packages/plugins/practice-cards/src/index.ts"],
       "@jazz/plugin-theory-rhythm": ["../../packages/plugins/theory-rhythm/src/index.ts"],
       "@jazz/plugin-visual-midi-keyboard": [
-        "../../packages/plugins/visual-midi-keyboard/src/index.ts"
+        "../../packages/plugins/visual-midi-keyboard/src/index.ts",
       ],
       "@jazz/plugin-theory-diminished-harmony": [
-        "../../packages/plugins/theory-diminished-harmony/src/index.ts"
+        "../../packages/plugins/theory-diminished-harmony/src/index.ts",
       ],
       "@jazz/plugin-theory-coltrane-changes": [
-        "../../packages/plugins/theory-coltrane-changes/src/index.ts"
+        "../../packages/plugins/theory-coltrane-changes/src/index.ts",
       ],
       "@jazz/plugin-theory-blues-advanced": [
-        "../../packages/plugins/theory-blues-advanced/src/index.ts"
+        "../../packages/plugins/theory-blues-advanced/src/index.ts",
       ],
       "@jazz/plugin-theory-rhythm-changes": [
-        "../../packages/plugins/theory-rhythm-changes/src/index.ts"
+        "../../packages/plugins/theory-rhythm-changes/src/index.ts",
       ],
       "@jazz/plugin-theory-modal-interchange": [
-        "../../packages/plugins/theory-modal-interchange/src/index.ts"
+        "../../packages/plugins/theory-modal-interchange/src/index.ts",
       ],
       "@jazz/plugin-theory-secondary-dominants": [
-        "../../packages/plugins/theory-secondary-dominants/src/index.ts"
+        "../../packages/plugins/theory-secondary-dominants/src/index.ts",
       ],
       "@jazz/plugin-theory-tritone-sub": ["../../packages/plugins/theory-tritone-sub/src/index.ts"],
       "@jazz/plugin-theory-turnarounds": ["../../packages/plugins/theory-turnarounds/src/index.ts"],
-      "@jazz/plugin-theory-catalog": ["../../packages/plugins/theory-catalog/src/index.ts"]
+      "@jazz/plugin-theory-catalog": ["../../packages/plugins/theory-catalog/src/index.ts"],
+      "@jazz/plugin-core-settings": ["../../packages/plugins/core-settings/src/index.ts"],
     },
-    "noEmit": true
+    "noEmit": true,
   },
   "include": ["src", "e2e", "vite.config.ts"],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules"],
 }

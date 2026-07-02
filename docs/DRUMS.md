@@ -237,7 +237,50 @@ export const drumsManifest: InstrumentManifest = {
 
 Drums полностью независимы от других инструментов — используют свой `EventSink` (`'drums'`), не пересекаются с `noteSink`/`chordSink`.
 
-## 9. Тесты
+## 9. Modern Kit
+
+**Манифест:** `modernKitManifest.ts`  
+**Класс:** `DrumInstrument` (тот же, что и Swirly Drums v2)
+
+Modern Kit — альтернативный набор барабанных сэмплов, использующий тот же `DrumInstrument`. Отличается более широким набором звуков и стиле-специфичными настройками по умолчанию.
+
+### 9.1. Отличия от Swirly Drums v2
+
+| Аспект           | Swirly Drums v2              | Modern Kit                         |
+| ---------------- | ---------------------------- | ---------------------------------- |
+| Звуков           | 8 (без tom, без stir)        | 10 (добавлены tom, stir)           |
+| Ride pattern     | Стандартный swing ride       | Настраиваемый (`swingRide`)        |
+| Stir (hi-hat foot)| Нет                         | Отдельный звук с настройкой громкости |
+| Tom              | Нет                          | Отдельный звук с настройкой громкости |
+| Per-style defaults| Нет                         | Да (bossa: snare off + rim on, ballad: vol 0.6) |
+
+### 9.2. Дополнительные звуки
+
+| Звук   | Функция                                  |
+| ------ | ---------------------------------------- |
+| `tom`  | Томы — заполнения (fills) и акценты      |
+| `stir` | Hi-hat foot stir — джазовая текстура     |
+
+### 9.3. Per-style defaults
+
+```ts
+perStyleDefaults: {
+  swing:  { pattern: 'swing' },
+  bossa:  { pattern: 'bossa', snareEnabled: false, rimEnabled: true },
+  funk:   { pattern: 'funk' },
+  latin:  { pattern: 'funk' },  // cascade to funky groove
+  ballad: { pattern: 'swing', volume: 0.6 },
+}
+```
+
+### 9.4. Семплы
+
+**Источник:** Modern Kit (универсальная акустическая установка)
+**Формат:** AAC (`.m4a`) с MP3-фолбэком
+**Round-robin:** 4 варианта на каждый звук
+**Размещение:** `apps/web/public/samples/aac/drums/modern-kit/`
+
+## 10. Тесты
 
 - `drumInstrument.test.ts` — все стили, backbeat, отключение звуков, humanization
 - `drumRandomizer.test.ts` — детерминизм, уровни, fills, ghost-ноты
@@ -245,4 +288,4 @@ Drums полностью независимы от других инструме
 
 ---
 
-_См. также: `docs/BASS.md` (бас), `docs/PIANO.md` (основная гармония)_
+_См. также: `docs/BASS.md` (бас), `docs/PIANO.md` (основная гармония), `docs/PERCUSSION.md` (перкуссия)_

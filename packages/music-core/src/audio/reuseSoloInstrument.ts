@@ -9,8 +9,11 @@ import { midiToNote } from './rhodesVoicing.js';
  * Solo instrument that reuses an existing sampler from an accompaniment instrument.
  *
  * Useful for Piano (Salamander) and Rhodes — the same Tone.Sampler used for
- * accompaniment can be played live via MIDI, routed to SoloBus instead of
- * the Transport-scheduled bus.
+ * accompaniment can be played live via MIDI.
+ *
+ * Does NOT connect to SoloBus — the shared sampler is already in the audio graph
+ * via the accompaniment chain. Solo volume is applied as velocity scaling
+ * by the host.
  *
  * `dispose()` does NOT destroy the underlying sampler — it is shared.
  */
@@ -49,14 +52,16 @@ export class ReuseSoloInstrument implements SoloInstrument {
     }
   }
 
-  connect(destination: unknown): void {
-    if (this.disposed) return;
-    this.sampler.connect(destination);
+  /** No-op: shared sampler is already in the accompaniment audio graph. */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  connect(_destination: unknown): void {
+    // Shared sampler stays in the accompaniment chain only.
+    // Solo volume is applied as velocity scaling by the host.
   }
 
+  /** No-op: we never connected to anything. */
   disconnect(): void {
-    if (this.disposed) return;
-    this.sampler.disconnect();
+    // Nothing to disconnect.
   }
 
   /** Dispose without destroying the shared sampler. */

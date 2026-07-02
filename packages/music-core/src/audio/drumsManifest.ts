@@ -33,10 +33,19 @@ export const drumsManifest: InstrumentManifest = {
     crashFrequency: 4,
     rimEnabled: false,
     rimVolume: 0.6,
+    tomEnabled: false,
+    tomVolume: 0.7,
     humanizeIntensity: 'med',
     // Legacy fields for backward compatibility
     ridePattern: 'swingRide',
     stirEnabled: true,
     stirVolume: 0.6,
+  },
+  perStyleDefaults: {
+    swing: { pattern: 'swing' },
+    bossa: { pattern: 'bossa', snareEnabled: false, rimEnabled: true },
+    funk: { pattern: 'funk' },
+    latin: { pattern: 'funk' }, // closest to latin groove with current patterns
+    ballad: { pattern: 'swing', volume: 0.55 },
   },
 };

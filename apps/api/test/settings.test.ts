@@ -149,3 +149,129 @@ describe('PATCH /api/settings', () => {
     expect(resB.body.bpm).toBe(222);
   });
 });
+
+describe('Per-style overrides (T-004)', () => {
+  let app: FastifyInstance;
+  let agent: Agent;
+
+  beforeEach(async () => {
+    app = await makeApp();
+    await app.ready();
+    agent = supertest.agent(app.server);
+  });
+
+  afterEach(async () => {
+    await app.close();
+  });
+
+  it('PATCH saves per-style overrides and GET returns them', async () => {
+    await devLogin(agent);
+
+    const overrides = {
+      swing: { drumsVolume: 0.5, bassEnabled: false },
+      bossa: { drumsVolume: 0.9 },
+    };
+
+    const patchRes = await agent.patch('/api/settings').send({ perStyleOverrides: overrides });
+    expect(patchRes.status).toBe(200);
+    expect(patchRes.body.perStyleOverrides).toEqual(overrides);
+
+    const getRes = await agent.get('/api/settings');
+    expect(getRes.body.perStyleOverrides).toEqual(overrides);
+  });
+
+  it('PATCH merges per-style overrides with existing ones', async () => {
+    await devLogin(agent);
+
+    // First save swing override
+    await agent.patch('/api/settings').send({
+      perStyleOverrides: { swing: { drumsVolume: 0.5 } },
+    });
+
+    // Then add bossa override — swing should be preserved
+    const res = await agent.patch('/api/settings').send({
+      perStyleOverrides: { bossa: { drumsVolume: 0.9 } },
+    });
+    expect(res.body.perStyleOverrides).toEqual({
+      swing: { drumsVolume: 0.5 },
+      bossa: { drumsVolume: 0.9 },
+    });
+  });
+
+  it('PATCH merges keys within an existing style override', async () => {
+    await devLogin(agent);
+
+    // Save initial swing override
+    await agent.patch('/api/settings').send({
+      perStyleOverrides: { swing: { drumsVolume: 0.5 } },
+    });
+
+    // Add another key to swing
+    const res = await agent.patch('/api/settings').send({
+      perStyleOverrides: { swing: { bassEnabled: false } },
+    });
+    expect(res.body.perStyleOverrides).toEqual({
+      swing: { drumsVolume: 0.5, bassEnabled: false },
+    });
+  });
+
+  it('persists overrides: save for swing, switch to bossa, return to swing — override kept', async () => {
+    await devLogin(agent);
+
+    // Save swing override
+    await agent.patch('/api/settings').send({
+      perStyleOverrides: { swing: { drumsVolume: 0.5 } },
+    });
+
+    // Save bossa override
+    await agent.patch('/api/settings').send({
+      perStyleOverrides: { bossa: { drumsVolume: 0.9 } },
+    });
+
+    // Verify both are present
+    const res = await agent.get('/api/settings');
+    expect(res.body.perStyleOverrides).toEqual({
+      swing: { drumsVolume: 0.5 },
+      bossa: { drumsVolume: 0.9 },
+    });
+  });
+
+  it('DELETE /api/settings/style/:style removes overrides for that style', async () => {
+    await devLogin(agent);
+
+    // Save overrides for two styles
+    await agent.patch('/api/settings').send({
+      perStyleOverrides: {
+        swing: { drumsVolume: 0.5 },
+        bossa: { drumsVolume: 0.9 },
+      },
+    });
+
+    // Delete swing override
+    const delRes = await agent.delete('/api/settings/style/swing');
+    expect(delRes.status).toBe(200);
+    expect(delRes.body.perStyleOverrides).toEqual({
+      bossa: { drumsVolume: 0.9 },
+    });
+
+    // Verify GET also reflects the deletion
+    const getRes = await agent.get('/api/settings');
+    expect(getRes.body.perStyleOverrides).toEqual({
+      bossa: { drumsVolume: 0.9 },
+    });
+  });
+
+  it('DELETE /api/settings/style/:style returns 400 for unknown style', async () => {
+    await devLogin(agent);
+    const res = await agent.delete('/api/settings/style/unknown-style');
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+  });
+
+  it('DELETE /api/settings/style/:style is idempotent (no override = no error)', async () => {
+    await devLogin(agent);
+    const res = await agent.delete('/api/settings/style/swing');
+    expect(res.status).toBe(200);
+    expect(res.body.perStyleOverrides).toEqual({});
+  });
+});

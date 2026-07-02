@@ -39,6 +39,8 @@ export type { PluginDefinition } from './definePlugin';
 
 export { usePermission } from './hooks/usePermission';
 export { useFlag } from './hooks/useFlag';
+export { useStyleSettings } from './hooks/useStyleSettings';
+export type { UseStyleSettingsReturn } from './hooks/useStyleSettings';
 
 export type {
   LectureMeta,

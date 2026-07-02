@@ -6,6 +6,7 @@ import {
 } from '../time/timeSignature.js';
 import type { BeatType } from './transportEngine.js';
 import type { DrumSound } from './drumSampleRegistry.js';
+import type { PercussionSound } from './percussionSampleRegistry.js';
 
 /** A half-open tick window `[fromTicks, toTicks)` to schedule events into. */
 export interface ScheduleWindow {
@@ -48,8 +49,37 @@ export interface GuitarEvent {
   strum: GuitarStrum;
 }
 
+/** Payload emitted by {@link VibraphoneInstrument} via {@link ScheduleContext.scheduleEvent}. */
+export interface VibraphoneEvent {
+  notes: string[];
+}
+
+/** Payload emitted by {@link OrganInstrument} via {@link ScheduleContext.scheduleEvent}. */
+export interface OrganEvent {
+  notes: string[];
+}
+
+/** Payload emitted by {@link PercussionInstrument} via {@link ScheduleContext.scheduleEvent}. */
+export interface PercussionEvent {
+  sound: PercussionSound;
+}
+
+/** Payload emitted by {@link ClarinetInstrument} via {@link ScheduleContext.scheduleEvent}. */
+export interface ClarinetEvent {
+  notes: string[];
+}
+
 /** Union of all known instrument event payloads. Extend when adding a new instrument. */
-export type InstrumentEventPayload = BassEvent | RhodesEvent | DrumEvent | GuitarEvent | PianoEvent;
+export type InstrumentEventPayload =
+  | BassEvent
+  | RhodesEvent
+  | DrumEvent
+  | GuitarEvent
+  | PianoEvent
+  | VibraphoneEvent
+  | OrganEvent
+  | PercussionEvent
+  | ClarinetEvent;
 
 // ─── ScheduleContext ──────────────────────────────────────────────────────────
 
@@ -95,6 +125,8 @@ export interface ScheduleContext {
 export interface Instrument {
   schedule(window: ScheduleWindow, ctx: ScheduleContext): void;
   dispose?(): void;
+  /** Apply a full style profile — tempo, swing, instrument defaults. Optional for utilities like metronome. */
+  setStyleProfile?(profile: import('../styleProfile.js').StyleProfile): void;
 }
 
 export interface MetronomeOptions {
