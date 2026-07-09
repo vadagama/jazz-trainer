@@ -26,11 +26,22 @@ import type { SampleManifest } from './sampleManifest.js';
  * };
  * ```
  */
+export type InstrumentFamily = 'drums' | 'percussion' | 'pitched';
+
 export interface InstrumentManifest {
   /** Unique instrument ID — must match the `instrumentId` used in `scheduleEvent()`. */
   id: string;
   /** Human-readable display name. */
   name: string;
+  /** Discriminator — controls sample form (oneshots vs layers) and UI grouping. */
+  family: InstrumentFamily;
+  /** Icon identifier for the instrument tile (optional). */
+  icon?: string;
+  /**
+   * Settings key prefix (e.g. 'drums', 'percussion', 'bass').
+   * Replaces hardcoded `toSettingsPrefix()` maps in UI plugins.
+   */
+  settingsPrefix: string;
   /** Factory: creates a fresh Instrument instance (pure scheduling logic, no Tone.js). */
   createInstrument(): Instrument;
   /** Sample layout — what audio files this instrument needs and how they're organized. */
@@ -44,6 +55,11 @@ export interface InstrumentManifest {
    * fall back to `defaultSettings` values.
    */
   perStyleDefaults?: Partial<Record<Style, Record<string, unknown>>>;
+  /**
+   * Sound/gate names that the shell iterates over data-driven (e.g. percussion sounds).
+   * Replaces hardcoded per-sound blocks in `useTransport.ts`.
+   */
+  sounds?: readonly string[];
 }
 
 /**

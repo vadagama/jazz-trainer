@@ -18,7 +18,7 @@ function makeBar(
 }
 
 function makeSection(bars: Bar[], id = 's1', name = 'A'): Section {
-  return { id, name, timeSignature: '4/4', bars };
+  return { id, name, type: 'verseA', timeSignature: '4/4', bars };
 }
 
 function chordName(
@@ -119,7 +119,7 @@ describe('buildFlatSequence', () => {
     expect(seq.infiniteLoopStart).toBeNull();
   });
 
-  it('infinite loop on last section with count:null', () => {
+  it('infinite loop on last section with count:null — single section', () => {
     const sections = [
       makeSection([makeBar(['A']), makeBar(['B']), makeBar(['C'], { repeatEnd: { count: null } })]),
     ];
@@ -128,13 +128,63 @@ describe('buildFlatSequence', () => {
     expect(seq.infiniteLoopStart).toBe(0);
   });
 
-  it('multiple sections', () => {
+  it('infinite loop on last section with count:null — multiple sections wraps to bar 0', () => {
+    const sections = [
+      makeSection([makeBar(['A']), makeBar(['B'])], 's1', 'Verse'),
+      makeSection([makeBar(['C']), makeBar(['D'], { repeatEnd: { count: null } })], 's2', 'Chorus'),
+    ];
+    const seq = buildFlatSequence(sections);
+    // One form pass, infinite loop wraps back to the FIRST bar of the whole grid
+    expect(seq.bars).toEqual([0, 1, 2, 3]);
+    expect(seq.infiniteLoopStart).toBe(0);
+  });
+
+  it('finite form-repeat on last bar — single section plays form N times', () => {
+    const sections = [
+      makeSection([makeBar(['A']), makeBar(['B'], { repeatEnd: { count: 2 } })]),
+    ];
+    const seq = buildFlatSequence(sections);
+    expect(seq.bars).toEqual([0, 1, 0, 1]);
+    expect(seq.infiniteLoopStart).toBeNull();
+  });
+
+  it('finite form-repeat on last bar — multiple sections plays whole form N times', () => {
     const sections = [
       makeSection([makeBar(['A']), makeBar(['B'])], 's1', 'Verse'),
       makeSection([makeBar(['C']), makeBar(['D'], { repeatEnd: { count: 2 } })], 's2', 'Chorus'),
     ];
     const seq = buildFlatSequence(sections);
-    expect(seq.bars).toEqual([0, 1, 2, 3, 2, 3]);
+    // The whole form (A B C D) plays twice, then auto-stops
+    expect(seq.bars).toEqual([0, 1, 2, 3, 0, 1, 2, 3]);
+    expect(seq.infiniteLoopStart).toBeNull();
+  });
+
+  it('finite form-repeat ×3 — whole form three times', () => {
+    const sections = [
+      makeSection([makeBar(['A']), makeBar(['B'])], 's1', 'Verse'),
+      makeSection([makeBar(['C'], { repeatEnd: { count: 3 } })], 's2', 'Chorus'),
+    ];
+    const seq = buildFlatSequence(sections);
+    expect(seq.bars).toEqual([0, 1, 2, 0, 1, 2, 0, 1, 2]);
+    expect(seq.infiniteLoopStart).toBeNull();
+  });
+
+  it('multiple sections without form-repeat — inner repeats still expand inline', () => {
+    const sections = [
+      makeSection([makeBar(['A']), makeBar(['B'])], 's1', 'Verse'),
+      makeSection(
+        [
+          makeBar(['C']),
+          makeBar(['D'], { repeatEnd: { count: 2 } }),
+          makeBar(['E']),
+        ],
+        's2',
+        'Chorus',
+      ),
+    ];
+    // No repeat on the very last bar → no form-repeat; inner repeat expands inline
+    const seq = buildFlatSequence(sections);
+    expect(seq.bars).toEqual([0, 1, 2, 3, 2, 3, 4]);
     expect(seq.infiniteLoopStart).toBeNull();
   });
 });

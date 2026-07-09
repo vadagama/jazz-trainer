@@ -1,4 +1,4 @@
-import type { Section, TimeSignatureString } from '@jazz/shared';
+import type { RepeatEnd, Section, TimeSignatureString } from '@jazz/shared';
 import { parseChord } from '../chords/parseChord.js';
 import type { ChordTimelineEntry } from '../audio/chordTimeline.js';
 import { parseTimeSignature } from '../time/timeSignature.js';
@@ -50,35 +50,66 @@ export function expandRange(
 }
 
 /**
- * Expand sections into a linear playback order respecting repeatEnd markers.
- * - repeatEnd.count = N  → play that section N times total
- * - repeatEnd.count = null on the LAST section → infinite loop
+ * Marker on the last bar of the last section: it repeats the WHOLE form,
+ * not just the last section. `count: null` = infinite loop, `count: N` = N full passes.
  */
-export function buildFlatSequence(sections: Section[]): FlatSequence {
+function getFormRepeat(sections: Section[]): RepeatEnd | undefined {
+  if (sections.length === 0) return undefined;
+  const lastSection = sections[sections.length - 1]!;
+  const lastBar = lastSection.bars[lastSection.bars.length - 1];
+  return lastBar?.repeatEnd;
+}
+
+/**
+ * Build a single linear pass over the form (one playthrough of all sections),
+ * respecting inner/nested `repeatEnd` markers. The form-repeat marker on the
+ * last bar of the last section is stripped before expansion so it is not
+ * mistaken for an inner repeat (then the bar plays once as the form endpoint).
+ */
+function buildFormPass(sections: Section[]): number[] {
+  const formRepeat = getFormRepeat(sections);
+  const norm = sections.map((s, si) => {
+    if (si !== sections.length - 1 || formRepeat === undefined) return s.bars;
+    const lastIdx = s.bars.length - 1;
+    return s.bars.map((b, bi) =>
+      bi === lastIdx ? ({ ...b, repeatEnd: undefined } as typeof b) : b,
+    );
+  });
+
   const bars: number[] = [];
   let globalOffset = 0;
-  let infiniteLoopStart: number | null = null;
+  for (let si = 0; si < norm.length; si++) {
+    expandRange(norm[si]!, 0, norm[si]!.length - 1, globalOffset, bars);
+    globalOffset += sections[si]!.bars.length;
+  }
+  return bars;
+}
 
-  for (let si = 0; si < sections.length; si++) {
-    const section = sections[si]!;
-    const sectionBars = section.bars;
-    const isLastSection = si === sections.length - 1;
+/**
+ * Expand sections into a linear playback order respecting repeatEnd markers.
+ * A `repeatEnd` on the LAST bar of the LAST section repeats the whole form:
+ * - count = N  → the whole form plays N times total, then stops
+ * - count = null → the whole form loops infinitely from bar 0
+ * `repeatEnd` on any non-last bar repeats its inner sub-range (see expandRange).
+ */
+export function buildFlatSequence(sections: Section[]): FlatSequence {
+  const formRepeat = getFormRepeat(sections);
 
-    const lastBar = sectionBars[sectionBars.length - 1];
-    const isInfiniteSection = isLastSection && lastBar?.repeatEnd?.count === null;
-
-    if (isInfiniteSection) {
-      infiniteLoopStart = bars.length;
-      expandRange(sectionBars, 0, sectionBars.length - 2, globalOffset, bars);
-      bars.push(globalOffset + sectionBars.length - 1);
-    } else {
-      expandRange(sectionBars, 0, sectionBars.length - 1, globalOffset, bars);
-    }
-
-    globalOffset += sectionBars.length;
+  if (formRepeat === undefined) {
+    return { bars: buildFormPass(sections), infiniteLoopStart: null };
   }
 
-  return { bars, infiniteLoopStart };
+  const onePass = buildFormPass(sections);
+
+  if (formRepeat.count === null) {
+    // Infinite loop: one pass, wrap back to bar 0
+    return { bars: onePass, infiniteLoopStart: 0 };
+  }
+
+  // Finite form-repeat: N full passes, then auto-stop (infiniteLoopStart stays null)
+  const bars: number[] = [];
+  for (let p = 0; p < formRepeat.count; p++) bars.push(...onePass);
+  return { bars, infiniteLoopStart: null };
 }
 
 /**

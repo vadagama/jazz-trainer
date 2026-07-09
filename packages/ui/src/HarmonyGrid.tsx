@@ -1,8 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
-import { Plus, Infinity as InfinityIcon, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Infinity as InfinityIcon, Pencil, Trash2, ChevronDown } from 'lucide-react';
 import { cn } from './utils';
-import type { Bar, Section, RepeatEnd, TimeSignatureString } from '@jazz/shared';
-import { TIME_SIGNATURES } from '@jazz/shared';
+import type { Bar, Section, RepeatEnd, TimeSignatureString, SectionType } from '@jazz/shared';
+import {
+  TIME_SIGNATURES,
+  SECTION_TYPES,
+  SECTION_TYPE_LABELS,
+  SECTION_TYPE_COLORS,
+} from '@jazz/shared';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from './dropdown-menu';
 
 function TimeSigDisplay({
@@ -113,6 +118,60 @@ function SectionNameEditor({ name, onChange }: { name: string; onChange: (name: 
   );
 }
 
+function SectionTypeSelector({
+  type,
+  onChange,
+}: {
+  type: SectionType;
+  onChange?: (type: SectionType) => void;
+}) {
+  if (!onChange) {
+    return (
+      <span
+        className={cn(
+          'rounded border px-1.5 py-0.5 text-[10px] font-medium select-none',
+          SECTION_TYPE_COLORS[type],
+        )}
+      >
+        {SECTION_TYPE_LABELS[type]}
+      </span>
+    );
+  }
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          className={cn(
+            'flex items-center gap-0.5 rounded border px-1.5 py-0.5 text-[10px] font-medium transition-opacity hover:opacity-80',
+            SECTION_TYPE_COLORS[type],
+          )}
+        >
+          {SECTION_TYPE_LABELS[type]}
+          <ChevronDown className="size-2.5" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className="w-40 p-1">
+        {SECTION_TYPES.map((t) => (
+          <button
+            key={t}
+            onClick={() => onChange(t)}
+            className={cn(
+              'flex w-full items-center gap-2 rounded px-2 py-1.5 text-xs transition-colors hover:bg-accent',
+              t === type && 'bg-accent',
+            )}
+          >
+            <span
+              className={cn('size-2 rounded-full', SECTION_TYPE_COLORS[t]?.match(/bg-\S+/)?.[0])}
+            />
+            {SECTION_TYPE_LABELS[t]}
+          </button>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 const REPEAT_COUNTS = [2, 3, 4, 8] as const;
 
 function RepeatEndIndicator({ repeatEnd }: { repeatEnd: RepeatEnd }) {
@@ -135,9 +194,11 @@ function RepeatEndIndicator({ repeatEnd }: { repeatEnd: RepeatEnd }) {
 function RepeatEndDropdown({
   repeatEnd,
   onChange,
+  allowInfinite = true,
 }: {
   repeatEnd: RepeatEnd | undefined;
   onChange: (r: RepeatEnd | undefined) => void;
+  allowInfinite?: boolean;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -193,17 +254,21 @@ function RepeatEndDropdown({
           ))}
         </div>
         <div className="mt-1 grid grid-cols-2 gap-1">
-          <button
-            onClick={() => select({ count: null })}
-            className={cn(
-              'flex items-center justify-center rounded px-2 py-1 text-xs font-medium transition-colors',
-              repeatEnd?.count === null
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-secondary text-secondary-foreground hover:bg-accent',
-            )}
-          >
-            <InfinityIcon className="size-3" />
-          </button>
+          {allowInfinite ? (
+            <button
+              onClick={() => select({ count: null })}
+              className={cn(
+                'flex items-center justify-center rounded px-2 py-1 text-xs font-medium transition-colors',
+                repeatEnd?.count === null
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-secondary text-secondary-foreground hover:bg-accent',
+              )}
+            >
+              <InfinityIcon className="size-3" />
+            </button>
+          ) : (
+            <div />
+          )}
           {repeatEnd && (
             <button
               onClick={() => select(undefined)}
@@ -225,6 +290,7 @@ function BarCard({
   isPlaying,
   isCountingIn,
   readonly,
+  isLastSection,
   onSelect,
   onSetRepeatEnd,
   onMouseEnter,
@@ -235,6 +301,7 @@ function BarCard({
   isPlaying?: boolean;
   isCountingIn?: boolean;
   readonly?: boolean;
+  isLastSection?: boolean;
   onSelect: () => void;
   onSetRepeatEnd: (r: RepeatEnd | undefined) => void;
   onMouseEnter?: () => void;
@@ -307,7 +374,11 @@ function BarCard({
       </span>
 
       {!readonly ? (
-        <RepeatEndDropdown repeatEnd={bar.repeatEnd} onChange={onSetRepeatEnd} />
+        <RepeatEndDropdown
+          repeatEnd={bar.repeatEnd}
+          onChange={onSetRepeatEnd}
+          allowInfinite={isLastSection ?? true}
+        />
       ) : bar.repeatEnd ? (
         <RepeatEndIndicator repeatEnd={bar.repeatEnd} />
       ) : null}
@@ -327,9 +398,11 @@ function SectionView({
   playingBarIndex,
   countingInBarIndex,
   readonly,
+  isLastSection,
   onSelectBar,
   onRename,
   onSetTimeSignature,
+  onSetSectionType,
   onAddBar,
   onDeleteSection,
   onSetBarRepeatEnd,
@@ -341,9 +414,11 @@ function SectionView({
   playingBarIndex?: number;
   countingInBarIndex?: number;
   readonly?: boolean;
+  isLastSection?: boolean;
   onSelectBar: (id: string) => void;
   onRename: (name: string) => void;
   onSetTimeSignature: (ts: TimeSignatureString) => void;
+  onSetSectionType?: (type: SectionType) => void;
   onAddBar: () => void;
   onDeleteSection: () => void;
   onSetBarRepeatEnd: (barId: string, r: RepeatEnd | undefined) => void;
@@ -371,22 +446,28 @@ function SectionView({
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-2 pl-12">
         {readonly ? (
-          <span className="text-sm font-semibold text-foreground select-none">{section.name}</span>
+          <>
+            <span className="text-sm font-semibold text-foreground select-none">
+              {section.name}
+            </span>
+            <SectionTypeSelector type={section.type ?? 'verseA'} />
+          </>
         ) : (
-          <SectionNameEditor name={section.name} onChange={onRename} />
-        )}
-        {!readonly && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onDeleteSection();
-            }}
-            className="group ml-auto flex items-center gap-1 rounded px-1.5 py-1 text-muted-foreground/40 transition-colors hover:text-primary"
-            title="Удалить секцию"
-          >
-            <span className="text-xs">Удалить</span>
-            <Trash2 className="size-3.5" />
-          </button>
+          <>
+            <SectionNameEditor name={section.name} onChange={onRename} />
+            <SectionTypeSelector type={section.type ?? 'verseA'} onChange={onSetSectionType} />
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onDeleteSection();
+              }}
+              className="group ml-auto flex items-center gap-1 rounded px-1.5 py-1 text-muted-foreground/40 transition-colors hover:text-primary"
+              title="Удалить секцию"
+            >
+              <span className="text-xs">Удалить</span>
+              <Trash2 className="size-3.5" />
+            </button>
+          </>
         )}
       </div>
 
@@ -440,6 +521,7 @@ function SectionView({
                 isPlaying={cell.absIndex === playingBarIndex}
                 isCountingIn={cell.absIndex === countingInBarIndex}
                 readonly={readonly}
+                isLastSection={isLastSection}
                 onSelect={() => onSelectBar(cell.bar.id)}
                 onSetRepeatEnd={(r) => onSetBarRepeatEnd(cell.bar.id, r)}
                 onMouseEnter={() => onHoverBar?.(cell.bar.id)}
@@ -473,6 +555,7 @@ interface HarmonyGridProps {
   onSelectBar: (barId: string) => void;
   onRenameSection: (sectionId: string, name: string) => void;
   onSetSectionTimeSignature: (sectionId: string, ts: TimeSignatureString) => void;
+  onSetSectionType?: (sectionId: string, type: SectionType) => void;
   onAddBarToSection: (sectionId: string) => void;
   onDeleteSection: (sectionId: string) => void;
   onSetBarRepeatEnd: (barId: string, r: RepeatEnd | undefined) => void;
@@ -489,6 +572,7 @@ export function HarmonyGrid({
   onSelectBar,
   onRenameSection,
   onSetSectionTimeSignature,
+  onSetSectionType,
   onAddBarToSection,
   onDeleteSection,
   onSetBarRepeatEnd,
@@ -515,9 +599,10 @@ export function HarmonyGrid({
 
   return (
     <div className="flex flex-col gap-8" data-testid="harmony-grid">
-      {sections.map((section) => {
+      {sections.map((section, si) => {
         const sectionStart = absIndex;
         absIndex += section.bars.length;
+        const isLast = si === sections.length - 1;
         return (
           <SectionView
             key={section.id}
@@ -527,9 +612,13 @@ export function HarmonyGrid({
             playingBarIndex={playingBarIndex}
             countingInBarIndex={countingInBarIndex}
             readonly={readonly}
+            isLastSection={isLast}
             onSelectBar={onSelectBar}
             onRename={(name) => onRenameSection(section.id, name)}
             onSetTimeSignature={(ts) => onSetSectionTimeSignature(section.id, ts)}
+            onSetSectionType={
+              onSetSectionType ? (type) => onSetSectionType(section.id, type) : undefined
+            }
             onAddBar={() => onAddBarToSection(section.id)}
             onDeleteSection={() => onDeleteSection(section.id)}
             onSetBarRepeatEnd={onSetBarRepeatEnd}

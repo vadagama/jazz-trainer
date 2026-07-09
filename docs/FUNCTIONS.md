@@ -48,35 +48,76 @@ Jazz Trainer — браузерный тренажёр джазовой гарм
 - Лайки и копирование в свой каталог (с авторизацией)
 - Личный каталог (My grids) для авторизованных пользователей
 
+### 1.4. Настройки аранжировки 🟢
+
+**Плагин:** `core-settings` | **Маршрут:** `/settings`
+
+- Выбор стиля (swing, bossa, funk, latin, ballad) с предпросмотром ансамбля
+- Конфигурация ансамбля: пресеты (duet/trio/quartet/quintet/full) или ручной выбор инструментов
+- Per-instrument настройки: включение/выключение, выбор драм-кита, per-style оверрайды
+- Выбор сольного инструмента для live MIDI-ввода
+
 ---
 
 ## 2. Теория музыки
 
-### 2.1. Лады и гаммы 🟡
+Все лекции доступны через каталог `theory-catalog` (`/theory`) с поиском, сортировкой и лайками.
 
-**Плагин:** `theory-scales` | **Маршрут:** `/scales`
+### 2.1. Основы 🟡
 
-- Интерактивный справочник музыкальных ладов
-- Визуализация гамм (фортепианная клавиатура / нотный стан)
-- Основные лады: мажор, минор (натуральный, гармонический, мелодический), дорийский, фригийский и др.
+**Плагины:** `theory-scales`, `theory-chords`, `theory-intervals` | **Маршруты:** `/scales`, `/chords`, `/intervals`
 
-### 2.2. Аккорды 🟡
+- Интерактивный справочник ладов и гамм с визуализацией
+- Словарь джазовых аккордов (maj7, m7, 7, m7b5, dim7, aug и др.)
+- Справочник интервалов с визуализацией на клавиатуре
 
-**Плагин:** `theory-chords` | **Маршрут:** `/chords`
+### 2.2. Импровизация 🟡
 
-- Справочник аккордов джазовой гармонии
-- Типы: maj7, m7, 7, m7b5, dim7, augmented и др.
-- Визуализация структуры аккорда (ноты, интервалы)
-- Обращения аккордов
+**Плагины:** `theory-chord-tones`, `theory-approach-notes`, `theory-arpeggios` | **Маршруты:** `/theory/chord-tones`, `/theory/approach-notes`, `/theory/arpeggios`
 
-### 2.3. Интервалы 🟡
+- Аккордовые звуки — фундамент джазовой импровизации
+- Хроматические подходные ноты
+- Арпеджио: построение и применение
 
-**Плагин:** `theory-intervals` | **Маршрут:** `/intervals`
+### 2.3. Ритм и грув 🟡
 
-- Справочник музыкальных интервалов
-- Все интервалы от чистой примы до октавы
-- Визуализация на клавиатуре
-- Тренировка распознавания интервалов (опционально)
+**Плагины:** `theory-rhythm`, `theory-groove` | **Маршруты:** `/theory/rhythm`, `/theory/groove`
+
+- Основы джазового ритма, свинг и синкопы
+- Понятие грува, взаимодействие ритм-секции
+
+### 2.4. Блюз 🟡
+
+**Плагины:** `theory-blues`, `theory-blues-advanced` | **Маршруты:** `/theory/blues`, `/theory/blues-advanced`
+
+- Блюзовая форма, блюзовый лад и блюзовые ноты
+- Продвинутый блюз: гармонические усложнения
+
+### 2.5. Гармонические концепции 🟡
+
+**Плагины:** `theory-ii-v-i`, `theory-turnarounds`, `theory-rhythm-changes`, `theory-coltrane-changes`
+
+- ii–V–I — главная джазовая каденция (`/theory/ii-v-i`)
+- Обороты (turnarounds): I–VI–II–V и iii–VI–II–V (`/theory/turnarounds`)
+- Rhythm Changes — структура на основе I Got Rhythm (`/theory/rhythm-changes`)
+- Coltrane Changes — гармонический цикл больших терций (`/theory/coltrane-changes`)
+
+### 2.6. Продвинутая гармония 🟡
+
+**Плагины:** `theory-tritone-sub`, `theory-secondary-dominants`, `theory-modal-interchange`, `theory-diminished-harmony`
+
+- Тритоновая замена: G7 → D♭7 (`/theory/tritone-sub`)
+- Побочные доминанты: V7/ii, V7/V, V7/vi (`/theory/secondary-dominants`)
+- Ладовый обмен: заимствование аккордов из параллельных ладов (`/theory/modal-interchange`)
+- Уменьшённая гармония: diminished-аккорды (`/theory/diminished-harmony`)
+
+### 2.7. Гаммы и голосоведение 🟡
+
+**Плагины:** `theory-scales-jazz`, `theory-voicings`, `theory-voice-leading`
+
+- Джазовые гаммы: diminished, whole-tone, altered (`/theory/scales-jazz`)
+- Аккордовые голосоведения: shell, rootless, drop-2 (`/theory/voicings`)
+- Voice Leading: плавное голосоведение в ii–V–I (`/theory/voice-leading`)
 
 ---
 
@@ -218,9 +259,9 @@ Jazz Trainer — браузерный тренажёр джазовой гарм
 
 **Барабаны (DrumInstrument) 🟢:**
 
-- Два набора сэмплов: Swirly Drums v2 (акустическая джазовая установка) и Modern Kit (универсальная установка с toms и stir)
-- Стиле-специфичные паттерны: swing (ride + hi-hat), bossa (rim/clave), funk (16-е синкопы)
-- 8–10 звуков на установку, каждый с 4 round-robin вариантами
+- Два набора сэмплов: Jazz Drum Kit (Swirly Drums 1104, 4 velocity-слоя) и Funk Drum Kit (Virtuosity Drums, 2–5 layers)
+- Organism-driven паттерны v2: organism → cell → molecule → atom для всех 5 стилей (swing/bossa/funk/latin/ballad)
+- Per-style defaults: per-kit overrides (swing ride-driven, bossa clave+rim, funk 16-е + акценты, …)
 - Per-sound настройки: раздельное включение/громкость для каждого звука
 - Humanization (timing jitter ±3–8 мс) и рандомайзер (off/subtle/moderate/high)
 - Fills каждые N тактов (4/8/16) с настраиваемой сложностью
@@ -303,10 +344,18 @@ Jazz Trainer — браузерный тренажёр джазовой гарм
 - Подсистема для live MIDI-ввода — реагирует на события noteOn/noteOff в реальном времени
 - Интерфейс `SoloInstrument` (в отличие от `Instrument`, который планирует ноты в будущее через `TransportEngine`)
 - Три категории: `synth` (синтезаторные тембры), `sampled` (сэмплированные), `reuse` (переиспользование сэмплера аккомпанирующего инструмента)
-- 9 доступных тембров: synthDefault, synthLead, pianoSalamanderSolo, rhodesJRhodes3cSolo, clarinetSolo, vibraphoneSolo, guitarNylonSolo, trumpetMuted, flute
+- 7 доступных тембров: synthDefault, pianoUprightSolo, pianoSalamanderSolo, rhodesJRhodes3cSolo, clarinetSolo, vibraphoneSolo, guitarNylonSolo
 - `SoloInstrumentManifest` — самодостаточное описание (аналог `InstrumentManifest` для сольных)
 - `SoloInstrumentHost` — управление жизненным циклом (создание, переключение, dispose)
 - Подробнее: `docs/MIDI_INSTRUMENT_ARCHITECTURE.md`, `docs/MIDI_ARCHITECTURE.md`
+
+### 6.6. MIDI-визуализатор 🟢
+
+**Плагин:** `visual-midi-keyboard` | **Маршрут:** `/midi-keyboard`
+
+- Виртуальная MIDI-клавиатура с визуальной индикацией нажатых нот
+- MIDI-индикатор ввода: отображение noteOn/noteOff в реальном времени
+- Интеграция с сольными инструментами для live-игры
 
 ### 6.4. Транспорт, метроном и глобальный стиль 🟢
 
@@ -315,6 +364,7 @@ Jazz Trainer — браузерный тренажёр джазовой гарм
 - Loop: зацикливание выбранного диапазона тактов
 - Предсчёт (count-in)
 - **Глобальный стиль:** единый `Style` (swing, bossa, funk, latin, ballad) управляет поведением всех инструментов (Bass, Piano, Rhodes, Drums) согласованно
+- **StyleProfile:** централизованные стиле-специфичные настройки — ростеры инструментов, per-instrument дефолты, ансамбли-предсеты (duet/trio/quartet/quintet/full). Подробнее: `docs/STYLES.md`
 - **Sub-bar chord timeline:** `ChordTimeline` поддерживает multi-chord бары (несколько аккордов в одном такте), инструменты резолвят аккорд на момент звучания ноты. Подробнее: `docs/CHORDS.md`
 
 ---
@@ -390,4 +440,4 @@ Jazz Trainer — браузерный тренажёр джазовой гарм
 
 ---
 
-_Документ обновлён 2026-06-16. Отражает фактические возможности сервиса на текущий момент. Плагинов: 17._
+_Документ обновлён 2026-07-02. Отражает фактические возможности сервиса на текущий момент. Плагинов: 37._

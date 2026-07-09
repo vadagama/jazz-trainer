@@ -56,6 +56,21 @@ function escapeRegExp(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+/**
+ * Percent-encode a sample filename for use in a URL.
+ *
+ * Tone.js loads buffers via `fetch(baseUrl + url)` without any encoding, so a
+ * `#` in a filename (e.g. sharp-note guitar samples like `G#5_s6_01.m4a`) is
+ * treated by the browser as a URL fragment: the request is truncated at `#`,
+ * returns 404, and `decodeAudioData` then throws `EncodingError`. Encoding each
+ * path segment (keeping `/` separators intact) turns `#` into `%23`, which the
+ * dev/prod server decodes back to the real filename. Regular filenames are
+ * unaffected — `encodeURIComponent` leaves letters, digits, `_`, `.`, `-` as-is.
+ */
+function encodeSampleFilename(file: string): string {
+  return file.split('/').map(encodeURIComponent).join('/');
+}
+
 // ─── Factories ───────────────────────────────────────────────────────────────
 
 /**
@@ -92,8 +107,13 @@ export function createPitchedResources(
       : manifest.layers;
 
     for (const [layerName, noteMap] of Object.entries(layers)) {
+      // Encode filenames so `#` (sharp notes) survives Tone's un-encoded fetch.
+      const encodedUrls: Record<string, string> = {};
+      for (const [note, file] of Object.entries(noteMap)) {
+        encodedUrls[note] = encodeSampleFilename(file);
+      }
       const sampler = new Tone.Sampler({
-        urls: noteMap,
+        urls: encodedUrls,
         baseUrl,
         release: manifest.release ?? 1.0,
       });
@@ -120,7 +140,7 @@ export function createPitchedResources(
  *
  * @example
  * ```ts
- * const { players, dispose } = createOneshotResources(drumsManifest.sampleManifest);
+ * const { players, dispose } = createOneshotResources(jazzDrumKitManifest.sampleManifest);
  * for (const [sound, arr] of players) {
  *   const ch = new Tone.Channel().connect(master);
  *   for (const p of arr) p.connect(ch);
@@ -141,8 +161,32 @@ export function createOneshotResources(
       const resolvedFiles = useFallback
         ? files.map((f) => f.replace(new RegExp(`${escapeRegExp(fromExt)}$`), toExt))
         : files;
-      const playerArray = resolvedFiles.map((file) => new Tone.Player(`${baseUrl}${file}`));
+      const playerArray = resolvedFiles.map(
+        (file) => new Tone.Player(`${baseUrl}${encodeSampleFilename(file)}`),
+      );
       players.set(sound, playerArray);
+    }
+  }
+
+  // Load multi-velocity oneshots: flatten each sound×layer into the players map.
+  // All velocity layers for a sound are concatenated; velocity nuance is handled
+  // by per-event player volume rather than sample selection.
+  if (manifest.velocityOneshots) {
+    for (const [sound, layers] of Object.entries(manifest.velocityOneshots)) {
+      const allFiles: string[] = [];
+      for (const files of Object.values(layers)) {
+        allFiles.push(...files);
+      }
+      if (allFiles.length > 0) {
+        const [fromExt, toExt] = manifest.formatSwap ?? DEFAULT_FORMAT_SWAP;
+        const resolvedFiles = useFallback
+          ? allFiles.map((f) => f.replace(new RegExp(`${escapeRegExp(fromExt)}$`), toExt))
+          : allFiles;
+        const playerArray = resolvedFiles.map(
+          (file) => new Tone.Player(`${baseUrl}${encodeSampleFilename(file)}`),
+        );
+        players.set(sound, playerArray);
+      }
     }
   }
 

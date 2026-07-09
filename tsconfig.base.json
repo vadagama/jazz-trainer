@@ -44,6 +44,18 @@
       "@jazz/plugin-admin-flags": ["packages/plugins/admin-flags/src/index.ts"],
       "@jazz/plugin-admin-assets": ["packages/plugins/admin-assets/src/index.ts"],
       "@jazz/plugin-admin-diagnostics": ["packages/plugins/admin-diagnostics/src/index.ts"],
+      "@jazz/plugin-admin-drum-constructor": [
+        "packages/plugins/admin-drum-constructor/src/index.ts"
+      ],
+      "@jazz/plugin-jazz-drum-kit": [
+        "packages/plugins/instruments/jazz-drum-kit/src/index.ts"
+      ],
+      "@jazz/plugin-funk-drum-kit": [
+        "packages/plugins/instruments/funk-drum-kit/src/index.ts"
+      ],
+      "@jazz/plugin-percussion": [
+        "packages/plugins/instruments/percussion/src/index.ts"
+      ],
       "@jazz/plugin-template": ["packages/plugins/_template/src/index.ts"],
       "@jazz/plugin-theory-chord-tones": ["packages/plugins/theory-chord-tones/src/index.ts"],
       "@jazz/plugin-theory-approach-notes": ["packages/plugins/theory-approach-notes/src/index.ts"],

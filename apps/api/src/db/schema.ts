@@ -60,42 +60,9 @@ export const userSettings = sqliteTable('user_settings', {
   pianoProfile: text('piano_profile').notNull().default('swing-sparse'),
   pianoVoicingDensity: text('piano_voicing_density').notNull().default('rootless3'),
   pianoSampleLibrary: text('piano_sample_library').notNull().default('salamander'),
-  pianoRandomizationLevel: text('piano_randomization_level').notNull().default('off'),
   drumsEnabled: integer('drums_enabled', { mode: 'boolean' }).notNull().default(true),
   drumsVolume: real('drums_volume').notNull().default(0.7),
-  drumsRideEnabled: integer('drums_ride_enabled', { mode: 'boolean' }).notNull().default(true),
-  drumsRideVolume: real('drums_ride_volume').notNull().default(0.7),
-  /** @deprecated — use drumsSnareEnabled instead */
-  drumsStirEnabled: integer('drums_stir_enabled', { mode: 'boolean' }).notNull().default(true),
-  /** @deprecated — use drumsSnareVolume instead */
-  drumsStirVolume: real('drums_stir_volume').notNull().default(0.6),
-  drumsHihatEnabled: integer('drums_hihat_enabled', { mode: 'boolean' }).notNull().default(true),
-  drumsHihatVolume: real('drums_hihat_volume').notNull().default(0.65),
-  drumsHihatOpenness: integer('drums_hihat_openness').notNull().default(0),
-  drumsBassDrumEnabled: integer('drums_bass_drum_enabled', { mode: 'boolean' })
-    .notNull()
-    .default(true),
-  drumsBassDrumVolume: real('drums_bass_drum_volume').notNull().default(0.7),
-  drumsSnareEnabled: integer('drums_snare_enabled', { mode: 'boolean' }).notNull().default(true),
-  drumsSnareVolume: real('drums_snare_volume').notNull().default(0.8),
-  drumsCrashEnabled: integer('drums_crash_enabled', { mode: 'boolean' }).notNull().default(true),
-  drumsCrashVolume: real('drums_crash_volume').notNull().default(0.8),
-  drumsCrashFrequency: integer('drums_crash_frequency').notNull().default(4),
-  drumsRimEnabled: integer('drums_rim_enabled', { mode: 'boolean' }).notNull().default(false),
-  drumsRimVolume: real('drums_rim_volume').notNull().default(0.6),
-  drumsHumanizeIntensity: text('drums_humanize_intensity').notNull().default('med'),
-  drumsFunkComplexity: text('drums_funk_complexity').notNull().default('medium'),
-  drumsFillFrequency: text('drums_fill_frequency').notNull().default('8bars'),
-  drumsRandomizationLevel: text('drums_randomization_level').notNull().default('off'),
-  drumsFillComplexity: text('drums_fill_complexity').notNull().default('medium'),
-  drumsRideVariation: integer('drums_ride_variation', { mode: 'boolean' }).notNull().default(true),
-  drumsSnareGhosts: integer('drums_snare_ghosts', { mode: 'boolean' }).notNull().default(true),
-  drumsBassDrumVariation: integer('drums_bass_drum_variation', { mode: 'boolean' })
-    .notNull()
-    .default(true),
-  drumKit: text('drum_kit').notNull().default('jazz-kit'),
-  drumsTomEnabled: integer('drums_tom_enabled', { mode: 'boolean' }).notNull().default(true),
-  drumsTomVolume: real('drums_tom_volume').notNull().default(0.7),
+  drumKit: text('drum_kit').notNull().default('jazz-drum-kit'),
   /** Global playback style — single source of truth for all instruments. */
   style: text('style').notNull().default('swing'),
   /** Per-style user overrides for instrument settings (JSON). See T-004 / ARANGEMENT_PLAN. */

@@ -19,15 +19,16 @@ import {
   pickSalamanderLayer,
   DrumInstrument,
   PercussionInstrument,
+  type PercussionInstrumentSettings,
   getStyleProfile,
+  resolveInstrumentDefaults,
   type HumanizeIntensity,
   bassManifest,
   rhodesManifest,
   pianoManifest,
   salamanderManifest,
-  drumsManifest,
-  modernKitManifest,
-  percussionManifest,
+  resolveDrumSound,
+  selectDrumPlayer,
   guitarManifest,
   electricGuitarManifest,
   type BeatType,
@@ -57,12 +58,39 @@ import type {
 } from '@jazz/shared';
 import { audioUrl } from '@jazz/shared';
 import { usePlaybackStore, useLocalSettingsStore } from '@jazz/plugin-sdk';
+import { resolveDrumKit, drumArticulationMap, getInstrument } from '../shell/instrumentRegistry';
 
 const LOOKAHEAD_TICKS = 480 * 4;
 const PPQ = 480;
 
 function ticksToSeconds(durationTicks: number, bpm: number): number {
   return (durationTicks * 60) / (PPQ * bpm);
+}
+
+/** Per-sound → channel routing that handles both abstract roles and concrete
+ *  kit articulations, so per-sound volume channels work across all kits. */
+interface DrumChannels {
+  bassDrum: Tone.Channel | null;
+  snare: Tone.Channel | null;
+  hihat: Tone.Channel | null;
+  ride: Tone.Channel | null;
+  crash: Tone.Channel | null;
+  rim: Tone.Channel | null;
+  highTom: Tone.Channel | null;
+  lowTom: Tone.Channel | null;
+  master: Tone.Channel | null;
+}
+
+function pickDrumChannel(sound: string, ch: DrumChannels): Tone.Channel | null {
+  if (sound === 'bassDrum' || sound === 'kick') return ch.bassDrum;
+  if (sound === 'rim' || sound === 'snare_crossstick' || sound === 'snare_rimshot') return ch.rim;
+  if (sound.startsWith('snare') || sound === 'snare') return ch.snare;
+  if (sound.startsWith('hihat')) return ch.hihat;
+  if (sound.startsWith('ride')) return ch.ride;
+  if (sound === 'crash' || sound === 'crash_sizzle' || sound === 'splash') return ch.crash;
+  if (sound === 'highTom' || sound === 'tom_hi' || sound === 'tom_mhi') return ch.highTom;
+  if (sound === 'lowTom' || sound === 'tom_lo' || sound === 'tom_mlow') return ch.lowTom;
+  return ch.master;
 }
 
 export interface UseTransportOptions {
@@ -115,10 +143,6 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     for (const f of boolFields) if (o[f] !== undefined) patch[f] = o[f];
     for (const f of numFields) if (o[f] !== undefined) patch[f] = o[f];
     if (o.humanizeIntensity !== undefined) patch.humanizeIntensity = o.humanizeIntensity;
-    if (o.funkComplexity !== undefined) patch.funkComplexity = o.funkComplexity;
-    if (o.fillFrequency !== undefined) patch.fillFrequency = o.fillFrequency;
-    if (o.randomizationLevel !== undefined) patch.randomizationLevel = o.randomizationLevel;
-    if (o.fillComplexity !== undefined) patch.fillComplexity = o.fillComplexity;
     return patch;
   }
 
@@ -167,19 +191,22 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
   const drumsMasterChannelRef = useRef<Tone.Channel | null>(null);
   const drumInstrumentRef = useRef<DrumInstrument | null>(null);
   const drumsRrRef = useRef<Record<string, number>>({});
+  /** Players per velocity layer for the active kit (manifest.rrCount). */
+  const drumsRrPerLayerRef = useRef(4);
   // Percussion: oneshot players
   const percussionPlayersRef = useRef<Map<string, Tone.Player[]>>(new Map());
   const percussionDisposeRef = useRef<() => void>(() => {});
   const percussionMasterChannelRef = useRef<Tone.Channel | null>(null);
   const percussionInstrumentRef = useRef<PercussionInstrument | null>(null);
   const percussionRrRef = useRef<Record<string, number>>({});
+  const percussionManifestRef = useRef<import('@jazz/music-core').InstrumentManifest | null>(null);
   // Guitar: nylon/steel samplers + channel + instrument
   const guitarSamplersRef = useRef<Map<string, Tone.Sampler>>(new Map());
   const guitarDisposeRef = useRef<() => void>(() => {});
   const guitarChannelRef = useRef<Tone.Channel | null>(null);
   const guitarInstrumentRef = useRef<GuitarInstrument | null>(null);
   const rrCounterRef = useRef(new RoundRobinCounter());
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const scheduleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastScheduledRef = useRef(0);
   const prevTicksRef = useRef(0);
   const flatSeqRef = useRef<FlatSequence>({ bars: [], infiniteLoopStart: null });
@@ -429,31 +456,24 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     }).connect(drumsMasterChannel);
     drumsLowTomChannelRef.current = drumsLowTomChannel;
 
-    const drumSampleManifest =
-      settings.drumKit === 'modern-kit'
-        ? modernKitManifest.sampleManifest
-        : drumsManifest.sampleManifest;
+    const drumKitEntry = resolveDrumKit(settings.drumKit);
+    const drumKitManifest = drumKitEntry.manifest;
+    drumsRrPerLayerRef.current = drumKitManifest.sampleManifest.rrCount ?? 4;
 
-    const drumsRes = createOneshotResources(drumSampleManifest, settings.audioFormat);
+    const drumsRes = createOneshotResources(drumKitManifest.sampleManifest, settings.audioFormat);
+    const initDrumChannels: DrumChannels = {
+      bassDrum: drumsBassDrumChannel,
+      snare: drumsSnareChannel,
+      hihat: drumsHihatChannel,
+      ride: drumsRideChannel,
+      crash: drumsCrashChannel,
+      rim: drumsRimChannel,
+      highTom: drumsHighTomChannel,
+      lowTom: drumsLowTomChannel,
+      master: drumsMasterChannel,
+    };
     for (const [sound, arr] of drumsRes.players) {
-      const ch =
-        sound === 'bassDrum'
-          ? drumsBassDrumChannel
-          : sound === 'snare'
-            ? drumsSnareChannel
-            : sound === 'hihat' || sound === 'hihatHalf' || sound === 'hihatOpen'
-              ? drumsHihatChannel
-              : sound === 'ride'
-                ? drumsRideChannel
-                : sound === 'crash'
-                  ? drumsCrashChannel
-                  : sound === 'rim'
-                    ? drumsRimChannel
-                    : sound === 'highTom'
-                      ? drumsHighTomChannel
-                      : sound === 'lowTom'
-                        ? drumsLowTomChannel
-                        : drumsMasterChannel;
+      const ch = pickDrumChannel(sound, initDrumChannels) ?? drumsMasterChannel;
       for (const p of arr) p.connect(ch);
     }
     drumsPlayersRef.current = drumsRes.players;
@@ -474,26 +494,46 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
       if (p.sound === 'crash' && !(s.drumsCrashEnabled ?? true)) return;
       if (p.sound === 'rim' && !(s.drumsRimEnabled ?? true)) return;
       if ((p.sound === 'highTom' || p.sound === 'lowTom') && !(s.drumsTomEnabled ?? true)) return;
-      const pool = drumsPlayersRef.current.get(p.sound);
+
+      // Resolve abstract sound role → active kit's concrete articulation key,
+      // then pick a velocity-layered round-robin player (same path as the
+      // admin drum preview). Kits are keyed by articulation, not abstract role.
+      const artMap = drumArticulationMap(s.drumKit);
+      const concrete = artMap[p.sound] ?? p.sound;
+      const resolved = resolveDrumSound(concrete, drumsPlayersRef.current);
+      if (!resolved) return;
+      const pool = drumsPlayersRef.current.get(resolved);
       if (!pool) return;
-      const rr = (drumsRrRef.current[p.sound] ?? 0) % 4;
-      drumsRrRef.current[p.sound] = (drumsRrRef.current[p.sound] ?? 0) + 1;
-      const player = pool[rr];
+      const sel = selectDrumPlayer(
+        velocity,
+        pool.length,
+        drumsRrPerLayerRef.current,
+        drumsRrRef.current,
+        resolved,
+      );
+      if (!sel) return;
+      const player = pool[sel.playerIndex];
       if (!player) return;
       // Per-event velocity: set player volume inside the callback so it
       // applies at the exact audio time, not at schedule-time (which would
       // be overwritten by the next scheduling window).
-      const velDb = velocity < 1.0 ? Tone.gainToDb(velocity) : 0;
       tone.scheduleOnce((time: number) => {
         if (player.loaded) {
-          if (velocity < 1.0) player.volume.value = velDb;
-          player.start(time);
+          // Use setValueAtTime so volume is applied at the exact same
+          // audio time as start(), avoiding a race where .value uses
+          // AudioContext.currentTime which may lag behind transport time.
+          player.volume.setValueAtTime(sel.volumeDb, time);
+          try {
+            player.start(time);
+          } catch {
+            // start time collided with a pending start on this player — skip.
+          }
         }
       }, `${atTicks}i`);
     };
 
-    const drumInstrument = new DrumInstrument();
-    drumInstrument.setStyle((settings.style ?? 'swing') as Style);
+    const drumInstrument = drumKitManifest.createInstrument() as DrumInstrument;
+    drumInstrument.setStyleProfile(getStyleProfile((settings.style ?? 'swing') as Style));
     drumInstrument.updateSettings({
       enabled: settings.drumsEnabled ?? true,
       volume: settings.drumsVolume ?? 0.7,
@@ -512,27 +552,19 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
       rimEnabled: settings.drumsRimEnabled ?? false,
       rimVolume: settings.drumsRimVolume ?? 0.6,
       humanizeIntensity: (settings.drumsHumanizeIntensity ?? 'med') as HumanizeIntensity,
-      funkComplexity: settings.drumsFunkComplexity ?? 'medium',
-      fillFrequency: (settings.drumsFillFrequency ?? '8bars') as
-        | 'never'
-        | '4bars'
-        | '8bars'
-        | '16bars',
-      randomizationLevel: (settings.drumsRandomizationLevel ?? 'off') as
-        | 'off'
-        | 'subtle'
-        | 'moderate'
-        | 'high',
-      fillComplexity: (settings.drumsFillComplexity ?? 'medium') as 'simple' | 'medium' | 'complex',
-      rideVariation: settings.drumsRideVariation ?? true,
-      snareGhosts: settings.drumsSnareGhosts ?? true,
-      bassDrumVariation: settings.drumsBassDrumVariation ?? true,
       tomEnabled: settings.drumsTomEnabled ?? true,
       tomVolume: settings.drumsTomVolume ?? 0.7,
     });
     drumInstrumentRef.current = drumInstrument;
+    drumInstrument.setOrganismId((settings.drumsPattern as string | null) ?? null);
 
     // ── Percussion setup ───────────────────────────────────────────────────
+    // Resolved from the live instrument registry (contributed by the percussion
+    // plugin), never imported directly — see docs/INSTRUMENT-PLUGIN.md.
+    const percussionEntry = getInstrument('percussion')!;
+    const percussionManifest = percussionEntry.manifest;
+    percussionManifestRef.current = percussionManifest;
+
     const percussionMasterChannel = new Tone.Channel({
       volume: Tone.gainToDb(settings.percussionVolume ?? 0.7),
     }).toDestination();
@@ -552,6 +584,21 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
       const s = optsRef.current.settings;
       if (!(s.percussionEnabled ?? false)) return;
       const p = payload as PercussionEvent;
+
+      // Per-sound enable gates (data-driven from manifest.sounds)
+      const percSounds = percussionManifest.sounds;
+      if (percSounds) {
+        const sRaw = s as Record<string, unknown>;
+        const defs = (percussionManifest.defaultSettings ?? {}) as Record<string, unknown>;
+        for (const sound of percSounds) {
+          if (p.sound !== sound) continue;
+          const pascal = sound.charAt(0).toUpperCase() + sound.slice(1);
+          const fallback = (defs[`${sound}Enabled`] as boolean) ?? true;
+          if (!((sRaw[`percussion${pascal}Enabled`] as boolean | undefined) ?? fallback)) return;
+          break;
+        }
+      }
+
       const pool = percussionPlayersRef.current.get(p.sound);
       if (!pool) return;
       const rrCount = pool.length;
@@ -562,19 +609,54 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
       const velDb = velocity < 1.0 ? Tone.gainToDb(velocity) : 0;
       tone.scheduleOnce((time: number) => {
         if (player.loaded) {
-          if (velocity < 1.0) player.volume.value = velDb;
-          player.start(time);
+          if (velocity < 1.0) player.volume.setValueAtTime(velDb, time);
+          try {
+            player.start(time);
+          } catch {
+            // start time collided with a pending start on this player — skip.
+          }
         }
       }, `${atTicks}i`);
     };
 
-    const percussionInstrument = new PercussionInstrument();
+    const percussionInstrument = percussionManifest.createInstrument() as PercussionInstrument;
     percussionInstrument.setStyle((settings.style ?? 'swing') as Style);
-    percussionInstrument.updateSettings({
+
+    const percSounds = percussionManifest.sounds;
+    const percInitSettings: Record<string, unknown> = {
       enabled: settings.percussionEnabled ?? false,
       volume: settings.percussionVolume ?? 0.7,
       humanizeIntensity: (settings.percussionHumanizeIntensity ?? 'low') as HumanizeIntensity,
-    });
+    };
+
+    // Per-sound settings (data-driven from manifest.sounds)
+    if (percSounds) {
+      const sRaw = settings as Record<string, unknown>;
+      const defs = (percussionManifest.defaultSettings ?? {}) as Record<string, unknown>;
+      for (const sound of percSounds) {
+        const pascal = sound.charAt(0).toUpperCase() + sound.slice(1);
+        percInitSettings[`${sound}Enabled`] =
+          sRaw[`percussion${pascal}Enabled`] ?? defs[`${sound}Enabled`] ?? true;
+        percInitSettings[`${sound}Volume`] =
+          sRaw[`percussion${pascal}Volume`] ?? defs[`${sound}Volume`] ?? 0.7;
+      }
+    }
+
+    percussionInstrument.updateSettings(percInitSettings as Partial<PercussionInstrumentSettings>);
+    // Set organism from per-style overrides or the manifest's per-style
+    // defaults — resolved via the canonical resolveInstrumentDefaults() helper,
+    // which is the single source of truth for per-style instrument defaults.
+    const percStyleDefaults = resolveInstrumentDefaults(
+      percussionManifest,
+      (settings.style ?? 'swing') as Style,
+    );
+    const percOrganismId =
+      (settings.percussionPattern as string | undefined) ??
+      (percStyleDefaults.organismId as string | undefined) ??
+      null;
+    if (percOrganismId) {
+      percussionInstrument.setOrganismId(percOrganismId);
+    }
     percussionInstrumentRef.current = percussionInstrument;
 
     // ── Guitar ──────────────────────────────────────────────────────────
@@ -686,7 +768,7 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
 
       document.removeEventListener('pointerdown', warmAudioContext);
       unsub();
-      if (intervalRef.current !== null) clearInterval(intervalRef.current);
+      if (scheduleTimerRef.current !== null) clearTimeout(scheduleTimerRef.current);
       adapter.stop();
       strongPlayerRef.current?.dispose();
       strong2PlayerRef.current?.dispose();
@@ -959,17 +1041,33 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
 
     // ── Percussion ──
     if (percussionInstrumentRef.current) {
-      percussionInstrumentRef.current.updateSettings({
-        ...(overrides.percussionEnabled !== undefined && {
-          enabled: overrides.percussionEnabled as boolean,
-        }),
-        ...(overrides.percussionVolume !== undefined && {
-          volume: overrides.percussionVolume as number,
-        }),
-        ...(overrides.percussionHumanizeIntensity !== undefined && {
-          humanizeIntensity: overrides.percussionHumanizeIntensity as HumanizeIntensity,
-        }),
-      });
+      const patch: Record<string, unknown> = {};
+      if (overrides.percussionEnabled !== undefined) patch.enabled = overrides.percussionEnabled;
+      if (overrides.percussionVolume !== undefined) patch.volume = overrides.percussionVolume;
+      if (overrides.percussionHumanizeIntensity !== undefined)
+        patch.humanizeIntensity = overrides.percussionHumanizeIntensity;
+
+      // Per-sound overrides (data-driven from manifest.sounds)
+      const percManifest = percussionManifestRef.current;
+      const percSounds = percManifest?.sounds;
+      if (percSounds) {
+        const o = overrides as Record<string, unknown>;
+        for (const sound of percSounds) {
+          const pascal = sound.charAt(0).toUpperCase() + sound.slice(1);
+          const enabledVal = o[`percussion${pascal}Enabled`];
+          const volumeVal = o[`percussion${pascal}Volume`];
+          if (enabledVal !== undefined) patch[`${sound}Enabled`] = enabledVal;
+          if (volumeVal !== undefined) patch[`${sound}Volume`] = volumeVal;
+        }
+      }
+
+      percussionInstrumentRef.current.updateSettings(
+        patch as Partial<PercussionInstrumentSettings>,
+      );
+      // Update organism if pattern changed
+      if (overrides.percussionPattern !== undefined) {
+        percussionInstrumentRef.current.setOrganismId(overrides.percussionPattern as string | null);
+      }
     }
     if (percussionMasterChannelRef.current && overrides.percussionVolume !== undefined) {
       percussionMasterChannelRef.current.volume.value = Tone.gainToDb(
@@ -1064,21 +1162,6 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
       rimEnabled: settings.drumsRimEnabled ?? false,
       rimVolume: settings.drumsRimVolume ?? 0.6,
       humanizeIntensity: (settings.drumsHumanizeIntensity ?? 'med') as HumanizeIntensity,
-      funkComplexity: settings.drumsFunkComplexity ?? 'medium',
-      fillFrequency: (settings.drumsFillFrequency ?? '8bars') as
-        | 'never'
-        | '4bars'
-        | '8bars'
-        | '16bars',
-      randomizationLevel: (settings.drumsRandomizationLevel ?? 'off') as
-        | 'off'
-        | 'subtle'
-        | 'moderate'
-        | 'high',
-      fillComplexity: (settings.drumsFillComplexity ?? 'medium') as 'simple' | 'medium' | 'complex',
-      rideVariation: settings.drumsRideVariation ?? true,
-      snareGhosts: settings.drumsSnareGhosts ?? true,
-      bassDrumVariation: settings.drumsBassDrumVariation ?? true,
       tomEnabled: settings.drumsTomEnabled ?? true,
       tomVolume: settings.drumsTomVolume ?? 0.7,
     });
@@ -1121,55 +1204,48 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     settings.drumsRimEnabled,
     settings.drumsRimVolume,
     settings.drumsHumanizeIntensity,
-    settings.drumsFunkComplexity,
-    settings.drumsFillFrequency,
-    settings.drumsRandomizationLevel,
-    settings.drumsFillComplexity,
-    settings.drumsRideVariation,
-    settings.drumsSnareGhosts,
-    settings.drumsBassDrumVariation,
     settings.drumsTomEnabled,
     settings.drumsTomVolume,
   ]);
 
-  // Reload drum sample resources when kit changes (jazz-kit ↔ modern-kit)
+  // Sync organism selection (drumsPattern) to DrumInstrument
+  useEffect(() => {
+    if (!drumInstrumentRef.current) return;
+    drumInstrumentRef.current.setOrganismId((settings.drumsPattern as string | null) ?? null);
+  }, [settings.drumsPattern]);
+
+  // Reload drum sample resources when kit changes (jazz-drum-kit ↔ funk-drum-kit)
   const prevDrumKitRef = useRef(settings.drumKit);
   useEffect(() => {
     if (!initializedRef.current) return;
     if (settings.drumKit === prevDrumKitRef.current) return;
     prevDrumKitRef.current = settings.drumKit;
 
-    const kit = settings.drumKit ?? 'jazz-kit';
-    const manifest =
-      kit === 'modern-kit' ? modernKitManifest.sampleManifest : drumsManifest.sampleManifest;
+    const manifest = resolveDrumKit(settings.drumKit).manifest;
+    drumsRrPerLayerRef.current = manifest.sampleManifest.rrCount ?? 4;
 
     // Dispose old players
     drumsDisposeRef.current?.();
 
-    const drumsRes = createOneshotResources(manifest, settings.audioFormat);
+    const drumsRes = createOneshotResources(manifest.sampleManifest, settings.audioFormat);
+    const channels: DrumChannels = {
+      bassDrum: drumsBassDrumChannelRef.current,
+      snare: drumsSnareChannelRef.current,
+      hihat: drumsHihatChannelRef.current,
+      ride: drumsRideChannelRef.current,
+      crash: drumsCrashChannelRef.current,
+      rim: drumsRimChannelRef.current,
+      highTom: drumsHighTomChannelRef.current,
+      lowTom: drumsLowTomChannelRef.current,
+      master: drumsMasterChannelRef.current,
+    };
     for (const [sound, arr] of drumsRes.players) {
-      const ch =
-        sound === 'bassDrum'
-          ? drumsBassDrumChannelRef.current
-          : sound === 'snare'
-            ? drumsSnareChannelRef.current
-            : sound === 'hihat' || sound === 'hihatHalf' || sound === 'hihatOpen'
-              ? drumsHihatChannelRef.current
-              : sound === 'ride'
-                ? drumsRideChannelRef.current
-                : sound === 'crash'
-                  ? drumsCrashChannelRef.current
-                  : sound === 'rim'
-                    ? drumsRimChannelRef.current
-                    : sound === 'highTom'
-                      ? drumsHighTomChannelRef.current
-                      : sound === 'lowTom'
-                        ? drumsLowTomChannelRef.current
-                        : drumsMasterChannelRef.current;
+      const ch = pickDrumChannel(sound, channels);
       if (ch) for (const p of arr) p.connect(ch);
     }
     drumsPlayersRef.current = drumsRes.players;
     drumsDisposeRef.current = drumsRes.dispose;
+    drumsRrRef.current = {};
   }, [settings.drumKit, settings.audioFormat]);
 
   // Update swing ratio — read per-style from settings + Zustand
@@ -1208,6 +1284,8 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     bassInstrumentRef.current?.setTimeline(timeline);
     rhodesInstrumentRef.current?.setTimeline(new ChordTimeline(entries));
     pianoInstrumentRef.current?.setTimeline(new ChordTimeline(entries));
+    // Propagate sections to drum instrument for section-driven cell scheduling
+    engineRef.current?.setSections(opts.sections ?? null);
   }, [opts.sections, opts.timeSignature]);
 
   const play = useCallback(async () => {
@@ -1255,6 +1333,9 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     const sections = optsRef.current.sections ?? [];
     const seq = buildFlatSequence(sections);
     flatSeqRef.current = seq;
+
+    // Wire grid sections into the drum instrument for section-driven cell scheduling
+    engine.setSections(sections);
 
     // Sync chord timeline to bass, Rhodes, and Piano instruments
     const timelineEntries = buildChordTimelineEntries(
@@ -1368,9 +1449,9 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     engine.play();
     adapter.start(0.05 + countInSeconds);
 
-    if (intervalRef.current !== null) clearInterval(intervalRef.current);
+    if (scheduleTimerRef.current !== null) clearTimeout(scheduleTimerRef.current);
 
-    intervalRef.current = setInterval(() => {
+    const scheduleTick = (): boolean => {
       const currentTicks = adapterRef.current!.ticks;
       const seq2 = flatSeqRef.current;
       const sig2 = parseTimeSignature(optsRef.current.timeSignature);
@@ -1405,16 +1486,36 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
         seq2.bars.length > 0 &&
         currentTicks >= seq2.bars.length * tpBar2
       ) {
-        if (intervalRef.current !== null) clearInterval(intervalRef.current);
-        intervalRef.current = null;
         const a = adapterRef.current!;
         a.stop();
         a.setLoop(false);
         a.ticks = 0;
         lastScheduledRef.current = 0;
         engineRef.current?.stop();
+
+        // Stop any currently-playing oneshot samples (drums, percussion)
+        // so long samples (e.g. hihat_stir) don't ring out after transport stop.
+        for (const players of drumsPlayersRef.current.values()) {
+          for (const player of players) {
+            try {
+              player.stop();
+            } catch {
+              /* player already stopped */
+            }
+          }
+        }
+        for (const players of percussionPlayersRef.current.values()) {
+          for (const player of players) {
+            try {
+              player.stop();
+            } catch {
+              /* player already stopped */
+            }
+          }
+        }
+
         machine.dispatch({ type: 'stop' });
-        return;
+        return false;
       }
 
       // Schedule look-ahead window.
@@ -1444,7 +1545,15 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
           lastScheduledRef.current = to;
         }
       }
-    }, 25);
+      return true;
+    };
+
+    const runLoop = () => {
+      if (scheduleTick() && engineRef.current?.status === 'playing') {
+        scheduleTimerRef.current = setTimeout(runLoop, 25);
+      }
+    };
+    runLoop();
   }, []);
 
   const pause = useCallback(() => {
@@ -1456,9 +1565,9 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     countInTimeoutsRef.current = [];
     usePlaybackStore.getState()._setCountIn(false, 0);
 
-    if (intervalRef.current !== null) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
+    if (scheduleTimerRef.current !== null) {
+      clearTimeout(scheduleTimerRef.current);
+      scheduleTimerRef.current = null;
     }
 
     adapterRef.current?.pause();
@@ -1475,9 +1584,9 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     countInTimeoutsRef.current = [];
     usePlaybackStore.getState()._setCountIn(false, 0);
 
-    if (intervalRef.current !== null) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
+    if (scheduleTimerRef.current !== null) {
+      clearTimeout(scheduleTimerRef.current);
+      scheduleTimerRef.current = null;
     }
 
     const adapter = adapterRef.current!;
@@ -1488,6 +1597,28 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     prevTicksRef.current = 0;
 
     engine.stop();
+
+    // Stop any currently-playing oneshot samples (drums, percussion) so they
+    // don't ring out after the transport has stopped.
+    for (const players of drumsPlayersRef.current.values()) {
+      for (const player of players) {
+        try {
+          player.stop();
+        } catch {
+          /* player already stopped */
+        }
+      }
+    }
+    for (const players of percussionPlayersRef.current.values()) {
+      for (const player of players) {
+        try {
+          player.stop();
+        } catch {
+          /* player already stopped */
+        }
+      }
+    }
+
     machine.dispatch({ type: 'stop' });
   }, []);
 

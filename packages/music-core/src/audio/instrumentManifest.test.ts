@@ -1,12 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { resolveInstrumentDefaults } from './instrumentManifest.js';
 import { bassManifest } from './bassManifest.js';
-import { drumsManifest } from './drumsManifest.js';
 import { pianoManifest } from './pianoManifest.js';
 import { rhodesManifest } from './rhodesManifest.js';
 import { guitarManifest } from './guitarManifest.js';
 import { salamanderManifest } from './salamanderManifest.js';
-import { percussionManifest } from './percussionManifest.js';
 import { electricGuitarManifest } from './electricGuitarManifest.js';
 import type { Style } from '@jazz/shared';
 
@@ -20,6 +18,8 @@ describe('resolveInstrumentDefaults', () => {
     const manifest = {
       id: 'test',
       name: 'Test',
+      family: 'pitched' as const,
+      settingsPrefix: 'test',
       createInstrument: () => ({}) as never,
       sampleManifest: { baseUrl: '/' },
       defaultSettings: { enabled: true, volume: 0.5 },
@@ -32,6 +32,8 @@ describe('resolveInstrumentDefaults', () => {
     const manifest = {
       id: 'test',
       name: 'Test',
+      family: 'pitched' as const,
+      settingsPrefix: 'test',
       createInstrument: () => ({}) as never,
       sampleManifest: { baseUrl: '/' },
       defaultSettings: { enabled: false, volume: 0.7, pattern: 'default' },
@@ -45,6 +47,8 @@ describe('resolveInstrumentDefaults', () => {
     const manifest = {
       id: 'test',
       name: 'Test',
+      family: 'pitched' as const,
+      settingsPrefix: 'test',
       createInstrument: () => ({}) as never,
       sampleManifest: { baseUrl: '/' },
       defaultSettings: { enabled: false },
@@ -60,6 +64,8 @@ describe('resolveInstrumentDefaults', () => {
     const manifest = {
       id: 'test',
       name: 'Test',
+      family: 'pitched' as const,
+      settingsPrefix: 'test',
       createInstrument: () => ({}) as never,
       sampleManifest: { baseUrl: '/' },
       defaultSettings: { enabled: false, volume: 0.5 },
@@ -109,36 +115,8 @@ describe('bassManifest per-style defaults', () => {
 });
 
 // ─── Drums per-style defaults ─────────────────────────────────────────────────
-
-describe('drumsManifest per-style defaults', () => {
-  it('swing uses swing pattern', () => {
-    const result = resolveInstrumentDefaults(drumsManifest, 'swing');
-    expect(result.pattern).toBe('swing');
-  });
-
-  it('bossa uses bossa pattern, snare off, rim on', () => {
-    const result = resolveInstrumentDefaults(drumsManifest, 'bossa');
-    expect(result.pattern).toBe('bossa');
-    expect(result.snareEnabled).toBe(false);
-    expect(result.rimEnabled).toBe(true);
-  });
-
-  it('funk uses funk pattern', () => {
-    const result = resolveInstrumentDefaults(drumsManifest, 'funk');
-    expect(result.pattern).toBe('funk');
-  });
-
-  it('latin uses funk pattern (closest approximation)', () => {
-    const result = resolveInstrumentDefaults(drumsManifest, 'latin');
-    expect(result.pattern).toBe('funk');
-  });
-
-  it('ballad uses swing pattern with lower volume', () => {
-    const result = resolveInstrumentDefaults(drumsManifest, 'ballad');
-    expect(result.pattern).toBe('swing');
-    expect(result.volume).toBe(0.55);
-  });
-});
+// (moved to packages/plugins/instruments/jazz-drum-kit — the manifest now lives
+//  in the plugin, and music-core cannot import plugins by layer boundaries.)
 
 // ─── Piano per-style defaults ─────────────────────────────────────────────────
 
@@ -267,13 +245,11 @@ describe('salamanderManifest per-style defaults', () => {
 describe('perStyleDefaults completeness', () => {
   const manifests = [
     { name: 'bass', m: bassManifest },
-    { name: 'drums', m: drumsManifest },
     { name: 'piano', m: pianoManifest },
     { name: 'rhodes', m: rhodesManifest },
     { name: 'guitar', m: guitarManifest },
     { name: 'electric-guitar', m: electricGuitarManifest },
     { name: 'salamander', m: salamanderManifest },
-    { name: 'percussion', m: percussionManifest },
   ] as const;
 
   it('every manifest has perStyleDefaults', () => {
@@ -301,39 +277,5 @@ describe('perStyleDefaults completeness', () => {
         expect(typeof result, `${name} × ${style}`).toBe('object');
       }
     }
-  });
-});
-
-// ─── Percussion per-style defaults ────────────────────────────────────────────
-
-describe('percussionManifest per-style defaults', () => {
-  it('swing uses cascara-clave, disabled by default', () => {
-    const result = resolveInstrumentDefaults(percussionManifest, 'swing');
-    expect(result.pattern).toBe('cascara-clave');
-    expect(result.enabled).toBe(false);
-  });
-
-  it('bossa uses bossa-texture, disabled by default', () => {
-    const result = resolveInstrumentDefaults(percussionManifest, 'bossa');
-    expect(result.pattern).toBe('bossa-texture');
-    expect(result.enabled).toBe(false);
-  });
-
-  it('funk uses funk-accents, disabled by default', () => {
-    const result = resolveInstrumentDefaults(percussionManifest, 'funk');
-    expect(result.pattern).toBe('funk-accents');
-    expect(result.enabled).toBe(false);
-  });
-
-  it('latin uses cascara-clave, enabled by default', () => {
-    const result = resolveInstrumentDefaults(percussionManifest, 'latin');
-    expect(result.pattern).toBe('cascara-clave');
-    expect(result.enabled).toBe(true);
-  });
-
-  it('ballad uses bossa-texture, disabled by default', () => {
-    const result = resolveInstrumentDefaults(percussionManifest, 'ballad');
-    expect(result.pattern).toBe('bossa-texture');
-    expect(result.enabled).toBe(false);
   });
 });

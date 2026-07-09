@@ -1,0 +1,29 @@
+%% convertLegacyCell() — swing-16-verse (legacy pool → new lanes/clips)
+flowchart LR
+    subgraph L["Legacy DrumCell"]
+      LV["volumeMul 1.0"]
+      LD["dynamicsType steady"]
+      LG["grooveMoleculePool:<br/>ride-basic, feathering-1,<br/>foot-chick, stir-texture,<br/>snare-ghost-phrase"]
+      LVAR["variationMoleculePool:<br/>snare-backbeat<br/>(every 4 bars)"]
+      LF["fillMoleculePool:<br/>fill-triplet-1<br/>(every 8 bars)"]
+      LC["crashType: crash"]
+    end
+    subgraph N["New DrumCell"]
+      NV["velocity 1.0"]
+      ND["dynamics {steady, 0.15}"]
+      subgraph LANES["lanes[]"]
+        R["ride  p=1<br/>clip[0,16] {ride-basic ×10}"]
+        K["kick  p=1<br/>clip[0,16] {feathering-1 ×10}"]
+        H["hihat p=1<br/>clip[0,16] {foot-chick ×10}"]
+        S["stir  p=1<br/>clip[0,16] {stir-texture ×10}"]
+        SN["snare p=0.85<br/>clip[0,16] {ghost ×10, backbeat ×3}"]
+        FI["fill  p=0.6<br/>clip[7,1],[15,1] {fill-triplet-1 ×1}"]
+        AC["accent p=1<br/>clip[0,1],[8,1] {crash ×1}"]
+      end
+    end
+    LV --> NV
+    LD --> ND
+    LG --> R & K & H & S & SN
+    LVAR -. fold into snare pool .-> SN
+    LF --> FI
+    LC -. wrap as 1-atom molecule .-> AC

@@ -36,6 +36,16 @@ export default defineConfig({
       '@jazz/plugin-admin-flags': r('./packages/plugins/admin-flags/src/index.ts'),
       '@jazz/plugin-admin-assets': r('./packages/plugins/admin-assets/src/index.ts'),
       '@jazz/plugin-admin-diagnostics': r('./packages/plugins/admin-diagnostics/src/index.ts'),
+      '@jazz/plugin-admin-drum-constructor': r(
+        './packages/plugins/admin-drum-constructor/src/index.ts',
+      ),
+      '@jazz/plugin-jazz-drum-kit': r(
+        './packages/plugins/instruments/jazz-drum-kit/src/index.ts',
+      ),
+      '@jazz/plugin-funk-drum-kit': r(
+        './packages/plugins/instruments/funk-drum-kit/src/index.ts',
+      ),
+      '@jazz/plugin-percussion': r('./packages/plugins/instruments/percussion/src/index.ts'),
       '@jazz/plugin-theory-chord-tones': r('./packages/plugins/theory-chord-tones/src/index.ts'),
       '@jazz/plugin-theory-arpeggios': r('./packages/plugins/theory-arpeggios/src/index.ts'),
       '@jazz/plugin-theory-blues': r('./packages/plugins/theory-blues/src/index.ts'),

@@ -5,6 +5,7 @@ import type {
   SettingsService,
   NavigationService,
   EventBus,
+  InstrumentRegistryService,
 } from '@jazz/plugin-sdk';
 
 export function createPluginContext(overrides?: Partial<PluginContext>): PluginContext {
@@ -16,5 +17,6 @@ export function createPluginContext(overrides?: Partial<PluginContext>): PluginC
     events: overrides?.events ?? ({} as EventBus),
     music: overrides?.music ?? {},
     query: overrides?.query ?? {},
+    instruments: overrides?.instruments ?? ({} as InstrumentRegistryService),
   };
 }

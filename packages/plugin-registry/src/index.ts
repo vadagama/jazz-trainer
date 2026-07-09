@@ -7,6 +7,10 @@ import adminContent from '@jazz/plugin-admin-content';
 import adminFlags from '@jazz/plugin-admin-flags';
 import adminAssets from '@jazz/plugin-admin-assets';
 import adminDiagnostics from '@jazz/plugin-admin-diagnostics';
+import adminDrumConstructor from '@jazz/plugin-admin-drum-constructor';
+import jazzDrumKit from '@jazz/plugin-jazz-drum-kit';
+import funkDrumKit from '@jazz/plugin-funk-drum-kit';
+import percussion from '@jazz/plugin-percussion';
 import theoryChordTones from '@jazz/plugin-theory-chord-tones';
 import theoryApproachNotes from '@jazz/plugin-theory-approach-notes';
 import theoryArpeggios from '@jazz/plugin-theory-arpeggios';
@@ -46,6 +50,10 @@ export const PLUGINS: PluginDefinition[] = [
   adminFlags,
   adminAssets,
   adminDiagnostics,
+  adminDrumConstructor,
+  jazzDrumKit,
+  funkDrumKit,
+  percussion,
   theoryChordTones,
   theoryApproachNotes,
   theoryArpeggios,

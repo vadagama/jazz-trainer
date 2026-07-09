@@ -49,6 +49,7 @@ function buildSections(
     {
       id: 'practice-section',
       name: 'Practice',
+      type: 'verseA',
       timeSignature,
       bars: sectionBars,
     },

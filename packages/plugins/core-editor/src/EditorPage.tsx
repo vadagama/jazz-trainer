@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Loader2, AlertCircle, Pencil } from 'lucide-react';
 import type { TimeSignatureString, Key, Style } from '@jazz/shared';
-import { transposeSections } from '@jazz/music-core';
+import { transposeSections, getStyleProfile } from '@jazz/music-core';
 import type { InputPort } from '@jazz/music-core';
 import { SOLO_INSTRUMENT_MANIFESTS } from '@jazz/music-core/audio';
 import { useGrid, useUpdateGrid } from './queries/useGrid';
@@ -116,6 +116,7 @@ export function EditorPage() {
     deleteSection,
     renameSection,
     setSectionTimeSignature,
+    setSectionType,
     insertBarAfter,
   } = useEditorStore();
 
@@ -501,10 +502,9 @@ export function EditorPage() {
   }
 
   const handleStyleChange = (style: Style) => {
-    updateSettings.mutate({
-      style,
-      drumKit: style === 'funk' ? 'modern-kit' : 'jazz-kit',
-    });
+    const profile = getStyleProfile(style);
+    const drumKit = profile.defaultVariants.drums ?? 'jazz-drum-kit';
+    updateSettings.mutate({ style, drumKit });
   };
   async function handleSaveTitle(name: string) {
     await updateMutation.mutateAsync({ name });
@@ -586,6 +586,7 @@ export function EditorPage() {
                 }}
                 onRenameSection={renameSection}
                 onSetSectionTimeSignature={setSectionTimeSignature}
+                onSetSectionType={setSectionType}
                 onAddBarToSection={addBarToSection}
                 onDeleteSection={deleteSection}
                 onSetBarRepeatEnd={setBarRepeatEnd}

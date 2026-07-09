@@ -14,6 +14,8 @@ const CLARINET_SAMPLE_MANIFEST: SampleManifest = {
 export const clarinetManifest: InstrumentManifest = {
   id: 'clarinet',
   name: 'Clarinet',
+  family: 'pitched',
+  settingsPrefix: 'clarinet',
   createInstrument: () => new ClarinetInstrument(new ChordTimeline()),
   sampleManifest: CLARINET_SAMPLE_MANIFEST,
   defaultSettings: {

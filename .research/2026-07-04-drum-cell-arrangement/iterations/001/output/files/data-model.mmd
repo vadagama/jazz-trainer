@@ -1,0 +1,42 @@
+%% New DrumCell arrangement model (timeline of bars × clips)
+classDiagram
+    class DrumCell {
+      +string id
+      +DrumPatternStyle style
+      +int length  // 8|16|32 bars
+      +[4,4]|[5,4] timeSignature
+      +number velocity   // NEW: master musical velocity 0..1
+      +number volumeMul  // mixer level (unchanged)
+      +DrumCellDynamics dynamics
+      +DrumClip[] arrangement  // NEW: explicit placement
+      +number weight
+      %% legacy pool fields kept during migration (optional)
+      +string[] grooveMoleculePool?
+      +int variationEveryBars?
+      +string[] variationMoleculePool?
+      +int fillEveryBars?
+      +string[] fillMoleculePool?
+      +DrumSound crashType?
+    }
+    class DrumClip {
+      +string moleculeId
+      +int startBar        // 0-based, within [0, length)
+      +int lengthBars      // span; molecule tiles across it
+      +ClipMode mode       // 'layer' | 'replace'
+      +number velocityMul  // 0..1, per-clip trim
+      +number probability  // 0..1 (seeded, deterministic)
+      +string lane         // 'ride'|'hihat'|'kick'|'snare'|'aux'
+    }
+    class DrumMolecule {
+      +string id
+      +1|2 bars
+      +DrumAtom[] atoms
+      +MoleculeCategory category
+    }
+    class DrumCellDynamics {
+      +Type type  // steady|crescendo|decrescendo|wave
+      +number[] envelope?  // NEW optional per-bar breakpoints
+    }
+    DrumCell "1" o-- "many" DrumClip : arrangement
+    DrumClip "1" --> "1" DrumMolecule : moleculeId (ref)
+    DrumCell "1" *-- "1" DrumCellDynamics : dynamics

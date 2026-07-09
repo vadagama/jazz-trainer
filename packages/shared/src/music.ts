@@ -12,7 +12,12 @@ export const TimeSignatureSchema = z.enum(TIME_SIGNATURES);
 // ── Repeat end marker (bar-level) ──────────────────────────────────────────
 
 export const RepeatEndSchema = z.object({
-  /** null = infinite loop; positive integer = N repetitions */
+  /**
+   * Semantics depend on which bar carries the marker:
+   * - On the LAST bar of the LAST section: repeats the WHOLE form.
+   *   null = infinite loop; N = N full passes of the form, then stop.
+   * - On any other bar: repeats its inner sub-range (null treated as ×1 there).
+   */
   count: z.number().int().positive().nullable(),
 });
 export type RepeatEnd = z.infer<typeof RepeatEndSchema>;
@@ -22,6 +27,43 @@ export type RepeatEnd = z.infer<typeof RepeatEndSchema>;
 export const NOTE_NAMES = ['C', 'D', 'E', 'F', 'G', 'A', 'B'] as const;
 export const NoteNameSchema = z.enum(NOTE_NAMES);
 export type NoteName = z.infer<typeof NoteNameSchema>;
+
+// ── Section types ────────────────────────────────────────────────────
+
+export const SECTION_TYPES = [
+  'intro',
+  'verseA',
+  'verseB',
+  'verseC',
+  'chorus',
+  'bridge',
+  'solo',
+  'ending',
+] as const;
+export const SectionTypeSchema = z.enum(SECTION_TYPES);
+export type SectionType = z.infer<typeof SectionTypeSchema>;
+
+export const SECTION_TYPE_LABELS: Record<SectionType, string> = {
+  intro: 'Вступление',
+  verseA: 'Куплет A',
+  verseB: 'Куплет B',
+  verseC: 'Куплет C',
+  chorus: 'Припев',
+  bridge: 'Бридж',
+  solo: 'Соло',
+  ending: 'Концовка',
+};
+
+export const SECTION_TYPE_COLORS: Record<SectionType, string> = {
+  intro: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+  verseA: 'bg-green-500/20 text-green-400 border-green-500/30',
+  verseB: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
+  verseC: 'bg-teal-500/20 text-teal-400 border-teal-500/30',
+  chorus: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
+  bridge: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
+  solo: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30',
+  ending: 'bg-red-500/20 text-red-400 border-red-500/30',
+};
 
 export const AccidentalSchema = z.enum(['#', 'b', '']);
 export type Accidental = z.infer<typeof AccidentalSchema>;
@@ -97,6 +139,7 @@ export type Bar = z.infer<typeof BarSchema>;
 export const SectionSchema = z.object({
   id: z.string().min(1),
   name: z.string(),
+  type: SectionTypeSchema.default('verseA'),
   timeSignature: TimeSignatureSchema,
   bars: z.array(BarSchema),
 });

@@ -9,6 +9,7 @@ import { authRoutes, type AuthRoutesOptions } from './routes/auth.routes.js';
 import { settingsRoutes } from './routes/settings.routes.js';
 import { gridsRoutes } from './routes/grids.routes.js';
 import { patternsRoutes } from './routes/patterns.routes.js';
+import { devRoutes } from './routes/dev.routes.js';
 
 export interface BuildServerOptions {
   /** Override loaded config (merged with defaults; useful in tests). */
@@ -58,6 +59,9 @@ export async function buildServer(opts: BuildServerOptions = {}): Promise<Fastif
   await app.register(settingsRoutes, { prefix: '/api', db });
   await app.register(gridsRoutes, { prefix: '/api', db });
   await app.register(patternsRoutes, { prefix: '/api' });
+  if (config.authDevMode) {
+    await app.register(devRoutes, { prefix: '/api' });
+  }
 
   return app;
 }

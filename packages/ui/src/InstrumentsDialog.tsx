@@ -1,12 +1,17 @@
 import { useCallback, useMemo } from 'react';
 import type { Style } from '@jazz/shared';
 import { STYLES } from '@jazz/shared';
-import { getStyleProfile, getVisibleInstrumentGroups, type DisplayGroup } from '@jazz/music-core';
+import {
+  getStyleProfile,
+  getVisibleInstrumentGroups,
+  instrumentDefaultsFor,
+  type DisplayGroup,
+} from '@jazz/music-core';
 import { useSettings, useUpdateSettings } from '@jazz/plugin-sdk';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './dialog';
 import { Slider } from './slider';
 import { cn } from './utils';
-import { INSTRUMENT_ICONS } from './instrument-icons';
+import { INSTRUMENT_ICONS, DrumsIcon } from './instrument-icons';
 
 const STYLE_LABELS: Record<Style, string> = {
   swing: 'Swing',
@@ -64,7 +69,7 @@ function GroupRow({ group, style, rosterBadge }: GroupRowProps) {
   const updateSettings = useUpdateSettings();
 
   const profile = useMemo(() => getStyleProfile(style), [style]);
-  const defaults = profile.instrumentDefaults[group.activeInstrumentId];
+  const defaults = instrumentDefaultsFor(profile, group.activeInstrumentId);
   const prefix = group.settingsPrefix;
 
   const enabled =
@@ -94,7 +99,7 @@ function GroupRow({ group, style, rosterBadge }: GroupRowProps) {
     [prefix, updateSettings],
   );
 
-  const Icon = INSTRUMENT_ICONS[group.activeInstrumentId];
+  const Icon = INSTRUMENT_ICONS[group.activeInstrumentId] ?? DrumsIcon;
 
   return (
     <div

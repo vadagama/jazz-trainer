@@ -1,5 +1,5 @@
-import type { InstrumentId } from '@jazz/music-core';
 import type { FC, SVGProps } from 'react';
+import type { InstrumentId } from '@jazz/music-core';
 
 type SvgProps = SVGProps<SVGSVGElement>;
 const Svg: FC<SvgProps> = (props) => (
@@ -32,32 +32,6 @@ export function DrumsIcon(props: SvgProps) {
       {/* Cymbal (ride) */}
       <ellipse cx="5" cy="6" rx="2" ry="1" />
       <line x1="5" y1="6" x2="5" y2="11" />
-    </Svg>
-  );
-}
-
-// ─── Modern Drums ───────────────────────────────────────────────────────────
-
-export function ModernKitIcon(props: SvgProps) {
-  return (
-    <Svg {...props}>
-      {/* Bass drum (more modern shape) */}
-      <ellipse cx="12" cy="18" rx="4" ry="2.5" />
-      <line x1="12" y1="18" x2="12" y2="14" />
-      {/* Tom 1 & 2 */}
-      <ellipse cx="6" cy="12" rx="2" ry="1.2" />
-      <ellipse cx="18" cy="12" rx="2" ry="1.2" />
-      {/* Floor tom */}
-      <ellipse cx="10" cy="15" rx="2.5" ry="1.5" />
-      {/* Snare */}
-      <ellipse cx="17" cy="11" rx="2.5" ry="1.5" />
-      {/* Crash cymbal */}
-      <ellipse cx="5" cy="5" rx="2.5" ry="1" />
-      <line x1="5" y1="5" x2="5" y2="12" />
-      {/* Hi-hat */}
-      <line x1="19" y1="12" x2="19" y2="6" />
-      <line x1="17" y1="8.5" x2="21" y2="8.5" />
-      <line x1="17" y1="6" x2="21" y2="6" />
     </Svg>
   );
 }
@@ -341,7 +315,8 @@ export function SaxophoneIcon(props: SvgProps) {
 
 export const INSTRUMENT_ICONS: Record<InstrumentId, FC<SvgProps>> = {
   drums: DrumsIcon,
-  'modern-kit': ModernKitIcon,
+  'jazz-drum-kit': DrumsIcon,
+  'funk-drum-kit': DrumsIcon,
   'upright-bass': BassIcon,
   'electric-bass': BassIcon,
   piano: PianoIcon,

@@ -1,0 +1,19 @@
+%% Deterministic per-bar assembly for the timeline cell model
+flowchart TD
+    A["assembleBar(cell, barInCell, barInOrganism, settings, seed)"] --> B{cell.arrangement present?}
+    B -- no --> L["Legacy pool assembly (unchanged path)"]
+    B -- yes --> C["hits = []  ·  dynMul = dynamics(barInCell)"]
+    C --> D["for each clip i in cell.arrangement"]
+    D --> E{"barInCell in [startBar, startBar+lengthBars)?"}
+    E -- no --> D
+    E -- yes --> F{"clip.probability < 1?"}
+    F -- yes --> G["r = seededRandom(seed, barInOrganism, i)()<br/>skip clip if r > probability"]
+    F -- no --> H["localBar = barInCell - startBar<br/>molBar = localBar % molecule.bars"]
+    G --> H
+    H --> I["emit atoms of molecule for molBar<br/>(shift atTick by -molBar*barTicks)<br/>vel = atom.vel * cell.velocity * clip.velocityMul * dynMul"]
+    I --> J{"clip.mode == 'replace'?"}
+    J -- yes --> K["mark bar/lane as groove-suppressed"]
+    J -- no --> D
+    K --> D
+    D --> M["apply swing · resolve articulations · drop vel<=0"]
+    M --> N["return hits (idempotent for given inputs)"]

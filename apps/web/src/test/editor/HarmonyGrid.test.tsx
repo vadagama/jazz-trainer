@@ -6,6 +6,7 @@ import type { Section } from '@jazz/shared';
 const makeSection = (bars: Section['bars'], id = 's1', name = 'Section A'): Section => ({
   id,
   name,
+  type: 'verseA',
   timeSignature: '4/4',
   bars,
 });
