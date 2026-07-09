@@ -212,7 +212,7 @@ graph LR
 | Organ            | `OrganInstrument`       | `organManifest`                           | Hammond-style, 2 velocity-слоя, C2–C7              | 5      | —                 |
 | Percussion       | `PercussionInstrument`  | `percussionManifest`                      | Latin perc, 16 звуков (conga, clave, shaker, …)   | 5      | —                 |
 | Clarinet         | `ClarinetInstrument`    | `clarinetManifest`                        | Clarinet, 2 velocity-слоя, D3–C6                  | 5      | —                 |
-| Metronome        | `MetronomeInstrument`   | —                                         | 5 звуков (analog/button/stick/retro/switch)        | —      | —                 |
+| Metronome        | `MetronomeInstrument`   | `@jazz/plugin-metronome` (плагин)        | 8 звуков (analog/button/stick/retro/switch/cross-stick/hh-chick/hh-closed) | —      | —                 |
 
 **Сольные инструменты (SoloInstrument):** отдельная подсистема для live MIDI-ввода (см. §4.5). 7 манифестов: `synthDefault`, `pianoUprightSolo`, `pianoSalamanderSolo`, `rhodesJRhodes3cSolo`, `clarinetSolo`, `vibraphoneSolo`, `guitarNylonSolo`.
 

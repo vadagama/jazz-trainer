@@ -261,6 +261,7 @@ export function PlayerPage() {
   });
 
   const playingBarIndex = !countInActive && status !== 'idle' ? currentBar : undefined;
+  const currentBarDisplay = playingBarIndex != null ? playingBarIndex + 1 : 1;
 
   const availableTones: SoloInstrumentManifest[] = SOLO_INSTRUMENT_MANIFESTS;
 
@@ -296,7 +297,12 @@ export function PlayerPage() {
       {/* Grid (read-only) */}
       <main className="flex-1 overflow-y-auto py-4">
         <div className="mx-auto max-w-6xl px-4">
-          <h1 className="mb-6 text-xl font-bold text-foreground">{grid.name}</h1>
+          <div className="mb-6 flex items-center justify-between">
+            <h1 className="text-xl font-bold text-foreground">{grid.name}</h1>
+            <span className="text-base font-semibold tabular-nums text-foreground">
+              {currentBarDisplay} / {totalBars} тактов
+            </span>
+          </div>
           {sections.length > 0 && (
             <HarmonyGrid
               sections={displaySections}

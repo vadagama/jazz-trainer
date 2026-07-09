@@ -11,6 +11,7 @@ import adminDrumConstructor from '@jazz/plugin-admin-drum-constructor';
 import jazzDrumKit from '@jazz/plugin-jazz-drum-kit';
 import funkDrumKit from '@jazz/plugin-funk-drum-kit';
 import percussion from '@jazz/plugin-percussion';
+import metronomePlugin from '@jazz/plugin-metronome';
 import theoryChordTones from '@jazz/plugin-theory-chord-tones';
 import theoryApproachNotes from '@jazz/plugin-theory-approach-notes';
 import theoryArpeggios from '@jazz/plugin-theory-arpeggios';
@@ -54,6 +55,7 @@ export const PLUGINS: PluginDefinition[] = [
   jazzDrumKit,
   funkDrumKit,
   percussion,
+  metronomePlugin,
   theoryChordTones,
   theoryApproachNotes,
   theoryArpeggios,

@@ -1,7 +1,7 @@
 import { useMemo, useCallback, useSyncExternalStore, useState, useRef } from 'react';
 import { Loader2, Plus, Minus } from 'lucide-react';
-import type { Style, UserSettingsDTO } from '@jazz/shared';
-import { STYLES } from '@jazz/shared';
+import type { Style, UserSettingsDTO, MetronomeMode } from '@jazz/shared';
+import { STYLES, METRONOME_MODES } from '@jazz/shared';
 import {
   getStyleProfile,
   getVisibleInstruments,
@@ -48,6 +48,12 @@ const STYLE_LABELS: Record<Style, string> = {
   funk: 'Funk',
   latin: 'Latin',
   ballad: 'Ballad',
+};
+
+const MODE_LABELS: Record<MetronomeMode, string> = {
+  both: 'Везде',
+  'pickup-only': 'Только затакт',
+  'main-only': 'Только такты',
 };
 
 const TABS = [
@@ -432,21 +438,6 @@ export function SettingsPage() {
                   onValueChange={(vals) => mutate({ volume: (vals[0] ?? 80) / 100 })}
                 />
               </div>
-
-              <div className="flex items-start justify-between gap-4">
-                <Label className="pt-2 text-sm">Count-in (тактов)</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  max={4}
-                  value={settings?.countIn ?? 1}
-                  onChange={(e) => {
-                    const n = Number(e.target.value);
-                    if (!isNaN(n) && n >= 0 && n <= 4) mutate({ countIn: n });
-                  }}
-                  className="w-24 text-right"
-                />
-              </div>
             </CardContent>
           </Card>
 
@@ -462,7 +453,32 @@ export function SettingsPage() {
                 <Label className="text-sm">Включить метроном</Label>
                 <Checkbox
                   checked={metronomeOn}
-                  onChange={(e) => mutate({ metronomeEnabled: e.target.checked })}
+                  onChange={(e) => {
+                    const enabled = e.target.checked;
+                    mutate(
+                      enabled
+                        ? { metronomeEnabled: true }
+                        : { metronomeEnabled: false, countIn: 0 },
+                    );
+                  }}
+                />
+              </div>
+
+              <div className="flex items-start justify-between gap-4">
+                <Label className={`pt-2 text-sm ${metronomeOn ? '' : 'text-muted-foreground'}`}>
+                  Затакт (тактов)
+                </Label>
+                <Input
+                  type="number"
+                  min={0}
+                  max={4}
+                  disabled={!metronomeOn}
+                  value={settings?.countIn ?? 1}
+                  onChange={(e) => {
+                    const n = Number(e.target.value);
+                    if (!isNaN(n) && n >= 0 && n <= 4) mutate({ countIn: n });
+                  }}
+                  className="w-24 text-right"
                 />
               </div>
 
@@ -485,36 +501,96 @@ export function SettingsPage() {
                 />
               </div>
 
+              <div className="flex items-center justify-between gap-4">
+                <Label className={`text-sm ${metronomeOn ? '' : 'text-muted-foreground'}`}>
+                  Режим
+                </Label>
+                <Select
+                  value={settings?.metronomeMode ?? 'both'}
+                  onValueChange={(v) => mutate({ metronomeMode: v as MetronomeMode })}
+                  disabled={!metronomeOn}
+                >
+                  <SelectTrigger className="w-44">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {METRONOME_MODES.map((m) => (
+                      <SelectItem key={m} value={m}>
+                        {MODE_LABELS[m]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
               {[
-                { name: 'clickStrong' as const, label: 'Первая сильная доля' },
-                { name: 'clickStrong2' as const, label: 'Вторая сильная доля' },
-                { name: 'clickWeak' as const, label: 'Слабая доля' },
-              ].map(({ name, label }) => (
-                <div key={name} className="flex items-center justify-between gap-4">
-                  <span className={`text-sm ${metronomeOn ? '' : 'text-muted-foreground'}`}>
-                    {label}
-                  </span>
-                  <Select
-                    value={settings?.[name] ?? NONE_VALUE}
-                    onValueChange={(v) =>
-                      mutate({ [name]: v === NONE_VALUE ? null : v } as Partial<UserSettingsDTO>)
-                    }
-                    disabled={!metronomeOn}
-                  >
-                    <SelectTrigger className="w-44">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={NONE_VALUE}>—</SelectItem>
-                      {METRONOME_SAMPLES.map((s) => (
-                        <SelectItem key={s.id} value={s.id}>
-                          {s.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              ))}
+                {
+                  name: 'clickStrong' as const,
+                  label: 'Сильная доля (1)',
+                  volKey: 'metronomeStrongVolume' as const,
+                },
+                {
+                  name: 'clickStrong2' as const,
+                  label: 'Вторая сильная (3)',
+                  volKey: 'metronomeStrong2Volume' as const,
+                },
+                {
+                  name: 'clickWeak' as const,
+                  label: 'Слабая доля (2, 4)',
+                  volKey: 'metronomeWeakVolume' as const,
+                },
+              ].map(({ name, label, volKey }) => {
+                const beatVol = Math.round(((settings?.[volKey] as number) ?? 0.8) * 100);
+                return (
+                  <div key={name} className="space-y-2 border border-zinc-800 rounded-lg p-3">
+                    <span
+                      className={`text-sm font-medium ${metronomeOn ? '' : 'text-muted-foreground'}`}
+                    >
+                      {label}
+                    </span>
+                    <div className="flex items-center justify-between gap-4">
+                      <span className="text-xs text-muted-foreground">Звук</span>
+                      <Select
+                        value={settings?.[name] ?? NONE_VALUE}
+                        onValueChange={(v) =>
+                          mutate({
+                            [name]: v === NONE_VALUE ? null : v,
+                          } as Partial<UserSettingsDTO>)
+                        }
+                        disabled={!metronomeOn}
+                      >
+                        <SelectTrigger className="w-40">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={NONE_VALUE}>—</SelectItem>
+                          {METRONOME_SAMPLES.map((s) => (
+                            <SelectItem key={s.id} value={s.id}>
+                              {s.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-muted-foreground">Громкость</span>
+                        <span className="text-xs tabular-nums text-muted-foreground">
+                          {beatVol}%
+                        </span>
+                      </div>
+                      <Slider
+                        min={0}
+                        max={100}
+                        step={1}
+                        disabled={!metronomeOn}
+                        value={[beatVol]}
+                        onValueChange={(vals) => mutate({ [volKey]: (vals[0] ?? 80) / 100 })}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
             </CardContent>
           </Card>
         </div>

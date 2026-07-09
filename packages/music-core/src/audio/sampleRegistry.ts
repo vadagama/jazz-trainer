@@ -18,6 +18,13 @@ export const METRONOME_SAMPLES: readonly MetronomeSampleDef[] = [
   { id: 'drum-stick', label: 'Drum Stick', url: '/samples/aac/metronome/drum-stick.m4a' },
   { id: 'retro-stick', label: 'Retro Stick', url: '/samples/aac/metronome/retro-stick.m4a' },
   { id: 'switch', label: 'Switch', url: '/samples/aac/metronome/switch.m4a' },
+  {
+    id: 'cross-stick',
+    label: 'Cross-Stick (Rim Click)',
+    url: '/samples/aac/metronome/cross-stick.m4a',
+  },
+  { id: 'hh-chick', label: 'Hi-Hat Foot Chick', url: '/samples/aac/metronome/hh-chick.m4a' },
+  { id: 'hh-closed', label: 'Hi-Hat Closed', url: '/samples/aac/metronome/hh-closed.m4a' },
 ];
 
 export const METRONOME_SAMPLE_BY_ID: Record<ClickSound, MetronomeSampleDef> = Object.fromEntries(

@@ -432,6 +432,13 @@ export function EditorPage() {
   const selectedBarFlatIndex =
     selectedBarId != null ? allBars.findIndex((b) => b.id === selectedBarId) : undefined;
 
+  const currentBarDisplay =
+    playingBarIndex != null
+      ? playingBarIndex + 1
+      : selectedBarFlatIndex != null
+        ? selectedBarFlatIndex + 1
+        : 1;
+
   const lastBarId = useMemo(() => {
     if (sections.length === 0) return undefined;
     const lastSection = sections[sections.length - 1]!;
@@ -555,11 +562,18 @@ export function EditorPage() {
             <div className="mx-auto max-w-6xl px-4">
               {/* CURRENTLY EDITING header */}
               <div className="mb-6">
-                <div className="mb-2 flex items-center gap-1.5">
-                  <Pencil className="size-3.5 text-primary" />
-                  <span className="text-xs font-semibold uppercase tracking-widest text-primary">
-                    Currently Editing
-                  </span>
+                <div className="mb-2 flex items-center justify-between gap-1.5">
+                  <div className="flex items-center gap-1.5">
+                    <Pencil className="size-3.5 text-primary" />
+                    <span className="text-xs font-semibold uppercase tracking-widest text-primary">
+                      Currently Editing
+                    </span>
+                  </div>
+                  {totalBars > 0 && (
+                    <span className="text-base font-semibold tabular-nums text-foreground">
+                      {currentBarDisplay} / {totalBars} тактов
+                    </span>
+                  )}
                 </div>
                 <div className="flex items-start justify-between gap-4">
                   <CompositionTitle name={grid.name} onSave={handleSaveTitle} />

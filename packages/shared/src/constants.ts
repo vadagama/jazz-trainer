@@ -26,15 +26,22 @@ export const KEYS = [
 ] as const;
 export type Key = (typeof KEYS)[number];
 
-/** Metronome click sound identifiers — each maps to a sample pair (<id>-strong.wav / <id>-weak.wav). */
+/** Metronome click sound identifiers. */
 export const CLICK_SOUNDS = [
   'analog-metronome',
   'button-click',
   'drum-stick',
   'retro-stick',
   'switch',
+  'cross-stick',
+  'hh-chick',
+  'hh-closed',
 ] as const;
 export type ClickSound = (typeof CLICK_SOUNDS)[number];
+
+/** Metronome playback modes. */
+export const METRONOME_MODES = ['both', 'pickup-only', 'main-only'] as const;
+export type MetronomeMode = (typeof METRONOME_MODES)[number];
 
 /** Grid visibility (public-first model, see docs/03-data-model.md). */
 export const VISIBILITY = ['public', 'private'] as const;

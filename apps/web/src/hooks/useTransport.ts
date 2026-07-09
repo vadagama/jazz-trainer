@@ -56,7 +56,7 @@ import type {
   UserSettingsDTO,
   Style,
 } from '@jazz/shared';
-import { audioUrl } from '@jazz/shared';
+import { CLICK_SOUNDS, audioUrl } from '@jazz/shared';
 import { usePlaybackStore, useLocalSettingsStore } from '@jazz/plugin-sdk';
 import { resolveDrumKit, drumArticulationMap, getInstrument } from '../shell/instrumentRegistry';
 
@@ -148,12 +148,8 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
 
   const engineRef = useRef<TransportEngine | null>(null);
   const machineRef = useRef<PlaybackStateMachine | null>(null);
-  const strongPlayerRef = useRef<Tone.Player | null>(null);
-  const strong2PlayerRef = useRef<Tone.Player | null>(null);
-  const weakPlayerRef = useRef<Tone.Player | null>(null);
-  const strongUrlRef = useRef('');
-  const strong2UrlRef = useRef('');
-  const weakUrlRef = useRef('');
+  /** Map from ClickSound id → Tone.Player (8 sounds, per-beat configurable). */
+  const metronomePlayersRef = useRef<Map<string, Tone.Player>>(new Map());
   // Instrument resources created by factories
   const bassSamplersRef = useRef<Map<string, Tone.Sampler>>(new Map());
   const bassDisposeRef = useRef<() => void>(() => {});
@@ -237,39 +233,64 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     // Reuse sampler map for solo instruments (Piano, Rhodes)
     const reuseSamplers = new Map<string, Tone.Sampler>();
 
-    const makePlayer = (sound: ClickSound | null, volumeDb: number): Tone.Player | null => {
-      if (!sound) return null;
-      const p = new Tone.Player(
-        audioUrl(METRONOME_SAMPLE_BY_ID[sound].url, settings.audioFormat),
-      ).toDestination();
-      p.volume.value = volumeDb;
-      return p;
-    };
-
     // Master volume controls the global audio destination
     Tone.getDestination().volume.value = Tone.gainToDb(settings.volume);
 
-    const metronomeDb = Tone.gainToDb(settings.metronomeVolume ?? 0.8);
-    strongUrlRef.current = settings.clickStrong ?? '';
-    strong2UrlRef.current = settings.clickStrong2 ?? '';
-    weakUrlRef.current = settings.clickWeak ?? '';
-
-    strongPlayerRef.current = makePlayer(settings.clickStrong, metronomeDb);
-    // Secondary strong beat is 3 dB quieter than the primary downbeat
-    strong2PlayerRef.current = makePlayer(settings.clickStrong2, metronomeDb - 3);
-    // Weak beat is 6 dB quieter to create a natural accent on beat 1
-    weakPlayerRef.current = makePlayer(settings.clickWeak, metronomeDb - 6);
+    // Build a player pool: one Tone.Player per ClickSound (8 sounds).
+    // Per-beat volume is applied dynamically in the sink — no more hardcoded offsets.
+    const playerMap = new Map<string, Tone.Player>();
+    for (const s of CLICK_SOUNDS) {
+      const p = new Tone.Player(
+        audioUrl(METRONOME_SAMPLE_BY_ID[s as ClickSound].url, settings.audioFormat),
+      ).toDestination();
+      p.volume.value = Tone.gainToDb(settings.metronomeVolume ?? 0.8);
+      playerMap.set(s, p);
+    }
+    metronomePlayersRef.current = playerMap;
 
     const sink = (atTicks: number, beatType: BeatType) => {
-      if (!(optsRef.current.settings.metronomeEnabled ?? true)) return;
-      // Tone.js tick notation: "${N}i" = N ticks from transport start
-      tone.scheduleOnce((time: number) => {
-        let player: Tone.Player | null = null;
-        if (beatType === 'strong') player = strongPlayerRef.current;
-        else if (beatType === 'strong2') player = strong2PlayerRef.current;
-        else player = weakPlayerRef.current;
-        if (player?.loaded) player.start(time);
-      }, `${atTicks}i`);
+      try {
+        const s = optsRef.current.settings;
+        if (!(s.metronomeEnabled ?? true)) return;
+
+        // Mode-based filtering
+        const mode = (s.metronomeMode as string) ?? 'both';
+        if (mode === 'pickup-only') return;
+
+        // Per-beat enabled gate
+        if (beatType === 'strong' && !(s.metronomeStrongEnabled ?? true)) return;
+        if (beatType === 'strong2' && !(s.metronomeStrong2Enabled ?? true)) return;
+        if (beatType === 'weak' && !(s.metronomeWeakEnabled ?? true)) return;
+
+        // Determine which sound to play
+        let soundKey: ClickSound | null = null;
+        let beatVolume = 0.8;
+        if (beatType === 'strong') {
+          soundKey = s.clickStrong;
+          beatVolume = s.metronomeStrongVolume ?? 0.8;
+        } else if (beatType === 'strong2') {
+          soundKey = s.clickStrong2;
+          beatVolume = s.metronomeStrong2Volume ?? 0.8;
+        } else {
+          soundKey = s.clickWeak;
+          beatVolume = s.metronomeWeakVolume ?? 0.8;
+        }
+
+        const pool = metronomePlayersRef.current;
+        const player = soundKey ? (pool.get(soundKey) ?? null) : null;
+        if (!player) return;
+
+        // Dynamic per-beat volume = master × per-beat
+        const masterVol = s.metronomeVolume ?? 0.8;
+        player.volume.value = Tone.gainToDb(masterVol * beatVolume);
+
+        // Tone.js tick notation: "${N}i" = N ticks from transport start
+        tone.scheduleOnce((time: number) => {
+          if (player.loaded) player.start(time);
+        }, `${atTicks}i`);
+      } catch {
+        // Prevent a metronome error from breaking the scheduling loop
+      }
     };
 
     // Pre-warm: start AudioContext on any first user gesture so all samples
@@ -770,12 +791,9 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
       unsub();
       if (scheduleTimerRef.current !== null) clearTimeout(scheduleTimerRef.current);
       adapter.stop();
-      strongPlayerRef.current?.dispose();
-      strong2PlayerRef.current?.dispose();
-      weakPlayerRef.current?.dispose();
-      strongPlayerRef.current = null;
-      strong2PlayerRef.current = null;
-      weakPlayerRef.current = null;
+      // Dispose the metronome player pool
+      for (const p of metronomePlayersRef.current.values()) p.dispose();
+      metronomePlayersRef.current = new Map();
       bassDisposeRef.current();
       bassSamplersRef.current = new Map();
       bassChannelRef.current?.dispose();
@@ -847,68 +865,34 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     adapterRef.current?.setBpm(settings.bpm);
   }, [settings.bpm]);
 
-  // Reload strong player when sound selection changes
+  // Reload the metronome player pool when audio format changes
   useEffect(() => {
-    const key = settings.clickStrong ?? '';
-    if (strongUrlRef.current === key) return;
-    strongUrlRef.current = key;
-    strongPlayerRef.current?.dispose();
-    if (settings.clickStrong) {
+    const map = metronomePlayersRef.current;
+    if (map.size === 0) return;
+    for (const p of map.values()) p.dispose();
+    const playerMap = new Map<string, Tone.Player>();
+    for (const s of CLICK_SOUNDS) {
       const p = new Tone.Player(
-        audioUrl(METRONOME_SAMPLE_BY_ID[settings.clickStrong].url, settings.audioFormat),
+        audioUrl(METRONOME_SAMPLE_BY_ID[s as ClickSound].url, settings.audioFormat),
       ).toDestination();
-      p.volume.value = Tone.gainToDb(optsRef.current.settings.metronomeVolume ?? 0.8);
-      strongPlayerRef.current = p;
-    } else {
-      strongPlayerRef.current = null;
+      p.volume.value = Tone.gainToDb(settings.metronomeVolume ?? 0.8);
+      playerMap.set(s, p);
     }
-  }, [settings.clickStrong, settings.audioFormat]);
-
-  // Reload strong2 player when sound selection changes
-  useEffect(() => {
-    const key = settings.clickStrong2 ?? '';
-    if (strong2UrlRef.current === key) return;
-    strong2UrlRef.current = key;
-    strong2PlayerRef.current?.dispose();
-    if (settings.clickStrong2) {
-      const p = new Tone.Player(
-        audioUrl(METRONOME_SAMPLE_BY_ID[settings.clickStrong2].url, settings.audioFormat),
-      ).toDestination();
-      p.volume.value = Tone.gainToDb(optsRef.current.settings.metronomeVolume ?? 0.8) - 3;
-      strong2PlayerRef.current = p;
-    } else {
-      strong2PlayerRef.current = null;
-    }
-  }, [settings.clickStrong2, settings.audioFormat]);
-
-  // Reload weak player when sound selection changes
-  useEffect(() => {
-    const key = settings.clickWeak ?? '';
-    if (weakUrlRef.current === key) return;
-    weakUrlRef.current = key;
-    weakPlayerRef.current?.dispose();
-    if (settings.clickWeak) {
-      const p = new Tone.Player(
-        audioUrl(METRONOME_SAMPLE_BY_ID[settings.clickWeak].url, settings.audioFormat),
-      ).toDestination();
-      p.volume.value = Tone.gainToDb(optsRef.current.settings.metronomeVolume ?? 0.8) - 6;
-      weakPlayerRef.current = p;
-    } else {
-      weakPlayerRef.current = null;
-    }
-  }, [settings.clickWeak, settings.audioFormat]);
+    metronomePlayersRef.current = playerMap;
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- volume is dynamic in sink
+  }, [settings.audioFormat]);
 
   // Update master volume on the global destination
   useEffect(() => {
     Tone.getDestination().volume.value = Tone.gainToDb(settings.volume);
   }, [settings.volume]);
 
-  // Update metronome volume on all players
+  // Update metronome volume on the player pool (dynamic per-beat volume is set in the sink)
   useEffect(() => {
     const db = Tone.gainToDb(settings.metronomeVolume ?? 0.8);
-    if (strongPlayerRef.current) strongPlayerRef.current.volume.value = db;
-    if (strong2PlayerRef.current) strong2PlayerRef.current.volume.value = db - 3;
-    if (weakPlayerRef.current) weakPlayerRef.current.volume.value = db - 6;
+    for (const p of metronomePlayersRef.current.values()) {
+      p.volume.value = db;
+    }
   }, [settings.metronomeVolume]);
 
   // Update style profile on engine — propagates tempo, swing, and style to all instruments
@@ -1406,10 +1390,14 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
 
     // Schedule count-in beats at absolute audio time before transport starts
     if (countInBars > 0 && (optsRef.current.settings.metronomeEnabled ?? true)) {
+      const mode = (optsRef.current.settings.metronomeMode as string) ?? 'both';
+      const playSound = mode !== 'main-only';
       const firstBeatAt = Tone.now() + 0.05;
       const totalCountInBeats = countInBars * sig.beatsPerBar;
       const secondStrong = defaultSecondStrongBeats(sig);
+      const playerMap = metronomePlayersRef.current;
 
+      // Always show visual count-in indicator
       usePlaybackStore.getState()._setCountIn(true, 0);
 
       for (let b = 0; b < totalCountInBeats; b++) {
@@ -1418,11 +1406,35 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
         let beatType: BeatType = 'weak';
         if (beatInBar === 0) beatType = 'strong';
         else if (secondStrong.includes(beatInBar)) beatType = 'strong2';
-        let player: Tone.Player | null = null;
-        if (beatType === 'strong') player = strongPlayerRef.current;
-        else if (beatType === 'strong2') player = strong2PlayerRef.current;
-        else player = weakPlayerRef.current;
-        if (player?.loaded) player.start(firstBeatAt + beatOffset);
+
+        if (playSound) {
+          // Per-beat enabled gate for count-in
+          const s = optsRef.current.settings;
+          if (beatType === 'strong' && !(s.metronomeStrongEnabled ?? true)) continue;
+          if (beatType === 'strong2' && !(s.metronomeStrong2Enabled ?? true)) continue;
+          if (beatType === 'weak' && !(s.metronomeWeakEnabled ?? true)) continue;
+
+          // Determine sound and per-beat volume
+          let soundKey: ClickSound | null = null;
+          let beatVolume = 0.8;
+          if (beatType === 'strong') {
+            soundKey = s.clickStrong;
+            beatVolume = s.metronomeStrongVolume ?? 0.8;
+          } else if (beatType === 'strong2') {
+            soundKey = s.clickStrong2;
+            beatVolume = s.metronomeStrong2Volume ?? 0.8;
+          } else {
+            soundKey = s.clickWeak;
+            beatVolume = s.metronomeWeakVolume ?? 0.8;
+          }
+
+          const player = soundKey ? (playerMap.get(soundKey) ?? null) : null;
+          if (player) {
+            const masterVol = s.metronomeVolume ?? 0.8;
+            player.volume.value = Tone.gainToDb(masterVol * beatVolume);
+            if (player.loaded) player.start(firstBeatAt + beatOffset);
+          }
+        }
 
         // Update UI beat indicator in sync with audio
         const t = setTimeout(
@@ -1571,6 +1583,14 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     }
 
     adapterRef.current?.pause();
+    // Stop metronome players (may have been started via count-in)
+    for (const p of metronomePlayersRef.current.values()) {
+      try {
+        p.stop();
+      } catch {
+        /* already stopped */
+      }
+    }
     engine.pause();
     machine.dispatch({ type: 'pause' });
   }, []);
@@ -1597,6 +1617,15 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     prevTicksRef.current = 0;
 
     engine.stop();
+
+    // Stop metronome players (may have been started via count-in)
+    for (const p of metronomePlayersRef.current.values()) {
+      try {
+        p.stop();
+      } catch {
+        /* already stopped */
+      }
+    }
 
     // Stop any currently-playing oneshot samples (drums, percussion) so they
     // don't ring out after the transport has stopped.

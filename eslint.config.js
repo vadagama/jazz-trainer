@@ -70,7 +70,7 @@ export default tseslint.config(
         { type: 'packages/plugin-sdk', pattern: 'packages/plugin-sdk/*' },
         { type: 'packages/plugin-host', pattern: 'packages/plugin-host/*' },
         { type: 'packages/ui', pattern: 'packages/ui/*' },
-        { type: 'packages/plugins', pattern: 'packages/plugins/*' },
+        { type: 'packages/plugins', pattern: 'packages/plugins/**/*' },
         { type: 'packages/adapters', pattern: 'packages/adapters/**/*' },
         { type: 'apps/web', pattern: 'apps/web/*' },
         { type: 'apps/api', pattern: 'apps/api/*' },
