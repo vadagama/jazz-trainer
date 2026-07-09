@@ -216,6 +216,7 @@ Multi-chord бары (механизм)      → docs/CHORDS.md + music-core/src
 Инструменты (бас, барабаны)      → music-core/src/audio/BassInstrument, DrumInstrument
 Спецификация инструментов         → docs/BASS.md, docs/PIANO.md, docs/RHODES.md, docs/DRUMS.md, docs/GUITAR.md, docs/VIBRAPHONE.md, docs/ORGAN.md, docs/PERCUSSION.md, docs/CLARINET.md, docs/ALL_CHORDS.md
 Барабанные киты (плагины)         → packages/plugins/instruments/{jazz,funk}-drum-kit/ + docs/DRUMS.md
+Метроном (плагин)                  → packages/plugins/instruments/metronome/ + docs/METRONOME-VISION.md, docs/METRONOME-PLAN.md
 Упражнения (practice-cards)       → docs/EXERSISE-VISION.md, docs/EXERSISE-ARCHITECTURE.md
 Лады и гаммы                      → docs/SCALES-VISION.md + music-core/src/chords/modes.ts
 Rhodes (комплементарный слой)    → music-core/src/audio/rhodesInstrument.ts, rhodesVoicing.ts, pianoRhodesInteraction.ts
