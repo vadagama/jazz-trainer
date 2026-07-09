@@ -45,6 +45,19 @@ export const userSettings = sqliteTable('user_settings', {
   countIn: integer('count_in').notNull().default(1),
   metronomeEnabled: integer('metronome_enabled', { mode: 'boolean' }).notNull().default(true),
   metronomeVolume: real('metronome_volume').notNull().default(0.8),
+  metronomeMode: text('metronome_mode').notNull().default('both'),
+  metronomeStrongEnabled: integer('metronome_strong_enabled', { mode: 'boolean' })
+    .notNull()
+    .default(true),
+  metronomeStrongVolume: real('metronome_strong_volume').notNull().default(0.8),
+  metronomeStrong2Enabled: integer('metronome_strong2_enabled', { mode: 'boolean' })
+    .notNull()
+    .default(true),
+  metronomeStrong2Volume: real('metronome_strong2_volume').notNull().default(0.8),
+  metronomeWeakEnabled: integer('metronome_weak_enabled', { mode: 'boolean' })
+    .notNull()
+    .default(true),
+  metronomeWeakVolume: real('metronome_weak_volume').notNull().default(0.8),
   bassEnabled: integer('bass_enabled', { mode: 'boolean' }).notNull().default(true),
   bassVolume: real('bass_volume').notNull().default(0.7),
   bassComplexity: integer('bass_complexity').notNull().default(1),

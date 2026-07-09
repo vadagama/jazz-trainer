@@ -176,6 +176,13 @@
       "when": 1782100000000,
       "tag": "0025_add_drums_advanced_settings",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "6",
+      "when": 1782200000000,
+      "tag": "0026_add_metronome_mode",
+      "breakpoints": true
     }
   ]
 }

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { CLICK_SOUNDS, STYLES, KEYS, TIME_SIGNATURES } from './constants.js';
+import { CLICK_SOUNDS, METRONOME_MODES, STYLES, KEYS, TIME_SIGNATURES } from './constants.js';
 
 /**
  * DTO types and Zod validation schemas for the auth + settings layer (F4).
@@ -34,6 +34,13 @@ export const UserSettingsDTOSchema = z.object({
   countIn: z.number().int().min(0).max(4),
   metronomeEnabled: z.boolean().optional(),
   metronomeVolume: z.number().min(0).max(1).optional(),
+  metronomeMode: z.enum(METRONOME_MODES).default('both').optional(),
+  metronomeStrongEnabled: z.boolean().default(true).optional(),
+  metronomeStrongVolume: z.number().min(0).max(1).default(0.8).optional(),
+  metronomeStrong2Enabled: z.boolean().default(true).optional(),
+  metronomeStrong2Volume: z.number().min(0).max(1).default(0.8).optional(),
+  metronomeWeakEnabled: z.boolean().default(true).optional(),
+  metronomeWeakVolume: z.number().min(0).max(1).default(0.8).optional(),
   bassEnabled: z.boolean().optional(),
   bassVolume: z.number().min(0).max(1).optional(),
   bassComplexity: z.number().int().min(1).max(7).optional(),

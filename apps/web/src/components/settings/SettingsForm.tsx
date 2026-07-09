@@ -239,7 +239,11 @@ export function SettingsForm({ defaultValues, onSave, themeControl }: Props) {
                       id="metronomeEnabled"
                       type="checkbox"
                       checked={field.value ?? true}
-                      onChange={(e) => field.onChange(e.target.checked)}
+                      onChange={(e) => {
+                        const enabled = e.target.checked;
+                        field.onChange(enabled);
+                        if (!enabled) form.setValue('countIn', 0);
+                      }}
                       className="h-4 w-4 cursor-pointer accent-primary"
                     />
                   )}

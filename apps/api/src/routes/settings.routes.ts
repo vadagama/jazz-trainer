@@ -60,6 +60,19 @@ export async function settingsRoutes(
     if (data.countIn !== undefined) patch.countIn = data.countIn;
     if (data.metronomeEnabled !== undefined) patch.metronomeEnabled = data.metronomeEnabled;
     if (data.metronomeVolume !== undefined) patch.metronomeVolume = data.metronomeVolume;
+    if (data.metronomeMode !== undefined) patch.metronomeMode = data.metronomeMode;
+    if (data.metronomeStrongEnabled !== undefined)
+      patch.metronomeStrongEnabled = data.metronomeStrongEnabled;
+    if (data.metronomeStrongVolume !== undefined)
+      patch.metronomeStrongVolume = data.metronomeStrongVolume;
+    if (data.metronomeStrong2Enabled !== undefined)
+      patch.metronomeStrong2Enabled = data.metronomeStrong2Enabled;
+    if (data.metronomeStrong2Volume !== undefined)
+      patch.metronomeStrong2Volume = data.metronomeStrong2Volume;
+    if (data.metronomeWeakEnabled !== undefined)
+      patch.metronomeWeakEnabled = data.metronomeWeakEnabled;
+    if (data.metronomeWeakVolume !== undefined)
+      patch.metronomeWeakVolume = data.metronomeWeakVolume;
     if (data.bassEnabled !== undefined) patch.bassEnabled = data.bassEnabled;
     if (data.bassVolume !== undefined) patch.bassVolume = data.bassVolume;
     if (data.bassComplexity !== undefined) patch.bassComplexity = data.bassComplexity;
