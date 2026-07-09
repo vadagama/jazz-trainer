@@ -49,6 +49,8 @@ const ELECTRIC_GUITAR_SAMPLE_MANIFEST: SampleManifest = {
 export const electricGuitarManifest: InstrumentManifest = {
   id: 'electric-guitar',
   name: 'Electric Guitar',
+  family: 'pitched',
+  settingsPrefix: 'guitar',
   createInstrument: () => new GuitarInstrument(new ChordTimeline(), 'electric-guitar'),
   sampleManifest: ELECTRIC_GUITAR_SAMPLE_MANIFEST,
   defaultSettings: {

@@ -6,7 +6,9 @@ import {
 } from '../time/timeSignature.js';
 import type { BeatType } from './transportEngine.js';
 import type { DrumSound } from './drumSampleRegistry.js';
-import type { PercussionSound } from './percussionSampleRegistry.js';
+import type { PercussionSound } from './percussionPatternTypes.js';
+
+import type { SectionType } from '@jazz/shared';
 
 /** A half-open tick window `[fromTicks, toTicks)` to schedule events into. */
 export interface ScheduleWindow {
@@ -115,6 +117,10 @@ export interface ScheduleContext {
   scheduleChord?(atTicks: number, notes: string[], velocity: number, durationTicks: number): void;
   /** @deprecated Use `scheduleEvent('drums', { sound }, ...)` instead. */
   scheduleDrum?(atTicks: number, sound: DrumSound, velocity: number, durationTicks: number): void;
+  /** Тип секции сетки для текущего такта (если сетка имеет sections). */
+  gridSectionType?: SectionType;
+  /** Индекс такта внутри секции, 0-based. */
+  barInSection?: number;
 }
 
 /**

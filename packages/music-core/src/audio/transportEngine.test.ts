@@ -227,3 +227,133 @@ function groupByInstrument(
   }
   return map;
 }
+
+// ─── Section-driven scheduling ─────────────────────────────────────────────
+
+describe('TransportEngine section-driven scheduling', () => {
+  it('setSections propagates to section-aware instruments', () => {
+    const engine = new TransportEngine({ sink: vi.fn() });
+    const receivedSections: unknown[] = [];
+    const mockInstrument = {
+      schedule: vi.fn(),
+      setGridSections: (sections: unknown) => {
+        receivedSections.push(sections);
+      },
+    };
+    engine.addInstrument(mockInstrument);
+
+    const sections = [
+      {
+        id: 's1',
+        name: 'Verse',
+        type: 'verseA' as const,
+        timeSignature: '4/4' as const,
+        bars: ['bar1', 'bar2', 'bar3', 'bar4'] as unknown as Array<{
+          id: string;
+          chords: Array<{ symbol: string }>;
+        }>,
+      },
+    ];
+    engine.setSections(sections);
+    expect(receivedSections).toEqual([sections]);
+  });
+
+  it('setSections(null) clears sections', () => {
+    const engine = new TransportEngine({ sink: vi.fn() });
+    const receivedSections: unknown[] = [];
+    const mockInstrument = {
+      schedule: vi.fn(),
+      setGridSections: (sections: unknown) => {
+        receivedSections.push(sections);
+      },
+    };
+    engine.addInstrument(mockInstrument);
+
+    engine.setSections(null);
+    expect(receivedSections).toEqual([null]);
+  });
+
+  it('setSections does not break instruments without setGridSections', () => {
+    const engine = new TransportEngine({ sink: vi.fn() });
+    const metronome = new MetronomeInstrument();
+    engine.addInstrument(metronome);
+    expect(() =>
+      engine.setSections([
+        {
+          id: 's1',
+          name: 'Verse',
+          type: 'intro' as const,
+          timeSignature: '4/4' as const,
+          bars: [{ id: 'b1', chords: [{ symbol: 'C' }] }],
+        },
+      ]),
+    ).not.toThrow();
+  });
+
+  it('scheduleWindow fills gridSectionType and barInSection from sections', () => {
+    const engine = new TransportEngine({ bpm: 120, timeSignature: '4/4', sink: vi.fn() });
+    const ctxReceived: Array<{ gridSectionType?: string; barInSection?: number }> = [];
+    const spyInstrument = {
+      schedule: (_window: unknown, ctx: { gridSectionType?: string; barInSection?: number }) => {
+        ctxReceived.push({ gridSectionType: ctx.gridSectionType, barInSection: ctx.barInSection });
+      },
+    };
+    engine.addInstrument(spyInstrument);
+
+    const sections = [
+      {
+        id: 'intro',
+        name: 'Intro',
+        type: 'intro' as const,
+        timeSignature: '4/4' as const,
+        bars: [
+          { id: 'b1', chords: [{ symbol: 'C' }] },
+          { id: 'b2', chords: [{ symbol: 'Dm7' }] },
+        ],
+      },
+      {
+        id: 'verse',
+        name: 'Verse',
+        type: 'verseA' as const,
+        timeSignature: '4/4' as const,
+        bars: [
+          { id: 'b3', chords: [{ symbol: 'G7' }] },
+          { id: 'b4', chords: [{ symbol: 'Cmaj7' }] },
+          { id: 'b5', chords: [{ symbol: 'Am7' }] },
+          { id: 'b6', chords: [{ symbol: 'D7' }] },
+        ],
+      },
+    ];
+    engine.setSections(sections);
+
+    // Window at bar 0 → should be 'intro', barInSection = 0
+    engine.scheduleWindow({ fromTicks: 0, toTicks: 1920 });
+    expect(ctxReceived[0]!.gridSectionType).toBe('intro');
+    expect(ctxReceived[0]!.barInSection).toBe(0);
+
+    // Window at bar 2 → should be 'verseA', barInSection = 0
+    engine.scheduleWindow({ fromTicks: 2 * 1920, toTicks: 3 * 1920 });
+    expect(ctxReceived[1]!.gridSectionType).toBe('verseA');
+    expect(ctxReceived[1]!.barInSection).toBe(0);
+
+    // Window at bar 3 → should be 'verseA', barInSection = 1
+    engine.scheduleWindow({ fromTicks: 3 * 1920, toTicks: 4 * 1920 });
+    expect(ctxReceived[2]!.gridSectionType).toBe('verseA');
+    expect(ctxReceived[2]!.barInSection).toBe(1);
+  });
+
+  it('scheduleWindow without sections leaves gridSectionType undefined', () => {
+    const engine = new TransportEngine({ sink: vi.fn() });
+    const ctxReceived: Array<{ gridSectionType?: string; barInSection?: number }> = [];
+    const spyInstrument = {
+      schedule: (_window: unknown, ctx: { gridSectionType?: string; barInSection?: number }) => {
+        ctxReceived.push({ gridSectionType: ctx.gridSectionType, barInSection: ctx.barInSection });
+      },
+    };
+    engine.addInstrument(spyInstrument);
+
+    engine.scheduleWindow({ fromTicks: 0, toTicks: 1920 });
+    expect(ctxReceived[0]!.gridSectionType).toBeUndefined();
+    expect(ctxReceived[0]!.barInSection).toBeUndefined();
+  });
+});

@@ -14,6 +14,8 @@ const ORGAN_SAMPLE_MANIFEST: SampleManifest = {
 export const organManifest: InstrumentManifest = {
   id: 'organ',
   name: 'Organ (Hammond)',
+  family: 'pitched',
+  settingsPrefix: 'organ',
   createInstrument: () => new OrganInstrument(new ChordTimeline()),
   sampleManifest: ORGAN_SAMPLE_MANIFEST,
   defaultSettings: {

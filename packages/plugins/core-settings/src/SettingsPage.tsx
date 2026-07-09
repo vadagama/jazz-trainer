@@ -18,6 +18,7 @@ import {
   useUpdateSettings,
   useMidiConnection,
   useComputerKeyboardStore,
+  useInstruments,
 } from '@jazz/plugin-sdk';
 import {
   Button,
@@ -116,26 +117,7 @@ function useTheme() {
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 
-function toSettingsPrefix(id: InstrumentId): string | null {
-  const MAP: Partial<Record<InstrumentId, string | null>> = {
-    drums: 'drums',
-    'modern-kit': 'drums',
-    'upright-bass': 'bass',
-    'electric-bass': 'bass',
-    piano: 'piano',
-    rhodes: 'rhodes',
-    guitar: 'guitar',
-    'electric-guitar': 'guitar',
-    percussion: 'percussion',
-    // Style-driven instruments (no user settings yet):
-    vibraphone: null,
-    organ: null,
-    clarinet: null,
-    'trumpet-muted': null,
-    flute: null,
-  };
-  return MAP[id] ?? null;
-}
+/** Resolve settings prefix for an instrument id via the registry. */
 
 // ─── Tab bar ───────────────────────────────────────────────────────────────────
 
@@ -220,6 +202,7 @@ export function SettingsPage() {
   const { isLoading } = useSettings();
   const settings = useEffectiveSettings();
   const updateSettings = useUpdateSettings();
+  const instruments = useInstruments();
   const { theme, toggle: toggleTheme } = useTheme();
   const [tab, setTab] = useState<TabId>('main');
 
@@ -237,11 +220,13 @@ export function SettingsPage() {
   const handleStyleChange = useCallback(
     (style: Style) => {
       const profile = getStyleProfile(style);
-      const drumVariant = profile.defaultVariants.drums ?? 'drums';
+      const drumVariant = profile.defaultVariants.drums ?? 'jazz-drum-kit';
+      // Normalize legacy 'drums' alias → concrete kit id
+      const drumKit = drumVariant === 'drums' ? 'jazz-drum-kit' : drumVariant;
       mutate({
         style,
         bpm: profile.defaultTempo,
-        drumKit: drumVariant === 'modern-kit' ? 'modern-kit' : 'jazz-kit',
+        drumKit,
       });
     },
     [mutate],
@@ -280,15 +265,16 @@ export function SettingsPage() {
     } else {
       delete perStyleOverrides[currentStyle];
     }
-    const drumVariant = profile.defaultVariants.drums ?? 'drums';
+    const drumVariant = profile.defaultVariants.drums ?? 'jazz-kit';
+    const drumKit = drumVariant === 'drums' ? 'jazz-drum-kit' : drumVariant;
     const patch: Record<string, unknown> = {
       bpm: profile.defaultTempo,
-      drumKit: drumVariant === 'modern-kit' ? 'modern-kit' : 'jazz-kit',
+      drumKit,
       perStyleOverrides,
     };
-    const drumId = drumVariant as InstrumentId;
-    const prefix = toSettingsPrefix(drumId);
+    const prefix = instruments.get(drumKit)?.settingsPrefix;
     if (prefix) {
+      const drumId = drumVariant as InstrumentId;
       const profileDefaults = profile.instrumentDefaults[drumId];
       if (profileDefaults) {
         patch[`${prefix}Enabled`] = profileDefaults.enabled;
@@ -296,7 +282,7 @@ export function SettingsPage() {
       }
     }
     mutate(patch as Partial<UserSettingsDTO>);
-  }, [currentStyle, mutate, settings?.perStyleOverrides]);
+  }, [currentStyle, mutate, settings?.perStyleOverrides, instruments]);
 
   // ── MIDI connection state (hooks BEFORE early return) ───────────────────
   const inputPort = getInputPort();

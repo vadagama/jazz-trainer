@@ -104,7 +104,6 @@ export { InstrumentTile, type InstrumentTileProps } from './InstrumentTile';
 export {
   INSTRUMENT_ICONS,
   DrumsIcon,
-  ModernKitIcon,
   BassIcon,
   PianoIcon,
   RhodesIcon,

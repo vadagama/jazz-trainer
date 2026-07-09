@@ -22,6 +22,7 @@ export {
   getEnsemblePreset,
   getEnsemblePresets,
   applyEnsemble,
+  instrumentDefaultsFor,
   INSTRUMENT_GROUPS,
 } from './styleProfile.js';
 export type {

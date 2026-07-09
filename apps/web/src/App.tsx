@@ -4,10 +4,11 @@ import { AppShell } from './components/layout/AppShell';
 import { EditorShell } from './components/layout/EditorShell';
 import { ProtectedRoute } from './components/layout/ProtectedRoute';
 import { RbacGuard } from './components/layout/RbacGuard';
-import { contributions } from './shell/bootstrap';
+import { contributions, instrumentRegistry } from './shell/bootstrap';
 import type { RouteContribution } from '@jazz/plugin-sdk';
 import { PluginProvider } from '@jazz/plugin-sdk';
 import { useTransport } from '@/hooks/useTransport';
+import { useDrumPreview } from '@/hooks/useDrumPreview';
 import { MidiSoloProvider } from './shell/MidiSoloProvider';
 
 /**
@@ -58,7 +59,7 @@ function wrapRoute(r: RouteContribution, child: React.ReactNode): React.ReactNod
 const APP_SHELL_PATHS = new Set(['/', '/my', '/theory', '/settings', '/profile']);
 
 function isAppShellRoute(path: string): boolean {
-  return APP_SHELL_PATHS.has(path) || path.startsWith('/theory/');
+  return APP_SHELL_PATHS.has(path) || path.startsWith('/theory/') || path.startsWith('/admin/');
 }
 
 export function App() {
@@ -69,11 +70,18 @@ export function App() {
   );
   const bareRoutes = contributions.routes.filter(
     (r) =>
-      !isAppShellRoute(r.path) && !r.path.startsWith('/grids') && !r.path.startsWith('/play') && r.path !== '/practice-cards',
+      !isAppShellRoute(r.path) &&
+      !r.path.startsWith('/grids') &&
+      !r.path.startsWith('/play') &&
+      r.path !== '/practice-cards',
   );
 
   return (
-    <PluginProvider useTransport={useTransport}>
+    <PluginProvider
+      useTransport={useTransport}
+      useDrumPreview={useDrumPreview}
+      instruments={instrumentRegistry}
+    >
       <MidiSoloProvider>
         <Routes>
           {/* Header + scrollable GridContainer */}

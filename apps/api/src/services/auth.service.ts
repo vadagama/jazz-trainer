@@ -58,39 +58,14 @@ export function toSettingsDTO(s: UserSettingsRecord): UserSettingsDTO {
     pianoProfile: s.pianoProfile as UserSettingsDTO['pianoProfile'],
     pianoVoicingDensity: s.pianoVoicingDensity as UserSettingsDTO['pianoVoicingDensity'],
     pianoSampleLibrary: s.pianoSampleLibrary as UserSettingsDTO['pianoSampleLibrary'],
-    pianoRandomizationLevel:
-      s.pianoRandomizationLevel as UserSettingsDTO['pianoRandomizationLevel'],
+
     drumsEnabled: s.drumsEnabled,
     drumsVolume: clampVolume(s.drumsVolume),
-    drumsRideEnabled: s.drumsRideEnabled,
-    drumsRideVolume: clampVolume(s.drumsRideVolume),
-    drumsStirEnabled: s.drumsStirEnabled,
-    drumsStirVolume: clampVolume(s.drumsStirVolume),
-    drumsHihatEnabled: s.drumsHihatEnabled,
-    drumsHihatVolume: clampVolume(s.drumsHihatVolume),
-    drumsHihatOpenness: s.drumsHihatOpenness,
-    drumsBassDrumEnabled: s.drumsBassDrumEnabled,
-    drumsBassDrumVolume: clampVolume(s.drumsBassDrumVolume),
-    drumsSnareEnabled: s.drumsSnareEnabled,
-    drumsSnareVolume: clampVolume(s.drumsSnareVolume),
-    drumsCrashEnabled: s.drumsCrashEnabled,
-    drumsCrashVolume: clampVolume(s.drumsCrashVolume),
-    drumsCrashFrequency: s.drumsCrashFrequency,
-    drumsRimEnabled: s.drumsRimEnabled,
-    drumsRimVolume: clampVolume(s.drumsRimVolume),
     style: (s.style as UserSettingsDTO['style']) ?? 'swing',
-    drumsHumanizeIntensity: s.drumsHumanizeIntensity as UserSettingsDTO['drumsHumanizeIntensity'],
-    drumsFunkComplexity: s.drumsFunkComplexity as UserSettingsDTO['drumsFunkComplexity'],
-    drumsFillFrequency: s.drumsFillFrequency as UserSettingsDTO['drumsFillFrequency'],
-    drumsRandomizationLevel:
-      s.drumsRandomizationLevel as UserSettingsDTO['drumsRandomizationLevel'],
-    drumsFillComplexity: s.drumsFillComplexity as UserSettingsDTO['drumsFillComplexity'],
-    drumsRideVariation: s.drumsRideVariation,
-    drumsSnareGhosts: s.drumsSnareGhosts,
-    drumsBassDrumVariation: s.drumsBassDrumVariation,
-    drumKit: (s.drumKit as UserSettingsDTO['drumKit']) ?? 'jazz-kit',
-    drumsTomEnabled: s.drumsTomEnabled,
-    drumsTomVolume: clampVolume(s.drumsTomVolume),
+
+    drumKit: (s.drumKit as UserSettingsDTO['drumKit']) ?? 'jazz-drum-kit',
+    drumsPattern: (so?.drumsPattern as string | null) ?? null,
+
     swingRatio: Math.max(0.5, Math.min(0.75, s.swingRatio)),
     audioFormat: s.audioFormat as UserSettingsDTO['audioFormat'],
     practiceCards: s.practiceCards
@@ -137,6 +112,8 @@ export function toSettingsDTO(s: UserSettingsRecord): UserSettingsDTO {
   if (!has('pianoVolume')) dto.pianoVolume = pd.piano?.volume ?? 0.7;
   if (!has('rhodesEnabled')) dto.rhodesEnabled = pd.rhodes?.enabled;
   if (!has('rhodesVolume')) dto.rhodesVolume = pd.rhodes?.volume ?? 0.5;
+  if (!has('drumKit'))
+    dto.drumKit = activeDrums === 'funk-drum-kit' ? 'funk-drum-kit' : 'jazz-drum-kit';
   if (!has('drumsEnabled')) dto.drumsEnabled = pd[activeDrums]?.enabled;
   if (!has('drumsVolume')) dto.drumsVolume = pd[activeDrums]?.volume ?? 0.7;
   if (!has('percussionEnabled')) dto.percussionEnabled = pd.percussion?.enabled;

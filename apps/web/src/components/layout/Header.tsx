@@ -13,8 +13,9 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 export function Header() {
-  const { user } = useAuth();
+  const { user, permissions } = useAuth();
   const logout = useLogout();
+  const canEditContent = permissions.includes('content:write');
   const navigate = useNavigate();
   const { theme, toggle } = useTheme();
   const location = useLocation();
@@ -75,6 +76,19 @@ export function Header() {
           >
             Теория
           </Link>
+
+          {canEditContent && (
+            <Link
+              to="/admin/drum-constructor"
+              className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                location.pathname === '/admin/drum-constructor'
+                  ? 'bg-accent text-foreground'
+                  : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+              }`}
+            >
+              Конструктор
+            </Link>
+          )}
         </nav>
         <button
           onClick={toggle}

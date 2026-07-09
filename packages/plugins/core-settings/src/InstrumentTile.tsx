@@ -1,7 +1,12 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import type { Style, UserSettingsDTO } from '@jazz/shared';
-import { getStyleProfile, type InstrumentId } from '@jazz/music-core';
-import { useSettings, useUpdateSettings } from '@jazz/plugin-sdk';
+import {
+  getStyleProfile,
+  getOrganismsForStyle,
+  instrumentDefaultsFor,
+  type InstrumentId,
+} from '@jazz/music-core';
+import { useSettings, useUpdateSettings, useInstruments } from '@jazz/plugin-sdk';
 import {
   Card,
   CardContent,
@@ -26,48 +31,7 @@ interface InstrumentTileProps {
 
 type SettingsRecord = Partial<UserSettingsDTO>;
 
-// ─── Labels ────────────────────────────────────────────────────────────────────
-
-const INSTRUMENT_NAMES: Record<InstrumentId, string> = {
-  drums: 'Drum Kit',
-  'modern-kit': 'Drum Kit',
-  'upright-bass': 'Bass',
-  'electric-bass': 'Bass',
-  piano: 'Piano',
-  'upright-piano': 'Piano',
-  rhodes: 'Rhodes',
-  guitar: 'Guitar',
-  'electric-guitar': 'Guitar',
-  vibraphone: 'Vibraphone',
-  organ: 'Organ',
-  clarinet: 'Clarinet',
-  percussion: 'Percussion',
-  'trumpet-muted': 'Trumpet',
-  flute: 'Flute',
-};
-
 // ─── Helpers ───────────────────────────────────────────────────────────────────
-
-function toSettingsPrefix(id: InstrumentId): string | null {
-  const MAP: Partial<Record<InstrumentId, string | null>> = {
-    drums: 'drums',
-    'modern-kit': 'drums',
-    'upright-bass': 'bass',
-    'electric-bass': 'bass',
-    piano: 'piano',
-    rhodes: 'rhodes',
-    guitar: 'guitar',
-    'electric-guitar': 'guitar',
-    percussion: 'percussion',
-    // Style-driven instruments (no user settings yet):
-    vibraphone: null,
-    organ: null,
-    clarinet: null,
-    'trumpet-muted': null,
-    flute: null,
-  };
-  return MAP[id] ?? null;
-}
 
 function get(s: SettingsRecord | undefined, key: string, fallback: unknown = undefined) {
   if (!s) return fallback;
@@ -76,6 +40,18 @@ function get(s: SettingsRecord | undefined, key: string, fallback: unknown = und
 
 function pct(v: number | undefined, def: number) {
   return Math.round((v ?? def) * 100);
+}
+
+/** Resolve display name for an instrument via the registry. */
+function useInstrumentName(id: string): string {
+  const instruments = useInstruments();
+  return instruments.get(id)?.name ?? id;
+}
+
+/** Resolve settings prefix for an instrument via the registry. */
+function useInstrumentPrefix(id: string): string | null {
+  const instruments = useInstruments();
+  return instruments.get(id)?.settingsPrefix ?? null;
 }
 
 // ─── Shared sub-components ─────────────────────────────────────────────────────
@@ -154,7 +130,30 @@ function SettingSelect({
 // ─── Tile dispatcher ───────────────────────────────────────────────────────────
 
 export function InstrumentTile({ instrumentId, style }: InstrumentTileProps) {
-  if (instrumentId === 'drums' || instrumentId === 'modern-kit') {
+  const instruments = useInstruments();
+  const info = instruments.get(instrumentId);
+
+  // Route by family when available, otherwise use legacy id-based dispatch.
+  if (info?.family === 'drums') {
+    return <DrumsTile instrumentId={instrumentId} style={style} />;
+  }
+  if (info?.family === 'pitched') {
+    if (instrumentId === 'upright-bass' || instrumentId === 'electric-bass')
+      return <BassTile style={style} />;
+    if (instrumentId === 'piano') return <PianoTile style={style} />;
+    if (instrumentId === 'rhodes') return <RhodesTile style={style} />;
+    if (instrumentId === 'guitar' || instrumentId === 'electric-guitar')
+      return <GuitarTile instrumentId={instrumentId as 'guitar' | 'electric-guitar'} style={style} />;
+    return <SimpleTile instrumentId={instrumentId} style={style} />;
+  }
+  if (info?.family === 'percussion') return <PercussionTile style={style} />;
+
+  // Fallback for instruments not yet in registry (pre-F4)
+  if (
+    instrumentId === 'drums' ||
+    instrumentId === 'jazz-drum-kit' ||
+    instrumentId === 'funk-drum-kit'
+  ) {
     return <DrumsTile instrumentId={instrumentId} style={style} />;
   }
   if (instrumentId === 'upright-bass' || instrumentId === 'electric-bass')
@@ -162,7 +161,7 @@ export function InstrumentTile({ instrumentId, style }: InstrumentTileProps) {
   if (instrumentId === 'piano') return <PianoTile style={style} />;
   if (instrumentId === 'rhodes') return <RhodesTile style={style} />;
   if (instrumentId === 'guitar' || instrumentId === 'electric-guitar') {
-    return <GuitarTile instrumentId={instrumentId} style={style} />;
+    return <GuitarTile instrumentId={instrumentId as 'guitar' | 'electric-guitar'} style={style} />;
   }
   if (instrumentId === 'percussion') return <PercussionTile style={style} />;
   return <SimpleTile instrumentId={instrumentId} style={style} />;
@@ -200,14 +199,16 @@ function DrumsTile({
   instrumentId,
   style,
 }: {
-  instrumentId: 'drums' | 'modern-kit';
+  instrumentId: 'drums' | 'jazz-drum-kit' | 'funk-drum-kit' | string;
   style: Style;
 }) {
   const { data: settings } = useSettings();
   const mutate = useUpdateSettings();
+  const instruments = useInstruments();
   const prefix = 'drums';
+  const name = useInstrumentName(instrumentId);
 
-  const defaults = getStyleProfile(style).instrumentDefaults[instrumentId];
+  const defaults = instrumentDefaultsFor(getStyleProfile(style), instrumentId);
   const enabled = get(settings, `${prefix}Enabled`) !== false;
   const on = enabled;
 
@@ -216,14 +217,19 @@ function DrumsTile({
     [mutate],
   );
 
+  const organisms = useMemo(() => getOrganismsForStyle(getStyleProfile(style).id), [style]);
+  const currentPattern = (get(settings, 'drumsPattern') as string | undefined | null) ?? null;
+
+  // Kit selector: options from registry (drums family).
+  const kitOptions = useMemo(() => {
+    const drumKits = instruments.list('drums');
+    return drumKits.map((k) => ({ value: k.id, label: k.name }));
+  }, [instruments]);
+
   return (
     <Card className={!on ? 'opacity-50' : undefined}>
       <CardHeader className="pb-2">
-        <TileHeader
-          name={INSTRUMENT_NAMES[instrumentId]}
-          enabled={on}
-          onToggle={() => set({ [`${prefix}Enabled`]: !on })}
-        />
+        <TileHeader name={name} enabled={on} onToggle={() => set({ [`${prefix}Enabled`]: !on })} />
       </CardHeader>
       <CardContent className={on ? 'space-y-3' : 'space-y-3 pointer-events-none opacity-60'}>
         <SettingRow label="Громкость">
@@ -237,246 +243,35 @@ function DrumsTile({
 
         <SettingRow label="Набор сэмплов">
           <SettingSelect
-            value={(get(settings, 'drumKit') as string) ?? 'jazz-kit'}
-            defaultValue="jazz-kit"
+            value={(get(settings, 'drumKit') as string) ?? 'jazz-drum-kit'}
+            defaultValue="jazz-drum-kit"
             disabled={!on}
-            options={[
-              { value: 'jazz-kit', label: 'Jazz Kit' },
-              { value: 'modern-kit', label: 'Modern Kit' },
-            ]}
+            options={
+              kitOptions.length > 0
+                ? kitOptions
+                : [
+                    { value: 'jazz-drum-kit', label: 'Jazz Kit' },
+                    { value: 'funk-drum-kit', label: 'Funk Kit' },
+                  ]
+            }
             onChange={(v) => set({ drumKit: v })}
           />
         </SettingRow>
 
-        <SettingRow label="Humanize">
+        <SettingRow label="Паттерны">
           <SettingSelect
-            value={get(settings, `${prefix}HumanizeIntensity`) as string}
-            defaultValue="med"
+            value={currentPattern ?? '__auto__'}
+            defaultValue="__auto__"
             disabled={!on}
             options={[
-              { value: 'off', label: 'Выкл' },
-              { value: 'low', label: 'Низкая' },
-              { value: 'med', label: 'Средняя' },
-              { value: 'high', label: 'Высокая' },
+              { value: '__auto__', label: 'Авто' },
+              ...organisms.map((o) => ({ value: o.id, label: o.label })),
             ]}
-            onChange={(v) => set({ [`${prefix}HumanizeIntensity`]: v })}
+            onChange={(v) => set({ drumsPattern: v === '__auto__' ? null : v })}
           />
         </SettingRow>
-
-        {style === 'funk' && (
-          <>
-            <SettingRow label="Сложность (funk)">
-              <SettingSelect
-                value={get(settings, `${prefix}FunkComplexity`) as string}
-                defaultValue="medium"
-                disabled={!on}
-                options={[
-                  { value: 'simple', label: 'Простой' },
-                  { value: 'medium', label: 'Средний' },
-                  { value: 'complex', label: 'Сложный' },
-                ]}
-                onChange={(v) => set({ [`${prefix}FunkComplexity`]: v })}
-              />
-            </SettingRow>
-            <SettingRow label="Fill частота">
-              <SettingSelect
-                value={get(settings, `${prefix}FillFrequency`) as string}
-                defaultValue="8bars"
-                disabled={!on}
-                options={[
-                  { value: 'never', label: 'Без fills' },
-                  { value: '16bars', label: 'Редко (16т)' },
-                  { value: '8bars', label: 'Умеренно (8т)' },
-                  { value: '4bars', label: 'Часто (4т)' },
-                ]}
-                onChange={(v) => set({ [`${prefix}FillFrequency`]: v })}
-              />
-            </SettingRow>
-          </>
-        )}
-
-        <SettingRow label="Рандомизация">
-          <SettingSelect
-            value={get(settings, `${prefix}RandomizationLevel`) as string}
-            defaultValue="off"
-            disabled={!on}
-            options={[
-              { value: 'off', label: 'Выкл' },
-              { value: 'subtle', label: 'Тонкая' },
-              { value: 'moderate', label: 'Умеренная' },
-              { value: 'high', label: 'Высокая' },
-            ]}
-            onChange={(v) => set({ [`${prefix}RandomizationLevel`]: v })}
-          />
-        </SettingRow>
-
-        {(get(settings, `${prefix}RandomizationLevel`) ?? 'off') !== 'off' && (
-          <div className="space-y-2 pl-3 border-l-2 border-primary/30">
-            <p className="text-xs font-semibold text-primary/70">Колонки рандомизации</p>
-            <SettingRow label="Сложность fills">
-              <SettingSelect
-                value={get(settings, `${prefix}FillComplexity`) as string}
-                defaultValue="medium"
-                disabled={!on}
-                options={[
-                  { value: 'simple', label: 'Простая' },
-                  { value: 'medium', label: 'Средняя' },
-                  { value: 'complex', label: 'Сложная' },
-                ]}
-                onChange={(v) => set({ [`${prefix}FillComplexity`]: v })}
-              />
-            </SettingRow>
-            <SettingRow label="Вариация ride">
-              <Checkbox
-                disabled={!on}
-                checked={(get(settings, `${prefix}RideVariation`) as boolean) ?? true}
-                onChange={(e) => set({ [`${prefix}RideVariation`]: e.target.checked })}
-              />
-            </SettingRow>
-            <SettingRow label="Ghost notes (snare)">
-              <Checkbox
-                disabled={!on}
-                checked={(get(settings, `${prefix}SnareGhosts`) as boolean) ?? true}
-                onChange={(e) => set({ [`${prefix}SnareGhosts`]: e.target.checked })}
-              />
-            </SettingRow>
-            <SettingRow label="Вариация bass drum">
-              <Checkbox
-                disabled={!on}
-                checked={(get(settings, `${prefix}BassDrumVariation`) as boolean) ?? true}
-                onChange={(e) => set({ [`${prefix}BassDrumVariation`]: e.target.checked })}
-              />
-            </SettingRow>
-          </div>
-        )}
-
-        {/* Sub-components */}
-        <SubDrumsSection
-          title="Bass Drum"
-          enKey={`${prefix}BassDrumEnabled`}
-          volKey={`${prefix}BassDrumVolume`}
-          settings={settings}
-          defVol={0.7}
-          parentOn={on}
-          set={set}
-        />
-        <SubDrumsSection
-          title="Snare"
-          enKey={`${prefix}SnareEnabled`}
-          volKey={`${prefix}SnareVolume`}
-          settings={settings}
-          defVol={0.8}
-          parentOn={on}
-          set={set}
-        />
-        <SubDrumsSection
-          title="Hi-hat"
-          enKey={`${prefix}HihatEnabled`}
-          volKey={`${prefix}HihatVolume`}
-          settings={settings}
-          defVol={0.65}
-          parentOn={on}
-          set={set}
-          extra={
-            <SettingRow label="Открытость">
-              <SettingSelect
-                value={String((get(settings, `${prefix}HihatOpenness`) as number) ?? 0)}
-                defaultValue="0"
-                disabled={!on}
-                options={[
-                  { value: '0', label: 'Закрытый' },
-                  { value: '1', label: 'Слегка открытый' },
-                  { value: '2', label: 'Полуоткрытый' },
-                  { value: '3', label: 'Открытый' },
-                  { value: '4', label: 'Широко открытый' },
-                  { value: '5', label: 'Макс. открытый' },
-                ]}
-                onChange={(v) => set({ [`${prefix}HihatOpenness`]: Number(v) })}
-              />
-            </SettingRow>
-          }
-        />
-        <SubDrumsSection
-          title="Ride"
-          enKey={`${prefix}RideEnabled`}
-          volKey={`${prefix}RideVolume`}
-          settings={settings}
-          defVol={0.7}
-          parentOn={on}
-          set={set}
-        />
-        <SubDrumsSection
-          title="Crash"
-          enKey={`${prefix}CrashEnabled`}
-          volKey={`${prefix}CrashVolume`}
-          settings={settings}
-          defVol={0.8}
-          parentOn={on}
-          set={set}
-          extra={
-            <SettingRow label="Частота crash">
-              <SettingSelect
-                value={String((get(settings, `${prefix}CrashFrequency`) as number) ?? 4)}
-                defaultValue="4"
-                disabled={!on}
-                options={[
-                  { value: '0', label: 'Никогда' },
-                  { value: '4', label: 'Каждые 4 такта' },
-                  { value: '8', label: 'Каждые 8 тактов' },
-                  { value: '16', label: 'Каждые 16 тактов' },
-                  { value: '32', label: 'Каждые 32 такта' },
-                ]}
-                onChange={(v) => set({ [`${prefix}CrashFrequency`]: Number(v) })}
-              />
-            </SettingRow>
-          }
-        />
       </CardContent>
     </Card>
-  );
-}
-
-function SubDrumsSection({
-  title,
-  enKey,
-  volKey,
-  settings,
-  defVol,
-  parentOn,
-  set,
-  extra,
-}: {
-  title: string;
-  enKey: string;
-  volKey: string;
-  settings: SettingsRecord | undefined;
-  defVol: number;
-  parentOn: boolean;
-  set: (p: Record<string, unknown>) => void;
-  extra?: React.ReactNode;
-}) {
-  const enabled = get(settings, enKey) !== false;
-  const disabled = !parentOn || !enabled;
-  return (
-    <div className="space-y-1 pl-3 border-l border-border">
-      <div className="flex items-center justify-between">
-        <p className="text-xs text-muted-foreground">{title}</p>
-        <Checkbox
-          checked={enabled}
-          disabled={!parentOn}
-          onChange={(e) => set({ [enKey]: e.target.checked })}
-        />
-      </div>
-      <VolSlider
-        value={get(settings, volKey) as number | undefined}
-        defaultValue={defVol}
-        disabled={disabled}
-        onChange={(v) => set({ [volKey]: v })}
-      />
-      {extra && (
-        <div className={!parentOn || !enabled ? 'pointer-events-none opacity-50' : ''}>{extra}</div>
-      )}
-    </div>
   );
 }
 
@@ -499,7 +294,7 @@ function BassTile({ style }: { style: Style }) {
     <Card className={!on ? 'opacity-50' : undefined}>
       <CardHeader className="pb-2">
         <TileHeader
-          name={INSTRUMENT_NAMES['upright-bass']}
+          name={useInstrumentName('upright-bass')}
           enabled={on}
           onToggle={() => set({ [`${prefix}Enabled`]: !on })}
         />
@@ -564,7 +359,7 @@ function PianoTile({ style }: { style: Style }) {
     <Card className={!on ? 'opacity-50' : undefined}>
       <CardHeader className="pb-2">
         <TileHeader
-          name={INSTRUMENT_NAMES.piano}
+          name={useInstrumentName('piano')}
           enabled={on}
           onToggle={() => set({ [`${prefix}Enabled`]: !on })}
         />
@@ -625,21 +420,6 @@ function PianoTile({ style }: { style: Style }) {
             onChange={(v) => set({ [`${prefix}SampleLibrary`]: v })}
           />
         </SettingRow>
-
-        <SettingRow label="Рандомизация">
-          <SettingSelect
-            value={(get(settings, `${prefix}RandomizationLevel`) as string) ?? 'off'}
-            defaultValue="off"
-            disabled={!on}
-            options={[
-              { value: 'off', label: 'Выкл' },
-              { value: 'subtle', label: 'Лёгкая' },
-              { value: 'moderate', label: 'Умеренная' },
-              { value: 'high', label: 'Высокая' },
-            ]}
-            onChange={(v) => set({ [`${prefix}RandomizationLevel`]: v })}
-          />
-        </SettingRow>
       </CardContent>
     </Card>
   );
@@ -664,7 +444,7 @@ function RhodesTile({ style }: { style: Style }) {
     <Card className={!on ? 'opacity-50' : undefined}>
       <CardHeader className="pb-2">
         <TileHeader
-          name={INSTRUMENT_NAMES.rhodes}
+          name={useInstrumentName('rhodes')}
           enabled={on}
           onToggle={() => set({ [`${prefix}Enabled`]: !on })}
         />
@@ -754,7 +534,7 @@ function GuitarTile({
     <Card className={!on ? 'opacity-50' : undefined}>
       <CardHeader className="pb-2">
         <TileHeader
-          name={INSTRUMENT_NAMES[instrumentId]}
+          name={useInstrumentName(instrumentId)}
           enabled={on}
           onToggle={() => set({ [`${prefix}Enabled`]: !on })}
         />
@@ -792,7 +572,7 @@ function PercussionTile({ style }: { style: Style }) {
     <Card className={!on ? 'opacity-50' : undefined}>
       <CardHeader className="pb-2">
         <TileHeader
-          name={INSTRUMENT_NAMES.percussion}
+          name={useInstrumentName('percussion')}
           enabled={on}
           onToggle={() => set({ [`${prefix}Enabled`]: !on })}
         />
@@ -830,9 +610,9 @@ function PercussionTile({ style }: { style: Style }) {
 function SimpleTile({ instrumentId, style }: { instrumentId: InstrumentId; style: Style }) {
   const { data: settings } = useSettings();
   const mutate = useUpdateSettings();
-  const prefix = toSettingsPrefix(instrumentId);
+  const prefix = useInstrumentPrefix(instrumentId);
 
-  const defaults = getStyleProfile(style).instrumentDefaults[instrumentId];
+  const defaults = instrumentDefaultsFor(getStyleProfile(style), instrumentId);
   const on = prefix ? get(settings, `${prefix}Enabled`) !== false : defaults.enabled;
 
   const set = useCallback(
@@ -848,7 +628,7 @@ function SimpleTile({ instrumentId, style }: { instrumentId: InstrumentId; style
     <Card className={!on ? 'opacity-50' : undefined}>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
-          <span className="text-sm font-medium">{INSTRUMENT_NAMES[instrumentId]}</span>
+          <span className="text-sm font-medium">{useInstrumentName(instrumentId)}</span>
           {isStyleOnly ? (
             <span className="text-xs text-muted-foreground">{on ? 'Вкл' : 'Выкл'}</span>
           ) : (

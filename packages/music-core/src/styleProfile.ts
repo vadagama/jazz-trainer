@@ -3,12 +3,18 @@ import type { Style, TimeSignatureString } from '@jazz/shared';
 // ─── Instrument identifiers ──────────────────────────────────────────────────
 
 /**
- * Known instrument IDs across all InstrumentManifest entries.
- * Keep in sync with the `id` field of each *Manifest.ts in audio/.
+ * Instrument IDs across all InstrumentManifest entries.
+ *
+ * Open union: the listed literals document the built-in instruments (and give
+ * editor autocomplete), while `(string & {})` keeps the type OPEN so a new
+ * instrument plugin can be referenced by id without editing this union. Adding
+ * a kit no longer requires touching styleProfile — unknown ids resolve through
+ * {@link instrumentDefaultsFor} (falls back to OFF).
  */
 export type InstrumentId =
   | 'drums'
-  | 'modern-kit'
+  | 'jazz-drum-kit'
+  | 'funk-drum-kit'
   | 'upright-bass'
   | 'electric-bass'
   | 'piano'
@@ -21,7 +27,8 @@ export type InstrumentId =
   | 'clarinet'
   | 'percussion'
   | 'trumpet-muted'
-  | 'flute';
+  | 'flute'
+  | (string & {});
 
 // ─── Instrument groups (UI-layer) ────────────────────────────────────────────
 
@@ -64,8 +71,8 @@ export const INSTRUMENT_GROUPS: InstrumentGroupDef[] = [
     order: 1,
     settingsPrefix: 'drums',
     variants: [
-      { instrumentId: 'drums', name: 'Jazz' },
-      { instrumentId: 'modern-kit', name: 'Modern' },
+      { instrumentId: 'jazz-drum-kit', name: 'Jazz' },
+      { instrumentId: 'funk-drum-kit', name: 'Funk' },
     ],
   },
   {
@@ -212,6 +219,21 @@ export interface StyleProfile {
 /** Fallback for instruments that are irrelevant / hidden in a given style. */
 const OFF: InstrumentStyleDefaults = { enabled: false, volume: 0 };
 
+/**
+ * Resolve per-style defaults for an instrument id, tolerating ids not present
+ * in the profile (e.g. a newly added kit plugin) by falling back to OFF.
+ *
+ * Use this instead of indexing `profile.instrumentDefaults[id]` directly: with
+ * the open {@link InstrumentId} union that index is `… | undefined`, and this
+ * helper centralises the fallback so callers stay clean.
+ */
+export function instrumentDefaultsFor(
+  profile: StyleProfile,
+  id: InstrumentId,
+): InstrumentStyleDefaults {
+  return profile.instrumentDefaults[id] ?? OFF;
+}
+
 // ─── Registry data ────────────────────────────────────────────────────────────
 // Source: ARANGEMENT_VISION.md §3.2 (Style-specific rosters)
 
@@ -224,7 +246,7 @@ const SWING_PROFILE: StyleProfile = {
   swingRatio: 0.67,
   timeSignaturePresets: ['4/4', '3/4'],
   defaultVariants: {
-    drums: 'drums',
+    drums: 'jazz-drum-kit',
     bass: 'upright-bass',
     piano: 'piano',
     rhodes: 'rhodes',
@@ -241,7 +263,8 @@ const SWING_PROFILE: StyleProfile = {
   },
   instrumentDefaults: {
     drums: { enabled: true, volume: 0.7, pattern: 'swing' },
-    'modern-kit': { ...OFF },
+    'jazz-drum-kit': { enabled: true, volume: 0.7, pattern: 'swing' },
+    'funk-drum-kit': { ...OFF },
     'upright-bass': { enabled: true, volume: 0.75, pattern: 'walking' },
     'electric-bass': { ...OFF },
     piano: { enabled: true, volume: 0.7, pattern: 'swing-sparse', voicing: 'rootless3' },
@@ -267,7 +290,7 @@ const BOSSA_PROFILE: StyleProfile = {
   swingRatio: 0.5,
   timeSignaturePresets: ['2/4', '4/4'],
   defaultVariants: {
-    drums: 'drums',
+    drums: 'funk-drum-kit',
     bass: 'upright-bass',
     piano: 'piano',
     rhodes: 'rhodes',
@@ -278,13 +301,14 @@ const BOSSA_PROFILE: StyleProfile = {
   },
   instrumentRoster: {
     required: ['drums', 'bass', 'piano'],
-    recommended: ['guitar'],
-    optional: ['rhodes', 'winds', 'percussion'],
+    recommended: ['guitar', 'percussion'],
+    optional: ['rhodes', 'winds'],
     hidden: ['synth'],
   },
   instrumentDefaults: {
     drums: { enabled: true, volume: 0.6, pattern: 'bossa' },
-    'modern-kit': { ...OFF },
+    'jazz-drum-kit': { ...OFF },
+    'funk-drum-kit': { enabled: true, volume: 0.6, pattern: 'bossa' },
     'upright-bass': { enabled: true, volume: 0.7, pattern: 'root-5th' },
     'electric-bass': { ...OFF },
     piano: { enabled: true, volume: 0.65, pattern: 'swing-sparse', voicing: 'shell2' },
@@ -295,7 +319,7 @@ const BOSSA_PROFILE: StyleProfile = {
     vibraphone: { ...OFF },
     organ: { ...OFF },
     clarinet: { ...OFF },
-    percussion: { enabled: false, volume: 0.6, pattern: 'bossa' },
+    percussion: { enabled: true, volume: 0.6 },
     'trumpet-muted': { ...OFF },
     flute: { enabled: false, volume: 0.55, pattern: 'airy' },
   },
@@ -309,7 +333,7 @@ const FUNK_PROFILE: StyleProfile = {
   swingRatio: 0.5,
   timeSignaturePresets: ['4/4'],
   defaultVariants: {
-    drums: 'modern-kit',
+    drums: 'funk-drum-kit',
     bass: 'electric-bass',
     piano: 'piano',
     rhodes: 'rhodes',
@@ -320,13 +344,14 @@ const FUNK_PROFILE: StyleProfile = {
   },
   instrumentRoster: {
     required: ['drums', 'bass', 'piano'],
-    recommended: ['rhodes', 'guitar'],
-    optional: ['synth', 'winds', 'percussion'],
+    recommended: ['rhodes', 'guitar', 'percussion'],
+    optional: ['synth', 'winds'],
     hidden: [],
   },
   instrumentDefaults: {
     drums: { ...OFF },
-    'modern-kit': { enabled: true, volume: 0.75, pattern: 'funk' },
+    'jazz-drum-kit': { ...OFF },
+    'funk-drum-kit': { enabled: true, volume: 0.75, pattern: 'funk' },
     'upright-bass': { ...OFF },
     'electric-bass': { enabled: true, volume: 0.75, pattern: 'syncopated' },
     piano: { enabled: true, volume: 0.7, pattern: 'offbeat-push', voicing: 'rootless4' },
@@ -337,7 +362,7 @@ const FUNK_PROFILE: StyleProfile = {
     vibraphone: { ...OFF },
     organ: { enabled: false, volume: 0.65, pattern: 'pads-stabs' },
     clarinet: { ...OFF },
-    percussion: { enabled: false, volume: 0.65, pattern: 'funk' },
+    percussion: { enabled: true, volume: 0.65 },
     'trumpet-muted': { enabled: false, volume: 0.65, pattern: 'syncopated-accents' },
     flute: { ...OFF },
   },
@@ -352,7 +377,7 @@ const LATIN_PROFILE: StyleProfile = {
   swingRatio: 0.5,
   timeSignaturePresets: ['4/4', '6/8'],
   defaultVariants: {
-    drums: 'drums',
+    drums: 'funk-drum-kit',
     bass: 'upright-bass',
     piano: 'piano',
     rhodes: 'rhodes',
@@ -369,7 +394,8 @@ const LATIN_PROFILE: StyleProfile = {
   },
   instrumentDefaults: {
     drums: { enabled: true, volume: 0.7, pattern: 'latin' },
-    'modern-kit': { ...OFF },
+    'jazz-drum-kit': { ...OFF },
+    'funk-drum-kit': { enabled: true, volume: 0.7, pattern: 'latin' },
     'upright-bass': { enabled: true, volume: 0.7, pattern: 'montuno' },
     'electric-bass': { ...OFF },
     piano: { enabled: true, volume: 0.7, pattern: 'basie-light', voicing: 'quartal' },
@@ -394,7 +420,7 @@ const BALLAD_PROFILE: StyleProfile = {
   swingRatio: 0.58,
   timeSignaturePresets: ['4/4', '3/4'],
   defaultVariants: {
-    drums: 'drums',
+    drums: 'jazz-drum-kit',
     bass: 'upright-bass',
     piano: 'piano',
     rhodes: 'rhodes',
@@ -411,7 +437,8 @@ const BALLAD_PROFILE: StyleProfile = {
   },
   instrumentDefaults: {
     drums: { enabled: true, volume: 0.5, pattern: 'ballad' },
-    'modern-kit': { ...OFF },
+    'jazz-drum-kit': { enabled: true, volume: 0.5, pattern: 'ballad' },
+    'funk-drum-kit': { ...OFF },
     'upright-bass': { enabled: true, volume: 0.7, pattern: 'two-feel' },
     'electric-bass': { ...OFF },
     piano: { enabled: true, volume: 0.65, pattern: 'beginner-safe', voicing: 'rootless4' },
@@ -535,19 +562,19 @@ const FUNK_ENSEMBLES: StyleEnsembles = {
   duet: {
     instruments: {
       'electric-bass': { enabled: true, volume: 0.75 },
-      'modern-kit': { enabled: true, volume: 0.75 },
+      'funk-drum-kit': { enabled: true, volume: 0.75 },
     },
   },
   trio: {
     instruments: {
-      'modern-kit': { enabled: true, volume: 0.75 },
+      'funk-drum-kit': { enabled: true, volume: 0.75 },
       'electric-bass': { enabled: true, volume: 0.75 },
       piano: { enabled: true, volume: 0.7 },
     },
   },
   quartet: {
     instruments: {
-      'modern-kit': { enabled: true, volume: 0.75 },
+      'funk-drum-kit': { enabled: true, volume: 0.75 },
       'electric-bass': { enabled: true, volume: 0.75 },
       piano: { enabled: true, volume: 0.7 },
       rhodes: { enabled: true, volume: 0.6 },
@@ -555,16 +582,17 @@ const FUNK_ENSEMBLES: StyleEnsembles = {
   },
   quintet: {
     instruments: {
-      'modern-kit': { enabled: true, volume: 0.75 },
+      'funk-drum-kit': { enabled: true, volume: 0.75 },
       'electric-bass': { enabled: true, volume: 0.75 },
       piano: { enabled: true, volume: 0.7 },
       'electric-guitar': { enabled: true, volume: 0.7 },
       organ: { enabled: true, volume: 0.65 },
+      percussion: { enabled: true, volume: 0.65 },
     },
   },
   full: {
     instruments: {
-      'modern-kit': { enabled: true, volume: 0.75 },
+      'funk-drum-kit': { enabled: true, volume: 0.75 },
       'electric-bass': { enabled: true, volume: 0.75 },
       piano: { enabled: true, volume: 0.7 },
       rhodes: { enabled: true, volume: 0.6 },
@@ -876,7 +904,7 @@ export function applyEnsemble(
   if (currentOverrides) {
     for (const [id, overrides] of Object.entries(currentOverrides)) {
       if (overrides && id in result) {
-        result[id as InstrumentId] = { ...result[id as InstrumentId], ...overrides };
+        result[id] = { ...(result[id] ?? OFF), ...overrides };
       }
     }
   }

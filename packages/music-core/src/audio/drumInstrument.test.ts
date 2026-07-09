@@ -121,9 +121,10 @@ describe('DrumInstrument — 4/4 swing', () => {
     drum.updateSettings(makeDefaultSettings({ crashFrequency: 4 }));
     const hits: Hit[] = [];
     drum.schedule(oneBar(sig), makeCtx(sig, hits));
+    // Crash overlay removed; crash is now driven by cell molecules only.
+    // In degraded mode (no organism), crash is not added.
     const crashHits = hits.filter((h) => h.sound === 'crash');
-    expect(crashHits.length).toBe(1);
-    expect(crashHits[0]!.atTicks).toBe(0);
+    expect(crashHits.length).toBe(0);
   });
 
   it('disabled sound does not appear in hits', () => {
@@ -395,9 +396,9 @@ describe('DrumInstrument — bossa nova', () => {
     drum.updateSettings(makeDefaultSettings({ rimEnabled: true, crashFrequency: 4 }));
     const hits: Hit[] = [];
     drum.schedule(oneBar(sig), makeCtx(sig, hits));
+    // Crash overlay removed; crash is now driven by cell molecules only.
     const crashHits = hits.filter((h) => h.sound === 'crash');
-    expect(crashHits.length).toBe(1);
-    expect(crashHits[0]!.atTicks).toBe(0);
+    expect(crashHits.length).toBe(0);
   });
 
   it('degraded to scheduleDegradedSwing for non-4/4', () => {

@@ -1,0 +1,39 @@
+%% DrumCell arrangement model v2 — lanes × clips × weighted molecule pools
+classDiagram
+    class DrumCell {
+      +string id
+      +DrumPatternStyle style
+      +int length  // 8|16|32 bars
+      +[4,4]|[5,4] timeSignature
+      +number velocity   // мастер musical velocity 0..1 (масштабирует молекулы)
+      +DrumDynamics dynamics
+      +DrumLane[] lanes
+      +number weight     // для выбора организмом
+    }
+    class DrumLane {
+      +string name        // 'ride'|'hihat'|'kick'|'snare'|'fill'|'accent'...
+      +number probability // 0..1 — шанс звучать в такте ("иногда")
+      +DrumClip[] clips   // НЕ пересекаются по тактам
+    }
+    class DrumClip {
+      +int startBar       // 0-based, [0, length)
+      +int lengthBars     // >=1; startBar+lengthBars <= length
+      +WeightedMolecule[] pool  // 1+; взвешенный случайный выбор по такту
+    }
+    class WeightedMolecule {
+      +string moleculeId  // уникален в пределах ВСЕЙ клетки
+      +number weight      // >0
+    }
+    class DrumDynamics {
+      +DynamicsType type  // steady|crescendo|decrescendo|arch|valley|wave|pulse
+      +number amount      // 0..1 — глубина изменения velocity
+    }
+    class DrumOrganism {
+      +OrganismSection[] sections  // последовательность клеток (без изменений)
+    }
+    DrumOrganism "1" o-- "many" DrumCell : sequence of cells
+    DrumCell "1" *-- "1" DrumDynamics : dynamics
+    DrumCell "1" o-- "many" DrumLane : lanes
+    DrumLane "1" o-- "many" DrumClip : clips (non-overlapping)
+    DrumClip "1" o-- "many" WeightedMolecule : weighted pool
+    WeightedMolecule --> DrumMolecule : moleculeId (ref, unique per cell)

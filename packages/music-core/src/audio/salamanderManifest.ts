@@ -14,6 +14,8 @@ const SALAMANDER_SAMPLE_MANIFEST: SampleManifest = {
 export const salamanderManifest: InstrumentManifest = {
   id: 'piano',
   name: 'Salamander Grand Piano',
+  family: 'pitched',
+  settingsPrefix: 'piano',
   createInstrument: () => new PianoInstrument(new ChordTimeline()),
   sampleManifest: SALAMANDER_SAMPLE_MANIFEST,
   defaultSettings: {

@@ -1,3 +1,20 @@
+import type { InstrumentFamily } from '@jazz/music-core';
+
+export interface InstrumentInfo {
+  id: string;
+  name: string;
+  family: InstrumentFamily;
+  icon?: string;
+  settingsPrefix: string;
+  sounds?: readonly string[];
+}
+
+export interface InstrumentRegistryService {
+  list(family?: InstrumentFamily): InstrumentInfo[];
+  get(id: string): InstrumentInfo | undefined;
+  resolveDefaults(id: string, style: string): Record<string, unknown>;
+}
+
 export interface AudioService {
   /** Audio playback port (Tone.js, MIDI, etc.). */
   audioPort?: unknown;
@@ -33,4 +50,5 @@ export interface PluginContext {
   events: EventBus;
   music: unknown;
   query: unknown;
+  instruments: InstrumentRegistryService;
 }

@@ -14,6 +14,8 @@ const UPRIGHT_SAMPLE_MANIFEST: SampleManifest = {
 export const pianoManifest: InstrumentManifest = {
   id: 'piano',
   name: 'Upright Piano KW',
+  family: 'pitched',
+  settingsPrefix: 'piano',
   createInstrument: () => new PianoInstrument(new ChordTimeline()),
   sampleManifest: UPRIGHT_SAMPLE_MANIFEST,
   defaultSettings: {

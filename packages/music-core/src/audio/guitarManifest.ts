@@ -48,6 +48,8 @@ const GUITAR_SAMPLE_MANIFEST: SampleManifest = {
 export const guitarManifest: InstrumentManifest = {
   id: 'guitar',
   name: 'Guitar',
+  family: 'pitched',
+  settingsPrefix: 'guitar',
   createInstrument: () => new GuitarInstrument(new ChordTimeline(), 'guitar'),
   sampleManifest: GUITAR_SAMPLE_MANIFEST,
   defaultSettings: {

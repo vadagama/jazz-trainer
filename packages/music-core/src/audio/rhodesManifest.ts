@@ -14,6 +14,8 @@ const RHODES_SAMPLE_MANIFEST: SampleManifest = {
 export const rhodesManifest: InstrumentManifest = {
   id: 'rhodes',
   name: 'Rhodes',
+  family: 'pitched',
+  settingsPrefix: 'rhodes',
   createInstrument: () => new RhodesInstrument(new ChordTimeline()),
   sampleManifest: RHODES_SAMPLE_MANIFEST,
   defaultSettings: {

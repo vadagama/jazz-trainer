@@ -96,9 +96,9 @@ describe('getRoster', () => {
     expect(roster.recommended).toContain('guitar');
   });
 
-  it('funk default drum variant is modern-kit', () => {
+  it('funk default drum variant is funk-drum-kit', () => {
     const profile = getStyleProfile('funk');
-    expect(profile.defaultVariants.drums).toBe('modern-kit');
+    expect(profile.defaultVariants.drums).toBe('funk-drum-kit');
     expect(profile.defaultVariants.bass).toBe('electric-bass');
   });
 
@@ -135,7 +135,7 @@ describe('getVisibleInstruments', () => {
   it('returns required + recommended for swing in group order', () => {
     const visible = getVisibleInstruments('swing');
     // Order: drums(1), bass(2), piano(3), rhodes(4)
-    expect(visible).toEqual(['drums', 'upright-bass', 'piano', 'rhodes']);
+    expect(visible).toEqual(['jazz-drum-kit', 'upright-bass', 'piano', 'rhodes']);
   });
 
   it('includes optional when explicitly enabled', () => {
@@ -157,7 +157,7 @@ describe('getVisibleInstruments', () => {
   it('excludes hidden instruments by default', () => {
     const visible = getVisibleInstruments('swing');
     expect(visible).not.toContain('electric-guitar');
-    expect(visible).not.toContain('modern-kit');
+    expect(visible).not.toContain('funk-drum-kit');
   });
 
   it('excludes optional that is explicitly disabled', () => {
@@ -169,7 +169,7 @@ describe('getVisibleInstruments', () => {
     const visible = getVisibleInstruments('latin');
     // Groups: drums(1), bass(2), piano(3), winds(6), percussion(7)
     // So order: drums, upright-bass, piano, trumpet-muted, percussion
-    expect(visible).toEqual(['drums', 'upright-bass', 'piano', 'trumpet-muted', 'percussion']);
+    expect(visible).toEqual(['funk-drum-kit', 'upright-bass', 'piano', 'trumpet-muted', 'percussion']);
   });
 });
 
@@ -191,17 +191,18 @@ describe('getDefaultEnsemble', () => {
     expect(Object.keys(ensemble.instruments)).toHaveLength(4);
   });
 
-  it('funk trio uses modern-kit instead of drums', () => {
+  it('funk trio uses funk-drum-kit instead of drums', () => {
     const ensemble = getDefaultEnsemble('funk', 'trio');
-    expect(ensemble.instruments['modern-kit']).toEqual({ enabled: true, volume: 0.75 });
+    expect(ensemble.instruments['funk-drum-kit']).toEqual({ enabled: true, volume: 0.75 });
     expect(ensemble.instruments.drums).toBeUndefined();
   });
 
-  it('funk quintet includes electric-guitar and organ', () => {
+  it('funk quintet includes electric-guitar, organ and percussion', () => {
     const ensemble = getDefaultEnsemble('funk', 'quintet');
     expect(ensemble.instruments['electric-guitar']).toEqual({ enabled: true, volume: 0.7 });
     expect(ensemble.instruments.organ).toEqual({ enabled: true, volume: 0.65 });
-    expect(Object.keys(ensemble.instruments)).toHaveLength(5);
+    expect(ensemble.instruments.percussion).toEqual({ enabled: true, volume: 0.65 });
+    expect(Object.keys(ensemble.instruments)).toHaveLength(6);
   });
 
   it('latin duet is percussion + bass', () => {
@@ -252,8 +253,8 @@ describe('getDefaultEnsemble', () => {
   it('funk full ensemble includes all non-hidden instruments', () => {
     const funkFull = getDefaultEnsemble('funk', 'full');
     const ids = Object.keys(funkFull.instruments);
-    // Funk visible: modern-kit, electric-bass, piano, rhodes, electric-guitar, organ, trumpet-muted, percussion
-    expect(ids).toContain('modern-kit');
+    // Funk visible: funk-drum-kit, electric-bass, piano, rhodes, electric-guitar, organ, trumpet-muted, percussion
+    expect(ids).toContain('funk-drum-kit');
     expect(ids).toContain('electric-bass');
     expect(ids).toContain('piano');
     expect(ids).toContain('rhodes');
@@ -272,7 +273,7 @@ describe('getEnsemblePreset', () => {
     const preset = getEnsemblePreset('swing', 'trio');
     expect(preset.id).toBe('trio');
     expect(preset.name).toBe('Трио');
-    expect(Object.keys(preset.instrumentSettings)).toHaveLength(15);
+    expect(Object.keys(preset.instrumentSettings)).toHaveLength(16);
   });
 
   it('enabled instruments merge style defaults with ensemble volumes', () => {
@@ -292,7 +293,7 @@ describe('getEnsemblePreset', () => {
     const preset = getEnsemblePreset('swing', 'trio');
     expect(preset.instrumentSettings.organ).toEqual({ enabled: false, volume: 0 });
     expect(preset.instrumentSettings['electric-guitar']).toEqual({ enabled: false, volume: 0 });
-    expect(preset.instrumentSettings['modern-kit']).toEqual({ enabled: false, volume: 0 });
+    expect(preset.instrumentSettings['funk-drum-kit']).toEqual({ enabled: false, volume: 0 });
   });
 
   it('full ensemble returns correct name', () => {
@@ -331,9 +332,9 @@ describe('applyEnsemble', () => {
     expect(settings['upright-bass'].enabled).toBe(true);
   });
 
-  it('funk quintet enables Modern Kit, Bass, Piano, Electric Guitar, Organ', () => {
+  it('funk quintet enables Funk Drum Kit, Bass, Piano, Electric Guitar, Organ', () => {
     const settings = applyEnsemble('funk', 'quintet', {});
-    expect(settings['modern-kit'].enabled).toBe(true);
+    expect(settings['funk-drum-kit'].enabled).toBe(true);
     expect(settings['electric-bass'].enabled).toBe(true);
   });
 
@@ -353,9 +354,9 @@ describe('applyEnsemble', () => {
     expect(settings.piano.volume).toBe(0.7);
   });
 
-  it('returns all 15 instruments', () => {
+  it('returns all 16 instruments', () => {
     const settings = applyEnsemble('ballad', 'duet', {});
-    expect(Object.keys(settings)).toHaveLength(15);
+    expect(Object.keys(settings)).toHaveLength(16);
   });
 
   it('full ensemble enables all non-hidden instruments', () => {
@@ -363,8 +364,8 @@ describe('applyEnsemble', () => {
     expect(settings.drums.enabled).toBe(true);
     expect(settings.percussion.enabled).toBe(true);
     expect(settings['upright-bass'].enabled).toBe(true);
-    // Hidden for latin:
-    expect(settings['modern-kit'].enabled).toBe(false);
+    // Hidden for latin (funk-drum-kit is active, jazz-drum-kit is off):
+    expect(settings['jazz-drum-kit'].enabled).toBe(false);
     expect(settings.guitar.enabled).toBe(false);
     expect(settings['electric-guitar'].enabled).toBe(false);
     expect(settings.organ.enabled).toBe(false);

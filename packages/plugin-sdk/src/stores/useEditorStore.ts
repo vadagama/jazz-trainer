@@ -4,6 +4,7 @@ import type {
   ChordSlot,
   GridContent,
   Section,
+  SectionType,
   RepeatEnd,
   TimeSignatureString,
 } from '@jazz/shared';
@@ -36,6 +37,7 @@ interface EditorState {
   deleteSection: (sectionId: string) => void;
   renameSection: (sectionId: string, name: string) => void;
   setSectionTimeSignature: (sectionId: string, ts: TimeSignatureString) => void;
+  setSectionType: (sectionId: string, type: SectionType) => void;
 }
 
 function parseSlot(symbol: string): ChordSlot {
@@ -94,6 +96,7 @@ function migrateToSections(content: GridContent, defaultTs: TimeSignatureString)
   const section: Section = {
     id: nanoid(8),
     name: 'Section A',
+    type: 'verseA',
     timeSignature: defaultTs,
     bars: content.bars,
   };
@@ -302,6 +305,7 @@ export const useEditorStore = create<EditorState>((set) => ({
       const newSection: Section = {
         id: nanoid(8),
         name: nextSectionName(sections),
+        type: 'verseA',
         timeSignature,
         bars: [firstBar],
       };
@@ -339,6 +343,15 @@ export const useEditorStore = create<EditorState>((set) => ({
       if (!state.localContent?.sections) return state;
       const newSections = state.localContent.sections.map((s) =>
         s.id === sectionId ? { ...s, timeSignature: ts } : s,
+      );
+      return { localContent: { ...state.localContent, sections: newSections }, isDirty: true };
+    }),
+
+  setSectionType: (sectionId, type) =>
+    set((state) => {
+      if (!state.localContent?.sections) return state;
+      const newSections = state.localContent.sections.map((s) =>
+        s.id === sectionId ? { ...s, type } : s,
       );
       return { localContent: { ...state.localContent, sections: newSections }, isDirty: true };
     }),

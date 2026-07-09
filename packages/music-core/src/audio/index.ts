@@ -107,12 +107,8 @@ export { SOLO_INSTRUMENT_MANIFESTS } from './soloInstrumentRegistry.js';
 export { SoloInstrumentHost } from './soloInstrumentHost.js';
 export { DuckingCompressor, type DuckingCompressorOptions } from './duckingCompressor.js';
 export { testAudioPortContract } from './ports.contract.js';
-export {
-  DRUM_SAMPLE_FILES,
-  DRUMS_BASE_URL,
-  SWIRLY_DRUMS_BASE_URL,
-  type DrumSound,
-} from './drumSampleRegistry.js';
+export { type DrumSound } from './drumSampleRegistry.js';
+export { resolveDrumSound, selectDrumPlayer, type DrumHitSelection } from './drumSamplePlayer.js';
 export {
   DrumInstrument,
   DEFAULT_DRUM_SETTINGS,
@@ -126,10 +122,30 @@ export {
   type PercussionInstrumentSettings,
 } from './percussionInstrument.js';
 export {
-  PERCUSSION_SAMPLE_FILES,
-  PERCUSSION_BASE_URL,
-  type PercussionSound,
-} from './percussionSampleRegistry.js';
+  PERCUSSION_ORGANISMS,
+  PERCUSSION_ORGANISM_LIST,
+  getOrganismsForStyle as getPercussionOrganismsForStyle,
+} from './percussionOrganisms.js';
+export {
+  PERCUSSION_CELLS,
+  PERCUSSION_CELL_LIST,
+  getCellsForStyle as getPercussionCellsForStyle,
+} from './percussionCells.js';
+export {
+  PERCUSSION_MOLECULES,
+  PERCUSSION_MOLECULE_LIST,
+  getMoleculesForStyle as getPercussionMoleculesForStyle,
+} from './percussionMolecules.js';
+export { PercussionPatternEngine } from './percussionPatternEngine.js';
+export type {
+  PercussionSound,
+  PercussionPatternStyle,
+  PercussionAtom,
+  PercussionHit,
+  PercussionMolecule,
+  PercussionCell,
+  PercussionOrganism,
+} from './percussionPatternTypes.js';
 export {
   evaluateNote,
   evaluateNoteSequence,
@@ -142,8 +158,12 @@ export {
   type RhythmEvalResult,
   type BeatEval,
 } from './midiEval.js';
-export { type SampleManifest } from './sampleManifest.js';
-export { type InstrumentManifest, resolveInstrumentDefaults } from './instrumentManifest.js';
+export { type SampleManifest, buildVelocityRR, sampleBaseUrl } from './sampleManifest.js';
+export {
+  type InstrumentManifest,
+  type InstrumentFamily,
+  resolveInstrumentDefaults,
+} from './instrumentManifest.js';
 export {
   VIBRAPHONE_LAYERS,
   VIBRAPHONE_SAMPLER_BASE_URL,
@@ -182,15 +202,57 @@ export { bassManifest } from './bassManifest.js';
 export { rhodesManifest } from './rhodesManifest.js';
 export { pianoManifest } from './pianoManifest.js';
 export { salamanderManifest } from './salamanderManifest.js';
-export { drumsManifest } from './drumsManifest.js';
-export { modernKitManifest } from './modernKitManifest.js';
 export { guitarManifest } from './guitarManifest.js';
 export { electricGuitarManifest } from './electricGuitarManifest.js';
 export { vibraphoneManifest } from './vibraphoneManifest.js';
 export { organManifest } from './organManifest.js';
 export { clarinetManifest } from './clarinetManifest.js';
-export { percussionManifest } from './percussionManifest.js';
 export { GuitarInstrument, type GuitarMode, type GuitarVoicing } from './guitarInstrument.js';
+export { getOrganismsForStyle, DRUM_ORGANISMS, DRUM_ORGANISM_LIST } from './drumOrganisms.js';
+export { DRUM_CELLS, DRUM_CELL_LIST, getCellsForStyle } from './drumCells.js';
+export { DRUM_MOLECULES, DRUM_MOLECULE_LIST, getMoleculesForStyle } from './drumMolecules.js';
+export {
+  DrumPatternEngine,
+  validateCell,
+  MAX_LANES,
+  type CellValidationError,
+} from './drumPatternEngine.js';
+export type {
+  DrumPatternStyle,
+  DrumAtom,
+  DrumHit,
+  DrumMolecule,
+  MoleculeCategory,
+  MoleculeConditions,
+  DrumDynamicsType,
+  DrumDynamics,
+  DrumClip,
+  DrumLane,
+  DrumCell,
+  OrganismSection,
+  DrumOrganism,
+} from './drumPatternTypes.js';
+
+// ─── Generic pattern engine (reusable core for drums, percussion, …) ──────────
+export type {
+  Atom,
+  Hit,
+  Molecule,
+  Cell,
+  Organism as PatternOrganism,
+  Lane,
+  Clip,
+  Dynamics as PatternDynamics,
+  DynamicsType as PatternDynamicsType,
+  OrganismSection as PatternOrganismSection,
+} from './pattern/types.js';
+export {
+  applySwing,
+  dynamicsMultiplier,
+  assembleBar as assemblePatternBar,
+  resolveSectionCells as resolvePatternSectionCells,
+  clamp01,
+} from './pattern/engine.js';
 export { PianoInstrument } from './pianoInstrument.js';
 export {
   PianoRandomizer,

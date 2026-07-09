@@ -4,7 +4,7 @@
  */
 
 /** Time signatures supported by the metronome/grid (see docs/02-audio-engine.md). */
-export const TIME_SIGNATURES = ['4/4', '3/4', '2/4', '5/4', '6/8'] as const;
+export const TIME_SIGNATURES = ['2/4', '3/4', '4/4', '5/4', '7/4', '6/8', '12/8'] as const;
 export type TimeSignatureString = (typeof TIME_SIGNATURES)[number];
 
 /** The twelve keys used by the harmony generator (see docs/06-dsl.md). */

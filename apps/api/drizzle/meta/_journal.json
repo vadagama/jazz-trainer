@@ -169,6 +169,13 @@
       "when": 1782000000000,
       "tag": "0024_add_drum_kit_and_tom_settings",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "6",
+      "when": 1782100000000,
+      "tag": "0025_add_drums_advanced_settings",
+      "breakpoints": true
     }
   ]
 }

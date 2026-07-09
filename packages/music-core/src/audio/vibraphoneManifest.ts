@@ -14,6 +14,8 @@ const VIBRAPHONE_SAMPLE_MANIFEST: SampleManifest = {
 export const vibraphoneManifest: InstrumentManifest = {
   id: 'vibraphone',
   name: 'Vibraphone',
+  family: 'pitched',
+  settingsPrefix: 'vibraphone',
   createInstrument: () => new VibraphoneInstrument(new ChordTimeline()),
   sampleManifest: VIBRAPHONE_SAMPLE_MANIFEST,
   defaultSettings: {

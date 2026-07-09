@@ -104,27 +104,28 @@ export default definePlugin({
 | `navItems`                                       | Пункты меню (main, create, learn, practice, admin) | 🟢                            |
 | `commands`                                       | Именованные действия (палитра, хоткеи)             | 🔴 Типы есть, не используется |
 | `lessons` / `exercises` / `assessments`          | Учебные активности                                 | 🔴 Типы есть, не используется |
-| `instruments` / `generators` / `theoryProviders` | Звуковые движки, генераторы, теория                | 🔴 Тип `unknown[]`            |
+| `instruments` / `generators` / `theoryProviders` | Звуковые движки, генераторы, теория                | 🟡 `instruments` типизирован (`InstrumentContribution`), 2 кита-плагина; `generators`/`theoryProviders` — `unknown[]` |
 | `settingsSchema`                                 | Декларация настроек плагина                        | 🟡 Тип есть, не используется  |
 
-### 3.3. Категории и плагины (17 шт.)
+### 3.3. Категории и плагины (37 шт.)
 
-| Категория  | Плагины                                                                                |
-| ---------- | -------------------------------------------------------------------------------------- |
-| `core`     | `core-editor` (грид-редактор), `core-player` (плеер), `catalog` (каталог)              |
-| `theory`   | `theory-scales`, `theory-chords`, `theory-intervals`                                   |
-| `practice` | `ear-training` (MIDI, слух), `rhythm-drills` (MIDI, ритм), `practice-cards` (карточки) |
-| `assess`   | `chord-quiz`, `progression-recognition`                                                |
-| `admin`    | `admin-users`, `admin-content`, `admin-flags`, `admin-assets`, `admin-diagnostics`     |
+| Категория   | Кол-во | Плагины |
+| ----------- | ------ | ------- |
+| `core`      | 4      | `core-editor` (грид-редактор), `core-player` (плеер), `catalog` (каталог), `core-settings` (настройки аранжировки) |
+| `theory`    | 22     | `theory-catalog` (каталог лекций), `theory-scales`, `theory-chords`, `theory-intervals`, `theory-chord-tones`, `theory-approach-notes`, `theory-arpeggios`, `theory-rhythm`, `theory-groove`, `theory-blues`, `theory-ii-v-i`, `theory-scales-jazz`, `theory-voicings`, `theory-voice-leading`, `theory-diminished-harmony`, `theory-coltrane-changes`, `theory-blues-advanced`, `theory-rhythm-changes`, `theory-turnarounds`, `theory-tritone-sub`, `theory-modal-interchange`, `theory-secondary-dominants` |
+| `practice`  | 3      | `ear-training` (MIDI, слух), `rhythm-drills` (MIDI, ритм), `practice-cards` (карточки) |
+| `assess`    | 2      | `chord-quiz`, `progression-recognition` |
+| `play`      | 1      | `visual-midi-keyboard` (виртуальная MIDI-клавиатура) |
+| `admin`     | 5      | `admin-users`, `admin-content`, `admin-flags`, `admin-assets`, `admin-diagnostics` |
 
 ### 3.4. Реестр и загрузка
 
 ```ts
 // packages/plugin-registry/src/index.ts — build-time реестр
 import coreEditor from '@jazz/plugin-core-editor';
-// ... 15 импортов
+// ... 36 импортов
 
-export const PLUGINS = [coreEditor, corePlayer, catalog, ...];
+export const PLUGINS = [coreEditor, corePlayer, catalog, ...]; // 37 плагинов
 
 // apps/web/src/shell/bootstrap.ts — загрузка в shell
 const { loaded, errors } = loadPlugins(allPlugins, createPluginContext());
@@ -201,8 +202,8 @@ graph LR
 | Инструмент       | Класс                   | Манифест                                  | Семплы                                            | Стилей | Рандомайзер       |
 | ---------------- | ----------------------- | ----------------------------------------- | ------------------------------------------------- | ------ | ----------------- |
 | Bass             | `BassInstrument`        | `bassManifest`                            | SneakyBass, pluck/mute ×4 RR                      | 5      | `BassRandomizer`  |
-| Drums            | `DrumInstrument`        | `drumsManifest`                           | Swirly Drums v2, 8 звуков ×4 RR                   | 3      | `DrumRandomizer`  |
-| Modern Kit       | `DrumInstrument`        | `modernKitManifest`                       | Modern Kit, 10 звуков ×4 RR + stir                 | 5      | `DrumRandomizer`  |
+| Jazz Drum Kit    | `DrumInstrument`        | `@jazz/plugin-jazz-drum-kit` (плагин)     | Swirly Drums 1104, 4 velocity-слоя ×4 RR          | 5      | —                 |
+| Funk Drum Kit    | `DrumInstrument`        | `@jazz/plugin-funk-drum-kit` (плагин)     | Virtuosity Drums, 2–5 layers ×4 RR                | 5      | —                 |
 | Grand Piano      | `PianoInstrument`       | `pianoManifest` / `salamanderManifest`    | Upright KW / Salamander Grand                     | 5      | `PianoRandomizer` |
 | Rhodes           | `RhodesInstrument`      | `rhodesManifest`                          | jRhodes3c, 4 velocity-слоя                        | 5      | —                 |
 | Guitar           | `GuitarInstrument`      | `guitarManifest`                          | Nylon/Steel, E2–E5, 9 анкерных нот                | 5      | —                 |
@@ -213,7 +214,7 @@ graph LR
 | Clarinet         | `ClarinetInstrument`    | `clarinetManifest`                        | Clarinet, 2 velocity-слоя, D3–C6                  | 5      | —                 |
 | Metronome        | `MetronomeInstrument`   | —                                         | 5 звуков (analog/button/stick/retro/switch)        | —      | —                 |
 
-**Сольные инструменты (SoloInstrument):** отдельная подсистема для live MIDI-ввода (см. §4.5). 9 манифестов: `synthDefault`, `synthLead`, `pianoSalamanderSolo`, `rhodesJRhodes3cSolo`, `clarinetSolo`, `vibraphoneSolo`, `guitarNylonSolo`, `trumpetMuted`, `flute`.
+**Сольные инструменты (SoloInstrument):** отдельная подсистема для live MIDI-ввода (см. §4.5). 7 манифестов: `synthDefault`, `pianoUprightSolo`, `pianoSalamanderSolo`, `rhodesJRhodes3cSolo`, `clarinetSolo`, `vibraphoneSolo`, `guitarNylonSolo`.
 
 **StyleProfile** (`packages/music-core/src/styleProfile.ts`): централизованные стиле-специфичные настройки — ростеры инструментов (required/recommended/optional/hidden), per-instrument дефолты (pattern, voicing, mode) и ансамбли-предсеты (duet/trio/quartet/quintet/full).
 
@@ -223,7 +224,7 @@ graph LR
 
 ```ts
 interface InstrumentManifest {
-  id: string; // уникальный ID: 'bass' | 'drums' | 'modern-kit' | 'piano' | ...
+  id: string; // уникальный ID: 'bass' | 'jazz-drum-kit' | 'funk-drum-kit' | 'piano' | ...
   name: string; // читаемое имя
   createInstrument(): Instrument; // фабрика (чистая логика, без Tone.js)
   sampleManifest: SampleManifest; // раскладка аудиофайлов
@@ -274,19 +275,17 @@ interface SoloInstrument {
 - `sampled` — сэмплированные инструменты (SamplerSoloInstrument, Tone.js Sampler)
 - `reuse` — переиспользование сэмплера аккомпанирующего инструмента (ReuseSoloInstrument)
 
-**9 манифестов** в `manifests/`:
+**7 манифестов** в `manifests/`:
 
 | Категория | ID                        | Название           |
 | --------- | ------------------------- | ------------------ |
 | synth     | `synth-default`           | Default Synth      |
-| synth     | `synth-lead`              | Lead Synth         |
+| sampled   | `piano-upright`           | Upright Piano      |
 | sampled   | `piano-salamander`        | Grand Piano (Salamander) |
 | sampled   | `rhodes-jrhodes3c`        | Rhodes             |
 | sampled   | `clarinet`                | Clarinet           |
 | sampled   | `vibraphone`              | Vibraphone         |
 | sampled   | `guitar-nylon`            | Nylon Guitar       |
-| sampled   | `trumpet-muted`           | Muted Trumpet      |
-| sampled   | `flute`                   | Flute              |
 
 **Жизненный цикл:** `SoloInstrumentHost` управляет созданием, переключением тембров и dispose. Каждый тембр — один экземпляр; смена тембра = dispose старого + create нового.
 
@@ -411,7 +410,7 @@ jazz-trainer/
 │   ├── BASS.md                 # Спецификация баса (walking bass, стили, рандомайзер)
 │   ├── PIANO.md                # Спецификация фортепиано (профили, voicing, голосоведение)
 │   ├── RHODES.md               # Спецификация Rhodes (комплементарный слой)
-│   ├── DRUMS.md                # Спецификация барабанов (Swirly Drums v2, Modern Kit)
+│   ├── DRUMS.md                # Спецификация барабанов (Jazz Kit, Funk Kit, organism→cell→molecule)
 │   ├── GUITAR.md               # Спецификация гитары (nylon/steel/electric, паттерны)
 │   ├── VIBRAPHONE.md           # Спецификация вибрафона (pads/inserts)
 │   ├── ORGAN.md                # Спецификация органа (pads/stabs/pads-stabs)
@@ -565,6 +564,24 @@ jazz-trainer/
 **Альтернативы:** Оставить всё на строках (отклонено — дублирование и двойная конверсия). Всё на MIDI включая ChordSymbol (отклонено — потеря семантики качества аккордов).
 **Последствия:** Единый модуль `noteConverter.ts` вместо 6 дубликатов. WebMidiAdapter без конверсии на горячем пути. Виртуальная клавиатура, нотный стан, оценка игры — на одном языке. Подробнее: `docs/MIDI_ARCHITECTURE.md`.
 
+### ADR-016: StyleProfile — централизованные стиле-специфичные настройки
+
+**Дата:** 2026-07-01
+**Статус:** 🟢 Принято
+**Контекст:** С добавлением 12 инструментов и 5 стилей управление per-instrument поведением (какие инструменты активны, какие паттерны/voicing'и использовать) стало разрозненным. Каждый инструмент дублировал стиле-логику.
+**Решение:** `StyleProfile` (`music-core/src/styleProfile.ts`) — централизованный реестр стиле-специфичных настроек: ростеры инструментов (required/recommended/optional/hidden), per-instrument дефолты (pattern, voicing, mode) и ансамбли-предсеты (duet/trio/quartet/quintet/full). `InstrumentManifest.perStyleDefaults` — опциональные per-style оверрайды для `defaultSettings`, резолвятся через `resolveInstrumentDefaults()`.
+**Альтернативы:** Разрозненные per-style switch/case в каждом инструменте (текущий подход до рефакторинга). Отклонено — дублирование, сложность добавления нового стиля/инструмента.
+**Последствия:** Добавление стиля = одна запись в `StyleProfile`. Добавление инструмента = манифест + запись в профилях. Ансамбли-предсеты позволяют мгновенно переключать состав (дуэт → квинтет). Подробнее: `docs/STYLES.md`.
+
+### ADR-017: Plugin instruments — киты/инструменты как плагины
+
+**Дата:** 2026-07-06
+**Статус:** 🟢 Принято
+**Контекст:** Кит-специфичная логика (манифест, sample registry, articulation map) жила в `music-core`, хотя концептуально это фичевый код, а не ядро. Добавление нового кита требовало правки ядра. Точка расширения `instruments` была `unknown[]`.
+**Решение:** Инструментальные киты (jazz-drum-kit, funk-drum-kit) вынесены в плагины `packages/plugins/instruments/<kit>/`. Каждый плагин экспортирует `InstrumentManifest` + `articulationMap` через типизированную точку `contributes.instruments: InstrumentContribution[]`. Host (`useTransport.ts`) импортирует манифесты напрямую из плагинов по алиасу. Ядро (`music-core`) содержит только инструмент-агностичный `DrumInstrument` и generic pattern-engine (`pattern/`).
+**Альтернативы:** Оставить киты в `music-core`. Отклонено — раздувает ядро фичевым кодом. Полностью через contributions runtime (без прямого импорта). Отклонено — избыточная индирекция для build-time реестра.
+**Последствия:** Добавление кита = новый плагин + регистрация + алиасы (3 файла), без правки ядра. Папка `packages/plugins/instruments/` — эталонная структура для будущей миграции остальных инструментов (bass, piano, guitar, …). Аудио-ресурсы (Tone.js-каналы) пока остаются в `useTransport` — инкрементальная миграция.
+
 ## 10. Фазы миграции — статус
 
 | Фаза                | Статус | Ключевой результат                                                                    |
@@ -574,9 +591,9 @@ jazz-trainer/
 | ФR — RBAC + аудит   | ✅     | 3 роли, 11 permissions, audit log, `usePermission`/`useFlag`                          |
 | Ф2 — AudioPort      | 🟢     | `tone-audio-adapter` + `webmidi-adapter` готовы, 12 инструментов, манифесты, EventSink |
 | Ф3 — Фичи → плагины | ✅     | `core-editor`, `core-player`, `catalog` вынесены                                      |
-| Ф4 — Новые домены   | 🟡     | 10 domain-плагинов созданы. Наполнение контентом — в процессе                         |
+| Ф4 — Новые домены   | 🟡     | 22 theory-плагина, 3 practice, 2 assess, 1 play созданы. StyleProfile, per-style overrides 🟢 |
 | Ф5 — MIDI           | 🟡     | `webmidi-adapter`, `midiEval`, MIDI-плагины. Desktop исключён                         |
 
 ---
 
-_Документ описывает текущую архитектуру. Обновлён 2026-07-01. Фазы 0, 1, R, 2, 3 готовы ✅, Фазы 4, 5 частично 🟡. 15 ADR принято (ADR-001–015). Плагинов: 17. Инструментов: 12 аккомпанемента + 9 сольных. Целевое видение — в `ARCHITECTURE_VISION.md`._
+_Документ описывает текущую архитектуру. Обновлён 2026-07-06. Фазы 0, 1, R, 2, 3 готовы ✅, Фазы 4, 5 частично 🟡. 17 ADR принято (ADR-001–017). Плагинов: 39 (включая 2 инструментальных). Инструментов: 12 аккомпанемента + 7 сольных. Целевое видение — в `ARCHITECTURE_VISION.md`._

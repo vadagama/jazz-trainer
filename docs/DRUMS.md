@@ -1,291 +1,192 @@
 # Drums в джазовом тренажёре
 
-> **Статус:** 🟢 Реализовано
-> **Модуль:** `packages/music-core/src/audio/drumInstrument.ts`
-> **Манифест:** `drumsManifest.ts` (Swirly Drums v2)
+> **Статус:** 🟢 Реализовано (section-driven scheduling, generic pattern engine)
+> **Ядро (generic):** `packages/music-core/src/audio/pattern/` (`types.ts`, `engine.ts`)
+> **Ядро (drum):** `packages/music-core/src/audio/drumInstrument.ts`, `drumPatternEngine.ts`, `drumCells.ts`, `drumMolecules.ts`, `drumOrganisms.ts`
+> **Киты (плагины):** `packages/plugins/instruments/jazz-drum-kit/`, `packages/plugins/instruments/funk-drum-kit/`
 
-## 1. Роль барабанов
+## 1. Архитектура (organism → sectionMap → cell → molecule → atom)
 
-Барабаны в Jazz Trainer работают как **фоновая ритм-секция** — не солируют, держат groove:
-
-- Задают **swing feel** через ride-паттерн и хай-хэт
-- Подчёркивают **backbeat** (2 и 4 долю) через snare
-- Добавляют **текстуру** через bass drum, crash, rim
-- Автоматически адаптируются под размер и стиль
-
-**Восемь звуков Swirly Drums v2:**
-
-| Звук        | Функция                               |
-| ----------- | ------------------------------------- |
-| `bassDrum`  | Низкий пульс, акценты на сильные доли |
-| `snare`     | Backbeat (2 и 4), ghost-ноты, fills   |
-| `hihat`     | Закрытый хай-хэт — восьмые/четверти   |
-| `hihatHalf` | Полуоткрытый хай-хэт                  |
-| `hihatOpen` | Открытый хай-хэт — акценты            |
-| `ride`      | Ride-тарелка — swing pattern          |
-| `crash`     | Crash-тарелка — заполнения (fills)    |
-| `rim`       | Рим-шот / клаве — bossa-акценты       |
-
-## 2. Стили и паттерны
-
-`DrumInstrument` поддерживает 3 стиля со специфическими планировщиками:
+Барабанный движок построен по четырёхуровневой модели авторинга. Уровни вкладываются друг в друга: организм содержит карту секций (`sectionMap`), каждая секция ссылается на пул клеток, клетка — на лейны с клипами, клип — на молекулы, молекула — на атомы.
 
 ```
-schedule(style)
-├── swing  → scheduleSwing()
-├── bossa  → scheduleBossa()
-└── funk   → scheduleFunk()
+DrumOrganism  (sectionMap + timeSignatureOverrides + defaultForm)
+  └─ sectionMap[sectionType] → cellPool (cycling)
+       └─ DrumCell (таймлайн 8/16/32 тактов)
+            └─ DrumLane (роль: ride / kick / snare / hihat / fill / accent …)
+                 └─ DrumClip (спан тактов + пул молекул)
+                      └─ DrumMolecule (1–2 такта паттерна)
+                           └─ DrumAtom (один удар: sound + atTick + velocity)
 ```
 
-Для неподдерживаемых стилей (`latin`, `ballad`) используется degraded `scheduleSwing()`.
+| Уровень | Файл (реестр) | Тип | Генерируется Конструктором? |
+| --- | --- | --- | --- |
+| Atom | `drumMolecules.ts` | `DrumAtom` (= `Atom<DrumSound>`) | — |
+| Molecule | `drumMolecules.ts` | `DrumMolecule` (= `Molecule<DrumPatternStyle, DrumSound>`) | ✅ `drumMoleculesGenerated.ts` |
+| Cell | `drumCells.ts` | `DrumCell` (= `Cell<DrumPatternStyle>`) | ✅ `drumCellsGenerated.ts` |
+| Organism | `drumOrganisms.ts` | `DrumOrganism` (= `Organism<DrumPatternStyle>`) | ✅ `drumOrganismsGenerated.ts` |
 
-### 2.1. Swing (scheduleSwing)
+### 1.0. Generic pattern engine
 
-Классический джазовый паттерн:
+`packages/music-core/src/audio/pattern/` — инструмент-агностичное ядро, параметризованное по `<TStyle>` и `<TSound>`:
 
-| Доля | BassDrum    | Snare        | HiHat     | Ride |
-| ---- | ----------- | ------------ | --------- | ---- |
-| 1    | ● (сильная) |              | ● (chick) | ●    |
-| 2    |             | ● (backbeat) | ● (chick) | ●    |
-| 3    | ● (слабая)  |              | ● (chick) | ●    |
-| 4    |             | ● (backbeat) | ● (chick) | ●    |
+- `pattern/types.ts` — generic-типы: `Atom<TSound>`, `Hit<TSound>`, `Molecule<TStyle, TSound>`, `Cell<TStyle>`, `Organism<TStyle>`, `Lane`, `Clip`, `Dynamics`, `OrganismSection`.
+- `pattern/engine.ts` — generic-функции: `applySwing`, `dynamicsMultiplier`, `assembleBar(cell, barInCell, swingRatio, resolveMolecule)`, `resolveSectionCells(organism, sectionType, tsKey)`.
 
-Ride играет классический `ding ding-a-ding` (доля + swing-восьмая), хай-хэт — chick на 2 и 4.
+Drum-слой (`drumPatternTypes.ts`, `drumPatternEngine.ts`) — тонкие обёртки, биндящие generic-функции к drum-реестрам (`DRUM_CELLS`, `DRUM_MOLECULES`). Это позволяет будущим инструментам (перкуссия и др.) переиспользовать тот же pattern-engine без дублирования.
 
-### 2.2. Bossa (scheduleBossa)
+**Правило подмены:** если `*Generated.ts` непуст, он **полностью** замещает базовый реестр (поддержка удаления записей через Конструктор). Сгенерированные клетки валидируются при загрузке (`validateCell()` в `drumCellValidator.ts`).
 
-Латиноамериканский паттерн с rim/clave:
+### 1.1. Жизненный цикл воспроизведения (v3)
 
-| Доля | BassDrum | Snare | HiHat      | Rim |
-| ---- | -------- | ----- | ---------- | --- |
-| 1    | ●        |       | ○ (закрыт) | ●   |
-| 2    |          |       | ○ (закрыт) | ●   |
-| 3    | ●        |       | ○ (закрыт) | ●   |
-| 4    |          |       | ○ (закрыт) |     |
+1. `setStyleProfile(profile)` → `DrumInstrument` выбирает организм стиля (детерминированно, по фиксированному seed).
+2. `setGridSections(sections)` → TransportEngine передаёт секции сетки в `DrumInstrument`.
+3. `schedule(window, ctx)`:
+   - **grid-секции доступны** → `resolveBarSlot()` для каждого такта находит секцию по `absoluteBar`, вызывает `patternEngine.selectCellForSectionType()` с `sectionType` и `timeSignature`. Клетки cycling-ятся каждые `cell.length` тактов.
+   - **grid-секции недоступны (flat-режим)** → fallback на `organism.defaultForm` (сохраняет v2-поведение для обратной совместимости).
+   - **timingSignatureOverrides** → приоритетный резолв: `timeSignatureOverrides[ts][sectionType]` > `sectionMap[sectionType]` > `sectionMap.verseA`.
+   - **размер не 4/4 без override** → `scheduleDegradedSwing()` — упрощённый quarter-note swing по сильным долям.
+4. Crash-accent overlay (kit-level контроль, не часть молекул) — добавляется в начале каждого N-го такта (`crashFrequency`).
 
-Snare не используется в bossa — вместо неё rim/clave.
+### 1.2. Связка с секциями сетки
 
-### 2.3. Funk (scheduleFunk)
+`DrumOrganismV3` использует `sectionMap` вместо линейной последовательности секций.
+При наличии сетки с секциями (grid `sections`), `DrumInstrument` на лету выбирает
+клетку для каждого такта в зависимости от типа секции (`verseA`, `bridge`, `chorus`, ...)
+и её размера (`4/4`, `3/4`, ...).
 
-Синкопированный грув с 16-ми нотами:
+Пример: сетка `[intro(2т), verseA(8т), bridge(4т), verseA(8т), ending(2т)]` →
+каждый блок автоматически получит свою клетку из `sectionMap`.
 
-| Доля | BassDrum  | Snare        | HiHat      |
-| ---- | --------- | ------------ | ---------- |
-| 1    | ●         |              | ● (закрыт) |
-| 1e   |           |              |            |
-| 1&   | ○ (ghost) |              | ○ (открыт) |
-| 2    |           | ● (backbeat) | ● (закрыт) |
-| ...  |           |              |            |
+Все 5 стилей (`swing`, `bossa`, `funk`, `latin`, `ballad`) имеют organisms и играют через organism-путь в 4/4. Соответствие стиль → pattern-стиль задаётся в `DrumInstrument.STYLE_TO_PATTERN` и `styleProfile.instrumentDefaults.drums.pattern`:
 
-Bass drum активнее, больше синкоп, открытый хай-хэт на offbeat'ах.
+| Стиль | Pattern | Описание organism |
+| --- | --- | --- |
+| `swing` | `swing` | Ride-driven («ding ding-a-ding»), feathering kick, foot-chick 2&4, backbeat snare, ghost-texture |
+| `bossa` | `bossa` | Son-clave 3-2 на rim + samba-surdo kick (call-response) + ровные восьмые hi-hat |
+| `funk` | `funk` | Linear kick + 16-е hi-hat + жёсткий backbeat 2&4 + sizzle-crash |
+| `latin` | `bossa`/`funk` | Деградирует к bossa/funk groove (cascade) |
+| `ballad` | `swing` | Swing-организм с пониженной громкостью (volume 0.55) |
 
-## 3. Настройки (DrumInstrumentSettings)
+## 2. DrumSound — словарь звуков
 
-Барабаны имеют самые детальные настройки среди всех инструментов:
+`DrumSound` (`drumSampleRegistry.ts`) — объединение двух слоёв:
 
-```ts
-interface DrumInstrumentSettings {
-  enabled: boolean; // мастер-выключатель
-  volume: number; // общая громкость
-  pattern: DrumsPattern; // 'swing' | 'bossa' | 'funk' | 'ballad' | 'latin'
+- **Abstract roles** (10) — чем оперируют молекулы старого поколения (`bassDrum`, `snare`, `hihat`, `ride`, `crash`, `rim`, `highTom`, `lowTom`, `hihatHalf`, `hihatOpen`).
+- **Concrete articulations** (22) — конкретные сэмпл-ключи китов (`kick`, `snare_center`, `snare_edge`, `snare_buzz`, `snare_flam`, `snare_crossstick`, `snare_muted`, `snare_rimshot`, `snare_dig`, `hihat_closed`, `hihat_tight`, `hihat_open`, `hihat_foot`, `hihat_stir`, `ride_bow`, `ride_bell`, `crash_sizzle`, `splash`, `tom_mhi`, `tom_mlow`, `tom_hi`, `tom_lo`).
 
-  // Per-sound enable + volume
-  bassDrumEnabled: boolean;
-  bassDrumVolume: number;
-  snareEnabled: boolean;
-  snareVolume: number;
-  hihatEnabled: boolean;
-  hihatVolume: number;
-  hihatOpenness: number; // 0..1 степень открытости
-  rideEnabled: boolean;
-  rideVolume: number;
-  crashEnabled: boolean;
-  crashVolume: number;
-  crashFrequency: number; // частота crash (тактов)
-  rimEnabled: boolean;
-  rimVolume: number;
+Маршрутизация роль → артикуляция → сэмпл идёт через kit-специфичные мапы (`JAZZ_ARTICULATION_MAP`, `FUNK_ARTICULATION_MAP`) + fallback-chain (`DRUM_SOUND_FALLBACK` в `drumSamplePlayer.ts`).
 
-  // Humanization
-  humanizeIntensity: HumanizeIntensity; // 'off' | 'low' | 'med' | 'high'
+> **Технический долг (D-DRM-08):** смешение ролей и артикуляций в одном union. Планируется разделение на `DrumRole` / `DrumArticulation`, чтобы новый кит = 1 файл вместо правки 5 точек.
 
-  // Randomization
-  funkComplexity: number; // 1..3
-  randomizationLevel: RandomizationLevel; // 'off' | 'subtle' | 'moderate' | 'high'
-  fillFrequency: FillFrequency; // 'never' | '4bars' | '8bars' | '16bars'
-  fillComplexity: FillComplexity; // 'simple' | 'medium' | 'complex'
-  rideVariation: boolean; // вариации ride
-  snareGhosts: boolean; // ghost-ноты на snare
-  bassDrumVariation: boolean; // вариации bass drum
-}
+## 3. Настройки инструмента
+
+`DrumInstrumentSettings` (`drumInstrument.ts`) — kit-level настройки, которые управляют воспроизведением поверх молекул:
+
+| Настройка | Тип | Описание |
+| --- | --- | --- |
+| `enabled` | boolean | Master on/off |
+| `volume` | number 0–1 | Master volume |
+| `bassDrumEnabled` / `bassDrumVolume` | bool / 0–1 | Bass drum gate + volume |
+| `snareEnabled` / `snareVolume` | bool / 0–1 | Snare gate + volume |
+| `hihatEnabled` / `hihatVolume` | bool / 0–1 | Hi-hat gate + volume |
+| `hihatOpenness` | int 0–5 | Hi-hat openness (tight closed → wide open) |
+| `rideEnabled` / `rideVolume` | bool / 0–1 | Ride gate + volume |
+| `crashEnabled` / `crashVolume` | bool / 0–1 | Crash gate + volume |
+| `crashFrequency` | int | Crash accent каждые N тактов (0 = никогда) |
+| `rimEnabled` / `rimVolume` | bool / 0–1 | Rim gate + volume |
+| `tomEnabled` / `tomVolume` | bool / 0–1 | Tom gate + volume |
+| `humanizeIntensity` | `'off'\|'low'\|'med'\|'high'` | Timing humanization (0/2/4/7 ms jitter) |
+
+> **Важно:** настройки `bassDrumEnabled`/`snareEnabled`/... — это **kit-level gates**. Они фильтруют звук на уровне проигрывания (в `useTransport`), а не на уровне планирования атомов. Молекула может эмитить атом snare, но если `snareEnabled: false`, звук не заиграет.
+
+## 4. Барабанные киты (плагины)
+
+Киты реализованы как инструментальные плагины в `packages/plugins/instruments/`. Каждый плагин экспортирует `InstrumentManifest` + `articulationMap` через точку расширения `contributes.instruments`. Host (`useTransport.ts` / `useDrumPreview.ts`) импортирует манифесты напрямую из плагинов по алиасу.
+
+```
+packages/plugins/instruments/
+  jazz-drum-kit/   ← definePlugin + jazzDrumKitManifest + JAZZ_ARTICULATION_MAP
+  funk-drum-kit/   ← definePlugin + funkDrumKitManifest + FUNK_ARTICULATION_MAP
 ```
 
-## 4. Humanization
+Добавление нового кита = новый плагин + регистрация в `plugin-registry` + алиасы (см. рецепт в `CLAUDE.md`). Выбор активного кита — `selectDrumKitManifest(drumKit)` в `useTransport.ts` / `useDrumPreview.ts`: `drumKit === 'funk-drum-kit'` → funk, иначе jazz.
 
-Три уровня интенсивности с разной амплитудой jitter'а:
+### 4.1. Jazz Drum Kit
 
-| Уровень | Timing jitter |
-| ------- | ------------- |
-| `off`   | 0 мс          |
-| `low`   | ±3 мс         |
-| `med`   | ±5 мс         |
-| `high`  | ±8 мс         |
+| Свойство | Значение |
+| --- | --- |
+| Плагин | `packages/plugins/instruments/jazz-drum-kit/` (`@jazz/plugin-jazz-drum-kit`) |
+| Манифест | `src/manifest.ts` → `jazzDrumKitManifest` |
+| Registry | `src/sampleRegistry.ts` → `JAZZ_DRUM_KIT_SAMPLE_FILES`, `JAZZ_ARTICULATION_MAP` |
+| Источник сэмплов | Swirly Drums 1104 (акустическая джазовая установка, CC0) |
+| Velocity layers | 4: `vl5` (p), `vl10` (mf), `vl15` (f), `vl20` (ff) |
+| Round-robin | 4 на каждый звук |
+| Формат | AAC (`.m4a`) с MP3-фолбэком |
+| Размещение | `apps/web/public/samples/aac/drums/jazz-drum-kit/` |
 
-Jitter не выводит событие за границы окна (`atTicks >= window.fromTicks`).
+**Артикуляции Jazz Kit:** `kick`, `snare_center`/`snare_edge`/`snare_dig`, `hihat_closed`/`hihat_tight`/`hihat_open`/`hihat_foot`/`hihat_stir`, `ride_bow`/`ride_bell`, `crash`, `splash`, `tom_mhi`/`tom_mlow`.
 
-## 5. Рандомайзер (DrumRandomizer)
+**Per-style defaults:** swing (stir on, tom off), bossa (snare off, snareEdge on, rim on, tom off), funk (stir off, tom on), latin (stir off, tom on), ballad (volume 0.55, stir on, tom off).
 
-`DrumRandomizer` добавляет вариативность через псевдослучайные решения (seed от `barIndex`):
+### 4.2. Funk Drum Kit
 
-| Уровень    | Шанс изменений |
-| ---------- | -------------- |
-| `off`      | 0%             |
-| `subtle`   | 10%            |
-| `moderate` | 25%            |
-| `high`     | 40%            |
+| Свойство | Значение |
+| --- | --- |
+| Плагин | `packages/plugins/instruments/funk-drum-kit/` (`@jazz/plugin-funk-drum-kit`) |
+| Манифест | `src/manifest.ts` → `funkDrumKitManifest` |
+| Registry | `src/sampleRegistry.ts` → `FUNK_DRUM_KIT_SAMPLE_FILES`, `FUNK_ARTICULATION_MAP` |
+| Источник сэмплов | Virtuosity Drums (универсальная акустическая установка) |
+| Velocity layers | 2–5 в зависимости от артикуляции (kick — 3, snare_center — 5, crossstick — 2) |
+| Round-robin | 4 (кроме томов — по 1 на velocity layer) |
+| Формат | AAC (`.m4a`) с MP3-фолбэком |
+| Размещение | `apps/web/public/samples/aac/drums/funk-drum-kit/` |
 
-**Операции (применяются in-place к массиву hits):**
+**Артикуляции Funk Kit:** `kick`, `snare_center`/`snare_buzz`/`snare_flam`/`snare_crossstick`/`snare_muted`/`snare_rimshot`, `hihat_closed`/`hihat_open`/`hihat_foot`, `ride_bow`/`ride_bell`, `crash`/`crash_sizzle`, `tom_hi`/`tom_lo`.
 
-1. **Ride variation** — изменение velocity (×0.85–1.15),偶尔 пропуск (30% шанс)
-2. **Bass drum variation** — изменение velocity (×0.7–1.3), ghost-kick на слабых долях (20% шанс)
-3. **Snare ghost notes** — тихие ноты на субдивизиях 'e' и 'a' (кроме bossa и backbeat-долей)
-4. **Fills** — заполнения каждые N тактов (4/8/16), стиль-специфичные:
-   - Swing: snare + bass drum триольные bursts
-   - Bossa: rim clave вариации + syncopated bass drum
-   - Funk: 16-е snare fill + crash accent
+**Per-style defaults:** swing (все funk-артикуляции off), bossa (snare off, crossstick on, rim on, funk-артикуляции off, tom off), funk (все funk-артикуляции on, tom on), latin (buzz on, rimshot on, tom on), ballad (volume 0.6, funk-артикуляции off).
 
-## 6. Семплы (Swirly Drums v2)
+### 4.3. Скрипты конвертации сэмплов
 
-**Источник:** Swirly Drums v2 (акустическая джазовая установка)
-**Формат:** AAC (`.m4a`) с MP3-фолбэком
-**Размещение:** `apps/web/public/samples/aac/drums/swirly/`
-
-### 6.1. Файлы (4 round-robin на звук)
-
-```ts
-export const DRUM_SAMPLE_FILES: Record<DrumSound, string[]> = {
-  bassDrum: ['bd_vl5_rr1.m4a', 'bd_vl5_rr2.m4a', 'bd_vl5_rr3.m4a', 'bd_vl5_rr4.m4a'],
-  snare: ['sn_closed_rr1.m4a', 'sn_closed_rr2.m4a', 'sn_closed_rr3.m4a', 'sn_closed_rr4.m4a'],
-  hihat: ['hh_closed_rr1.m4a', 'hh_closed_rr2.m4a', 'hh_closed_rr3.m4a', 'hh_closed_rr4.m4a'],
-  hihatHalf: ['hh_half_rr1.m4a', 'hh_half_rr2.m4a', 'hh_half_rr3.m4a', 'hh_half_rr4.m4a'],
-  hihatOpen: ['hh_open_rr1.m4a', 'hh_open_rr2.m4a', 'hh_open_rr3.m4a', 'hh_open_rr4.m4a'],
-  ride: ['ride_vl6_rr1.m4a', 'ride_vl6_rr2.m4a', 'ride_vl6_rr3.m4a', 'ride_vl6_rr4.m4a'],
-  crash: [
-    'crash_accent_rr1.m4a',
-    'crash_accent_rr2.m4a',
-    'crash_accent_rr3.m4a',
-    'crash_accent_rr4.m4a',
-  ],
-  rim: ['rim_click_rr1.m4a', 'rim_click_rr2.m4a', 'rim_click_rr3.m4a', 'rim_click_rr4.m4a'],
-};
+```bash
+bash scripts/encode-drums-jazz.sh    # WAV → AAC/MP3 для Jazz Kit
 ```
 
-### 6.2. Round-robin
+## 5. Конструктор барабанов (admin)
 
-Все 4 варианта каждого звука циклически чередуются через `RoundRobinCounter`, избегая «machine gun effect».
+`packages/plugins/admin-drum-constructor/` — UI для редактирования клеток/молекул/организмов. Сохранение идёт через `POST /api/dev/drum-source` (маршрут `dev.routes.ts`, только в dev-режиме), который:
 
-### 6.3. Тип SampleManifest (oneshots)
+1. **Валидирует payload** через zod-схемы из `@jazz/shared` (`drums.ts`): `DrumSourcePayloadSchema` покрывает cells/molecules/organisms с точечными сообщениями об ошибках.
+2. **Записывает** валидные данные в `drumCellsGenerated.ts` / `drumMoleculesGenerated.ts` / `drumOrganismsGenerated.ts`.
+3. При загрузке приложения generated-файлы **замещают** базовые реестры (если непусты), а клетки дополнительно проходят `validateCell()` — структурная проверка (lane count, velocity range, clip overlap, pool weights, корректность moleculeId).
 
-В отличие от pitched-инструментов (слои `layers`), барабаны используют `oneshots`:
+Контракт Конструктора — канонический источник правды для формы данных: `packages/shared/src/drums.ts`.
 
-```ts
-const DRUMS_SAMPLE_MANIFEST: SampleManifest = {
-  baseUrl: '/samples/aac/drums/swirly/',
-  fallbackBaseUrl: '/samples/mp3/drums/swirly/',
-  oneshots: DRUM_SAMPLE_FILES,
-  rrCount: 4,
-};
-```
+## 6. Взаимодействие с другими инструментами
 
-## 7. Манифест
+| Инструмент | Правило |
+| --- | --- |
+| **Bass** | Независимы. Барабаны не конфликтуют с басом по частотам. |
+| **Piano** | Независимы. Барабаны — ритм, Piano — гармония. |
+| **Rhodes** | Независимы. Разные частотные диапазоны. |
 
-```ts
-export const drumsManifest: InstrumentManifest = {
-  id: 'drums',
-  name: 'Drums',
-  createInstrument: () => new DrumInstrument(),
-  sampleManifest: DRUMS_SAMPLE_MANIFEST,
-  defaultSettings: {
-    enabled: true,
-    volume: 0.7,
-    pattern: 'swing',
-    bassDrumEnabled: true,
-    bassDrumVolume: 0.7,
-    snareEnabled: true,
-    snareVolume: 0.8,
-    hihatEnabled: true,
-    hihatVolume: 0.65,
-    hihatOpenness: 0,
-    rideEnabled: true,
-    rideVolume: 0.7,
-    crashEnabled: true,
-    crashVolume: 0.8,
-    crashFrequency: 4,
-    rimEnabled: false,
-    rimVolume: 0.6,
-    humanizeIntensity: 'med',
-  },
-};
-```
+Drums используют свой `EventSink` (`'drums'`), не пересекаются с `noteSink`/`chordSink`.
 
-## 8. Взаимодействие с другими инструментами
+## 7. Тесты
 
-| Инструмент | Правило                                                 |
-| ---------- | ------------------------------------------------------- |
-| **Bass**   | Независимы. Барабаны не конфликтуют с басом по частотам |
-| **Piano**  | Независимы. Барабаны — ритм, Piano — гармония           |
-| **Rhodes** | Независимы. Разные частотные диапазоны                  |
-
-Drums полностью независимы от других инструментов — используют свой `EventSink` (`'drums'`), не пересекаются с `noteSink`/`chordSink`.
-
-## 9. Modern Kit
-
-**Манифест:** `modernKitManifest.ts`  
-**Класс:** `DrumInstrument` (тот же, что и Swirly Drums v2)
-
-Modern Kit — альтернативный набор барабанных сэмплов, использующий тот же `DrumInstrument`. Отличается более широким набором звуков и стиле-специфичными настройками по умолчанию.
-
-### 9.1. Отличия от Swirly Drums v2
-
-| Аспект           | Swirly Drums v2              | Modern Kit                         |
-| ---------------- | ---------------------------- | ---------------------------------- |
-| Звуков           | 8 (без tom, без stir)        | 10 (добавлены tom, stir)           |
-| Ride pattern     | Стандартный swing ride       | Настраиваемый (`swingRide`)        |
-| Stir (hi-hat foot)| Нет                         | Отдельный звук с настройкой громкости |
-| Tom              | Нет                          | Отдельный звук с настройкой громкости |
-| Per-style defaults| Нет                         | Да (bossa: snare off + rim on, ballad: vol 0.6) |
-
-### 9.2. Дополнительные звуки
-
-| Звук   | Функция                                  |
-| ------ | ---------------------------------------- |
-| `tom`  | Томы — заполнения (fills) и акценты      |
-| `stir` | Hi-hat foot stir — джазовая текстура     |
-
-### 9.3. Per-style defaults
-
-```ts
-perStyleDefaults: {
-  swing:  { pattern: 'swing' },
-  bossa:  { pattern: 'bossa', snareEnabled: false, rimEnabled: true },
-  funk:   { pattern: 'funk' },
-  latin:  { pattern: 'funk' },  // cascade to funky groove
-  ballad: { pattern: 'swing', volume: 0.6 },
-}
-```
-
-### 9.4. Семплы
-
-**Источник:** Modern Kit (универсальная акустическая установка)
-**Формат:** AAC (`.m4a`) с MP3-фолбэком
-**Round-robin:** 4 варианта на каждый звук
-**Размещение:** `apps/web/public/samples/aac/drums/modern-kit/`
-
-## 10. Тесты
-
-- `drumInstrument.test.ts` — все стили, backbeat, отключение звуков, humanization
-- `drumRandomizer.test.ts` — детерминизм, уровни, fills, ghost-ноты
-- `drumSampleRegistry.ts` — round-robin, имена файлов
+| Файл | Что покрывает |
+| --- | --- |
+| `drumInstrument.test.ts` | Organism-driven swing (ride-led, backbeat, feathering, foot-chick, crash, swing-ratio), 3/4 degraded, детерминизм |
+| `drumPatternEngine.test.ts` | `assembleBar`, swing application, dynamics, `validateCell` |
+| `instrumentManifest.test.ts` | per-style defaults для всех манифестов |
+| `packages/shared/src/drums.test.ts` | zod-схемы Конструктора (16 тестов, включая регрессию `section.type: "verse"`) |
 
 ---
 
-_См. также: `docs/BASS.md` (бас), `docs/PIANO.md` (основная гармония), `docs/PERCUSSION.md` (перкуссия)_
+## Changelog
+
+- **v3 cleanup + generic + plugins (2026-07):** Удалена legacy v2-обвязка (`DrumOrganism` v2, `migrateOrganism`, `selectCellForSection`, `BASE_DRUM_ORGANISMS`). `DrumOrganismV3` → `DrumOrganism` (единственный тип). Pattern-engine вынесен в generic-ядро `pattern/` (`Atom`/`Molecule`/`Cell`/`Organism` параметризованы по `<TStyle, TSound>`) — готов к переиспользованию перкуссией и др. Кит-манифесты (jazz/funk) вынесены из `music-core` в инструментальные плагины `packages/plugins/instruments/{jazz,funk}-drum-kit/` через типизированную точку расширения `contributes.instruments`. Удалены мёртвые остатки `modern-kit`/`drums` (styleProfile, UI-иконки, mp3-ассеты).
+- **v3 (2026-07):** Section-driven scheduling. `DrumOrganism` с `sectionMap` и `timeSignatureOverrides`. `DrumInstrument` резолвит клетки на лету по grid-секциям. `TransportEngine` пробрасывает `gridSectionType`/`barInSection` в `ScheduleContext`.
+- **v2 (2026-07):** Удалён legacy scheduling v1 (`scheduleSwing`/`Bossa`/`Funk`) и `DrumRandomizer` (~900 строк мёртвого кода). Добавлена zod-валидация Конструктора.
+
+_См. также: `docs/DRUMS-VISION.md` (видение), `docs/DRUMS-PATTERNS.md` (паттерны), `docs/PERCUSSION.md` (перкуссия), `docs/BASS.md` (бас)_

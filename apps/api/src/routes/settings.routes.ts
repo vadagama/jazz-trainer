@@ -71,42 +71,8 @@ export async function settingsRoutes(
       patch.rhodesVoicingDensity = data.rhodesVoicingDensity;
     if (data.drumsEnabled !== undefined) patch.drumsEnabled = data.drumsEnabled;
     if (data.drumsVolume !== undefined) patch.drumsVolume = data.drumsVolume;
-    if (data.drumsRideEnabled !== undefined) patch.drumsRideEnabled = data.drumsRideEnabled;
-    if (data.drumsRideVolume !== undefined) patch.drumsRideVolume = data.drumsRideVolume;
-    if (data.drumsStirEnabled !== undefined) patch.drumsStirEnabled = data.drumsStirEnabled;
-    if (data.drumsStirVolume !== undefined) patch.drumsStirVolume = data.drumsStirVolume;
-    if (data.drumsHihatEnabled !== undefined) patch.drumsHihatEnabled = data.drumsHihatEnabled;
-    if (data.drumsHihatVolume !== undefined) patch.drumsHihatVolume = data.drumsHihatVolume;
-    if (data.drumsHihatOpenness !== undefined) patch.drumsHihatOpenness = data.drumsHihatOpenness;
-    if (data.drumsBassDrumEnabled !== undefined)
-      patch.drumsBassDrumEnabled = data.drumsBassDrumEnabled;
-    if (data.drumsBassDrumVolume !== undefined)
-      patch.drumsBassDrumVolume = data.drumsBassDrumVolume;
-    if (data.drumsSnareEnabled !== undefined) patch.drumsSnareEnabled = data.drumsSnareEnabled;
-    if (data.drumsSnareVolume !== undefined) patch.drumsSnareVolume = data.drumsSnareVolume;
-    if (data.drumsCrashEnabled !== undefined) patch.drumsCrashEnabled = data.drumsCrashEnabled;
-    if (data.drumsCrashVolume !== undefined) patch.drumsCrashVolume = data.drumsCrashVolume;
-    if (data.drumsCrashFrequency !== undefined)
-      patch.drumsCrashFrequency = data.drumsCrashFrequency;
-    if (data.drumsRimEnabled !== undefined) patch.drumsRimEnabled = data.drumsRimEnabled;
-    if (data.drumsRimVolume !== undefined) patch.drumsRimVolume = data.drumsRimVolume;
     if (data.style !== undefined) patch.style = data.style;
-    if (data.drumsHumanizeIntensity !== undefined)
-      patch.drumsHumanizeIntensity = data.drumsHumanizeIntensity;
-    if (data.drumsFunkComplexity !== undefined)
-      patch.drumsFunkComplexity = data.drumsFunkComplexity;
-    if (data.drumsFillFrequency !== undefined) patch.drumsFillFrequency = data.drumsFillFrequency;
-    if (data.drumsRandomizationLevel !== undefined)
-      patch.drumsRandomizationLevel = data.drumsRandomizationLevel;
-    if (data.drumsFillComplexity !== undefined)
-      patch.drumsFillComplexity = data.drumsFillComplexity;
-    if (data.drumsRideVariation !== undefined) patch.drumsRideVariation = data.drumsRideVariation;
-    if (data.drumsSnareGhosts !== undefined) patch.drumsSnareGhosts = data.drumsSnareGhosts;
-    if (data.drumsBassDrumVariation !== undefined)
-      patch.drumsBassDrumVariation = data.drumsBassDrumVariation;
     if (data.drumKit !== undefined) patch.drumKit = data.drumKit;
-    if (data.drumsTomEnabled !== undefined) patch.drumsTomEnabled = data.drumsTomEnabled;
-    if (data.drumsTomVolume !== undefined) patch.drumsTomVolume = data.drumsTomVolume;
     if (data.swingRatio !== undefined) patch.swingRatio = data.swingRatio;
     if (data.audioFormat !== undefined) patch.audioFormat = data.audioFormat;
     if (data.pianoEnabled !== undefined) patch.pianoEnabled = data.pianoEnabled;
@@ -115,8 +81,6 @@ export async function settingsRoutes(
     if (data.pianoVoicingDensity !== undefined)
       patch.pianoVoicingDensity = data.pianoVoicingDensity;
     if (data.pianoSampleLibrary !== undefined) patch.pianoSampleLibrary = data.pianoSampleLibrary;
-    if (data.pianoRandomizationLevel !== undefined)
-      patch.pianoRandomizationLevel = data.pianoRandomizationLevel;
     if (data.rhodesLayerMode !== undefined) patch.rhodesLayerMode = data.rhodesLayerMode;
     if (data.rhodesLayerVolume !== undefined) patch.rhodesLayerVolume = data.rhodesLayerVolume;
     if (data.practiceCards !== undefined) patch.practiceCards = JSON.stringify(data.practiceCards);
@@ -144,7 +108,6 @@ export async function settingsRoutes(
         'pianoVolume',
         'pianoProfile',
         'pianoVoicingDensity',
-        'pianoRandomizationLevel',
         'rhodesEnabled',
         'rhodesVolume',
         'rhodesMode',
@@ -153,33 +116,44 @@ export async function settingsRoutes(
         'rhodesVoicingDensity',
         'drumsEnabled',
         'drumsVolume',
-        'drumsRideEnabled',
-        'drumsRideVolume',
-        'drumsHihatEnabled',
-        'drumsHihatVolume',
-        'drumsHihatOpenness',
-        'drumsBassDrumEnabled',
-        'drumsBassDrumVolume',
-        'drumsSnareEnabled',
-        'drumsSnareVolume',
-        'drumsCrashEnabled',
-        'drumsCrashVolume',
-        'drumsCrashFrequency',
-        'drumsRimEnabled',
-        'drumsRimVolume',
-        'drumsHumanizeIntensity',
-        'drumsFunkComplexity',
-        'drumsFillFrequency',
-        'drumsRandomizationLevel',
-        'drumsFillComplexity',
-        'drumsRideVariation',
-        'drumsSnareGhosts',
-        'drumsBassDrumVariation',
-        'drumsTomEnabled',
-        'drumsTomVolume',
+        'drumKit',
+        'drumsPattern',
         'percussionEnabled',
         'percussionVolume',
         'percussionHumanizeIntensity',
+        'percussionPattern',
+        'percussionCongaHighEnabled',
+        'percussionCongaHighVolume',
+        'percussionCongaLowEnabled',
+        'percussionCongaLowVolume',
+        'percussionBongoLowEnabled',
+        'percussionBongoLowVolume',
+        'percussionTumbaEnabled',
+        'percussionTumbaVolume',
+        'percussionTimbalesEnabled',
+        'percussionTimbalesVolume',
+        'percussionCowbellEnabled',
+        'percussionCowbellVolume',
+        'percussionClaveEnabled',
+        'percussionClaveVolume',
+        'percussionShakerEnabled',
+        'percussionShakerVolume',
+        'percussionGuiroEnabled',
+        'percussionGuiroVolume',
+        'percussionCabasaEnabled',
+        'percussionCabasaVolume',
+        'percussionTriangleEnabled',
+        'percussionTriangleVolume',
+        'percussionTambourineEnabled',
+        'percussionTambourineVolume',
+        'percussionVibraslapEnabled',
+        'percussionVibraslapVolume',
+        'percussionBelltreeEnabled',
+        'percussionBelltreeVolume',
+        'percussionWhistleEnabled',
+        'percussionWhistleVolume',
+        'percussionSleighBellsEnabled',
+        'percussionSleighBellsVolume',
         'guitarEnabled',
         'guitarVolume',
         'swingRatio',

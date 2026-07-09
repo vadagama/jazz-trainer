@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import type { InstrumentId } from '@jazz/music-core';
-import { INSTRUMENT_ICONS } from './instrument-icons';
+import { INSTRUMENT_ICONS, DrumsIcon } from './instrument-icons';
 import { Slider } from './slider';
 import { Badge } from './badge';
 import { cn } from './utils';
@@ -554,7 +554,7 @@ export function InstrumentTile({
   onChange,
 }: InstrumentTileProps): ReactNode {
   const [expanded, setExpanded] = useState(false);
-  const Icon = INSTRUMENT_ICONS[instrumentId];
+  const Icon = INSTRUMENT_ICONS[instrumentId] ?? DrumsIcon;
   const volumePct = Math.round(getNum(s, 'volume', 0.5) * 100);
 
   return (
@@ -649,7 +649,6 @@ function InstrumentBody({
 }): ReactNode {
   switch (instrumentId) {
     case 'drums':
-    case 'modern-kit':
       return <DrumsBody s={s} onChange={onChange} />;
     case 'upright-bass':
     case 'electric-bass':

@@ -11,6 +11,7 @@ import type {
   InstrumentEventPayload,
 } from './instrument.js';
 import type { DrumSound } from './drumSampleRegistry.js';
+import type { Section, SectionType } from '@jazz/shared';
 import type { StyleProfile } from '../styleProfile.js';
 
 /** Three-level beat accent: first downbeat, secondary accent, or ordinary weak beat. */
@@ -91,6 +92,9 @@ export class TransportEngine {
   private readonly instruments: Instrument[] = [];
   private readonly tickListeners = new Set<(pos: MusicalPosition) => void>();
 
+  /** Grid sections for section-driven scheduling (null = no sections). */
+  private sections: Section[] | null = null;
+
   constructor(opts: TransportEngineOptions) {
     this.bpm = Math.max(20, Math.min(400, opts.bpm ?? 120));
     this.swingRatio = Math.max(0.5, Math.min(0.75, opts.swingRatio ?? 0.5));
@@ -153,6 +157,22 @@ export class TransportEngine {
     }
   }
 
+  /**
+   * Set grid sections for section-driven scheduling.
+   * Pass `null` to clear (instruments fall back to flat/legacy mode).
+   */
+  setSections(sections: Section[] | null): void {
+    this.sections = sections;
+    for (const instrument of this.instruments) {
+      // Notify drum instrument (and any other section-aware instrument)
+      if ('setGridSections' in instrument) {
+        (
+          instrument as unknown as { setGridSections: (s: Section[] | null) => void }
+        ).setGridSections(sections);
+      }
+    }
+  }
+
   setTimeSignature(sig: TimeSignature | string): void {
     this.timeSignature = typeof sig === 'string' ? parseTimeSignature(sig) : sig;
   }
@@ -172,10 +192,31 @@ export class TransportEngine {
   /** Ask every instrument to schedule its events into the given tick window. */
   scheduleWindow(window: ScheduleWindow): void {
     const eventSinks = this.eventSinks;
+
+    // Compute section context from grid sections at the window start
+    let gridSectionType: SectionType | undefined;
+    let barInSection: number | undefined;
+    if (this.sections && this.sections.length > 0) {
+      const tpBar = ticksPerBar(this.timeSignature);
+      const absoluteBar = Math.floor(window.fromTicks / tpBar);
+      let cursor = 0;
+      for (const sec of this.sections) {
+        const secLen = sec.bars.length;
+        if (absoluteBar >= cursor && absoluteBar < cursor + secLen) {
+          gridSectionType = sec.type as SectionType;
+          barInSection = absoluteBar - cursor;
+          break;
+        }
+        cursor += secLen;
+      }
+    }
+
     const ctx = {
       bpm: this.bpm,
       timeSignature: this.timeSignature,
       swingRatio: this.swingRatio,
+      gridSectionType,
+      barInSection,
       scheduleClick: (atTicks: number, beatType: BeatType) => this.sink(atTicks, beatType),
       // Canonical dispatch — each instrument calls this with its typed payload
       scheduleEvent: (

@@ -23,6 +23,8 @@ const BASS_SAMPLE_MANIFEST: SampleManifest = {
 export const bassManifest: InstrumentManifest = {
   id: 'bass',
   name: 'Bass',
+  family: 'pitched',
+  settingsPrefix: 'bass',
   createInstrument: () => new BassInstrument(new ChordTimeline()),
   sampleManifest: BASS_SAMPLE_MANIFEST,
   defaultSettings: {

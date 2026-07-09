@@ -5,3 +5,4 @@ export * from './dto.js';
 export * from './grids.js';
 export * from './lectures.js';
 export * from './audioFormat.js';
+export * from './drums.js';

@@ -11,15 +11,28 @@ export { useSettings, useUpdateSettings } from './queries/useSettings';
 export { useEffectiveSettings } from './queries/useEffectiveSettings';
 
 export type { UseTransportOptions, TransportControls } from './transport';
-export { PluginProvider, usePluginTransport } from './host-context';
+export {
+  PluginProvider,
+  usePluginTransport,
+  usePluginDrumPreview,
+  useInstruments,
+} from './host-context';
 export type { UseTransportFn } from './host-context';
+export type {
+  DrumPreviewControls,
+  DrumPreviewKit,
+  DrumPreviewPlayOptions,
+  UseDrumPreviewFn,
+} from './drumPreview';
 export type { PluginManifest, PluginManifestInput } from './manifest.schema';
+export { instrumentManifestSchema, validateInstrumentManifest } from './instrumentManifest.schema';
 
 export type {
   RouteContribution,
   NavItemContribution,
   CommandContribution,
   ActivityContribution,
+  InstrumentContribution,
   PluginContributions,
 } from './extension-points';
 
@@ -30,6 +43,8 @@ export type {
   NavigationService,
   EventBus,
   PluginContext,
+  InstrumentRegistryService,
+  InstrumentInfo,
 } from './context';
 
 export type { ActivityType, ActivityState, ActivityResult, ActivityDefinition } from './activity';

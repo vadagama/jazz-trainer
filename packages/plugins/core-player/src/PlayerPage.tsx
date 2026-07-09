@@ -183,7 +183,7 @@ export function PlayerPage() {
     updateSettings.mutate({
       style,
       bpm: profile.defaultTempo,
-      drumKit: drumVariant === 'modern-kit' ? 'modern-kit' : 'jazz-kit',
+      drumKit: drumVariant === 'drums' ? 'jazz-drum-kit' : drumVariant,
     });
   };
 
@@ -201,6 +201,7 @@ export function PlayerPage() {
             {
               id: 'section-main',
               name: 'A',
+              type: 'verseA',
               timeSignature: effectiveTimeSig,
               bars: rawContent.bars,
             },

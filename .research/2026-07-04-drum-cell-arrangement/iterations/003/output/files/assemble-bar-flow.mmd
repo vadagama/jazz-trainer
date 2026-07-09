@@ -1,0 +1,16 @@
+%% Deterministic per-bar assembly v2 — lanes, per-lane probability, weighted pools
+flowchart TD
+    A["assembleBar(cell, barInCell, barInOrganism, settings, seed, overrides?)"] --> C["dynMul = dynamics(cell.dynamics, barInCell, length)<br/>hits = []"]
+    C --> D["for each lane in cell.lanes"]
+    D --> E["clip = lane.clips.find(startBar ≤ barInCell < startBar+lengthBars)"]
+    E --> F{clip найден?}
+    F -- no --> D
+    F -- yes --> G{"lane.probability < 1?"}
+    G -- yes --> H["r = seeded(seed, barInOrganism, lane.name)()<br/>skip lane if r > probability  ('иногда')"]
+    G -- no --> I["mol = weightedPick(clip.pool,<br/>seeded(seed, barInOrganism, lane.name+':pick'))"]
+    H --> I
+    I --> J["resolved = overrides[mol] ?? DRUM_MOLECULES[mol]<br/>localBar = barInCell - clip.startBar<br/>molBar = localBar % resolved.bars"]
+    J --> K["emit atoms где floor(atTick/barTicks)==molBar<br/>atTick -= molBar*barTicks   (фикс bars:2)<br/>vel = atom.vel * cell.velocity * dynMul"]
+    K --> D
+    D --> L["apply swing · resolve articulations · drop vel<=0"]
+    L --> M["return hits — idempotent по (cell, barInCell, barInOrganism, seed)"]
