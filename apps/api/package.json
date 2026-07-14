@@ -5,7 +5,8 @@
   "type": "module",
   "main": "./dist/index.js",
   "scripts": {
-    "dev": "tsx watch --env-file=.env --ignore=./data --ignore=./dist --ignore=./node_modules src/index.ts",
+    "dev": "tsx watch --env-file=.env --ignore=./data --ignore=./dist --ignore=./node_modules --ignore=./drizzle src/index.ts",
+    "predev": "node -e \"const{existsSync,mkdirSync}=require('fs');const d='./data';if(!existsSync(d))mkdirSync(d,{recursive:true})\"",
     "build": "tsup",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit",

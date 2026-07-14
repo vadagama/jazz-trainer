@@ -57,7 +57,8 @@ export class DrumPatternEngine {
    * Select a cell and its bar position for a given section type.
    *
    * - Resolves the cell pool via {@link resolveSectionCells}.
-   * - Cycles through the pool every `cell.length` bars (cycling).
+   * - Cycles through the pool every `cell.length` bars **and** every form
+   *   pass (controlled by `passIndex`).
    * - Falls back to any cell of the style when pool is empty.
    */
   selectCellForSectionType(
@@ -67,6 +68,7 @@ export class DrumPatternEngine {
     barInSection: number,
     style: DrumPatternStyle,
     _seed: number,
+    passIndex = 0,
   ): { cell: DrumCell; barInCell: number } {
     const pool = this.resolveSectionCells(organism, sectionType, timeSignatureStr);
 
@@ -83,7 +85,9 @@ export class DrumPatternEngine {
 
     const cell = cells[0]!;
 
-    const cellIndex = Math.floor(barInSection / cell.length) % pool.length;
+    // passIndex shifts the cell pool on each form pass;
+    // barInSection / cell.length handles within-section cycling
+    const cellIndex = (passIndex + Math.floor(barInSection / cell.length)) % pool.length;
     const selectedId = pool[cellIndex]!;
     const selected = DRUM_CELLS[selectedId];
     if (!selected || selected.style !== style) {
@@ -103,8 +107,8 @@ export class DrumPatternEngine {
 
   // ── assembleBar ──────────────────────────────────────────────────────────
 
-  assembleBar(cell: DrumCell, barInCell: number, swingRatio: number): DrumHit[] {
-    return assembleBarGeneric(cell, barInCell, swingRatio, (id) => DRUM_MOLECULES[id]);
+  assembleBar(cell: DrumCell, barInCell: number, swingRatio: number, seed?: number): DrumHit[] {
+    return assembleBarGeneric(cell, barInCell, swingRatio, (id) => DRUM_MOLECULES[id], seed);
   }
 }
 

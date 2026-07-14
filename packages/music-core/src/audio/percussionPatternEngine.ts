@@ -56,7 +56,8 @@ export class PercussionPatternEngine {
    * Select a cell and its bar position for a given section type.
    *
    * - Resolves the cell pool via {@link resolveSectionCells}.
-   * - Cycles through the pool every `cell.length` bars (cycling).
+   * - Cycles through the pool every `cell.length` bars **and** every form
+   *   pass (controlled by `passIndex`).
    * - Falls back to any cell of the style when pool is empty.
    */
   selectCellForSectionType(
@@ -65,6 +66,7 @@ export class PercussionPatternEngine {
     timeSignatureStr: string,
     barInSection: number,
     style: PercussionPatternStyle,
+    passIndex = 0,
   ): { cell: PercussionCell; barInCell: number } {
     const pool = this.resolveSectionCells(organism, sectionType, timeSignatureStr);
 
@@ -81,7 +83,9 @@ export class PercussionPatternEngine {
 
     const cell = cells[0]!;
 
-    const cellIndex = Math.floor(barInSection / cell.length) % pool.length;
+    // passIndex shifts the cell pool on each form pass;
+    // barInSection / cell.length handles within-section cycling
+    const cellIndex = (passIndex + Math.floor(barInSection / cell.length)) % pool.length;
     const selectedId = pool[cellIndex]!;
     const selected = PERCUSSION_CELLS[selectedId];
     if (!selected || selected.style !== style) {
@@ -101,7 +105,12 @@ export class PercussionPatternEngine {
 
   // ── assembleBar ────────────────────────────────────────────────────────────
 
-  assembleBar(cell: PercussionCell, barInCell: number, swingRatio: number): PercussionHit[] {
-    return assembleBarGeneric(cell, barInCell, swingRatio, (id) => PERCUSSION_MOLECULES[id]);
+  assembleBar(
+    cell: PercussionCell,
+    barInCell: number,
+    swingRatio: number,
+    seed?: number,
+  ): PercussionHit[] {
+    return assembleBarGeneric(cell, barInCell, swingRatio, (id) => PERCUSSION_MOLECULES[id], seed);
   }
 }

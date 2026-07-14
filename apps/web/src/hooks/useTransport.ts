@@ -23,9 +23,7 @@ import {
   getStyleProfile,
   resolveInstrumentDefaults,
   type HumanizeIntensity,
-  bassManifest,
   rhodesManifest,
-  pianoManifest,
   salamanderManifest,
   resolveDrumSound,
   selectDrumPlayer,
@@ -42,6 +40,10 @@ import {
   buildFlatSequence,
   buildChordTimelineEntries,
   type FlatSequence,
+  type TensionLevel,
+  type BassTensionLevel,
+  type BassPhrasing,
+  type BassRange,
 } from '@jazz/music-core';
 import {
   ToneAudioAdapter,
@@ -301,20 +303,58 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     document.addEventListener('pointerdown', warmAudioContext, { once: true });
 
     // ── Bass setup ─────────────────────────────────────────────────────────
+    // Bass contributes two variant instruments (upright + electric) via the
+    // plugin registry; a single BassInstrument instance adapts its variant to
+    // the active style. Both sample libraries are loaded so the sink can pick
+    // the right sampler by the event's emitted instrument id.
     const bassChannel = new Tone.Channel({
       volume: Tone.gainToDb(Math.max(0.001, settings.bassVolume ?? 0.7)),
     }).toDestination();
     bassChannelRef.current = bassChannel;
 
-    const bassRes = createPitchedResources(bassManifest.sampleManifest, settings.audioFormat);
-    for (const s of bassRes.samplers.values()) s.connect(bassChannel);
-    bassSamplersRef.current = bassRes.samplers;
-    bassDisposeRef.current = bassRes.dispose;
+    const bassSamplers = new Map<string, Tone.Sampler>();
+    const bassDisposers: Array<() => void> = [];
+    for (const bassId of ['upright-bass', 'electric-bass']) {
+      const entry = getInstrument(bassId);
+      if (!entry) continue;
+      const res = createPitchedResources(entry.manifest.sampleManifest, settings.audioFormat);
+      for (const s of res.samplers.values()) s.connect(bassChannel);
+      // Store under `${bassId}/${layerName}` for sink lookup by articulation×RR.
+      for (const [layerName, sampler] of res.samplers.entries()) {
+        bassSamplers.set(`${bassId}/${layerName}`, sampler);
+      }
+      bassDisposers.push(res.dispose);
+    }
+    bassSamplersRef.current = bassSamplers;
+    bassDisposeRef.current = () => {
+      for (const dispose of bassDisposers) dispose();
+    };
 
     const bassEventSink: EventSink = (payload, atTicks, velocity, durationTicks) => {
       if (!(optsRef.current.settings.bassEnabled ?? true)) return;
       const p = payload as BassEvent;
-      const layerKey = `${p.articulation}_rr${rrCounterRef.current.next(p.note, p.articulation)}`;
+      // Variant follows the instrument's current variant (set via setVariant),
+      // which reflects the user's choice or the style-driven default — NOT the
+      // articulation. regular/muted exist in both palettes; rel/stac are
+      // electric-only.
+      const isElectric = bassInstrumentRef.current?.getVariant() === 'electric';
+      const bassId = isElectric ? 'electric-bass' : 'upright-bass';
+      // Map the 4 logical articulations to the per-variant sample layer names:
+      //   regular → pluck (upright) / reg (electric)
+      //   muted   → mute (upright) / ghost (electric)
+      //   rel/stac → electric-only, same name.
+      const sampleArt = isElectric
+        ? p.articulation === 'regular'
+          ? 'reg'
+          : p.articulation === 'muted'
+            ? 'ghost'
+            : p.articulation // rel, stac
+        : p.articulation === 'regular'
+          ? 'pluck'
+          : p.articulation === 'muted'
+            ? 'mute'
+            : 'pluck'; // rel/stac shouldn't reach upright; fallback to pluck
+      const layerKey = `${bassId}/${sampleArt}_rr${rrCounterRef.current.next(p.note, p.articulation)}`;
       const sampler = bassSamplersRef.current.get(layerKey);
       if (!sampler) return;
       const durationSecs = ticksToSeconds(durationTicks, optsRef.current.settings.bpm);
@@ -325,6 +365,23 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
 
     const bassInstrument = new BassInstrument(new ChordTimeline());
     bassInstrument.setStyle((settings.style ?? 'swing') as Style);
+    // Apply the user's variant choice (overrides the style-driven default).
+    // When unset, fall back to the StyleProfile's defaultVariants.bass.
+    const bassStyle = (settings.style ?? 'swing') as Style;
+    const defaultBassVariantId = getStyleProfile(bassStyle).defaultVariants.bass;
+    const explicitVariant = settings.bassVariant as 'upright' | 'electric' | undefined;
+    const resolvedVariant =
+      explicitVariant ?? (defaultBassVariantId === 'electric-bass' ? 'electric' : 'upright');
+    bassInstrument.setVariant(resolvedVariant);
+    // Apply tension/phrasing/muted/pattern settings at init (mirror piano setters).
+    if (settings.bassTension) bassInstrument.setTension(settings.bassTension as BassTensionLevel);
+    if (settings.bassHumanize) {
+      const h = settings.bassHumanize as Record<string, unknown>;
+      if (h.phrasing) bassInstrument.setPhrasing(h.phrasing as BassPhrasing);
+    }
+    bassInstrument.setUseMutedNotes((settings.bassUseMutedNotes ?? true) as boolean);
+    bassInstrument.setOrganismId((settings.bassPattern as string | null) ?? null);
+    bassInstrument.setRange((settings.bassRange as BassRange) ?? 'medium');
     bassInstrumentRef.current = bassInstrument;
 
     // ── Rhodes setup ───────────────────────────────────────────────────────
@@ -379,8 +436,11 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     pianoEQ3Ref.current = pianoEQ3;
     pianoChannelRef.current = pianoChannel;
 
+    const pianoRegistryEntry = getInstrument('upright');
     const activePianoManifest =
-      settings.pianoSampleLibrary === 'upright-kw' ? pianoManifest : salamanderManifest;
+      settings.pianoSampleLibrary === 'upright' && pianoRegistryEntry
+        ? pianoRegistryEntry.manifest
+        : salamanderManifest;
     const pianoRes = createPitchedResources(
       activePianoManifest.sampleManifest,
       settings.audioFormat,
@@ -397,7 +457,7 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
       if (!(optsRef.current.settings.pianoEnabled ?? false)) return;
       const p = payload as PianoEvent;
       const pickLayer =
-        optsRef.current.settings.pianoSampleLibrary === 'upright-kw'
+        optsRef.current.settings.pianoSampleLibrary === 'upright'
           ? pickPianoLayer
           : pickSalamanderLayer;
       const layerName = pickLayer(velocity);
@@ -419,8 +479,8 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     if (settings.pianoVoicingDensity) {
       pianoInstrument.setVoicingDensity(settings.pianoVoicingDensity);
     }
-    if (settings.pianoProfile) {
-      pianoInstrument.setProfile(settings.pianoProfile);
+    if (settings.pianoTension) {
+      pianoInstrument.setTension(settings.pianoTension as TensionLevel);
     }
     const pianoRandLevel = (settings.pianoRandomizationLevel ?? 'off') as
       | 'off'
@@ -429,6 +489,12 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
       | 'high';
     pianoInstrument.setHumanize(pianoRandLevel !== 'off');
     pianoInstrument.setRandomizationLevel(pianoRandLevel);
+    if (settings.pianoHumanize) {
+      pianoInstrument.setHumanizeParams(
+        settings.pianoHumanize as Partial<import('@jazz/music-core').HumanizeParams>,
+      );
+    }
+    pianoInstrument.setOrganismId((settings.pianoPattern as string | null) ?? null);
     pianoInstrumentRef.current = pianoInstrument;
 
     // ── Drums setup ─────────────────────────────────────────────────────────
@@ -643,11 +709,20 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     const percussionInstrument = percussionManifest.createInstrument() as PercussionInstrument;
     percussionInstrument.setStyle((settings.style ?? 'swing') as Style);
 
+    // Resolve per-style defaults up front — the single source of truth for
+    // organismId and humanizeIntensity (e.g. funk forces humanize off).
+    const percStyleDefaults = resolveInstrumentDefaults(
+      percussionManifest,
+      (settings.style ?? 'swing') as Style,
+    );
+
     const percSounds = percussionManifest.sounds;
     const percInitSettings: Record<string, unknown> = {
       enabled: settings.percussionEnabled ?? false,
       volume: settings.percussionVolume ?? 0.7,
-      humanizeIntensity: (settings.percussionHumanizeIntensity ?? 'low') as HumanizeIntensity,
+      humanizeIntensity: (settings.percussionHumanizeIntensity ??
+        (percStyleDefaults.humanizeIntensity as HumanizeIntensity | undefined) ??
+        'low') as HumanizeIntensity,
     };
 
     // Per-sound settings (data-driven from manifest.sounds)
@@ -667,10 +742,6 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     // Set organism from per-style overrides or the manifest's per-style
     // defaults — resolved via the canonical resolveInstrumentDefaults() helper,
     // which is the single source of truth for per-style instrument defaults.
-    const percStyleDefaults = resolveInstrumentDefaults(
-      percussionManifest,
-      (settings.style ?? 'swing') as Style,
-    );
     const percOrganismId =
       (settings.percussionPattern as string | undefined) ??
       (percStyleDefaults.organismId as string | undefined) ??
@@ -740,6 +811,8 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
       sink,
     });
     engine.registerSink('bass', bassEventSink);
+    engine.registerSink('upright-bass', bassEventSink);
+    engine.registerSink('electric-bass', bassEventSink);
     engine.registerSink('rhodes', rhodesEventSink);
     engine.registerSink('piano', pianoEventSink);
     engine.registerSink('drums', drumsEventSink);
@@ -791,6 +864,7 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
       unsub();
       if (scheduleTimerRef.current !== null) clearTimeout(scheduleTimerRef.current);
       adapter.stop();
+      adapter.dispose();
       // Dispose the metronome player pool
       for (const p of metronomePlayersRef.current.values()) p.dispose();
       metronomePlayersRef.current = new Map();
@@ -916,11 +990,52 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     bassInstrumentRef.current.setComplexity(level);
   }, [settings.bassComplexity]);
 
-  // Update bass octave shift
+  // Update bass variant (upright | electric | auto-by-style)
   useEffect(() => {
     if (!bassInstrumentRef.current) return;
-    bassInstrumentRef.current.setOctaveShift(settings.bassOctaveUp ? 1 : 0);
-  }, [settings.bassOctaveUp]);
+    const explicit = settings.bassVariant as 'upright' | 'electric' | undefined;
+    if (explicit) {
+      bassInstrumentRef.current.setVariant(explicit);
+    } else {
+      // Auto: follow the StyleProfile default for the current style.
+      const bassStyle = (settings.style ?? 'swing') as Style;
+      const defaultId = getStyleProfile(bassStyle).defaultVariants.bass;
+      bassInstrumentRef.current.setVariant(defaultId === 'electric-bass' ? 'electric' : 'upright');
+    }
+  }, [settings.bassVariant, settings.style]);
+
+  // Update bass tension (gates which chord steps the engine picks)
+  useEffect(() => {
+    if (!bassInstrumentRef.current) return;
+    bassInstrumentRef.current.setTension((settings.bassTension ?? 'clean') as BassTensionLevel);
+  }, [settings.bassTension]);
+
+  // Update bass phrasing (phrase-level velocity curve)
+  useEffect(() => {
+    if (!bassInstrumentRef.current) return;
+    const phrasing = (settings.bassHumanize as Record<string, unknown> | undefined)?.phrasing as
+      | BassPhrasing
+      | undefined;
+    if (phrasing) bassInstrumentRef.current.setPhrasing(phrasing);
+  }, [settings.bassHumanize]);
+
+  // Update bass muted-note usage (ghost-note toggle)
+  useEffect(() => {
+    if (!bassInstrumentRef.current) return;
+    bassInstrumentRef.current.setUseMutedNotes((settings.bassUseMutedNotes ?? true) as boolean);
+  }, [settings.bassUseMutedNotes]);
+
+  // Update bass organism (pattern) selection
+  useEffect(() => {
+    if (!bassInstrumentRef.current) return;
+    bassInstrumentRef.current.setOrganismId((settings.bassPattern as string | null) ?? null);
+  }, [settings.bassPattern]);
+
+  // Update bass range (narrow|medium|wide)
+  useEffect(() => {
+    if (!bassInstrumentRef.current) return;
+    bassInstrumentRef.current.setRange((settings.bassRange as BassRange) ?? 'medium');
+  }, [settings.bassRange]);
 
   // Update Rhodes volume
   useEffect(() => {
@@ -930,12 +1045,11 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     );
   }, [settings.rhodesVolume]);
 
-  // Update Rhodes volume
-  // Update Rhodes comping mode (legacy — used only when layerMode is 'none')
+  // Update Rhodes organism form (pattern-engine selection)
   useEffect(() => {
     if (!rhodesInstrumentRef.current) return;
-    rhodesInstrumentRef.current.setMode(settings.rhodesMode ?? 'halfNotes');
-  }, [settings.rhodesMode]);
+    rhodesInstrumentRef.current.setOrganismId(settings.rhodesPattern ?? null);
+  }, [settings.rhodesPattern]);
 
   // Apply per-style user overrides on top of engine style defaults.
   // Also mutates optsRef.current.settings so event sinks see per-style values.
@@ -957,8 +1071,29 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
         bassInstrumentRef.current.setComplexity(
           overrides.bassComplexity as 1 | 2 | 3 | 4 | 5 | 6 | 7,
         );
-      if (overrides.bassOctaveUp !== undefined)
-        bassInstrumentRef.current.setOctaveShift(overrides.bassOctaveUp ? 1 : 0);
+      if (overrides.bassTension !== undefined)
+        bassInstrumentRef.current.setTension(overrides.bassTension as BassTensionLevel);
+      if (overrides.bassUseMutedNotes !== undefined)
+        bassInstrumentRef.current.setUseMutedNotes(overrides.bassUseMutedNotes as boolean);
+      if (overrides.bassVariant !== undefined) {
+        bassInstrumentRef.current.setVariant(overrides.bassVariant as 'upright' | 'electric');
+      } else {
+        // No explicit override: follow the style's default variant.
+        const defaultId = getStyleProfile(style).defaultVariants.bass;
+        bassInstrumentRef.current.setVariant(
+          defaultId === 'electric-bass' ? 'electric' : 'upright',
+        );
+      }
+      if (overrides.bassHumanize !== undefined) {
+        const h = overrides.bassHumanize as Record<string, unknown>;
+        if (h?.phrasing) bassInstrumentRef.current.setPhrasing(h.phrasing as BassPhrasing);
+      }
+      if (overrides.bassPattern !== undefined) {
+        bassInstrumentRef.current.setOrganismId(overrides.bassPattern as string | null);
+      }
+      if (overrides.bassRange !== undefined) {
+        bassInstrumentRef.current.setRange(overrides.bassRange as BassRange);
+      }
     }
     if (bassChannelRef.current && overrides.bassVolume !== undefined) {
       bassChannelRef.current.volume.value = Tone.gainToDb(
@@ -968,20 +1103,27 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
 
     // ── Piano ──
     if (pianoInstrumentRef.current) {
-      if (overrides.pianoProfile)
-        pianoInstrumentRef.current.setProfile(
-          overrides.pianoProfile as import('@jazz/music-core').CompingProfileId,
-        );
       if (overrides.pianoVoicingDensity)
         pianoInstrumentRef.current.setVoicingDensity(
           overrides.pianoVoicingDensity as import('@jazz/music-core').PianoVoicingDensity,
         );
+      if (overrides.pianoTension) {
+        pianoInstrumentRef.current.setTension(overrides.pianoTension as TensionLevel);
+      }
       if (overrides.pianoRandomizationLevel !== undefined) {
         const lvl = overrides.pianoRandomizationLevel as string;
         pianoInstrumentRef.current.setHumanize(lvl !== 'off');
         pianoInstrumentRef.current.setRandomizationLevel(
           lvl as 'off' | 'subtle' | 'moderate' | 'high',
         );
+      }
+      if (overrides.pianoHumanize) {
+        pianoInstrumentRef.current.setHumanizeParams(
+          overrides.pianoHumanize as Partial<import('@jazz/music-core').HumanizeParams>,
+        );
+      }
+      if (overrides.pianoPattern !== undefined) {
+        pianoInstrumentRef.current.setOrganismId(overrides.pianoPattern as string | null);
       }
     }
     if (pianoChannelRef.current && overrides.pianoVolume !== undefined) {
@@ -992,20 +1134,14 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
 
     // ── Rhodes ──
     if (rhodesInstrumentRef.current) {
-      if (overrides.rhodesLayerMode)
-        rhodesInstrumentRef.current.setLayerMode(
-          overrides.rhodesLayerMode as import('@jazz/music-core').RhodesLayerMode,
-        );
+      if (overrides.rhodesPattern)
+        rhodesInstrumentRef.current.setOrganismId(overrides.rhodesPattern as string);
       if (overrides.rhodesVoicingDensity)
         rhodesInstrumentRef.current.setVoicingDensity(
           overrides.rhodesVoicingDensity as import('@jazz/music-core').RhodesVoicingDensity,
         );
       if (overrides.rhodesLayerVolume !== undefined)
         rhodesInstrumentRef.current.setLayerVolume(overrides.rhodesLayerVolume as number);
-      if (overrides.rhodesMode)
-        rhodesInstrumentRef.current.setMode(
-          overrides.rhodesMode as import('@jazz/music-core').RhodesCompingMode,
-        );
     }
     if (rhodesChannelRef.current && overrides.rhodesVolume !== undefined) {
       rhodesChannelRef.current.volume.value = Tone.gainToDb(
@@ -1093,6 +1229,16 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     pianoInstrumentRef.current.setRandomizationLevel(level);
   }, [settings.pianoRandomizationLevel]);
 
+  // Update Piano humanize params (chord spread, timing jitter, velocity, phrasing, rush/lag)
+  useEffect(() => {
+    if (!pianoInstrumentRef.current) return;
+    if (settings.pianoHumanize) {
+      pianoInstrumentRef.current.setHumanizeParams(
+        settings.pianoHumanize as Partial<import('@jazz/music-core').HumanizeParams>,
+      );
+    }
+  }, [settings.pianoHumanize]);
+
   // Update Guitar volume
   useEffect(() => {
     if (!guitarChannelRef.current) return;
@@ -1105,8 +1251,11 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
   useEffect(() => {
     if (!initializedRef.current) return;
 
+    const pianoRegistryEntry = getInstrument('upright');
     const activePianoManifest =
-      settings.pianoSampleLibrary === 'upright-kw' ? pianoManifest : salamanderManifest;
+      settings.pianoSampleLibrary === 'upright' && pianoRegistryEntry
+        ? pianoRegistryEntry.manifest
+        : salamanderManifest;
     const pianoRes = createPitchedResources(
       activePianoManifest.sampleManifest,
       settings.audioFormat,
@@ -1198,6 +1347,18 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     drumInstrumentRef.current.setOrganismId((settings.drumsPattern as string | null) ?? null);
   }, [settings.drumsPattern]);
 
+  // Sync organism selection (pianoPattern) to PianoInstrument
+  useEffect(() => {
+    if (!pianoInstrumentRef.current) return;
+    pianoInstrumentRef.current.setOrganismId((settings.pianoPattern as string | null) ?? null);
+  }, [settings.pianoPattern]);
+
+  // Sync tension level to PianoInstrument
+  useEffect(() => {
+    if (!pianoInstrumentRef.current || !settings.pianoTension) return;
+    pianoInstrumentRef.current.setTension(settings.pianoTension as TensionLevel);
+  }, [settings.pianoTension]);
+
   // Reload drum sample resources when kit changes (jazz-drum-kit ↔ funk-drum-kit)
   const prevDrumKitRef = useRef(settings.drumKit);
   useEffect(() => {
@@ -1263,13 +1424,15 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
   useEffect(() => {
     const seq = flatSeqRef.current;
     if (seq.bars.length === 0) return;
-    const entries = buildChordTimelineEntries(opts.sections ?? [], seq.bars, opts.timeSignature);
+    // DEBUG: log last bar repeatEnd
+    const secs = opts.sections ?? [];
+    const entries = buildChordTimelineEntries(secs, seq.bars, opts.timeSignature);
     const timeline = new ChordTimeline(entries);
     bassInstrumentRef.current?.setTimeline(timeline);
     rhodesInstrumentRef.current?.setTimeline(new ChordTimeline(entries));
     pianoInstrumentRef.current?.setTimeline(new ChordTimeline(entries));
     // Propagate sections to drum instrument for section-driven cell scheduling
-    engineRef.current?.setSections(opts.sections ?? null);
+    engineRef.current?.setSections(secs);
   }, [opts.sections, opts.timeSignature]);
 
   const play = useCallback(async () => {

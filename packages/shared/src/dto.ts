@@ -44,10 +44,44 @@ export const UserSettingsDTOSchema = z.object({
   bassEnabled: z.boolean().optional(),
   bassVolume: z.number().min(0).max(1).optional(),
   bassComplexity: z.number().int().min(1).max(7).optional(),
-  bassOctaveUp: z.boolean().optional(),
+  /** Какой вариант баса использовать (overrides the style-driven default). */
+  bassVariant: z.enum(['upright', 'electric']).nullable().optional(),
+  /** Ручка «сколько гармонической краски» — gates which chord steps the bass engine picks. */
+  bassTension: z.enum(['clean', 'moderate', 'altered', 'max']).optional(),
+  bassHumanize: z
+    .object({
+      timingJitterMs: z
+        .preprocess(
+          (val) => {
+            if (typeof val === 'number') {
+              if (val === 0) return 'none';
+              if (val <= 6) return 'low';
+              if (val <= 20) return 'medium';
+              return 'high';
+            }
+            return val;
+          },
+          z.enum(['none', 'low', 'medium', 'high']),
+        )
+        .optional(),
+      velocityVariation: z.enum(['off', 'light', 'medium', 'strong']).optional(),
+      phrasing: z.enum(['flat', 'gentle', 'expressive']).optional(),
+      humanizeTiming: z
+        .enum(['none', 'slight-rush', 'slight-lag', 'medium-rush', 'medium-lag'])
+        .optional(),
+    })
+    .optional(),
+  /** Использовать ли приглушённые (ghost/mute) ноты в груве. */
+  bassUseMutedNotes: z.boolean().optional(),
+  /** Явный выбор организма баса (null = Авто, первый в списке). */
+  bassPattern: z.string().nullable().optional(),
+  /** Диапазон баса: narrow (узкий, октава 2) | medium (средний) | wide (широкий). */
+  bassRange: z.enum(['narrow', 'medium', 'wide']).optional(),
   rhodesEnabled: z.boolean().optional(),
   rhodesVolume: z.number().min(0).max(1).optional(),
-  /** @deprecated Use rhodesLayerMode instead */
+  /** Pattern-engine organism form id (e.g. 'rhodes-swing-form'). */
+  rhodesPattern: z.string().optional(),
+  /** @deprecated Use rhodesPattern (organism-driven scheduling) instead. */
   rhodesMode: z
     .enum([
       'wholeNotes',
@@ -65,19 +99,57 @@ export const UserSettingsDTOSchema = z.object({
       'two-threeand',
     ])
     .optional(),
+  /** @deprecated Legacy layer mode — superseded by rhodesPattern. */
   rhodesLayerMode: z
     .enum(['pads', 'subtle-offbeats', 'high-comping', 'ambient-swells', 'stab-accents', 'none'])
     .optional(),
   rhodesLayerVolume: z.number().min(0).max(1).optional(),
-  rhodesVoicingDensity: z.enum(['shell2', 'rootless3', 'rootless4']).optional(),
+  rhodesVoicingDensity: z.enum(['shell2', 'rootless3', 'rootless4', 'quartal']).optional(),
   pianoEnabled: z.boolean().optional(),
   pianoVolume: z.number().min(0).max(1).optional(),
-  pianoProfile: z
-    .enum(['swing-sparse', 'swing-medium', 'basie-light', 'offbeat-push', 'beginner-safe'])
-    .optional(),
   pianoVoicingDensity: z.enum(['shell2', 'rootless3', 'rootless4', 'quartal']).optional(),
   pianoRandomizationLevel: z.enum(['off', 'subtle', 'moderate', 'high']).optional(),
-  pianoSampleLibrary: z.enum(['salamander', 'upright-kw']).optional(),
+  pianoSampleLibrary: z.enum(['salamander', 'upright']).optional(),
+  pianoPattern: z.string().nullable().optional(),
+  /** Единственная ручка «сколько гармонической краски» (заменяет старые upper/passing тумблеры). */
+  pianoTension: z.enum(['clean', 'moderate', 'altered', 'max']).optional(),
+  pianoHumanize: z
+    .object({
+      timingJitterMs: z
+        .preprocess(
+          (val) => {
+            if (typeof val === 'number') {
+              if (val === 0) return 'none';
+              if (val <= 6) return 'low';
+              if (val <= 20) return 'medium';
+              return 'high';
+            }
+            return val;
+          },
+          z.enum(['none', 'low', 'medium', 'high']),
+        )
+        .optional(),
+      velocityVariation: z.enum(['off', 'light', 'medium', 'strong']).optional(),
+      chordSpreadMs: z
+        .preprocess(
+          (val) => {
+            if (typeof val === 'number') {
+              if (val === 0) return 'none';
+              if (val <= 8) return 'low';
+              if (val <= 25) return 'medium';
+              return 'high';
+            }
+            return val;
+          },
+          z.enum(['none', 'low', 'medium', 'high']),
+        )
+        .optional(),
+      phrasing: z.enum(['flat', 'gentle', 'expressive']).optional(),
+      humanizeTiming: z
+        .enum(['none', 'slight-rush', 'slight-lag', 'medium-rush', 'medium-lag'])
+        .optional(),
+    })
+    .optional(),
   drumKit: z.string().optional(),
   drumsPattern: z.string().nullable().optional(),
   drumsEnabled: z.boolean().optional(),

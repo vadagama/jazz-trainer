@@ -21,14 +21,14 @@ export const rhodesManifest: InstrumentManifest = {
   defaultSettings: {
     enabled: false,
     volume: 0.6,
-    mode: 'halfNotes',
+    pattern: 'rhodes-swing-form',
     voicingDensity: 'rootless3',
   },
   perStyleDefaults: {
-    swing: { mode: 'subtleOffbeats', voicingDensity: 'rootless3' },
-    bossa: { mode: 'ambientSwells', voicingDensity: 'shell2' },
-    funk: { mode: 'stabAccents', voicingDensity: 'rootless4' },
-    latin: { mode: 'highComping', voicingDensity: 'rootless3' },
-    ballad: { mode: 'pads', voicingDensity: 'shell2' },
+    swing: { pattern: 'rhodes-swing-form', voicingDensity: 'rootless3' },
+    bossa: { pattern: 'rhodes-bossa-form', voicingDensity: 'shell2' },
+    funk: { pattern: 'rhodes-funk-form', voicingDensity: 'rootless4' },
+    latin: { pattern: 'rhodes-latin-form', voicingDensity: 'rootless3' },
+    ballad: { pattern: 'rhodes-ballad-form', voicingDensity: 'shell2' },
   },
 };

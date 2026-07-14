@@ -1,59 +1,99 @@
 import type { ChordSymbol, Style } from '@jazz/shared';
-import {
-  ticksPerBar,
-  ticksPerBeat,
-  defaultStrongBeats,
-  defaultSecondStrongBeats,
-} from '../time/timeSignature.js';
+import { ticksPerBar, ticksPerBeat } from '../time/timeSignature.js';
 import type { Instrument, ScheduleContext, ScheduleWindow } from './instrument.js';
 import type { ChordTimeline } from './chordTimeline.js';
-import {
-  BassRandomizer,
-  type BassRandomizationLevel,
-  type ApproachVariant,
-} from './bassRandomizer.js';
+import { BassRandomizer } from './bassRandomizer.js';
 import { getStyleProfile, type StyleProfile } from '../styleProfile.js';
+import { type FlatSection } from './drumInstrument.js';
+import { BassPatternEngine } from './bassPatternEngine.js';
+import type {
+  BassOrganism,
+  BassPatternStyle,
+  BassPhrasing,
+  BassRange,
+  BassTensionLevel,
+  BassVariant,
+} from './bassPatternTypes.js';
+import { resolveBassStepPitch } from './bassPitch.js';
+import { resolveBassStep } from './bassStepEngine.js';
 
-/** Bass pattern names from {@link StyleProfile.instrumentDefaults.bass.pattern}. */
+const PPQ = 480;
+
+/**
+ * Bass pattern names from {@link StyleProfile.instrumentDefaults.bass.pattern}.
+ * Maps 1:1 onto a default organism per variant×style.
+ */
 export type BassPattern = 'walking' | 'root-5th' | 'syncopated' | 'montuno' | 'two-feel';
 
-const PATTERN_DEFAULT_COMPLEXITY: Record<BassPattern, 1 | 2 | 3 | 4 | 5 | 6 | 7> = {
-  walking: 5,
-  'root-5th': 3,
-  syncopated: 5,
-  montuno: 3,
-  'two-feel': 7,
+/** Style → default bass pattern (fallback when StyleProfile omits one). */
+const STYLE_DEFAULT_PATTERN: Record<Style, BassPattern> = {
+  swing: 'walking',
+  bossa: 'root-5th',
+  funk: 'syncopated',
+  latin: 'montuno',
+  ballad: 'two-feel',
 };
 
-const NOTE_SEMITONES: Record<string, number> = {
-  C: 0,
-  D: 2,
-  E: 4,
-  F: 5,
-  G: 7,
-  A: 9,
-  B: 11,
-};
+/** Phrase length (bars) used by the phrasing velocity curve. */
+const PHRASE_BARS = 4;
 
-const SEMITONE_NAMES = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'] as const;
-
-/** Fraction of the slot actually sounded — leaves a natural gap before the next note. */
-const GATE_RATIO = 0.92;
-
-/** Velocity per beat index (0-based). Source: BASS.md §Velocity и акценты. */
-const BEAT_VELOCITY = [0.82, 0.68, 0.76, 0.7] as const;
-
+/**
+ * BassInstrument — pitched bass driven by the generic pattern engine.
+ *
+ * Two variants share one engine:
+ *  - `upright`  → id `upright-bass`, palette { regular, muted }, swing/bossa/ballad
+ *  - `electric` → id `electric-bass`, palette { regular, muted, rel, stac }, funk/latin
+ *
+ * **Step engine model (mirrors piano's VoiceRole → voicing):**
+ * Molecules store only an articulation (`regular`/`muted`/`rel`/`stac`). At
+ * scheduling time, for each hit:
+ *  1. {@link resolveBassStep} decides *which* chord step to play, from the
+ *     current pattern, tension, and beat position.
+ *  2. {@link resolveBassStepPitch} resolves that step to a scientific pitch
+ *     against the real chord (octave-2 anchor, C4 ceiling).
+ *  3. The articulation is forwarded as-is in the {@link BassEvent}.
+ *
+ * `tension` widens the set of chord steps the engine may pick (clean → root/fifth
+ * only; max → chromaticism, octave jumps). `phrasing` shapes velocity across a
+ * 4-bar phrase. `useMutedNotes` gates whether `muted` articulation atoms are
+ * emitted (disabled → they are skipped, thinning the groove).
+ */
 export class BassInstrument implements Instrument {
   private timeline: ChordTimeline;
-  private complexity: 1 | 2 | 3 | 4 | 5 | 6 | 7 = 5;
-  private octaveShift = 0;
+  private variant: BassVariant;
+  /** Instrument id emitted in `scheduleEvent` (e.g. `upright-bass`/`electric-bass`). */
+  instrumentId: string;
   private style: Style = 'swing';
-  /** Active bass pattern from {@link StyleProfile.instrumentDefaults.bass.pattern}. */
+  private currentPatternStyle: BassPatternStyle = 'swing';
   private pattern: BassPattern = 'walking';
+  private baseVelocity = 1.0;
+  private humanize = true;
+  private octaveShift = 0;
+  /** Harmonic tension knob (clean|moderate|altered|max) — gates step engine color. */
+  private tension: BassTensionLevel = 'clean';
+  /** Phrase-level velocity curve (flat|gentle|expressive). */
+  private phrasing: BassPhrasing = 'flat';
+  /** Whether to emit `muted` articulation atoms (ghost notes). */
+  private useMutedNotes = true;
+  /** Octave range knob (narrow|medium|wide) — restricts how wide the bass roams. */
+  private range: BassRange = 'medium';
   readonly randomizer = new BassRandomizer();
 
-  constructor(timeline: ChordTimeline) {
+  private readonly patternEngine = new BassPatternEngine();
+  private organismId: string | null = null;
+  private currentOrganism: BassOrganism | null = null;
+  /** Grid sections for per-bar section resolution (mirrors PianoInstrument). */
+  private gridSections: FlatSection[] | null = null;
+  private lastScheduledBar = -1;
+  private infiniteLoopCount = 0;
+  private lastScheduledTick = -1;
+
+  constructor(timeline: ChordTimeline, variant: BassVariant = 'upright') {
     this.timeline = timeline;
+    this.variant = variant;
+    this.instrumentId = variant === 'upright' ? 'upright-bass' : 'electric-bass';
+    // Upright bass plays one octave above its natural register by default.
+    if (variant === 'upright') this.octaveShift = 1;
   }
 
   setTimeline(timeline: ChordTimeline): void {
@@ -62,29 +102,40 @@ export class BassInstrument implements Instrument {
 
   setStyleProfile(profile: StyleProfile): void {
     this.style = profile.id;
-    const bassKey =
-      (['electric-bass', 'upright-bass'] as const).find(
-        (k) => profile.instrumentDefaults[k]?.enabled,
-      ) ?? 'upright-bass';
-    const pat = profile.instrumentDefaults[bassKey].pattern as BassPattern | undefined;
-    this.pattern = pat ?? this.styleToPattern(profile.id);
-    this.complexity = PATTERN_DEFAULT_COMPLEXITY[this.pattern] ?? 5;
+    this.currentPatternStyle = profile.id;
+    // NOTE: the variant is no longer auto-switched from the StyleProfile.
+    // The user explicitly selects upright/electric via setVariant(); the
+    // engine serves cross-style content via pattern-engine style fallbacks.
+    // When no explicit variant was chosen yet, default it from the style.
+    const defaults = profile.instrumentDefaults[this.instrumentId];
+    const pat = defaults?.pattern as BassPattern | undefined;
+    this.pattern = pat ?? STYLE_DEFAULT_PATTERN[profile.id];
+    // Apply per-style tension/phrasing defaults if present.
+    if (defaults?.tension) this.tension = defaults.tension as BassTensionLevel;
+    if (defaults?.humanize?.phrasing) this.phrasing = defaults.humanize.phrasing as BassPhrasing;
+    this.selectOrganismForStyle();
   }
 
-  /** Fallback: resolve pattern from style when profile doesn't specify one. */
-  private styleToPattern(style: Style): BassPattern {
-    switch (style) {
-      case 'swing':
-        return 'walking';
-      case 'bossa':
-        return 'root-5th';
-      case 'funk':
-        return 'syncopated';
-      case 'latin':
-        return 'montuno';
-      case 'ballad':
-        return 'two-feel';
-    }
+  /**
+   * Explicitly switch the sample-library variant (upright ↔ electric).
+   * Updates {@link instrumentId} so downstream sinks resolve the correct
+   * articulation palette, and re-selects the organism for the current style
+   * (cross-style content is served via the pattern-engine style fallback).
+   * When the user picks a variant for a style it has no authored content for
+   * (e.g. electric on swing), the engine falls back to the variant's native
+   * style content.
+   */
+  setVariant(variant: BassVariant): void {
+    this.variant = variant;
+    this.instrumentId = variant === 'upright' ? 'upright-bass' : 'electric-bass';
+    // Upright bass defaults to +1 octave; electric stays at natural register.
+    this.octaveShift = variant === 'upright' ? 1 : 0;
+    this.selectOrganismForStyle();
+  }
+
+  /** Current variant (upright | electric). */
+  getVariant(): BassVariant {
+    return this.variant;
   }
 
   /** @deprecated Use {@link setStyleProfile}(getStyleProfile(style)) instead. */
@@ -92,577 +143,290 @@ export class BassInstrument implements Instrument {
     this.setStyleProfile(getStyleProfile(style));
   }
 
-  setComplexity(level: 1 | 2 | 3 | 4 | 5 | 6 | 7): void {
-    this.complexity = level;
+  setBaseVelocity(velocity: number): void {
+    this.baseVelocity = Math.max(0, Math.min(2, velocity));
+  }
+
+  setHumanize(enabled: boolean): void {
+    this.humanize = enabled;
   }
 
   setOctaveShift(shift: number): void {
     this.octaveShift = shift;
   }
 
-  setRandomizationLevel(level: BassRandomizationLevel): void {
-    this.randomizer.setLevel(level);
+  /** Set the harmonic tension knob (gates which chord steps the engine may pick). */
+  setTension(level: BassTensionLevel): void {
+    this.tension = level;
+  }
+
+  /** Set the phrase-level velocity curve (flat|gentle|expressive). */
+  setPhrasing(level: BassPhrasing): void {
+    this.phrasing = level;
+  }
+
+  /** Gate whether `muted` articulation atoms are emitted (ghost-note toggle). */
+  setUseMutedNotes(enabled: boolean): void {
+    this.useMutedNotes = enabled;
+  }
+
+  /** Set the octave range (narrow|medium|wide) — restricts how wide the bass roams. */
+  setRange(level: BassRange): void {
+    this.range = level;
+  }
+
+  /**
+   * Complexity is now expressed at the molecule/cell level (each molecule
+   * declares a `complexity: {min,max}` band, cells layer sparse/medium/dense
+   * pools, organisms pick denser cells for choruses). This setter is retained
+   * as a no-op for backward compatibility with older callers that still feed
+   * the legacy 1–7 scale; it has no effect on pattern-engine scheduling.
+   *
+   * @deprecated Complexity is authored in molecules/cells/organisms.
+   */
+  setComplexity(_level: 1 | 2 | 3 | 4 | 5 | 6 | 7): void {
+    /* no-op: see javadoc */
+  }
+
+  setGridSections(sections: FlatSection[] | null): void {
+    this.gridSections = sections;
+  }
+
+  // ─── Organism selection (mirrors PianoInstrument.setOrganismId) ───────────
+
+  /**
+   * Select an organism by ID. Pass `null` to fall back to the first organism
+   * for the current variant×style («Авто»). When an explicit ID is given and
+   * valid, it overrides the default selection.
+   */
+  setOrganismId(id: string | null): void {
+    this.organismId = id;
+    this.selectOrganismForStyle();
+  }
+
+  /** Pick the organism: explicit ID if set (searches both variants), otherwise first in the pool. */
+  private selectOrganismForStyle(): void {
+    if (this.organismId !== null) {
+      // Search across BOTH variant lists — the user may pick an upright organism
+      // even when the current variant is electric (cross-variant selection).
+      // When found, switch variant to match so cell lookup uses the right registry.
+      for (const v of ['upright', 'electric'] as BassVariant[]) {
+        const organisms = this.patternEngine.getOrganisms(v, this.currentPatternStyle);
+        const explicit = organisms.find((o) => o.id === this.organismId);
+        if (explicit) {
+          this.currentOrganism = explicit;
+          this.variant = v;
+          this.instrumentId = v === 'upright' ? 'upright-bass' : 'electric-bass';
+          this.octaveShift = v === 'upright' ? 1 : 0;
+          return;
+        }
+      }
+      // Fallback: not found in any variant → use current variant's first
+    }
+    const organisms = this.patternEngine.getOrganisms(this.variant, this.currentPatternStyle);
+    this.currentOrganism = organisms[0] ?? null;
   }
 
   /* ── Scheduling ──────────────────────────────────────────────────────────── */
 
   schedule(window: ScheduleWindow, ctx: ScheduleContext): void {
-    switch (this.pattern) {
-      case 'walking':
-        this.scheduleSwing(window, ctx);
-        break;
-      case 'root-5th':
-        this.scheduleBossa(window, ctx);
-        break;
-      case 'syncopated':
-        this.scheduleFunk(window, ctx);
-        break;
-      case 'montuno':
-        this.scheduleLatin(window, ctx);
-        break;
-      case 'two-feel':
-        this.scheduleBallad(window, ctx);
-        break;
-    }
+    const organism = this.currentOrganism;
+    if (!organism) return;
+    this.scheduleWithPatternEngine(window, ctx, organism);
   }
 
-  /* ── Swing: walking bass ─────────────────────────────────────────────────── */
-
-  private scheduleSwing(window: ScheduleWindow, ctx: ScheduleContext): void {
+  /**
+   * Section-driven scheduling via the pattern engine (mirrors
+   * {@link PianoInstrument.scheduleWithPatternEngine}):
+   *  1. For each bar in the window, resolve section + bar-in-section.
+   *  2. Engine selects a cell + bar-in-cell for that section.
+   *  3. `resolveBar()` yields hits; each hit's `sound` is an articulation. The
+   *     step engine picks the chord degree, the pitch is resolved against the
+   *     current chord, and a {@link BassEvent} is emitted.
+   */
+  private scheduleWithPatternEngine(
+    window: ScheduleWindow,
+    ctx: ScheduleContext,
+    organism: BassOrganism,
+  ): void {
     const sig = ctx.timeSignature;
-    const tpBeat = ticksPerBeat(sig);
     const tpBar = ticksPerBar(sig);
-    const os = this.octaveShift;
+    const tpBeat = ticksPerBeat(sig);
 
-    if (this.complexity <= 2) {
-      // Roots on quarters, alternating octaves
-      const strongBeats = new Set([...defaultStrongBeats(sig), ...defaultSecondStrongBeats(sig)]);
-      const slotTicks = Math.floor(tpBar / 4);
-      const durationTicks = Math.floor(slotTicks * GATE_RATIO);
-      const firstBeat = Math.ceil(window.fromTicks / tpBeat);
-      for (let beat = firstBeat; beat * tpBeat < window.toTicks; beat++) {
-        const atTicks = beat * tpBeat;
-        const beatInBar = beat % sig.beatsPerBar;
-        const chord = this.timeline.getChordAtTick(atTicks, sig);
-        if (!chord) continue;
-        const isStrong = strongBeats.has(beatInBar);
-        const octave = (isStrong ? 2 : 3) + os;
-        const velocity = BEAT_VELOCITY[beatInBar] ?? BEAT_VELOCITY[0];
-        ctx.scheduleEvent(
-          'bass',
-          { note: resolveRootNote(chord, octave, os), articulation: 'pluck' },
-          atTicks,
-          velocity,
-          durationTicks,
-        );
-      }
-    } else if (this.complexity <= 4) {
-      // Root on strong beats, fifth on weak beats; octave alternates between bars
-      const strongBeats = new Set([...defaultStrongBeats(sig), ...defaultSecondStrongBeats(sig)]);
-      const slotTicks = Math.floor(tpBar / 4);
-      const durationTicks = Math.floor(slotTicks * GATE_RATIO);
-      const firstBeat = Math.ceil(window.fromTicks / tpBeat);
-      for (let beat = firstBeat; beat * tpBeat < window.toTicks; beat++) {
-        const atTicks = beat * tpBeat;
-        const beatInBar = beat % sig.beatsPerBar;
-        const barIndex = Math.floor(beat / sig.beatsPerBar);
-        const chord = this.timeline.getChordAtTick(atTicks, sig);
-        if (!chord) continue;
-        const isStrong = strongBeats.has(beatInBar);
-        const velocity = BEAT_VELOCITY[beatInBar] ?? BEAT_VELOCITY[0];
-        if (isStrong) {
-          const octave = (beatInBar !== 0 && barIndex % 2 === 1 ? 3 : 2) + os;
-          ctx.scheduleEvent(
-            'bass',
-            { note: resolveRootNote(chord, octave, os), articulation: 'pluck' },
-            atTicks,
-            velocity,
-            durationTicks,
-          );
-        } else {
-          ctx.scheduleEvent(
-            'bass',
-            { note: resolveFifthNote(chord, 2 + os, os), articulation: 'pluck' },
-            atTicks,
-            velocity,
-            durationTicks,
-          );
-        }
-      }
-    } else if (this.complexity <= 6) {
-      // Walking bass with sub-bar chord awareness:
-      // - First beat of a chord → root
-      // - Last beat of a chord → approach to next chord (sub-bar or next bar)
-      // - Inner beats → third / fifth (alternating)
-      //
-      // With BassRandomizer:
-      // - Approach notes use chromatic or diatonic variants (seed from barIndex).
-      // - 3–4 chord bars: sometimes play sparse (half notes instead of quarters),
-      //   with octave jumps for variety.
-      const slotTicks = Math.floor(tpBar / 4);
-      const durationTicks = Math.floor(slotTicks * GATE_RATIO);
-      const firstBeat = Math.ceil(window.fromTicks / tpBeat);
+    if (this.lastScheduledTick >= 0 && window.fromTicks < this.lastScheduledTick - tpBeat) {
+      // Backward seek (rewind): nothing special to reset for bass.
+    }
 
-      for (let beat = firstBeat; beat * tpBeat < window.toTicks; beat++) {
-        const atTicks = beat * tpBeat;
-        const beatInBar = beat % sig.beatsPerBar;
-        const barIndex = Math.floor(atTicks / tpBar);
-        const chord = this.timeline.getChordAtTick(atTicks, sig);
-        if (!chord) continue;
+    const firstBar = Math.floor(window.fromTicks / tpBar);
+    const lastBar = Math.floor((window.toTicks - 1) / tpBar);
 
-        const chordCount = this.timeline.getChordCountInBar(barIndex);
-        const isSparse = this.randomizer.shouldPlaySparse(barIndex, chordCount);
-        const prevBeatChord = this.timeline.getChordAtTick(atTicks - tpBeat, sig);
-        const nextBeatChord = this.timeline.getChordAtTick(atTicks + tpBeat, sig);
-        const isFirstOfChord = !prevBeatChord || prevBeatChord !== chord;
-        const isLastOfChord = !nextBeatChord || nextBeatChord !== chord;
+    for (let bar = firstBar; bar <= lastBar; bar++) {
+      const barStartTicks = bar * tpBar;
+      const firstBeatChord = this.timeline.getChordAtTick(barStartTicks, sig);
+      if (!firstBeatChord) continue;
 
-        // In sparse mode (3-4 chord bars), skip inner beats: play only chord
-        // boundaries (where chord changes). Non-boundary beats rest.
-        if (isSparse && !isFirstOfChord) continue;
-
-        const velocity = BEAT_VELOCITY[beatInBar] ?? BEAT_VELOCITY[0];
-        let note: string;
-        if (isFirstOfChord) {
-          let oct = 2 + os;
-          if (this.randomizer.shouldShiftOctave(barIndex, beat)) oct += 1;
-          if (this.randomizer.shouldDropOctave(barIndex, beat)) oct -= 1;
-          note = resolveRootNote(chord, oct, os);
-        } else if (isLastOfChord) {
-          const nextChord = this.timeline.getNextChord(atTicks, sig);
-          if (nextChord) {
-            const variant = this.randomizer.selectApproachVariant(barIndex, beat);
-            note = resolveApproachNote(nextChord, variant, 2 + os, os);
-          } else {
-            note = resolveSeventhNote(chord, 2 + os, os);
+      // Section resolution per bar (mirrors PianoInstrument).
+      let sectionType: string = ctx.gridSectionType ?? 'verseA';
+      let barInSection: number = ctx.barInSection ?? bar % 32;
+      let passIndex = 0;
+      if (this.gridSections) {
+        for (const sec of this.gridSections) {
+          if (bar >= sec.startBar && bar < sec.startBar + sec.lengthBars) {
+            sectionType = sec.type;
+            barInSection = bar - sec.startBar;
+            if (sec.lengthBars === Infinity && sec.passLength != null) {
+              if (bar < this.lastScheduledBar) this.infiniteLoopCount++;
+              this.lastScheduledBar = bar;
+              passIndex = this.infiniteLoopCount;
+            } else {
+              passIndex = sec.passIndex;
+            }
+            break;
           }
-        } else {
-          // Inner beats: alternate third / fifth
-          note =
-            beatInBar % 2 === 0
-              ? resolveFifthNote(chord, 2 + os, os)
-              : resolveThirdNote(chord, 2 + os, os);
         }
+      } else if (bar !== firstBar) {
+        barInSection = (ctx.barInSection ?? 0) + (bar - firstBar);
+      }
+      const tsStr = `${sig.beatsPerBar}/${sig.beatUnit}`;
+
+      const { cell, barInCell } = this.patternEngine.selectCellForSectionType(
+        this.variant,
+        organism,
+        sectionType,
+        tsStr,
+        barInSection,
+        this.currentPatternStyle,
+        passIndex,
+      );
+
+      const hits = this.patternEngine.resolveBar(
+        this.variant,
+        cell.id,
+        barInCell,
+        ctx.swingRatio,
+        ctx.playSeed,
+      );
+
+      for (const hit of hits) {
+        const eventTicks = barStartTicks + hit.atTick;
+        if (eventTicks < window.fromTicks || eventTicks >= window.toTicks) continue;
+
+        const currentChord = this.timeline.getChordAtTick(eventTicks, sig);
+        if (!currentChord) continue;
+
+        // Anticipation: a hit in the last beat of the bar targets the next chord.
+        let chord = currentChord;
+        let nextChord: ChordSymbol | null = null;
+        if (hit.atTick >= tpBar - tpBeat) {
+          nextChord = this.timeline.getNextChord(eventTicks, sig);
+          if (nextChord && nextChord.raw !== currentChord.raw) chord = nextChord;
+        }
+
+        const articulation = hit.sound;
+        // Gate muted (ghost) notes when the user disables them.
+        if (articulation === 'muted' && !this.useMutedNotes) continue;
+
+        // Step engine: which chord degree does this atom play?
+        const step = resolveBassStep(hit.atTick, tpBeat, tpBar, chord, {
+          pattern: this.pattern,
+          tension: this.tension,
+          nextChord,
+        });
+        const note = this.resolveStepPitch(step, chord, bar, eventTicks, nextChord);
+        if (!note) continue;
+
+        // Clip duration to the bar boundary.
+        const nextBarStart = barStartTicks + tpBar;
+        let durationTicks = hit.durationTicks;
+        if (durationTicks > nextBarStart - eventTicks) {
+          durationTicks = Math.max(1, nextBarStart - eventTicks);
+        }
+
+        const beat = Math.floor((eventTicks % PPQ) / (PPQ / 4));
+        const phraseMul = this.phrasingMultiplier(barInSection, beat);
+        const velocity = Math.min(1, hit.velocity * this.baseVelocity * phraseMul);
+        const atTicks = this.applyHumanization(eventTicks, barStartTicks, tpBar);
+
         ctx.scheduleEvent(
-          'bass',
-          { note, articulation: 'pluck' },
+          this.instrumentId,
+          { note, articulation },
           atTicks,
           velocity,
           durationTicks,
         );
-      }
-    } else {
-      // Complexity 7: dense chord tones on all beats
-      const slotTicks = Math.floor(tpBar / 4);
-      const durationTicks = Math.floor(slotTicks * GATE_RATIO);
-      const firstBeat = Math.ceil(window.fromTicks / tpBeat);
-      for (let beat = firstBeat; beat * tpBeat < window.toTicks; beat++) {
-        const atTicks = beat * tpBeat;
-        const beatInBar = beat % sig.beatsPerBar;
-        const chord = this.timeline.getChordAtTick(atTicks, sig);
-        if (!chord) continue;
-        const velocity = BEAT_VELOCITY[beatInBar] ?? BEAT_VELOCITY[0];
-        let note: string;
-        switch (beatInBar) {
-          case 0:
-            note = resolveRootNote(chord, 2 + os, os);
-            break;
-          case 1:
-            note = resolveThirdNote(chord, 2 + os, os);
-            break;
-          case 2:
-            note = resolveFifthNote(chord, 2 + os, os);
-            break;
-          default:
-            note = resolveSeventhNote(chord, 2 + os, os);
-            break;
-        }
-        ctx.scheduleEvent(
-          'bass',
-          { note, articulation: 'pluck' },
-          atTicks,
-          velocity,
-          durationTicks,
-        );
+        this.lastScheduledTick = eventTicks;
       }
     }
   }
 
-  /* ── Bossa: root-5th half notes ──────────────────────────────────────────── */
-
-  private scheduleBossa(window: ScheduleWindow, ctx: ScheduleContext): void {
-    // Root on beat 1, fifth on beat 3 — half-note duration per event (1 5 | 1 5)
-    // Higher complexity adds octave jumps and alternating direction
-    const sig = ctx.timeSignature;
-    const tpBeat = ticksPerBeat(sig);
-    const tpBar = ticksPerBar(sig);
-    const os = this.octaveShift;
-
-    // Two slots per bar: beat 0 and beat 2 (1-indexed: 1 and 3)
-    const slotTicks = tpBar / 2; // half-note duration
-    const durationTicks = Math.floor(slotTicks * GATE_RATIO);
-
-    const firstBeat = Math.ceil(window.fromTicks / tpBeat);
-    for (let beat = firstBeat; beat * tpBeat < window.toTicks; beat++) {
-      const beatInBar = beat % sig.beatsPerBar;
-      // Only beats 0 and 2 (downbeats 1 and 3) for half-note pattern
-      // In 3/4: only beat 0
-      if (sig.beatsPerBar >= 4) {
-        if (beatInBar !== 0 && beatInBar !== 2) continue;
-      } else {
-        if (beatInBar !== 0) continue;
+  /**
+   * Phrase-level velocity multiplier (mirrors piano's `phrasingMultiplier`).
+   * Applies a deterministic velocity curve across a 4-bar phrase:
+   *  - `flat` → 1.0 everywhere
+   *  - `gentle` → mild arc (phrase start/end slightly louder)
+   *  - `expressive` → strong downbeat emphasis + phrase-end build
+   */
+  private phrasingMultiplier(barInSection: number, beat: number): number {
+    switch (this.phrasing) {
+      case 'flat':
+        return 1.0;
+      case 'gentle': {
+        // Mild 4-bar arc: bars 0/3 slightly louder, bar 2 slightly pulled back.
+        const barArc = [1.04, 1.0, 0.96, 1.05][barInSection % PHRASE_BARS] ?? 1.0;
+        const beatArc = beat === 0 ? 1.03 : 1.0;
+        return barArc * beatArc;
       }
-      const atTicks = beat * tpBeat;
-      const chord = this.timeline.getChordAtTick(atTicks, sig);
-      if (!chord) continue;
-
-      const barIndex = Math.floor(beat / sig.beatsPerBar);
-      const velocity = BEAT_VELOCITY[beatInBar] ?? BEAT_VELOCITY[0];
-
-      let note: string;
-      if (beatInBar === 0) {
-        // Beat 1: root
-        // Higher complexity alternates octave 2/3 between bars
-        const octave = this.complexity >= 4 && barIndex % 2 === 1 ? 3 : 2;
-        note = resolveRootNote(chord, octave + os, os);
-      } else {
-        // Beat 3: fifth
-        note = resolveFifthNote(chord, 2 + os, os);
+      case 'expressive': {
+        // Strong downbeat emphasis; phrase-end (bar 3) builds.
+        const barArc = [1.06, 0.98, 1.0, 1.09][barInSection % PHRASE_BARS] ?? 1.0;
+        const beatArc = beat === 0 ? 1.08 : beat === 2 ? 0.98 : 1.0;
+        return barArc * beatArc;
       }
-      ctx.scheduleEvent('bass', { note, articulation: 'pluck' }, atTicks, velocity, durationTicks);
+      default:
+        return 1.0;
     }
   }
 
-  /* ── Funk: syncopated eighth-notes with rests ────────────────────────────── */
-
-  private scheduleFunk(window: ScheduleWindow, ctx: ScheduleContext): void {
-    // Syncopated line: emphasis on offbeat eighths, classic funk bass
-    // Complexity 1-2: sparse (root on 1, 5th on 3)
-    // Complexity 3-4: medium (root on 1, 5th on 2&, octave on 4)
-    // Complexity 5-6: dense (root, 5th, octave with syncopation)
-    // Complexity 7: very syncopated (approach notes on offbeats)
-    const sig = ctx.timeSignature;
-    const tpBeat = ticksPerBeat(sig);
-    const tpBar = ticksPerBar(sig);
-    const os = this.octaveShift;
-
-    // Eighth-note grid: 8 slots per 4/4 bar
-    const eighthTicks = tpBeat / 2;
-    const slotTicks = tpBar / (sig.beatsPerBar * 2);
-    const durationTicks = Math.floor(slotTicks * GATE_RATIO);
-
-    const firstEighth = Math.ceil(window.fromTicks / eighthTicks);
-    for (let e = firstEighth; e * eighthTicks < window.toTicks; e++) {
-      const atTicks = e * eighthTicks;
-      const beatInBar = Math.floor((e % (sig.beatsPerBar * 2)) / 2);
-      const subIndex = e % 2; // 0 = downbeat, 1 = upbeat (the "&")
-      const barIndex = Math.floor(e / (sig.beatsPerBar * 2));
-      const chord = this.timeline.getChordAtTick(atTicks, sig);
-      if (!chord) continue;
-
-      const velocity = BEAT_VELOCITY[beatInBar] ?? BEAT_VELOCITY[0];
-
-      // Decide which eighth-notes to fire based on complexity
-      let note: string | null = null;
-
-      if (this.complexity <= 2) {
-        // Sparse: root on beat 1, fifth on beat 3 (quarter-note feel)
-        if (beatInBar === 0 && subIndex === 0) {
-          note = resolveRootNote(chord, 2 + os, os);
-        } else if (beatInBar === 2 && subIndex === 0) {
-          note = resolveFifthNote(chord, 2 + os, os);
-        }
-      } else if (this.complexity <= 4) {
-        // Medium: root on 1, root on 1&, fifth on 2&, root on 4, root on 4&
-        if (beatInBar === 0 && subIndex === 0) {
-          note = resolveRootNote(chord, 2 + os, os);
-        } else if (beatInBar === 0 && subIndex === 1) {
-          note = resolveRootNote(chord, 3 + os, os);
-        } else if (beatInBar === 1 && subIndex === 1) {
-          note = resolveFifthNote(chord, 2 + os, os);
-        } else if (beatInBar === 2 && subIndex === 1) {
-          note = resolveRootNote(chord, 3 + os, os);
-        } else if (beatInBar === 3 && subIndex === 0) {
-          note = resolveRootNote(chord, 2 + os, os);
-        } else if (beatInBar === 3 && subIndex === 1) {
-          note = resolveRootNote(chord, 3 + os, os);
-        }
-      } else if (this.complexity <= 6) {
-        // Dense syncopated: hits on 1, 1&, 2&, 3, 3&, 4&
-        if (beatInBar === 0 && subIndex === 0) {
-          note = resolveRootNote(chord, 2 + os, os);
-        } else if (beatInBar === 0 && subIndex === 1) {
-          note = resolveFifthNote(chord, 2 + os, os);
-        } else if (beatInBar === 1 && subIndex === 1) {
-          note = resolveRootNote(chord, 3 + os, os);
-        } else if (beatInBar === 2 && subIndex === 0) {
-          note = resolveFifthNote(chord, 2 + os, os);
-        } else if (beatInBar === 2 && subIndex === 1) {
-          note = resolveRootNote(chord, 3 + os, os);
-        } else if (beatInBar === 3 && subIndex === 1) {
-          note = resolveSeventhNote(chord, 2 + os, os);
-        }
-      } else {
-        // Complexity 7: highly syncopated with approach notes
-        if (beatInBar === 0 && subIndex === 0) {
-          note = resolveFifthNote(chord, 2 + os, os);
-        } else if (beatInBar === 0 && subIndex === 1) {
-          note = resolveRootNote(chord, 2 + os, os);
-        } else if (beatInBar === 1 && subIndex === 1) {
-          note = resolveFifthNote(chord, 2 + os, os);
-        } else if (beatInBar === 2 && subIndex === 0) {
-          note = resolveRootNote(chord, 3 + os, os);
-        } else if (beatInBar === 2 && subIndex === 1) {
-          note = resolveSeventhNote(chord, 2 + os, os);
-        } else if (beatInBar === 3 && subIndex === 0) {
-          const nextChord = this.timeline.getNextChord(atTicks, sig);
-          if (nextChord) {
-            const variant = this.randomizer.selectApproachVariant(barIndex, beatInBar);
-            note = resolveApproachNote(nextChord, variant, 2 + os, os);
-          } else {
-            note = resolveFifthNote(chord, 2 + os, os);
-          }
-        } else if (beatInBar === 3 && subIndex === 1) {
-          note = resolveRootNote(chord, 3 + os, os);
-        }
-      }
-
-      if (note) {
-        ctx.scheduleEvent(
-          'bass',
-          { note, articulation: 'pluck' },
-          atTicks,
-          velocity,
-          durationTicks,
-        );
-      }
-    }
+  /**
+   * Tiny timing jitter for groove feel (disabled when humanize is off).
+   * The nudge is clamped to the originating bar so notes never leak across
+   * bar boundaries (which would break per-bar chord resolution downstream).
+   */
+  private applyHumanization(atTicks: number, barStart: number, barTicks: number): number {
+    if (!this.humanize) return atTicks;
+    // Deterministic per-tick nudge (~±6 ticks ≈ ±6 ms at PPQ 480 / bpm 120).
+    const nudge = (((atTicks * 1103515245 + 12345) >>> 0) % 13) - 6;
+    return Math.max(barStart, Math.min(barStart + barTicks - 1, atTicks + nudge));
   }
 
-  /* ── Latin: montuno ──────────────────────────────────────────────────────── */
+  /* ── Pitch resolution: BassStep → scientific pitch ───────────────────────── */
 
-  private scheduleLatin(window: ScheduleWindow, ctx: ScheduleContext): void {
-    // Montuno-style: root on beat 1, fifth on beat 2&, octave on beat 4
-    // Complexity adds fills: 1-2 = sparse, 3-4 = medium, 5-7 = dense with passing tones
-    const sig = ctx.timeSignature;
-    const tpBeat = ticksPerBeat(sig);
-    const tpBar = ticksPerBar(sig);
-    const os = this.octaveShift;
-
-    const slotTicks = Math.floor(tpBar / 4);
-    const durationTicks = Math.floor(slotTicks * GATE_RATIO);
-
-    const firstBeat = Math.ceil(window.fromTicks / tpBeat);
-    for (let beat = firstBeat; beat * tpBeat < window.toTicks; beat++) {
-      const atTicks = beat * tpBeat;
-      const beatInBar = beat % sig.beatsPerBar;
-      const barIndex = Math.floor(beat / sig.beatsPerBar);
-      const chord = this.timeline.getChordAtTick(atTicks, sig);
-      if (!chord) continue;
-
-      const velocity = BEAT_VELOCITY[beatInBar] ?? BEAT_VELOCITY[0];
-
-      // Beat 1: root
-      if (beatInBar === 0) {
-        const octave = this.complexity >= 5 && barIndex % 2 === 1 ? 3 : 2;
-        ctx.scheduleEvent(
-          'bass',
-          { note: resolveRootNote(chord, octave + os, os), articulation: 'pluck' },
-          atTicks,
-          velocity,
-          durationTicks,
-        );
-      }
-
-      // Beat 2& (offbeat after beat 2): fifth — schedule at beat 2 tick + half beat
-      if (beatInBar === 1 && sig.beatsPerBar >= 3) {
-        const atOff = atTicks + tpBeat / 2;
-        if (atOff >= window.fromTicks && atOff < window.toTicks) {
-          ctx.scheduleEvent(
-            'bass',
-            { note: resolveFifthNote(chord, 2 + os, os), articulation: 'pluck' },
-            atOff,
-            velocity * 0.9,
-            Math.floor((tpBeat / 2) * GATE_RATIO),
-          );
-        }
-      }
-
-      // Beat 4: octave (or seventh in higher complexity)
-      if (beatInBar === sig.beatsPerBar - 1 && sig.beatsPerBar >= 3) {
-        const note =
-          this.complexity >= 6
-            ? resolveSeventhNote(chord, 2 + os, os)
-            : resolveRootNote(chord, 3 + os, os);
-        ctx.scheduleEvent(
-          'bass',
-          { note, articulation: 'pluck' },
-          atTicks,
-          velocity,
-          durationTicks,
-        );
-      }
-    }
+  /**
+   * Resolve a {@link BassStep} against `chord` into a scientific pitch string,
+   * centered on octave 2 and clamped to the C4 ceiling. `approach` resolves
+   * against `nextChord` (the chord being approached) using the randomizer
+   * (seeded by `barIndex` for deterministic per-bar variation).
+   *
+   * Delegates to {@link resolveBassStepPitch} so the admin-constructor preview
+   * shares the exact same pitch logic.
+   */
+  private resolveStepPitch(
+    step: import('./bassPatternTypes.js').BassStep,
+    chord: ChordSymbol,
+    barIndex: number,
+    atTicks: number,
+    nextChord: ChordSymbol | null,
+  ): string | null {
+    // Beat-within-bar feeds the randomizer's approach-variant selection,
+    // matching the legacy in-class behaviour before the extraction.
+    const beat = Math.floor((atTicks % PPQ) / (PPQ / 4));
+    const approachVariant = this.randomizer.selectApproachVariant(barIndex, beat);
+    return resolveBassStepPitch(step, chord, {
+      octaveShift: this.octaveShift,
+      nextChord,
+      barIndex,
+      approachVariant,
+      range: this.range,
+    });
   }
-
-  /* ── Ballad: two-feel ────────────────────────────────────────────────────── */
-
-  private scheduleBallad(window: ScheduleWindow, ctx: ScheduleContext): void {
-    // Two-feel: notes on beats 1 and 3 only, half-bar duration
-    // Complexity 1-3: root on 1, root on 3
-    // Complexity 4-6: root on 1, fifth on 3
-    // Complexity 7: root on 1, fifth on 3 with octave jumps on bar changes
-    const sig = ctx.timeSignature;
-    const tpBeat = ticksPerBeat(sig);
-    const tpBar = ticksPerBar(sig);
-    const os = this.octaveShift;
-
-    const slotTicks = tpBar / 2; // only 2 slots per bar
-    const durationTicks = Math.floor(slotTicks * GATE_RATIO);
-
-    const firstBeat = Math.ceil(window.fromTicks / tpBeat);
-    for (let beat = firstBeat; beat * tpBeat < window.toTicks; beat++) {
-      const beatInBar = beat % sig.beatsPerBar;
-      // Only beats 0 and 2 (beats 1 and 3) for 4/4; only beat 0 for 3/4
-      if (sig.beatsPerBar >= 4) {
-        if (beatInBar !== 0 && beatInBar !== 2) continue;
-      } else {
-        if (beatInBar !== 0) continue;
-      }
-      const atTicks = beat * tpBeat;
-      const chord = this.timeline.getChordAtTick(atTicks, sig);
-      if (!chord) continue;
-
-      const barIndex = Math.floor(beat / sig.beatsPerBar);
-      const velocity = BEAT_VELOCITY[beatInBar] ?? BEAT_VELOCITY[0];
-
-      let note: string;
-      if (beatInBar === 0) {
-        // Beat 1: root; higher complexity alternates octaves
-        const octave = this.complexity >= 7 && barIndex % 2 === 1 ? 3 : 2;
-        note = resolveRootNote(chord, octave + os, os);
-      } else {
-        // Beat 3: fifth (medium+) or root (low complexity)
-        note =
-          this.complexity <= 3
-            ? resolveRootNote(chord, 2 + os, os)
-            : resolveFifthNote(chord, 2 + os, os);
-      }
-      ctx.scheduleEvent('bass', { note, articulation: 'pluck' }, atTicks, velocity, durationTicks);
-    }
-  }
-}
-
-/* ── Note resolution helpers ───────────────────────────────────────────────── */
-
-/**
- * Convert ChordSymbol root to a scientific pitch string at the given octave.
- * Applies a ceiling at G3 + octaveShift (matching resolveIntervalNote).
- */
-function resolveRootNote(chord: ChordSymbol, octave: number, octaveShift = 0): string {
-  const accOffset = chord.rootAccidental === '#' ? 1 : chord.rootAccidental === 'b' ? -1 : 0;
-  const rootSemitone = ((NOTE_SEMITONES[chord.root] ?? 0) + accOffset + 12) % 12;
-  const ceilOct = 3 + octaveShift;
-  let finalOctave = octave;
-  if (finalOctave > ceilOct || (finalOctave === ceilOct && rootSemitone > 7)) finalOctave -= 1;
-  return `${chord.root}${chord.rootAccidental}${finalOctave}`;
-}
-
-/** Interval in semitones from root to third based on chord quality. */
-function thirdInterval(chord: ChordSymbol): number {
-  switch (chord.quality) {
-    case 'major':
-      return 4;
-    case 'dominant':
-      return 4;
-    case 'augmented':
-      return 4;
-    default:
-      return 3; // minor, halfDiminished, diminished
-  }
-}
-
-/** Interval in semitones from root to fifth based on chord quality/alterations. */
-function fifthInterval(chord: ChordSymbol): number {
-  if (chord.quality === 'diminished' || chord.quality === 'halfDiminished') return 6;
-  if (chord.quality === 'augmented') return 8;
-  if (chord.alterations.includes('b5')) return 6;
-  return 7;
-}
-
-/** Interval in semitones from root to seventh based on chord quality. */
-function seventhInterval(chord: ChordSymbol): number {
-  if (chord.quality === 'major') return 11; // major 7th
-  if (chord.quality === 'diminished') return 9; // diminished 7th (bb7)
-  return 10; // minor 7th (dominant, minor, halfDiminished, augmented)
-}
-
-/**
- * Resolve a chord interval (semitones above root) to a scientific pitch string.
- * Placed above the root in rootOctave; octave is incremented when the interval
- * wraps the chromatic boundary. Notes above the walking bass ceiling (G3 + octaveShift)
- * are clamped down one octave.
- */
-function resolveIntervalNote(
-  chord: ChordSymbol,
-  rootOctave: number,
-  intervalSemitones: number,
-  octaveShift = 0,
-): string {
-  const accOffset = chord.rootAccidental === '#' ? 1 : chord.rootAccidental === 'b' ? -1 : 0;
-  const rootSemitone = ((NOTE_SEMITONES[chord.root] ?? 0) + accOffset + 12) % 12;
-  const targetSemitone = (rootSemitone + intervalSemitones) % 12;
-  let octave = rootOctave + (targetSemitone < rootSemitone ? 1 : 0);
-  const ceilOct = 3 + octaveShift;
-  if (octave > ceilOct || (octave === ceilOct && targetSemitone > 7)) octave -= 1;
-  return `${SEMITONE_NAMES[targetSemitone]}${octave}`;
-}
-
-function resolveFifthNote(chord: ChordSymbol, rootOctave: number, octaveShift = 0): string {
-  return resolveIntervalNote(chord, rootOctave, fifthInterval(chord), octaveShift);
-}
-
-function resolveThirdNote(chord: ChordSymbol, rootOctave: number, octaveShift = 0): string {
-  return resolveIntervalNote(chord, rootOctave, thirdInterval(chord), octaveShift);
-}
-
-function resolveSeventhNote(chord: ChordSymbol, rootOctave: number, octaveShift = 0): string {
-  return resolveIntervalNote(chord, rootOctave, seventhInterval(chord), octaveShift);
-}
-
-/**
- * Chromatic approach to nextChord's root from one semitone above (fromAbove=true)
- * or below (fromAbove=false). Octave wraps are handled so the approach note is
- * always on the correct side of the target pitch. Walking bass ceiling applied.
- */
-function resolveApproachNote(
-  nextChord: ChordSymbol,
-  variant: ApproachVariant | boolean,
-  targetOctave: number,
-  octaveShift = 0,
-): string {
-  const accOffset =
-    nextChord.rootAccidental === '#' ? 1 : nextChord.rootAccidental === 'b' ? -1 : 0;
-  const nextRootSemitone = ((NOTE_SEMITONES[nextChord.root] ?? 0) + accOffset + 12) % 12;
-
-  // Normalise boolean legacy calls to variant
-  if (variant === true) variant = 'chromaticAbove';
-  else if (variant === false) variant = 'chromaticBelow';
-
-  const stepSemitones = variant === 'chromaticAbove' || variant === 'chromaticBelow' ? 1 : 2;
-  const isAbove = variant === 'chromaticAbove' || variant === 'diatonicAbove';
-
-  let approachSemitone: number;
-  let approachOctave: number;
-  if (isAbove) {
-    approachSemitone = (nextRootSemitone + stepSemitones) % 12;
-    approachOctave = approachSemitone <= nextRootSemitone ? targetOctave + 1 : targetOctave;
-  } else {
-    approachSemitone = (nextRootSemitone + (12 - stepSemitones)) % 12;
-    approachOctave = approachSemitone >= nextRootSemitone ? targetOctave - 1 : targetOctave;
-  }
-  const ceilOct = 3 + octaveShift;
-  if (approachOctave > ceilOct || (approachOctave === ceilOct && approachSemitone > 7))
-    approachOctave -= 1;
-  return `${SEMITONE_NAMES[approachSemitone]}${approachOctave}`;
 }

@@ -2,7 +2,12 @@ import { describe, it, expect } from 'vitest';
 import { PianoInstrument } from './pianoInstrument.js';
 import { ChordTimeline } from './chordTimeline.js';
 import { parseTimeSignature } from '../time/timeSignature.js';
-import type { ScheduleContext } from './instrument.js';
+import { intervalToMidi, resolveInterval, buildPianoVoicing } from './pianoVoicing.js';
+import { suggestUpperStructure } from './pianoUpperStructures.js';
+import { PIANO_MOLECULE_LIST } from './pianoMolecules.js';
+import { PIANO_CELL_LIST } from './pianoCells.js';
+import { PIANO_ORGANISM_LIST } from './pianoOrganisms.js';
+import type { PianoEvent, ScheduleContext } from './instrument.js';
 import type { ChordSymbol, Style } from '@jazz/shared';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -54,8 +59,8 @@ function makeCtx(sig = parseTimeSignature('4/4')): {
 function makePiano(entries: { chord: ChordSymbol | null }[], style?: Style): PianoInstrument {
   const timeline = new ChordTimeline(entries.map((e, i) => ({ barIndex: i, chord: e.chord })));
   const inst = new PianoInstrument(timeline);
-  inst.setHumanize(false);
   if (style) inst.setStyle(style);
+  inst.setHumanize(false);
   return inst;
 }
 
@@ -159,51 +164,52 @@ describe('PianoInstrument — profiles', () => {
 // ─── Style defaults ───────────────────────────────────────────────────────────
 
 describe('PianoInstrument — style defaults', () => {
-  it('swing style → swing-sparse profile', () => {
+  it('swing style → organism-based scheduling produces events', () => {
     const inst = makePiano([{ chord: dm7 }], 'swing');
     const { ctx, chords } = makeCtx();
     inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
-    // basie-2-4: beats 2 and 4
-    const ticks = chords.map((c) => c.at);
-    expect(ticks).toContain(TPB); // beat 2
-    expect(ticks).toContain(3 * TPB); // beat 4
+    // Organism-based: piano-swing-sparse cell with molecule pool variation
+    expect(chords.length).toBeGreaterThan(0);
+    // All events should be within the window
+    for (const c of chords) {
+      expect(c.at).toBeGreaterThanOrEqual(0);
+      expect(c.at).toBeLessThan(TPBAR);
+    }
   });
 
-  it('funk style → offbeat-push profile', () => {
+  it('funk style → organism-based scheduling produces events', () => {
     const inst = makePiano([{ chord: dm7 }], 'funk');
     const { ctx, chords } = makeCtx();
     inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
-    // offbeat-2-4: events on 2& and 4&
-    expect(chords.length).toBe(2);
+    expect(chords.length).toBeGreaterThan(0);
   });
 
-  it('ballad style → beginner-safe profile', () => {
+  it('ballad style → organism-based scheduling produces events', () => {
     const inst = makePiano([{ chord: dm7 }], 'ballad');
     const { ctx, chords } = makeCtx();
     inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
-    // halfNotes: 2 events per bar
-    expect(chords.length).toBe(2);
+    expect(chords.length).toBeGreaterThan(0);
   });
 
-  it('bossa style → swing-sparse profile', () => {
+  it('bossa style → organism-based scheduling produces events', () => {
     const inst = makePiano([{ chord: dm7 }], 'bossa');
     const { ctx, chords } = makeCtx();
     inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
     expect(chords.length).toBeGreaterThan(0);
   });
 
-  it('latin style → basie-light profile (bar 0 = basie-2-4)', () => {
+  it('latin style → organism-based scheduling produces events', () => {
     const inst = makePiano([{ chord: dm7 }, { chord: g7 }], 'latin');
     const { ctx, chords } = makeCtx();
     inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
-    // basie-2-4: beat 2 and beat 4, on-beat
-    const ticks = chords.map((c) => c.at);
-    expect(ticks).toContain(TPB); // beat 2
-    expect(ticks).toContain(3 * TPB); // beat 4
+    expect(chords.length).toBeGreaterThan(0);
   });
 
   it('swing style → voicing = rootless3', () => {
     const inst = makePiano([{ chord: dm7 }], 'swing');
+    // Isolate density from swing's default tension ('moderate'), which can add
+    // upper-structure notes on top of the base voicing — tested separately.
+    inst.setTension('clean');
     const { ctx, chords } = makeCtx();
     inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
     expect(chords.length).toBeGreaterThan(0);
@@ -224,6 +230,7 @@ describe('PianoInstrument — style defaults', () => {
     // setStyleProfile should NOT overwrite when voicing is absent from defaults
     // (but our style profiles always have voicing, so this tests the manual-override path)
     inst.setStyle('swing');
+    inst.setTension('clean'); // isolate density from swing's default tension
     // swing has rootless3 default — setStyleProfile applies it, overriding shell2
     const { ctx, chords } = makeCtx();
     inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
@@ -373,22 +380,67 @@ describe('PianoInstrument — window filtering', () => {
 // ─── Humanization ─────────────────────────────────────────────────────────────
 
 describe('PianoInstrument — humanization', () => {
-  it('humanize=true adds timing jitter within ±6ms', () => {
+  it('humanize=true adds timing jitter (low preset = ±15ms)', () => {
     const inst = makePiano([{ chord: dm7 }]);
     inst.setProfile('swing-sparse');
     inst.setHumanize(true);
+    // Isolate timing jitter: disable chord spread, phrasing, and global shift
+    inst.setHumanizeParams({
+      timingJitterMs: 'low' as const,
+      chordSpreadMs: 'none' as const,
+      phrasing: 'flat',
+      humanizeTiming: 'none',
+      velocityVariation: 'off',
+    });
     const { ctx, chords } = makeCtx();
     inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
 
-    // At 120bpm, PPQ=480, maxJitterTicks = round(0.006 * (120/60) * 480) = 6
-    const maxJitter = Math.round(0.006 * (120 / 60) * 480); // = 6
+    // At 120bpm, PPQ=480, low jitter = 15ms → maxJitterTicks = round(0.015 * (120/60) * 480) = 14
+    const maxJitter = Math.round(0.015 * (120 / 60) * 480); // = 14
     for (const c of chords) {
-      // The event should be within ±maxJitter of the expected beat position
-      const expectedTicks = Math.round(c.at / TPB) * TPB; // nearest beat
-      // For offbeat events this is approximate, just check not wildly off
+      const expectedTicks = Math.round(c.at / TPB) * TPB;
       const diff = Math.abs(c.at - expectedTicks);
-      // Allow some tolerance, but keep reasonable
       expect(diff).toBeLessThanOrEqual(maxJitter + 1);
+    }
+  });
+
+  it('chord spread high spreads notes across time (bass first, treble last)', () => {
+    const inst = makePiano([{ chord: dm7 }]);
+    inst.setProfile('swing-sparse');
+    inst.setHumanize(true);
+    // Isolate chord spread: disable jitter, phrasing, velocity, and global shift
+    inst.setHumanizeParams({
+      timingJitterMs: 'none' as const,
+      chordSpreadMs: 'high' as const,
+      phrasing: 'flat',
+      humanizeTiming: 'none',
+      velocityVariation: 'off',
+    });
+    const { ctx, chords } = makeCtx();
+    inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
+
+    // Each chord event now contains exactly 1 note (spread path splits them)
+    for (const c of chords) {
+      expect(c.notes.length).toBe(1);
+    }
+
+    // Group by base tick (rounded to beat) to find chords on the same beat
+    const byBeat = new Map<number, PianoEvent[]>();
+    for (const c of chords) {
+      const beat = Math.round(c.at / TPB) * TPB;
+      const list = byBeat.get(beat) || [];
+      list.push(c);
+      byBeat.set(beat, list);
+    }
+
+    // For any beat with multiple notes, verify they're spread (different at-ticks)
+    for (const [, events] of byBeat) {
+      if (events.length <= 1) continue;
+      const ticks = events.map((e) => e.at).sort((a, b) => a - b);
+      // At 120bpm PPQ=480, high spread = ±100ms → ±96 ticks total spread 192
+      const spread = ticks[ticks.length - 1]! - ticks[0]!;
+      expect(spread).toBeGreaterThan(0);
+      expect(spread).toBeLessThanOrEqual(200); // generous upper bound
     }
   });
 
@@ -796,5 +848,232 @@ describe('PianoInstrument — adaptive profile', () => {
     inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
     expect(chords.length).toBe(2);
     expect(chords[0]!.at).toBe(0); // beat 1
+  });
+});
+
+describe('intervalToMidi', () => {
+  it('converts major intervals from root C4', () => {
+    const root = 'C4';
+    expect(intervalToMidi(root, '1')).toBe(60); // unison
+    expect(intervalToMidi(root, '3')).toBe(64); // E4
+    expect(intervalToMidi(root, '5')).toBe(67); // G4
+    expect(intervalToMidi(root, '7')).toBe(71); // B4
+  });
+
+  it('converts flat intervals from root C4', () => {
+    const root = 'C4';
+    expect(intervalToMidi(root, 'b3')).toBe(63); // Eb4
+    expect(intervalToMidi(root, 'b7')).toBe(70); // Bb4
+    expect(intervalToMidi(root, 'b9')).toBe(73); // Db5
+    expect(intervalToMidi(root, 'b13')).toBe(80); // Ab5
+  });
+
+  it('converts sharp intervals from root C4', () => {
+    const root = 'C4';
+    expect(intervalToMidi(root, '#9')).toBe(75); // D#5
+    expect(intervalToMidi(root, '#11')).toBe(78); // F#5
+  });
+
+  it('converts upper extensions', () => {
+    const root = 'C4';
+    expect(intervalToMidi(root, '9')).toBe(74); // D5
+    expect(intervalToMidi(root, '11')).toBe(77); // F5
+    expect(intervalToMidi(root, '13')).toBe(81); // A5
+  });
+
+  it('works with different roots', () => {
+    expect(intervalToMidi('F4', '3')).toBe(69); // A4
+    expect(intervalToMidi('Bb3', '5')).toBe(65); // F4
+  });
+
+  it('resolveInterval is a convenience wrapper', () => {
+    expect(resolveInterval('3', 'C4')).toBe(64);
+    expect(resolveInterval('b7', 'G3')).toBe(intervalToMidi('G3', 'b7'));
+  });
+
+  it('throws on invalid interval string', () => {
+    expect(() => intervalToMidi('C4', 'x3')).toThrow('Invalid interval');
+    expect(() => intervalToMidi('C4', '')).toThrow('Invalid interval');
+    expect(() => intervalToMidi('C4', 'major')).toThrow('Invalid interval');
+  });
+});
+
+// ─── T-008 Upper Structures ────────────────────────────────────────────────────
+
+describe('PianoInstrument — upper structures', () => {
+  it('suggestUpperStructure is deterministic and gated by tension', () => {
+    const chord = makeChord('C', '', 'dominant');
+    expect(suggestUpperStructure(chord, 'dominant', 'clean', 42)).toBeNull();
+    const a = suggestUpperStructure(chord, 'dominant', 'max', 42);
+    const b = suggestUpperStructure(chord, 'dominant', 'max', 42);
+    expect(a).not.toBeNull();
+    expect(a).toEqual(b);
+  });
+
+  it('buildPianoVoicing merges upper-structure notes above the base voicing when tension is engaged', () => {
+    const chord = makeChord('C', '', 'dominant');
+    const clean = buildPianoVoicing(chord, 'rootless3', null, 'clean', 1);
+    const max = buildPianoVoicing(chord, 'rootless3', null, 'max', 1);
+    expect(max.length).toBeGreaterThan(clean.length);
+  });
+});
+
+// ─── T-009 Passing Chords ──────────────────────────────────────────────────────
+
+describe('PianoInstrument — passing chords', () => {
+  it('passing chord molecules have category "fill"', () => {
+    const passMols = PIANO_MOLECULE_LIST.filter(
+      (m) => m.category === 'fill' && m.id.includes('pass-'),
+    );
+    expect(passMols.length).toBeGreaterThanOrEqual(10);
+    for (const mol of passMols) {
+      expect(mol.category).toBe('fill');
+    }
+  });
+
+  it('passing chord molecules are pure rhythm — role "chord", tagged by approach idiom', () => {
+    const passMols = PIANO_MOLECULE_LIST.filter(
+      (m) => m.category === 'fill' && m.id.includes('pass-'),
+    );
+    for (const mol of passMols) {
+      expect(mol.tags).toContain('passing');
+      for (const atom of mol.atoms) {
+        expect(atom.sound).toBe('chord');
+      }
+    }
+  });
+
+  it('passing chords are on beat 4 or later', () => {
+    const ppq = 480;
+    const beat4Start = ppq * 3;
+    const passMols = PIANO_MOLECULE_LIST.filter(
+      (m) => m.category === 'fill' && m.id.includes('pass-'),
+    );
+    for (const mol of passMols) {
+      for (const atom of mol.atoms) {
+        expect(atom.atTick).toBeGreaterThanOrEqual(beat4Start);
+      }
+    }
+  });
+
+  it('a fill hit late in the bar pre-echoes the next bar chord voicing', () => {
+    // piano-swing-extended places a 'fill' lane clip at startBar 3 (1 bar).
+    // Bars 0-3 = Cmaj7, bar 4 = Dm7 — the last-beat fill hit in bar 3 should
+    // use Dm7's voicing (pre-echo), not Cmaj7's.
+    const entries = [cmaj7, cmaj7, cmaj7, cmaj7, dm7, dm7].map((chord) => ({ chord }));
+    const inst = makePiano(entries, 'swing');
+    inst.setOrganismId('piano-swing-extended-form');
+    inst.setTension('clean');
+    const { ctx, chords } = makeCtx();
+    inst.schedule({ fromTicks: 0, toTicks: 4 * TPBAR }, ctx);
+
+    const cmaj7Voicing = buildPianoVoicing(cmaj7, 'rootless3', null, 'clean', 0);
+    const dm7Voicing = buildPianoVoicing(dm7, 'rootless3', null, 'clean', 0);
+
+    const lastBeatOfBar3 = 3 * TPBAR + (TPBAR - TPB);
+    const preEchoHits = chords.filter((c) => c.at >= lastBeatOfBar3 && c.at < 4 * TPBAR);
+    expect(preEchoHits.length).toBeGreaterThan(0);
+    for (const hit of preEchoHits) {
+      const sorted = [...hit.notes].sort();
+      expect(sorted).not.toEqual([...cmaj7Voicing].sort());
+      expect(sorted).toEqual([...dm7Voicing].sort());
+    }
+  });
+});
+
+// ─── T-011 Multi-Clip Pool Cells ────────────────────────────────────────────────
+
+describe('PianoInstrument — multi-clip pool cells', () => {
+  it('extended cells have multiple lanes (comping + fill + accent)', () => {
+    const extCells = PIANO_CELL_LIST.filter((c) => c.id.includes('extended'));
+    expect(extCells.length).toBeGreaterThanOrEqual(5);
+    for (const cell of extCells) {
+      const laneNames = cell.lanes.map((l) => l.name);
+      expect(laneNames).toContain('comping');
+      // At least one extra lane
+      expect(cell.lanes.length).toBeGreaterThan(1);
+    }
+  });
+
+  it('extended cells have multi-clip pool (multiple molecules per clip)', () => {
+    const extCells = PIANO_CELL_LIST.filter((c) => c.id.includes('extended'));
+    for (const cell of extCells) {
+      const compingLane = cell.lanes.find((l) => l.name === 'comping');
+      expect(compingLane).toBeDefined();
+      for (const clip of compingLane!.clips) {
+        expect(clip.pool.length).toBeGreaterThanOrEqual(2);
+      }
+    }
+  });
+
+  it('extended cells have fill lane with probability 0.15', () => {
+    const extCells = PIANO_CELL_LIST.filter((c) => c.id.includes('extended'));
+    for (const cell of extCells) {
+      const fillLane = cell.lanes.find((l) => l.name === 'fill');
+      if (fillLane) {
+        expect(fillLane.probability).toBe(0.15);
+      }
+    }
+  });
+});
+
+// ─── T-012 Extended Organisms ───────────────────────────────────────────────────
+
+describe('PianoInstrument — extended organisms', () => {
+  it('extended organisms exist for all 5 styles', () => {
+    const styles = ['swing', 'bossa', 'funk', 'latin', 'ballad'];
+    for (const style of styles) {
+      const orgs = PIANO_ORGANISM_LIST.filter(
+        (o) => o.style === style && o.id.includes('extended'),
+      );
+      expect(orgs.length).toBeGreaterThanOrEqual(1);
+    }
+  });
+
+  it('extended organisms reference extended cells in at least one section', () => {
+    const extOrgs = PIANO_ORGANISM_LIST.filter((o) => o.id.includes('extended'));
+    for (const org of extOrgs) {
+      // At least one section map entry should reference an extended cell
+      const allCells = Object.values(org.sectionMap).flat();
+      expect(allCells.some((c) => c.includes('extended'))).toBe(true);
+    }
+  });
+});
+
+// ─── Humanization Pipeline ──────────────────────────────────────────────────────
+
+describe('PianoInstrument — humanization pipeline', () => {
+  it('humanize params are applied from style profile', () => {
+    const timeline = new ChordTimeline([
+      { barIndex: 0, chord: dm7 },
+      { barIndex: 1, chord: g7 },
+      { barIndex: 2, chord: cmaj7 },
+      { barIndex: 3, chord: cmaj7 },
+    ]);
+    const inst = new PianoInstrument(timeline);
+    inst.setStyle('swing');
+    const events: Array<{
+      notes: string[];
+      atTick: number;
+      velocity: number;
+      durationTicks: number;
+    }> = [];
+    const ctx = makeCtx();
+    ctx.ctx.scheduleEvent = (
+      _inst: string,
+      payload: unknown,
+      atTick: number,
+      velocity: number,
+      durationTicks: number,
+    ) => {
+      events.push({
+        notes: (payload as { notes: string[] }).notes,
+        atTick,
+        velocity,
+        durationTicks,
+      });
+    };
+    inst.schedule({ fromTicks: 0, toTicks: 480 * 4 }, ctx.ctx);
+    expect(events.length).toBeGreaterThan(0);
   });
 });

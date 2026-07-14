@@ -182,7 +182,6 @@ export function PlayerPage() {
     const drumVariant = profile.defaultVariants.drums ?? 'drums';
     updateSettings.mutate({
       style,
-      bpm: profile.defaultTempo,
       drumKit: drumVariant === 'drums' ? 'jazz-drum-kit' : drumVariant,
     });
   };
@@ -217,7 +216,8 @@ export function PlayerPage() {
     if (sections.length === 0) return undefined;
     const lastSection = sections[sections.length - 1]!;
     const lastBar = lastSection.bars[lastSection.bars.length - 1];
-    return lastBar?.repeatEnd?.count;
+    // Default to infinite loop when no repeatEnd is explicitly set
+    return lastBar?.repeatEnd?.count ?? null;
   }, [sections, repeatOverridden, repeatOverride]);
 
   const handleRepeatChange = useCallback((value: number | null | undefined) => {
@@ -225,18 +225,29 @@ export function PlayerPage() {
     setRepeatOverride(value);
   }, []);
 
-  // Apply repeat override to sections for transport
+  // Apply repeat override to sections for transport.
+  // When no repeatEnd is set, default to infinite loop (count: null).
   const effectiveSections = useMemo(() => {
-    if (!repeatOverridden || sections.length === 0) return sections;
+    if (sections.length === 0) return sections;
+
+    const lastSection = sections[sections.length - 1]!;
+    const lastBar = lastSection.bars[lastSection.bars.length - 1];
+    const currentCount = lastBar?.repeatEnd?.count;
+    const desiredCount = repeatOverridden
+      ? repeatOverride
+      : (currentCount ?? null); // default: infinite when no repeatEnd
+
+    if (desiredCount === currentCount) return sections;
+
     return sections.map((s, si) => {
       if (si !== sections.length - 1) return s;
       const bars = s.bars.map((b, bi) => {
         if (bi !== s.bars.length - 1) return b;
-        if (repeatOverride === undefined) {
+        if (desiredCount === undefined) {
           const { repeatEnd: _, ...rest } = b;
           return rest as typeof b;
         }
-        return { ...b, repeatEnd: { count: repeatOverride } };
+        return { ...b, repeatEnd: { count: desiredCount } };
       });
       return { ...s, bars };
     });

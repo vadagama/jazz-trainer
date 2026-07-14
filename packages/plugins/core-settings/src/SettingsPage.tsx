@@ -37,6 +37,8 @@ import {
   Label,
   MidiDeviceSelector,
   MidiIndicator,
+  useClampedNumberInput,
+  clampNumber,
 } from '@jazz/ui';
 import { InstrumentTile } from './InstrumentTile';
 
@@ -151,11 +153,13 @@ function TabBar({ active, onChange }: { active: TabId; onChange: (id: TabId) => 
 // ─── Tempo input (keyboard-friendly, +5/-5 buttons) ────────────────────────────
 
 function TempoControl({ value, onChange }: { value: number; onChange: (v: number) => void }) {
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  function clamp(v: number) {
-    return Math.max(20, Math.min(400, Math.round(v)));
-  }
+  const clamp = (v: number) => clampNumber(v, 20, 400);
+  const {
+    text,
+    onChange: onTextChange,
+    onBlur,
+    onKeyDown: onHookKeyDown,
+  } = useClampedNumberInput({ value, onCommit: onChange, min: 20, max: 400 });
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === 'ArrowUp') {
@@ -166,7 +170,7 @@ function TempoControl({ value, onChange }: { value: number; onChange: (v: number
       e.preventDefault();
       onChange(clamp(value - 5));
     }
-    if (e.key === 'Enter') inputRef.current?.blur();
+    onHookKeyDown(e);
   }
 
   return (
@@ -180,12 +184,11 @@ function TempoControl({ value, onChange }: { value: number; onChange: (v: number
         <Minus className="size-3" />
       </Button>
       <Input
-        ref={inputRef}
-        type="number"
-        min={20}
-        max={400}
-        value={value}
-        onChange={(e) => onChange(clamp(Number(e.target.value)))}
+        type="text"
+        inputMode="numeric"
+        value={text}
+        onChange={onTextChange}
+        onBlur={onBlur}
         onKeyDown={handleKeyDown}
         className="w-[72px] text-center text-sm [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
       />
@@ -199,6 +202,38 @@ function TempoControl({ value, onChange }: { value: number; onChange: (v: number
       </Button>
       <span className="text-xs text-muted-foreground ml-1">BPM</span>
     </div>
+  );
+}
+
+// ─── Count-in input (keyboard-friendly) ────────────────────────────────────────
+
+function CountInControl({
+  value,
+  disabled,
+  onChange,
+}: {
+  value: number;
+  disabled?: boolean;
+  onChange: (v: number) => void;
+}) {
+  const {
+    text,
+    onChange: onTextChange,
+    onBlur,
+    onKeyDown,
+  } = useClampedNumberInput({ value, onCommit: onChange, min: 0, max: 4 });
+
+  return (
+    <Input
+      type="text"
+      inputMode="numeric"
+      disabled={disabled}
+      value={text}
+      onChange={onTextChange}
+      onBlur={onBlur}
+      onKeyDown={onKeyDown}
+      className="w-24 text-right"
+    />
   );
 }
 
@@ -231,7 +266,6 @@ export function SettingsPage() {
       const drumKit = drumVariant === 'drums' ? 'jazz-drum-kit' : drumVariant;
       mutate({
         style,
-        bpm: profile.defaultTempo,
         drumKit,
       });
     },
@@ -239,8 +273,20 @@ export function SettingsPage() {
   );
 
   const handleBpmChange = useCallback(
-    (value: number) => mutate({ bpm: Math.max(20, Math.min(400, Math.round(value))) }),
-    [mutate],
+    (value: number) => {
+      const clamped = Math.max(20, Math.min(400, Math.round(value)));
+      const perStyleOverrides = {
+        ...((settings?.perStyleOverrides ?? {}) as Record<string, Record<string, unknown>>),
+      };
+      const currentOverrides = { ...(perStyleOverrides[currentStyle] ?? {}) };
+      currentOverrides.bpm = clamped;
+      perStyleOverrides[currentStyle] = currentOverrides;
+      mutate({
+        bpm: clamped,
+        perStyleOverrides,
+      } as Partial<UserSettingsDTO>);
+    },
+    [mutate, currentStyle, settings?.perStyleOverrides],
   );
 
   const handleSwingChange = useCallback(
@@ -260,12 +306,13 @@ export function SettingsPage() {
 
   const handleReset = useCallback(() => {
     const profile = getStyleProfile(currentStyle);
-    const perStyleOverrides = { ...(settings?.perStyleOverrides ?? {}) };
-    // Clear per-style swing override for current style
-    const currentOverrides = {
-      ...((perStyleOverrides[currentStyle] ?? {}) as Record<string, unknown>),
+    const perStyleOverrides = {
+      ...((settings?.perStyleOverrides ?? {}) as Record<string, Record<string, unknown>>),
     };
+    // Clear per-style overrides for current style
+    const currentOverrides = { ...(perStyleOverrides[currentStyle] ?? {}) };
     delete currentOverrides.swingRatio;
+    delete currentOverrides.bpm;
     if (Object.keys(currentOverrides).length > 0) {
       perStyleOverrides[currentStyle] = currentOverrides;
     } else {
@@ -274,7 +321,6 @@ export function SettingsPage() {
     const drumVariant = profile.defaultVariants.drums ?? 'jazz-kit';
     const drumKit = drumVariant === 'drums' ? 'jazz-drum-kit' : drumVariant;
     const patch: Record<string, unknown> = {
-      bpm: profile.defaultTempo,
       drumKit,
       perStyleOverrides,
     };
@@ -393,10 +439,12 @@ export function SettingsPage() {
     );
   }
 
-  const currentBpm = settings?.bpm ?? 120;
-  const perStyleSwing = (
-    settings?.perStyleOverrides?.[currentStyle] as Record<string, unknown> | undefined
-  )?.swingRatio as number | undefined;
+  const perStyleOverridesObj = settings?.perStyleOverrides?.[currentStyle] as
+    | Record<string, unknown>
+    | undefined;
+  const perStyleBpm = perStyleOverridesObj?.bpm as number | undefined;
+  const currentBpm = perStyleBpm ?? styleProfile.defaultTempo;
+  const perStyleSwing = perStyleOverridesObj?.swingRatio as number | undefined;
   const currentSwing = perStyleSwing ?? styleProfile.swingRatio;
   const metronomeOn = settings?.metronomeEnabled ?? true;
   const volumePct = Math.round((settings?.volume ?? 0.8) * 100);
@@ -468,17 +516,10 @@ export function SettingsPage() {
                 <Label className={`pt-2 text-sm ${metronomeOn ? '' : 'text-muted-foreground'}`}>
                   Затакт (тактов)
                 </Label>
-                <Input
-                  type="number"
-                  min={0}
-                  max={4}
-                  disabled={!metronomeOn}
+                <CountInControl
                   value={settings?.countIn ?? 1}
-                  onChange={(e) => {
-                    const n = Number(e.target.value);
-                    if (!isNaN(n) && n >= 0 && n <= 4) mutate({ countIn: n });
-                  }}
-                  className="w-24 text-right"
+                  disabled={!metronomeOn}
+                  onChange={(n) => mutate({ countIn: n })}
                 />
               </div>
 

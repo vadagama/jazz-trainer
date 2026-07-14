@@ -1,6 +1,7 @@
 import { Suspense, lazy, useMemo } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AppShell } from './components/layout/AppShell';
+import { AdminShell } from './components/layout/AdminShell';
 import { EditorShell } from './components/layout/EditorShell';
 import { ProtectedRoute } from './components/layout/ProtectedRoute';
 import { RbacGuard } from './components/layout/RbacGuard';
@@ -9,6 +10,7 @@ import type { RouteContribution } from '@jazz/plugin-sdk';
 import { PluginProvider } from '@jazz/plugin-sdk';
 import { useTransport } from '@/hooks/useTransport';
 import { useDrumPreview } from '@/hooks/useDrumPreview';
+import { usePercussionPreview } from '@/hooks/usePercussionPreview';
 import { MidiSoloProvider } from './shell/MidiSoloProvider';
 
 /**
@@ -59,11 +61,16 @@ function wrapRoute(r: RouteContribution, child: React.ReactNode): React.ReactNod
 const APP_SHELL_PATHS = new Set(['/', '/my', '/theory', '/settings', '/profile']);
 
 function isAppShellRoute(path: string): boolean {
-  return APP_SHELL_PATHS.has(path) || path.startsWith('/theory/') || path.startsWith('/admin/');
+  return APP_SHELL_PATHS.has(path) || path.startsWith('/theory/');
+}
+
+function isAdminRoute(path: string): boolean {
+  return path.startsWith('/admin/');
 }
 
 export function App() {
   const shellRoutes = contributions.routes.filter((r) => isAppShellRoute(r.path));
+  const adminRoutes = contributions.routes.filter((r) => isAdminRoute(r.path));
   const editorRoutes = contributions.routes.filter(
     (r) =>
       r.path.startsWith('/grids') || r.path.startsWith('/play') || r.path === '/practice-cards',
@@ -71,6 +78,7 @@ export function App() {
   const bareRoutes = contributions.routes.filter(
     (r) =>
       !isAppShellRoute(r.path) &&
+      !isAdminRoute(r.path) &&
       !r.path.startsWith('/grids') &&
       !r.path.startsWith('/play') &&
       r.path !== '/practice-cards',
@@ -80,10 +88,19 @@ export function App() {
     <PluginProvider
       useTransport={useTransport}
       useDrumPreview={useDrumPreview}
+      usePercussionPreview={usePercussionPreview}
       instruments={instrumentRegistry}
     >
       <MidiSoloProvider>
         <Routes>
+          {/* Admin: Header + AdminSidebar + content */}
+          <Route element={<AdminShell />}>
+            {adminRoutes.map((r) => {
+              const element = <LazyRoute key={r.path} importer={r.element} />;
+              return <Route key={r.path} path={r.path} element={wrapRoute(r, element)} />;
+            })}
+          </Route>
+
           {/* Header + scrollable GridContainer */}
           <Route element={<AppShell />}>
             {shellRoutes.map((r) => {

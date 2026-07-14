@@ -1,5 +1,6 @@
 import type { PercussionOrganism, PercussionPatternStyle } from './percussionPatternTypes.js';
 import type { SectionType } from '@jazz/shared';
+import { GENERATED_PERCUSSION_ORGANISMS } from './percussionOrganismsGenerated.js';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Organisms — macro-form structures (section-driven)
@@ -32,21 +33,16 @@ function organism(
 const BASE_PERCUSSION_ORGANISMS: Record<string, PercussionOrganism> = {
   // ── Latin ──────────────────────────────────────────────────────────────────
 
-  'latin-default': organism(
-    'latin-default',
-    'latin',
-    'Latin Default (cascara, montuno, sparse)',
-    {
-      intro: ['latin-8-intro'],
-      verseA: ['latin-16-verse', 'latin-16-verse-var'],
-      verseB: ['latin-16-montuno', 'latin-16-verse-var'],
-      verseC: ['latin-16-verse', 'latin-16-verse-var'],
-      chorus: ['latin-16-chorus'],
-      bridge: ['latin-16-bridge'],
-      solo: ['latin-16-solo'],
-      ending: ['latin-8-ending'],
-    },
-  ),
+  'latin-default': organism('latin-default', 'latin', 'Latin Default (cascara, montuno, sparse)', {
+    intro: ['latin-8-intro'],
+    verseA: ['latin-16-verse', 'latin-16-verse-var'],
+    verseB: ['latin-16-montuno', 'latin-16-verse-var'],
+    verseC: ['latin-16-verse', 'latin-16-verse-var'],
+    chorus: ['latin-16-chorus'],
+    bridge: ['latin-16-bridge'],
+    solo: ['latin-16-solo'],
+    ending: ['latin-8-ending'],
+  }),
 
   // ── Bossa ──────────────────────────────────────────────────────────────────
 
@@ -71,7 +67,7 @@ const BASE_PERCUSSION_ORGANISMS: Record<string, PercussionOrganism> = {
   'funk-default': organism(
     'funk-default',
     'funk',
-    'Funk Default (shaker, tambourine, cowbell, cabasa)',
+    'Funk Default (conga, bongo, cowbell, triangle — no shaker)',
     {
       intro: ['funk-8-intro'],
       verseA: ['funk-16-verse', 'funk-16-verse-var'],
@@ -85,7 +81,10 @@ const BASE_PERCUSSION_ORGANISMS: Record<string, PercussionOrganism> = {
   ),
 };
 
-export const PERCUSSION_ORGANISMS: Record<string, PercussionOrganism> = BASE_PERCUSSION_ORGANISMS;
+export const PERCUSSION_ORGANISMS: Record<string, PercussionOrganism> =
+  Object.keys(GENERATED_PERCUSSION_ORGANISMS).length > 0
+    ? (GENERATED_PERCUSSION_ORGANISMS as Record<string, PercussionOrganism>)
+    : BASE_PERCUSSION_ORGANISMS;
 
 export const PERCUSSION_ORGANISM_LIST: PercussionOrganism[] = Object.values(PERCUSSION_ORGANISMS);
 

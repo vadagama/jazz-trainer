@@ -125,7 +125,13 @@ export async function authRoutes(app: FastifyInstance, opts: AuthRoutesOptions):
       ensureUserSettings(db, user.id);
       const sid = createSession(db, user.id, config.sessionTtlMs);
       reply.setCookie('sid', sid, COOKIE_OPTS);
-      return { user: toUserDTO(user) };
+      const permSet = resolvePermissions(db, user.id);
+      const flags = resolveFlags(db, user.role, user.id);
+      return {
+        user: toUserDTO(user),
+        permissions: [...permSet],
+        flags,
+      };
     });
   }
 

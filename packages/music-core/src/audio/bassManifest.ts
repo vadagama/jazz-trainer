@@ -1,10 +1,19 @@
 import type { InstrumentManifest } from './instrumentManifest.js';
 import type { SampleManifest } from './sampleManifest.js';
-import { buildBassPluckUrls, buildBassMuteUrls } from './sampleRegistry.js';
+import {
+  buildBassPluckUrls,
+  buildBassMuteUrls,
+  buildBassRegUrls,
+  buildBassArticUrls,
+} from './sampleRegistry.js';
 import { BassInstrument } from './bassInstrument.js';
 import { ChordTimeline } from './chordTimeline.js';
 
-function buildBassLayers(): Record<string, Record<string, string>> {
+// ════════════════════════════════════════════════════════════════════════════
+// Upright bass — Sneakybass pluck + mute. Swing / bossa / ballad.
+// ════════════════════════════════════════════════════════════════════════════
+
+function buildUprightLayers(): Record<string, Record<string, string>> {
   const layers: Record<string, Record<string, string>> = {};
   for (const rr of [1, 2, 3, 4] as const) {
     layers[`pluck_rr${rr}`] = buildBassPluckUrls(rr);
@@ -13,31 +22,80 @@ function buildBassLayers(): Record<string, Record<string, string>> {
   return layers;
 }
 
-const BASS_SAMPLE_MANIFEST: SampleManifest = {
+const UPRIGHT_BASS_SAMPLE_MANIFEST: SampleManifest = {
   baseUrl: '/samples/aac/bass/',
   fallbackBaseUrl: '/samples/mp3/bass/',
-  layers: buildBassLayers(),
+  layers: buildUprightLayers(),
   release: 0.8,
 };
 
-export const bassManifest: InstrumentManifest = {
-  id: 'bass',
+export const uprightBassManifest: InstrumentManifest = {
+  id: 'upright-bass',
   name: 'Bass',
   family: 'pitched',
   settingsPrefix: 'bass',
-  createInstrument: () => new BassInstrument(new ChordTimeline()),
-  sampleManifest: BASS_SAMPLE_MANIFEST,
+  createInstrument: () => new BassInstrument(new ChordTimeline(), 'upright'),
+  sampleManifest: UPRIGHT_BASS_SAMPLE_MANIFEST,
   defaultSettings: {
     enabled: true,
     volume: 0.8,
-    complexity: 3,
-    octaveUp: false,
+    pattern: 'walking',
   },
   perStyleDefaults: {
-    swing: { complexity: 5 }, // walking bass — четверти + approach notes
-    bossa: { complexity: 3 }, // root-5th — половинные
-    funk: { complexity: 5 }, // syncopated eighths — пропуск 1-й доли
-    latin: { complexity: 4 }, // montuno — нота-пауза-нота
-    ballad: { complexity: 7 }, // two-feel — половинные
+    swing: { pattern: 'walking' },
+    bossa: { pattern: 'root-5th' },
+    funk: { enabled: false, volume: 0 },
+    latin: { enabled: false, volume: 0 },
+    ballad: { pattern: 'two-feel' },
   },
 };
+
+// ════════════════════════════════════════════════════════════════════════════
+// Electric bass — darkblack reg / stac / rel / ghost. Funk / latin.
+// ════════════════════════════════════════════════════════════════════════════
+
+function buildElectricLayers(): Record<string, Record<string, string>> {
+  const layers: Record<string, Record<string, string>> = {};
+  for (const rr of [1, 2, 3, 4] as const) {
+    layers[`reg_rr${rr}`] = buildBassRegUrls(rr);
+    layers[`stac_rr${rr}`] = buildBassArticUrls('stac', rr);
+    layers[`rel_rr${rr}`] = buildBassArticUrls('rel', rr);
+    layers[`ghost_rr${rr}`] = buildBassArticUrls('ghost', rr);
+  }
+  return layers;
+}
+
+const ELECTRIC_BASS_SAMPLE_MANIFEST: SampleManifest = {
+  baseUrl: '/samples/aac/bass/',
+  fallbackBaseUrl: '/samples/mp3/bass/',
+  layers: buildElectricLayers(),
+  release: 0.6,
+};
+
+export const electricBassManifest: InstrumentManifest = {
+  id: 'electric-bass',
+  name: 'Electric Bass',
+  family: 'pitched',
+  settingsPrefix: 'bass',
+  createInstrument: () => new BassInstrument(new ChordTimeline(), 'electric'),
+  sampleManifest: ELECTRIC_BASS_SAMPLE_MANIFEST,
+  defaultSettings: {
+    enabled: true,
+    volume: 0.8,
+    pattern: 'syncopated',
+  },
+  perStyleDefaults: {
+    swing: { enabled: false, volume: 0 },
+    bossa: { enabled: false, volume: 0 },
+    funk: { pattern: 'syncopated' },
+    latin: { pattern: 'montuno' },
+    ballad: { enabled: false, volume: 0 },
+  },
+};
+
+/**
+ * @deprecated Use {@link uprightBassManifest} / {@link electricBassManifest}.
+ * Legacy alias kept for the transition period (points at the upright manifest,
+ * which matches the pre-split single-bass behaviour for swing/bossa/ballad).
+ */
+export const bassManifest: InstrumentManifest = uprightBassManifest;

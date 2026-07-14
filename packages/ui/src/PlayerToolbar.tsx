@@ -1,5 +1,5 @@
 import { Play, Square, Volume2, VolumeX, SkipBack, SkipForward, Music } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { KEYS } from '@jazz/shared';
 import type { Key, Style } from '@jazz/shared';
 import type { PlaybackStatus } from '@jazz/music-core';
@@ -9,6 +9,7 @@ import { Slider } from './slider';
 import { cn } from './utils';
 import { StyleSelector } from './StyleSelector';
 import { RepeatSelector } from './RepeatSelector';
+import { useClampedNumberInput } from './useClampedNumberInput';
 
 const STYLE_LABELS: Record<Style, string> = {
   swing: 'Swing',
@@ -86,9 +87,17 @@ export function PlayerToolbar({
   const isMuted = volumeProp === 0;
   const isPlaying = status === 'playing';
 
-  const [bpmInput, setBpmInput] = useState(String(bpm));
-
-  useEffect(() => setBpmInput(String(bpm)), [bpm]);
+  const {
+    text: bpmInput,
+    onChange: handleBpmChange,
+    onBlur: commitBpm,
+    onKeyDown: onBpmKeyDown,
+  } = useClampedNumberInput({
+    value: bpm,
+    onCommit: (v) => onBpmChange?.(v),
+    min: 20,
+    max: 400,
+  });
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -110,16 +119,6 @@ export function PlayerToolbar({
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isPlaying, onPlay, onStop]);
-
-  function handleBpmChange(e: React.ChangeEvent<HTMLInputElement>) {
-    setBpmInput(e.target.value.replace(/\D/g, ''));
-  }
-
-  function commitBpm() {
-    const val = parseInt(bpmInput, 10);
-    if (!isNaN(val) && val >= 20 && val <= 400) onBpmChange?.(val);
-    else setBpmInput(String(bpm));
-  }
 
   function adjustBpm(delta: number) {
     onBpmChange?.(Math.min(400, Math.max(20, bpm + delta)));
@@ -146,7 +145,7 @@ export function PlayerToolbar({
               value={bpmInput}
               onChange={handleBpmChange}
               onBlur={commitBpm}
-              onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
+              onKeyDown={onBpmKeyDown}
               className="w-12 bg-transparent text-center text-sm font-semibold tabular-nums text-foreground focus:outline-none"
               aria-label="BPM"
             />

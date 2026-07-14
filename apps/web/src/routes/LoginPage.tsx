@@ -2,7 +2,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { Music4 } from 'lucide-react';
-import { DevLoginSchema, type DevLoginInput } from '@jazz/shared';
+import { DevLoginSchema, type DevLoginInput, type MeResponse } from '@jazz/shared';
 import { apiClient } from '@/lib/apiClient';
 import { queryClient } from '@/lib/queryClient';
 import { Button } from '@/components/ui/button';
@@ -49,7 +49,7 @@ export default function LoginPage() {
   async function onDevLogin(data: DevLoginInput) {
     setDevError(null);
     try {
-      const res = await apiClient.post<{ user: unknown }>('/api/auth/dev-login', data);
+      const res = await apiClient.post<MeResponse>('/api/auth/dev-login', data);
       queryClient.setQueryData(['auth', 'me'], res);
       navigate(returnTo, { replace: true });
     } catch (err: unknown) {

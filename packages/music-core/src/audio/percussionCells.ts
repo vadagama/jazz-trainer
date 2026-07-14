@@ -1,4 +1,5 @@
 import type { PercussionCell, Lane, Clip, Dynamics } from './percussionPatternTypes.js';
+import { GENERATED_PERCUSSION_CELLS } from './percussionCellsGenerated.js';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -15,7 +16,9 @@ function lane(name: string, probability: number, clips: Clip[]): Lane {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// BOSSA cells
+// BOSSA cells — each lane uses a SINGLE-INSTRUMENT molecule
+// (shaker lane → shaker molecule, clave lane → clave molecule, etc.)
+// Exception: conga lane uses congaHigh + congaLow + bongoLow combined molecule.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const bossa16Verse: PercussionCell = {
@@ -26,13 +29,13 @@ const bossa16Verse: PercussionCell = {
   velocity: 0.85,
   dynamics: WAVE,
   lanes: [
-    lane('shaker', 0.95, [clip(0, 16, ['bossa-classic-shaker-clave'])]),
-    lane('cabasa', 0.3, [clip(0, 16, ['bossa-cabasa-pulse'])]),
-    lane('clave', 0.8, [clip(0, 16, ['bossa-classic-shaker-clave'])]),
-    lane('conga', 0.7, [clip(0, 16, ['bossa-rio-conga'])]),
-    lane('triangle', 0.4, [clip(0, 16, ['bossa-soft-texture'])]),
-    lane('tambourine', 0.25, [clip(0, 16, ['bossa-tambourine-light'])]),
-    lane('guiro', 0.2, [clip(0, 16, ['bossa-guiro-brush'])]),
+    lane('shaker', 0.95, [clip(0, 16, ['bossa-shaker-classic'])]),
+    lane('cabasa', 0.3, [clip(0, 16, ['bossa-cabasa-16ths'])]),
+    lane('clave', 0.8, [clip(0, 16, ['bossa-clave-son-32'])]),
+    lane('conga', 0.7, [clip(0, 16, ['bossa-conga-rio', 'bossa-conga-color'])]),
+    lane('triangle', 0.4, [clip(0, 16, ['bossa-triangle-downbeats'])]),
+    lane('tambourine', 0.25, [clip(0, 16, ['bossa-tambourine-16ths'])]),
+    lane('guiro', 0.2, [clip(0, 16, ['bossa-guiro-quarters'])]),
   ],
 };
 
@@ -44,13 +47,13 @@ const bossa16VerseVar: PercussionCell = {
   velocity: 0.82,
   dynamics: WAVE,
   lanes: [
-    lane('shaker', 0.95, [clip(0, 16, ['bossa-cabasa-pulse'])]),
-    lane('cabasa', 0.5, [clip(0, 16, ['bossa-cabasa-pulse'])]),
-    lane('clave', 0.8, [clip(0, 16, ['bossa-partido-alto-hint'])]),
-    lane('conga', 0.75, [clip(0, 16, ['bossa-partido-alto-hint'])]),
-    lane('triangle', 0.35, [clip(0, 16, ['bossa-soft-texture'])]),
-    lane('tambourine', 0.3, [clip(0, 16, ['bossa-tambourine-light'])]),
-    lane('cowbell', 0.2, [clip(0, 16, ['bossa-cowbell-whisper'])]),
+    lane('shaker', 0.95, [clip(0, 16, ['bossa-shaker-rio'])]),
+    lane('cabasa', 0.5, [clip(0, 16, ['bossa-cabasa-16ths'])]),
+    lane('clave', 0.8, [clip(0, 16, ['bossa-clave-partido'])]),
+    lane('conga', 0.75, [clip(0, 16, ['bossa-conga-tumbao'])]),
+    lane('triangle', 0.35, [clip(0, 16, ['bossa-triangle-offbeats'])]),
+    lane('tambourine', 0.3, [clip(0, 16, ['bossa-tambourine-16ths'])]),
+    lane('cowbell', 0.2, [clip(0, 16, ['bossa-cowbell-quarters'])]),
   ],
 };
 
@@ -62,10 +65,10 @@ const bossa16Basic: PercussionCell = {
   velocity: 0.8,
   dynamics: STEADY,
   lanes: [
-    lane('shaker', 0.95, [clip(0, 16, ['bossa-tambourine-light'])]),
-    lane('clave', 0.7, [clip(0, 16, ['bossa-cowbell-whisper'])]),
-    lane('conga', 0.5, [clip(0, 16, ['bossa-rio-conga'])]),
-    lane('triangle', 0.3, [clip(0, 16, ['bossa-soft-texture'])]),
+    lane('shaker', 0.95, [clip(0, 16, ['bossa-shaker-soft'])]),
+    lane('clave', 0.7, [clip(0, 16, ['bossa-clave-light'])]),
+    lane('conga', 0.5, [clip(0, 16, ['bossa-conga-rio'])]),
+    lane('triangle', 0.3, [clip(0, 16, ['bossa-triangle-mixed'])]),
   ],
 };
 
@@ -77,12 +80,12 @@ const bossa16Chorus: PercussionCell = {
   velocity: 0.9,
   dynamics: PULSE,
   lanes: [
-    lane('shaker', 0.95, [clip(0, 16, ['bossa-partido-alto-hint'])]),
-    lane('cabasa', 0.5, [clip(0, 16, ['bossa-extended-color'])]),
-    lane('clave', 0.85, [clip(0, 16, ['bossa-extended-color'])]),
-    lane('conga', 0.8, [clip(0, 16, ['bossa-extended-color'])]),
-    lane('tambourine', 0.45, [clip(0, 16, ['bossa-extended-color'])]),
-    lane('triangle', 0.35, [clip(0, 16, ['bossa-cowbell-whisper'])]),
+    lane('shaker', 0.95, [clip(0, 16, ['bossa-shaker-classic'])]),
+    lane('cabasa', 0.5, [clip(0, 16, ['bossa-cabasa-16ths'])]),
+    lane('clave', 0.85, [clip(0, 16, ['bossa-clave-sync'])]),
+    lane('conga', 0.8, [clip(0, 16, ['bossa-conga-tumbao'])]),
+    lane('tambourine', 0.45, [clip(0, 16, ['bossa-tambourine-8ths'])]),
+    lane('triangle', 0.35, [clip(0, 16, ['bossa-triangle-mixed'])]),
   ],
 };
 
@@ -94,11 +97,11 @@ const bossa16Bridge: PercussionCell = {
   velocity: 0.82,
   dynamics: WAVE,
   lanes: [
-    lane('shaker', 0.9, [clip(0, 16, ['bossa-guiro-brush'])]),
-    lane('guiro', 0.6, [clip(0, 16, ['bossa-guiro-brush'])]),
-    lane('clave', 0.6, [clip(0, 16, ['bossa-guiro-brush'])]),
-    lane('conga', 0.5, [clip(0, 16, ['bossa-tambourine-light'])]),
-    lane('belltree', 0.15, [clip(0, 16, ['bossa-extended-color'])]),
+    lane('shaker', 0.9, [clip(0, 16, ['bossa-shaker-offbeats'])]),
+    lane('guiro', 0.6, [clip(0, 16, ['bossa-guiro-quarters'])]),
+    lane('clave', 0.6, [clip(0, 16, ['bossa-clave-light'])]),
+    lane('conga', 0.5, [clip(0, 16, ['bossa-conga-color'])]),
+    lane('belltree', 0.15, [clip(0, 16, ['bossa-belltree-swell'])]),
   ],
 };
 
@@ -110,9 +113,9 @@ const bossa16Solo: PercussionCell = {
   velocity: 0.7,
   dynamics: STEADY,
   lanes: [
-    lane('shaker', 0.9, [clip(0, 16, ['bossa-minimal-jazz'])]),
-    lane('clave', 0.5, [clip(0, 16, ['bossa-minimal-jazz'])]),
-    lane('triangle', 0.3, [clip(0, 16, ['bossa-minimal-jazz'])]),
+    lane('shaker', 0.9, [clip(0, 16, ['bossa-shaker-sparse'])]),
+    lane('clave', 0.5, [clip(0, 16, ['bossa-clave-light'])]),
+    lane('triangle', 0.3, [clip(0, 16, ['bossa-triangle-offbeats'])]),
   ],
 };
 
@@ -124,9 +127,9 @@ const bossa8Intro: PercussionCell = {
   velocity: 0.65,
   dynamics: { type: 'crescendo', amount: 0.4 },
   lanes: [
-    lane('shaker', 0.9, [clip(0, 8, ['bossa-minimal-jazz'])]),
-    lane('triangle', 0.4, [clip(0, 8, ['bossa-soft-texture'])]),
-    lane('belltree', 0.2, [clip(0, 8, ['bossa-extended-color'])]),
+    lane('shaker', 0.9, [clip(0, 8, ['bossa-shaker-sparse'])]),
+    lane('triangle', 0.4, [clip(0, 8, ['bossa-triangle-downbeats'])]),
+    lane('belltree', 0.2, [clip(0, 8, ['bossa-belltree-swell'])]),
   ],
 };
 
@@ -138,14 +141,16 @@ const bossa8Ending: PercussionCell = {
   velocity: 0.6,
   dynamics: { type: 'decrescendo', amount: 0.4 },
   lanes: [
-    lane('shaker', 0.85, [clip(0, 8, ['bossa-minimal-jazz'])]),
-    lane('triangle', 0.35, [clip(0, 8, ['bossa-soft-texture'])]),
-    lane('belltree', 0.25, [clip(0, 8, ['bossa-extended-color'])]),
+    lane('shaker', 0.85, [clip(0, 8, ['bossa-shaker-sparse'])]),
+    lane('triangle', 0.35, [clip(0, 8, ['bossa-triangle-downbeats'])]),
+    lane('belltree', 0.25, [clip(0, 8, ['bossa-belltree-swell'])]),
   ],
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// FUNK cells
+// FUNK cells — each lane uses a SINGLE-INSTRUMENT molecule
+// Funk uses cabasa/tambourine pulse (no shaker). Bongo high is separate.
+// Conga lane = congaHigh + congaLow + bongoLow combined.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const funk16Verse: PercussionCell = {
@@ -156,10 +161,9 @@ const funk16Verse: PercussionCell = {
   velocity: 0.85,
   dynamics: WAVE,
   lanes: [
-    lane('shaker', 0.9, [clip(0, 16, ['funk-tight-shaker-tambourine'])]),
-    lane('tambourine', 0.7, [clip(0, 16, ['funk-tight-shaker-tambourine'])]),
-    lane('cowbell', 0.3, [clip(0, 16, ['funk-cowbell-pocket'])]),
-    lane('cabasa', 0.2, [clip(0, 16, ['funk-sixteenth-cabasa-drive'])]),
+    lane('cowbell', 0.55, [clip(0, 16, ['funk-cowbell-syncopated', 'funk-cowbell-disco'])]),
+    lane('triangle', 0.35, [clip(0, 16, ['funk-triangle-offbeats', 'funk-triangle-backbeat'])]),
+    lane('cabasa', 0.6, [clip(0, 16, ['funk-cabasa-16ths'])]),
   ],
 };
 
@@ -171,10 +175,11 @@ const funk16VerseVar: PercussionCell = {
   velocity: 0.82,
   dynamics: WAVE,
   lanes: [
-    lane('shaker', 0.9, [clip(0, 16, ['funk-cowbell-pocket'])]),
-    lane('cowbell', 0.6, [clip(0, 16, ['funk-cowbell-pocket'])]),
-    lane('tambourine', 0.5, [clip(0, 16, ['funk-tight-shaker-tambourine'])]),
-    lane('triangle', 0.15, [clip(0, 16, ['funk-sixteenth-cabasa-drive'])]),
+    lane('conga', 0.9, [clip(0, 16, ['funk-conga-groove', 'funk-conga-tumbao'])]),
+    lane('bongo', 0.75, [clip(0, 16, ['funk-bongohi-martillo', 'funk-bongohi-call'])]),
+    lane('cowbell', 0.65, [clip(0, 16, ['funk-cowbell-16ths', 'funk-cowbell-syncopated'])]),
+    lane('triangle', 0.4, [clip(0, 16, ['funk-triangle-offbeats', 'funk-triangle-backbeat'])]),
+    lane('tambourine', 0.35, [clip(0, 16, ['funk-tambourine-16ths'])]),
   ],
 };
 
@@ -186,10 +191,12 @@ const funk16Chorus: PercussionCell = {
   velocity: 0.9,
   dynamics: PULSE,
   lanes: [
-    lane('shaker', 0.95, [clip(0, 16, ['funk-disco-tambourine-layer'])]),
-    lane('tambourine', 0.8, [clip(0, 16, ['funk-disco-tambourine-layer'])]),
-    lane('cabasa', 0.45, [clip(0, 16, ['funk-sixteenth-cabasa-drive'])]),
-    lane('cowbell', 0.4, [clip(0, 16, ['funk-disco-tambourine-layer'])]),
+    lane('cowbell', 0.75, [clip(0, 16, ['funk-cowbell-disco', 'funk-cowbell-16ths'])]),
+    lane('conga', 0.85, [clip(0, 16, ['funk-conga-tumbao', 'funk-conga-groove'])]),
+    lane('bongo', 0.65, [clip(0, 16, ['funk-bongohi-martillo', 'funk-bongohi-call'])]),
+    lane('tambourine', 0.7, [clip(0, 16, ['funk-tambourine-16ths'])]),
+    lane('triangle', 0.3, [clip(0, 16, ['funk-triangle-backbeat'])]),
+    lane('cabasa', 0.5, [clip(0, 16, ['funk-cabasa-16ths'])]),
   ],
 };
 
@@ -201,10 +208,11 @@ const funk16Bridge: PercussionCell = {
   velocity: 0.8,
   dynamics: WAVE,
   lanes: [
-    lane('shaker', 0.85, [clip(0, 16, ['funk-sparse-breakbeat-perc'])]),
-    lane('tambourine', 0.55, [clip(0, 16, ['funk-sparse-breakbeat-perc'])]),
-    lane('vibraslap', 0.15, [clip(0, 16, ['funk-sparse-breakbeat-perc'])]),
-    lane('cowbell', 0.25, [clip(0, 16, ['funk-cowbell-pocket'])]),
+    lane('conga', 0.85, [clip(0, 16, ['funk-conga-groove', 'funk-congaLow-downbeats'])]),
+    lane('bongo', 0.7, [clip(0, 16, ['funk-bongohi-martillo', 'funk-bongohi-call'])]),
+    lane('cowbell', 0.35, [clip(0, 16, ['funk-cowbell-syncopated', 'funk-cowbell-break'])]),
+    lane('triangle', 0.45, [clip(0, 16, ['funk-triangle-offbeats', 'funk-triangle-backbeat'])]),
+    lane('cabasa', 0.4, [clip(0, 16, ['funk-cabasa-quiet-16ths'])]),
   ],
 };
 
@@ -216,9 +224,10 @@ const funk16Solo: PercussionCell = {
   velocity: 0.7,
   dynamics: STEADY,
   lanes: [
-    lane('shaker', 0.8, [clip(0, 16, ['funk-sparse-breakbeat-perc'])]),
-    lane('tambourine', 0.4, [clip(0, 16, ['funk-sparse-breakbeat-perc'])]),
-    lane('triangle', 0.15, [clip(0, 16, ['funk-sixteenth-cabasa-drive'])]),
+    lane('conga', 0.8, [clip(0, 16, ['funk-conga-groove', 'funk-conga-tumbao'])]),
+    lane('bongo', 0.55, [clip(0, 16, ['funk-bongohi-martillo'])]),
+    lane('triangle', 0.4, [clip(0, 16, ['funk-triangle-offbeats', 'funk-triangle-backbeat'])]),
+    lane('cabasa', 0.35, [clip(0, 16, ['funk-cabasa-quiet-16ths'])]),
   ],
 };
 
@@ -230,9 +239,11 @@ const funk16Tight: PercussionCell = {
   velocity: 0.83,
   dynamics: STEADY,
   lanes: [
-    lane('shaker', 0.9, [clip(0, 16, ['funk-tight-shaker-tambourine'])]),
-    lane('tambourine', 0.6, [clip(0, 16, ['funk-tight-shaker-tambourine'])]),
-    lane('cowbell', 0.2, [clip(0, 16, ['funk-cowbell-pocket'])]),
+    lane('conga', 0.9, [clip(0, 16, ['funk-conga-groove', 'funk-conga-tumbao'])]),
+    lane('bongo', 0.7, [clip(0, 16, ['funk-bongohi-martillo'])]),
+    lane('cowbell', 0.45, [clip(0, 16, ['funk-cowbell-syncopated', 'funk-cowbell-16ths'])]),
+    lane('triangle', 0.3, [clip(0, 16, ['funk-triangle-backbeat'])]),
+    lane('cabasa', 0.5, [clip(0, 16, ['funk-cabasa-quiet-16ths'])]),
   ],
 };
 
@@ -244,9 +255,11 @@ const funk16Pocket: PercussionCell = {
   velocity: 0.82,
   dynamics: WAVE,
   lanes: [
-    lane('shaker', 0.85, [clip(0, 16, ['funk-cowbell-pocket'])]),
-    lane('cowbell', 0.55, [clip(0, 16, ['funk-cowbell-pocket'])]),
-    lane('tambourine', 0.4, [clip(0, 16, ['funk-tight-shaker-tambourine'])]),
+    lane('conga', 0.85, [clip(0, 16, ['funk-conga-groove', 'funk-conga-tumbao'])]),
+    lane('bongo', 0.75, [clip(0, 16, ['funk-bongohi-martillo', 'funk-bongohi-call'])]),
+    lane('cowbell', 0.6, [clip(0, 16, ['funk-cowbell-syncopated', 'funk-cowbell-16ths'])]),
+    lane('triangle', 0.35, [clip(0, 16, ['funk-triangle-offbeats', 'funk-triangle-backbeat'])]),
+    lane('tambourine', 0.3, [clip(0, 16, ['funk-tambourine-16ths'])]),
   ],
 };
 
@@ -258,9 +271,9 @@ const funk8Intro: PercussionCell = {
   velocity: 0.65,
   dynamics: { type: 'crescendo', amount: 0.35 },
   lanes: [
-    lane('shaker', 0.85, [clip(0, 8, ['funk-sparse-breakbeat-perc'])]),
-    lane('tambourine', 0.4, [clip(0, 8, ['funk-sparse-breakbeat-perc'])]),
-    lane('vibraslap', 0.12, [clip(0, 8, ['funk-sparse-breakbeat-perc'])]),
+    lane('conga', 0.8, [clip(0, 8, ['funk-conga-groove'])]),
+    lane('bongo', 0.55, [clip(0, 8, ['funk-bongohi-martillo'])]),
+    lane('triangle', 0.4, [clip(0, 8, ['funk-triangle-offbeats'])]),
   ],
 };
 
@@ -272,13 +285,16 @@ const funk8Ending: PercussionCell = {
   velocity: 0.6,
   dynamics: { type: 'decrescendo', amount: 0.4 },
   lanes: [
-    lane('shaker', 0.8, [clip(0, 8, ['funk-sparse-breakbeat-perc'])]),
-    lane('tambourine', 0.35, [clip(0, 8, ['funk-sparse-breakbeat-perc'])]),
+    lane('conga', 0.75, [clip(0, 8, ['funk-conga-groove'])]),
+    lane('bongo', 0.5, [clip(0, 8, ['funk-bongohi-martillo'])]),
+    lane('triangle', 0.35, [clip(0, 8, ['funk-triangle-offbeats'])]),
   ],
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// LATIN cells
+// LATIN cells — each lane uses a SINGLE-INSTRUMENT molecule
+// Shaker lane → shaker molecule, clave lane → clave molecule, etc.
+// Conga lane = congaHigh + congaLow + bongoLow combined. Bongo high unused for latin.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const latin16Verse: PercussionCell = {
@@ -289,12 +305,11 @@ const latin16Verse: PercussionCell = {
   velocity: 0.85,
   dynamics: WAVE,
   lanes: [
-    lane('shaker', 0.95, [clip(0, 16, ['latin-cascara-clave'])]),
-    lane('clave', 0.85, [clip(0, 16, ['latin-cascara-clave'])]),
-    lane('timbales', 0.6, [clip(0, 16, ['latin-cascara-clave'])]),
-    lane('conga', 0.7, [clip(0, 16, ['latin-cascara-clave'])]),
-    lane('cowbell', 0.4, [clip(0, 16, ['latin-cascara-clave'])]),
-    lane('bongo', 0.3, [clip(0, 16, ['latin-cascara-clave'])]),
+    lane('shaker', 0.95, [clip(0, 16, ['latin-shaker-8ths'])]),
+    lane('clave', 0.85, [clip(0, 16, ['latin-clave-son-32'])]),
+    lane('timbales', 0.6, [clip(0, 16, ['latin-timbales-cascara'])]),
+    lane('conga', 0.7, [clip(0, 16, ['latin-conga-tumbao'])]),
+    lane('cowbell', 0.4, [clip(0, 16, ['latin-cowbell-sparse'])]),
   ],
 };
 
@@ -306,12 +321,12 @@ const latin16VerseVar: PercussionCell = {
   velocity: 0.83,
   dynamics: WAVE,
   lanes: [
-    lane('shaker', 0.9, [clip(0, 16, ['latin-montuno'])]),
-    lane('clave', 0.8, [clip(0, 16, ['latin-montuno'])]),
-    lane('timbales', 0.5, [clip(0, 16, ['latin-montuno'])]),
-    lane('conga', 0.75, [clip(0, 16, ['latin-montuno'])]),
-    lane('cowbell', 0.5, [clip(0, 16, ['latin-montuno'])]),
-    lane('guiro', 0.3, [clip(0, 16, ['latin-montuno'])]),
+    lane('shaker', 0.9, [clip(0, 16, ['latin-shaker-16ths'])]),
+    lane('clave', 0.8, [clip(0, 16, ['latin-clave-son-32'])]),
+    lane('timbales', 0.5, [clip(0, 16, ['latin-timbales-dense'])]),
+    lane('conga', 0.75, [clip(0, 16, ['latin-conga-montuno'])]),
+    lane('cowbell', 0.5, [clip(0, 16, ['latin-cowbell-sparse'])]),
+    lane('guiro', 0.3, [clip(0, 16, ['latin-guiro-quarters'])]),
   ],
 };
 
@@ -323,12 +338,12 @@ const latin16Chorus: PercussionCell = {
   velocity: 0.9,
   dynamics: PULSE,
   lanes: [
-    lane('shaker', 0.95, [clip(0, 16, ['latin-cowbell-groove'])]),
-    lane('cowbell', 0.7, [clip(0, 16, ['latin-cowbell-groove'])]),
-    lane('clave', 0.85, [clip(0, 16, ['latin-cowbell-groove'])]),
-    lane('conga', 0.75, [clip(0, 16, ['latin-cowbell-groove'])]),
-    lane('timbales', 0.5, [clip(0, 16, ['latin-cowbell-groove'])]),
-    lane('guiro', 0.35, [clip(0, 16, ['latin-montuno'])]),
+    lane('shaker', 0.95, [clip(0, 16, ['latin-shaker-8ths'])]),
+    lane('cowbell', 0.7, [clip(0, 16, ['latin-cowbell-syncopated'])]),
+    lane('clave', 0.85, [clip(0, 16, ['latin-clave-son-32'])]),
+    lane('conga', 0.75, [clip(0, 16, ['latin-conga-tumbao'])]),
+    lane('timbales', 0.5, [clip(0, 16, ['latin-timbales-dense'])]),
+    lane('guiro', 0.35, [clip(0, 16, ['latin-guiro-quarters'])]),
   ],
 };
 
@@ -340,11 +355,11 @@ const latin16Bridge: PercussionCell = {
   velocity: 0.82,
   dynamics: WAVE,
   lanes: [
-    lane('shaker', 0.85, [clip(0, 16, ['latin-montuno'])]),
-    lane('clave', 0.7, [clip(0, 16, ['latin-montuno'])]),
-    lane('guiro', 0.45, [clip(0, 16, ['latin-montuno'])]),
-    lane('conga', 0.6, [clip(0, 16, ['latin-montuno'])]),
-    lane('cowbell', 0.35, [clip(0, 16, ['latin-cowbell-groove'])]),
+    lane('shaker', 0.85, [clip(0, 16, ['latin-shaker-16ths'])]),
+    lane('clave', 0.7, [clip(0, 16, ['latin-clave-son-32'])]),
+    lane('guiro', 0.45, [clip(0, 16, ['latin-guiro-quarters'])]),
+    lane('conga', 0.6, [clip(0, 16, ['latin-conga-montuno'])]),
+    lane('cowbell', 0.35, [clip(0, 16, ['latin-cowbell-syncopated'])]),
   ],
 };
 
@@ -356,10 +371,10 @@ const latin16Solo: PercussionCell = {
   velocity: 0.7,
   dynamics: STEADY,
   lanes: [
-    lane('shaker', 0.85, [clip(0, 16, ['latin-sparse'])]),
-    lane('clave', 0.55, [clip(0, 16, ['latin-sparse'])]),
-    lane('triangle', 0.3, [clip(0, 16, ['latin-sparse'])]),
-    lane('conga', 0.35, [clip(0, 16, ['latin-sparse'])]),
+    lane('shaker', 0.85, [clip(0, 16, ['latin-shaker-sparse'])]),
+    lane('clave', 0.55, [clip(0, 16, ['latin-clave-sparse'])]),
+    lane('triangle', 0.3, [clip(0, 16, ['latin-triangle-sparse'])]),
+    lane('conga', 0.35, [clip(0, 16, ['latin-conga-sparse'])]),
   ],
 };
 
@@ -371,12 +386,12 @@ const latin16Montuno: PercussionCell = {
   velocity: 0.86,
   dynamics: PULSE,
   lanes: [
-    lane('shaker', 0.95, [clip(0, 16, ['latin-montuno'])]),
-    lane('clave', 0.85, [clip(0, 16, ['latin-montuno'])]),
-    lane('timbales', 0.55, [clip(0, 16, ['latin-montuno'])]),
-    lane('conga', 0.75, [clip(0, 16, ['latin-montuno'])]),
-    lane('cowbell', 0.5, [clip(0, 16, ['latin-cowbell-groove'])]),
-    lane('guiro', 0.3, [clip(0, 16, ['latin-montuno'])]),
+    lane('shaker', 0.95, [clip(0, 16, ['latin-shaker-16ths'])]),
+    lane('clave', 0.85, [clip(0, 16, ['latin-clave-son-32'])]),
+    lane('timbales', 0.55, [clip(0, 16, ['latin-timbales-dense'])]),
+    lane('conga', 0.75, [clip(0, 16, ['latin-conga-montuno'])]),
+    lane('cowbell', 0.5, [clip(0, 16, ['latin-cowbell-syncopated'])]),
+    lane('guiro', 0.3, [clip(0, 16, ['latin-guiro-quarters'])]),
   ],
 };
 
@@ -388,9 +403,9 @@ const latin8Intro: PercussionCell = {
   velocity: 0.6,
   dynamics: { type: 'crescendo', amount: 0.35 },
   lanes: [
-    lane('shaker', 0.8, [clip(0, 8, ['latin-intro'])]),
-    lane('clave', 0.55, [clip(0, 8, ['latin-intro'])]),
-    lane('belltree', 0.2, [clip(0, 8, ['latin-intro'])]),
+    lane('shaker', 0.8, [clip(0, 8, ['latin-shaker-quiet'])]),
+    lane('clave', 0.55, [clip(0, 8, ['latin-clave-intro'])]),
+    lane('belltree', 0.2, [clip(0, 8, ['latin-belltree-swell'])]),
   ],
 };
 
@@ -402,10 +417,10 @@ const latin8Ending: PercussionCell = {
   velocity: 0.6,
   dynamics: { type: 'decrescendo', amount: 0.4 },
   lanes: [
-    lane('shaker', 0.8, [clip(0, 8, ['latin-ending'])]),
-    lane('belltree', 0.3, [clip(0, 8, ['latin-ending'])]),
-    lane('triangle', 0.25, [clip(0, 8, ['latin-ending'])]),
-    lane('conga', 0.3, [clip(0, 8, ['latin-ending'])]),
+    lane('shaker', 0.8, [clip(0, 8, ['latin-shaker-quiet'])]),
+    lane('belltree', 0.3, [clip(0, 8, ['latin-belltree-ending'])]),
+    lane('triangle', 0.25, [clip(0, 8, ['latin-triangle-sparse'])]),
+    lane('conga', 0.3, [clip(0, 8, ['latin-conga-sparse'])]),
   ],
 };
 
@@ -446,7 +461,10 @@ const BASE_PERCUSSION_CELLS: Record<string, PercussionCell> = {
   'latin-8-ending': latin8Ending,
 };
 
-export const PERCUSSION_CELLS: Record<string, PercussionCell> = BASE_PERCUSSION_CELLS;
+export const PERCUSSION_CELLS: Record<string, PercussionCell> =
+  Object.keys(GENERATED_PERCUSSION_CELLS).length > 0
+    ? (GENERATED_PERCUSSION_CELLS as Record<string, PercussionCell>)
+    : BASE_PERCUSSION_CELLS;
 
 export const PERCUSSION_CELL_LIST: PercussionCell[] = Object.values(PERCUSSION_CELLS);
 

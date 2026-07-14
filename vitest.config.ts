@@ -39,18 +39,40 @@ export default defineConfig({
       '@jazz/plugin-admin-drum-constructor': r(
         './packages/plugins/admin-drum-constructor/src/index.ts',
       ),
+      '@jazz/plugin-admin-percussion-constructor': r(
+        './packages/plugins/admin-percussion-constructor/src/index.ts',
+      ),
+      '@jazz/plugin-admin-piano-constructor': r(
+        './packages/plugins/admin-piano-constructor/src/index.ts',
+      ),
+      '@jazz/plugin-admin-bass-constructor': r(
+        './packages/plugins/admin-bass-constructor/src/index.ts',
+      ),
+      '@jazz/plugin-admin-rhodes-constructor': r(
+        './packages/plugins/admin-rhodes-constructor/src/index.ts',
+      ),
+      '@jazz/plugin-admin-constructor-shared': r(
+        './packages/plugins/admin-constructor-shared/src/index.ts',
+      ),
       '@jazz/plugin-jazz-drum-kit': r('./packages/plugins/instruments/jazz-drum-kit/src/index.ts'),
       '@jazz/plugin-funk-drum-kit': r('./packages/plugins/instruments/funk-drum-kit/src/index.ts'),
       '@jazz/plugin-percussion': r('./packages/plugins/instruments/percussion/src/index.ts'),
       '@jazz/plugin-metronome': r('./packages/plugins/instruments/metronome/src/index.ts'),
-      '@jazz/plugin-theory-chord-tones': r('./packages/plugins/theory/theory-chord-tones/src/index.ts'),
+      '@jazz/plugin-upright-piano': r('./packages/plugins/instruments/upright-piano/src/index.ts'),
+      '@jazz/plugin-bass': r('./packages/plugins/instruments/bass/src/index.ts'),
+      '@jazz/plugin-rhodes': r('./packages/plugins/instruments/rhodes/src/index.ts'),
+      '@jazz/plugin-theory-chord-tones': r(
+        './packages/plugins/theory/theory-chord-tones/src/index.ts',
+      ),
       '@jazz/plugin-theory-arpeggios': r('./packages/plugins/theory/theory-arpeggios/src/index.ts'),
       '@jazz/plugin-theory-blues': r('./packages/plugins/theory/theory-blues/src/index.ts'),
       '@jazz/plugin-practice-cards': r('./packages/plugins/practice-cards/src/index.ts'),
       '@jazz/plugin-theory-rhythm': r('./packages/plugins/theory/theory-rhythm/src/index.ts'),
       '@jazz/plugin-theory-groove': r('./packages/plugins/theory/theory-groove/src/index.ts'),
       '@jazz/plugin-theory-ii-v-i': r('./packages/plugins/theory/theory-ii-v-i/src/index.ts'),
-      '@jazz/plugin-theory-scales-jazz': r('./packages/plugins/theory/theory-scales-jazz/src/index.ts'),
+      '@jazz/plugin-theory-scales-jazz': r(
+        './packages/plugins/theory/theory-scales-jazz/src/index.ts',
+      ),
       '@jazz/plugin-theory-voicings': r('./packages/plugins/theory/theory-voicings/src/index.ts'),
       '@jazz/plugin-theory-voice-leading': r(
         './packages/plugins/theory/theory-voice-leading/src/index.ts',
@@ -73,8 +95,12 @@ export default defineConfig({
       '@jazz/plugin-theory-secondary-dominants': r(
         './packages/plugins/theory/theory-secondary-dominants/src/index.ts',
       ),
-      '@jazz/plugin-theory-tritone-sub': r('./packages/plugins/theory/theory-tritone-sub/src/index.ts'),
-      '@jazz/plugin-theory-turnarounds': r('./packages/plugins/theory/theory-turnarounds/src/index.ts'),
+      '@jazz/plugin-theory-tritone-sub': r(
+        './packages/plugins/theory/theory-tritone-sub/src/index.ts',
+      ),
+      '@jazz/plugin-theory-turnarounds': r(
+        './packages/plugins/theory/theory-turnarounds/src/index.ts',
+      ),
       '@jazz/plugin-theory-catalog': r('./packages/plugins/theory/theory-catalog/src/index.ts'),
       '@jazz/plugin-visual-midi-keyboard': r(
         './packages/plugins/visual-midi-keyboard/src/index.ts',

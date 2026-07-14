@@ -4,6 +4,7 @@ import type { GridContent } from '@jazz/shared';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -67,6 +68,9 @@ export function DslModal({ open, content, onImport, onClose }: DslModalProps) {
       <DialogContent className="max-w-lg" data-testid="dsl-modal">
         <DialogHeader>
           <DialogTitle>DSL — импорт / экспорт</DialogTitle>
+          <DialogDescription>
+            Скопируйте DSL-представление сетки или вставьте новый DSL для импорта.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="flex gap-1 border-b border-border pb-2">

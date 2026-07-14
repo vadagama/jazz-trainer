@@ -19,6 +19,16 @@
 
 Выбирай задачу → читай только указанные файлы, **не** весь проект.
 
+### Добавить инструмент в аранжировку
+
+```
+docs/MELODIC-PLUGIN.md                     ← спецификация pitched-инструмента
+docs/RHYTHMIC-PLUGIN.md                   ← спецификация unpitched-инструмента
+packages/music-core/src/audio/<имя>Instrument.ts ← эталон: rhodes/guitar/vibraphone/organ/clarinet
+packages/plugins/instruments/<имя>/       ← плагинная обёртка (рекомендовано)
+packages/music-core/src/styleProfile.ts   ← InstrumentId + INSTRUMENT_GROUPS
+```
+
 ### Добавить/изменить плагин
 
 ```
@@ -216,6 +226,8 @@ Multi-chord бары (механизм)      → docs/CHORDS.md + music-core/src
 Инструменты (бас, барабаны)      → music-core/src/audio/BassInstrument, DrumInstrument
 Спецификация инструментов         → docs/BASS.md, docs/PIANO.md, docs/RHODES.md, docs/DRUMS.md, docs/GUITAR.md, docs/VIBRAPHONE.md, docs/ORGAN.md, docs/PERCUSSION.md, docs/CLARINET.md, docs/ALL_CHORDS.md
 Барабанные киты (плагины)         → packages/plugins/instruments/{jazz,funk}-drum-kit/ + docs/DRUMS.md
+Бас (плагин: upright + electric)  → packages/plugins/instruments/bass/ + docs/BASS.md
+Бас step engine (выбор ступеней) → music-core/src/audio/bassStepEngine.ts (молекула хранит артикуляцию, движок выбирает step по tension/style)
 Метроном (плагин)                  → packages/plugins/instruments/metronome/ + docs/METRONOME-VISION.md, docs/METRONOME-PLAN.md
 Упражнения (practice-cards)       → docs/EXERSISE-VISION.md, docs/EXERSISE-ARCHITECTURE.md
 Лады и гаммы                      → docs/SCALES-VISION.md + music-core/src/chords/modes.ts
@@ -235,6 +247,7 @@ RBAC-мидлварь                    → apps/api/src/plugins/rbac.plugin.ts
 Аудит                            → apps/api/src/services/audit.service.ts
 ESLint-границы                   → eslint.config.js (секция boundaries)
 Алиасы                           → tsconfig.base.json + vite.config.ts + vitest.config.ts
+Спецификация инструментов         → docs/MELODIC-PLUGIN.md (pitched), docs/RHYTHMIC-PLUGIN.md (unpitched)
 Архитектура (текущая + ADR)         → docs/ARCHITECTURE_BASE.md
 Архитектура (целевое видение)        → docs/ARCHITECTURE_VISION.md
 Возможности сервиса              → docs/FUNCTIONS.md

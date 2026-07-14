@@ -17,6 +17,7 @@ export const percussionManifest: InstrumentManifest = {
   sounds: [
     'congaHigh',
     'congaLow',
+    'bongoHigh',
     'bongoLow',
     'tumba',
     'timbales',
@@ -37,7 +38,6 @@ export const percussionManifest: InstrumentManifest = {
   defaultSettings: {
     enabled: false,
     volume: 0.7,
-    pattern: 'cascara-clave',
     organismId: null,
     congaHighEnabled: true,
     congaHighVolume: 0.7,
@@ -55,6 +55,8 @@ export const percussionManifest: InstrumentManifest = {
     guiroVolume: 0.5,
     triangleEnabled: true,
     triangleVolume: 0.5,
+    bongoHighEnabled: false,
+    bongoHighVolume: 0.62,
     bongoLowEnabled: false,
     bongoLowVolume: 0.65,
     tumbaEnabled: false,
@@ -76,7 +78,7 @@ export const percussionManifest: InstrumentManifest = {
   perStyleDefaults: {
     swing: { enabled: false },
     bossa: { organismId: 'bossa-default', enabled: true },
-    funk: { organismId: 'funk-default', enabled: true },
+    funk: { organismId: 'funk-default', enabled: true, humanizeIntensity: 'off' },
     latin: { organismId: 'latin-default', enabled: true },
     ballad: { enabled: false },
   },

@@ -7,7 +7,7 @@ export interface PianoBarContext {
   barIndex: number;
   /** Total number of bars in the form (0 = unknown / single bar). */
   formLength: number;
-  /** Whether a next chord exists (for anticipations and passing chords). */
+  /** Whether a next chord exists (for anticipations). */
   hasNextChord: boolean;
 }
 
@@ -55,7 +55,6 @@ export class PianoRandomizer {
     let result = this.applySkipBeats(events, prob, rand);
     result = this.applyEighthShifts(result, prob, rand);
     result = this.applyAnticipations(result, prob, rand, ctx);
-    result = this.applyPassingChord(result, prob, rand, ctx);
 
     return result;
   }
@@ -120,29 +119,5 @@ export class PianoRandomizer {
       }
       return event;
     });
-  }
-
-  private applyPassingChord(
-    events: CompEvent[],
-    prob: number,
-    rand: () => number,
-    ctx: PianoBarContext,
-  ): CompEvent[] {
-    if (!ctx.hasNextChord) return events;
-    if (rand() >= prob * 0.3) return events;
-
-    // Add a short anticipation on beat 4.5 as a passing chord
-    const hasBeat4 = events.some((e) => e.beat === 4);
-    if (!hasBeat4) return events;
-
-    const passing: CompEvent = {
-      beat: 4,
-      subdivision: 0.5 as const,
-      durationBeats: 0.4,
-      velocity: 0.38,
-      chordRef: 'next' as const,
-    };
-
-    return [...events, passing];
   }
 }

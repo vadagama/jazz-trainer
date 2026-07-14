@@ -8,7 +8,7 @@ const SALAMANDER_SAMPLE_MANIFEST: SampleManifest = {
   baseUrl: SALAMANDER_SAMPLER_BASE_URL,
   fallbackBaseUrl: '/samples/mp3/piano/salamander/',
   layers: SALAMANDER_LAYERS,
-  release: 2.0,
+  release: 0.8,
 };
 
 export const salamanderManifest: InstrumentManifest = {

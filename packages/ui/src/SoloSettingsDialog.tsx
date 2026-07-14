@@ -1,5 +1,5 @@
 import type { ReactNode, ComponentType, SVGProps } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from './dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './dialog';
 import { Slider } from './slider';
 import { cn } from './utils';
 import {
@@ -72,6 +72,7 @@ export function SoloSettingsDialog({
             <SaxophoneIcon className="size-5 text-primary" />
             Соло-инструмент
           </DialogTitle>
+          <DialogDescription>Выберите тембр и громкость соло-инструмента.</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-5 pt-2">

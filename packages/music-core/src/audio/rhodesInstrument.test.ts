@@ -28,17 +28,17 @@ function makeChord(
 
 function makeCtx(overrides?: Partial<ScheduleContext>): {
   ctx: ScheduleContext;
-  events: { notes: string[] }[];
+  events: { notes: string[]; velocity: number }[];
 } {
-  const events: { notes: string[] }[] = [];
+  const events: { notes: string[]; velocity: number }[] = [];
   const ctx: ScheduleContext = {
     bpm: 120,
     timeSignature: parseTimeSignature('4/4'),
     swingRatio: 0.5,
     scheduleClick: () => {},
-    scheduleEvent: (_id: string, payload: unknown, _at: number, _vel: number, _dur: number) => {
+    scheduleEvent: (_id: string, payload: unknown, _at: number, vel: number, _dur: number) => {
       const p = payload as { notes: string[] };
-      events.push({ notes: [...p.notes] });
+      events.push({ notes: [...p.notes], velocity: vel });
     },
     ...overrides,
   };
@@ -50,212 +50,121 @@ const TPBAR = 480 * 4;
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
 describe('RhodesInstrument', () => {
-  describe('setStyleProfile', () => {
-    it('applies latin style profile with high-comping mode', () => {
-      const inst = new RhodesInstrument(new ChordTimeline([]));
-      inst.setStyleProfile(getStyleProfile('latin'));
-
-      const timeline = new ChordTimeline([{ barIndex: 0, chord: makeChord('C', 'major') }]);
-      inst.setTimeline(timeline);
-      inst.setHumanize(false);
-      inst.setLayerVolume(1.0);
-
-      const { ctx, events } = makeCtx();
-      inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
-
-      // high-comping = 2 events per bar (beats 1 and 3)
-      expect(events).toHaveLength(2);
-    });
-
-    it('swing style uses subtle-offbeats layer mode', () => {
+  describe('pattern-engine scheduling (primary path)', () => {
+    it('produces events for swing style via organism', () => {
       const inst = new RhodesInstrument(new ChordTimeline([]));
       inst.setStyleProfile(getStyleProfile('swing'));
 
       const timeline = new ChordTimeline([{ barIndex: 0, chord: makeChord('C', 'major') }]);
       inst.setTimeline(timeline);
       inst.setHumanize(false);
-      inst.setLayerVolume(1.0);
 
       const { ctx, events } = makeCtx();
       inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
 
-      // subtle-offbeats = 2 events per bar (beats 2& and 4&)
-      expect(events).toHaveLength(2);
+      // Pattern-engine pads lane is always-on (probability 1) → at least 1 event.
+      expect(events.length).toBeGreaterThan(0);
     });
 
-    it('bossa style uses ambient-swells layer mode', () => {
-      const inst = new RhodesInstrument(new ChordTimeline([]));
-      inst.setStyleProfile(getStyleProfile('bossa'));
+    it('produces events for all 5 styles', () => {
+      for (const style of ['swing', 'bossa', 'funk', 'latin', 'ballad'] as const) {
+        const inst = new RhodesInstrument(new ChordTimeline([]));
+        inst.setStyleProfile(getStyleProfile(style));
 
-      const timeline = new ChordTimeline([{ barIndex: 0, chord: makeChord('C', 'major') }]);
-      inst.setTimeline(timeline);
-      inst.setHumanize(false);
-      inst.setLayerVolume(1.0);
+        const timeline = new ChordTimeline([{ barIndex: 0, chord: makeChord('C', 'major') }]);
+        inst.setTimeline(timeline);
+        inst.setHumanize(false);
 
-      const { ctx, events } = makeCtx();
-      inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
+        const { ctx, events } = makeCtx();
+        inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
 
-      // ambient-swells = 1 event per 2 bars → 1 in first bar
-      expect(events).toHaveLength(1);
+        expect(events.length).toBeGreaterThan(0);
+      }
     });
 
-    it('funk style uses stab-accents layer mode', () => {
-      const inst = new RhodesInstrument(new ChordTimeline([]));
-      inst.setStyleProfile(getStyleProfile('funk'));
-
-      const timeline = new ChordTimeline([{ barIndex: 0, chord: makeChord('C', 'major') }]);
-      inst.setTimeline(timeline);
-      inst.setHumanize(false);
-      inst.setLayerVolume(1.0);
-
-      const { ctx, events } = makeCtx();
-      inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
-
-      // stab-accents = 2 events per bar (beats 2 and 4)
-      expect(events).toHaveLength(2);
-    });
-
-    it('ballad style uses pads layer mode', () => {
+    it('uses low velocity (complementary layer, sits behind piano)', () => {
       const inst = new RhodesInstrument(new ChordTimeline([]));
       inst.setStyleProfile(getStyleProfile('ballad'));
 
       const timeline = new ChordTimeline([{ barIndex: 0, chord: makeChord('C', 'major') }]);
       inst.setTimeline(timeline);
       inst.setHumanize(false);
-      inst.setLayerVolume(1.0);
 
       const { ctx, events } = makeCtx();
       inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
 
-      // pads = 1 event per bar
-      expect(events).toHaveLength(1);
+      // Rhodes is a calm complementary layer — velocities should be modest (≤ 0.6).
+      for (const event of events) {
+        expect(event.velocity).toBeLessThanOrEqual(0.6);
+      }
+    });
+
+    it('stays within the Rhodes register (C3–C6)', () => {
+      const inst = new RhodesInstrument(new ChordTimeline([]));
+      inst.setStyleProfile(getStyleProfile('swing'));
+
+      const timeline = new ChordTimeline([{ barIndex: 0, chord: makeChord('C', 'major') }]);
+      inst.setTimeline(timeline);
+      inst.setHumanize(false);
+
+      const { ctx, events } = makeCtx();
+      inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
+
+      for (const event of events) {
+        for (const note of event.notes) {
+          const midi = noteToMidi(note);
+          expect(midi).toBeGreaterThanOrEqual(48); // C3
+          expect(midi).toBeLessThanOrEqual(84); // C6
+        }
+      }
+    });
+
+    it('produces different events across multiple bars (organism cycling)', () => {
+      const inst = new RhodesInstrument(new ChordTimeline([]));
+      inst.setStyleProfile(getStyleProfile('swing'));
+
+      const timeline = new ChordTimeline([
+        { barIndex: 0, chord: makeChord('C', 'major') },
+        { barIndex: 2, chord: makeChord('F', 'dominant') },
+      ]);
+      inst.setTimeline(timeline);
+      inst.setHumanize(false);
+
+      const { ctx, events } = makeCtx();
+      inst.schedule({ fromTicks: 0, toTicks: TPBAR * 4 }, ctx);
+
+      expect(events.length).toBeGreaterThan(2);
     });
   });
 
-  describe('high-comping (latin style)', () => {
-    it('shifts notes up by +12 semitones', () => {
+  describe('voicing resolution', () => {
+    it('resolves arp roles to single notes (not full voicings)', () => {
       const inst = new RhodesInstrument(new ChordTimeline([]));
       inst.setStyleProfile(getStyleProfile('latin'));
 
       const timeline = new ChordTimeline([{ barIndex: 0, chord: makeChord('C', 'major') }]);
       inst.setTimeline(timeline);
       inst.setHumanize(false);
-      inst.setLayerVolume(1.0);
 
-      const { ctx, events } = makeCtx();
+      // Force the chorus section — it uses rhodes-latin-cascade whose primary
+      // lane is arpeggio (arp1..arp4 → single notes per hit).
+      const { ctx, events } = makeCtx({ gridSectionType: 'chorus', barInSection: 0 });
       inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
 
-      expect(events.length).toBeGreaterThan(0);
-
-      // All notes should be MIDI >= 72 (C5) since rangeMin=C4 + shift=+12 gives ≥C5
-      for (const event of events) {
-        for (const note of event.notes) {
-          const midi = noteToMidi(note);
-          expect(midi).toBeGreaterThanOrEqual(60); // C4 minimum after shift
-        }
-      }
+      // Arp roles resolve to a single note; the cascade cell is arpeggio-heavy.
+      const singleNoteEvents = events.filter((e) => e.notes.length === 1);
+      expect(singleNoteEvents.length).toBeGreaterThan(0);
     });
+  });
 
-    it('all notes are in C5–C7 range for latin style', () => {
+  describe('reset', () => {
+    it('does not throw when called without scheduling', () => {
       const inst = new RhodesInstrument(new ChordTimeline([]));
-      inst.setStyleProfile(getStyleProfile('latin'));
-
-      const timeline = new ChordTimeline([{ barIndex: 0, chord: makeChord('C', 'major') }]);
-      inst.setTimeline(timeline);
-      inst.setHumanize(false);
-      inst.setLayerVolume(1.0);
-
-      const { ctx, events } = makeCtx();
-      inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
-
-      for (const event of events) {
-        for (const note of event.notes) {
-          const midi = noteToMidi(note);
-          // rangeMin C4(60) + 12 shift = C5(72) minimum
-          // rangeMax C6(84) + 12 shift = C7(96) maximum
-          expect(midi).toBeGreaterThanOrEqual(72);
-          expect(midi).toBeLessThanOrEqual(96);
-        }
-      }
+      expect(() => inst.reset()).not.toThrow();
     });
+  });
 
-    it('produces higher notes than swing (subtle-offbeats) mode', () => {
-      const instLatin = new RhodesInstrument(new ChordTimeline([]));
-      instLatin.setStyleProfile(getStyleProfile('latin'));
-      const timelineLatin = new ChordTimeline([{ barIndex: 0, chord: makeChord('C', 'major') }]);
-      instLatin.setTimeline(timelineLatin);
-      instLatin.setHumanize(false);
-      instLatin.setLayerVolume(1.0);
-
-      const { ctx: ctx1, events: latinEvents } = makeCtx();
-      instLatin.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx1);
-
-      const instSwing = new RhodesInstrument(new ChordTimeline([]));
-      instSwing.setStyleProfile(getStyleProfile('swing'));
-      const timelineSwing = new ChordTimeline([{ barIndex: 0, chord: makeChord('C', 'major') }]);
-      instSwing.setTimeline(timelineSwing);
-      instSwing.setHumanize(false);
-      instSwing.setLayerVolume(1.0);
-
-      const { ctx: ctx2, events: swingEvents } = makeCtx();
-      instSwing.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx2);
-
-      // Compare average MIDI note pitch
-      const avgMidi = (notes: string[]) =>
-        notes.reduce((sum, n) => sum + noteToMidi(n), 0) / notes.length;
-
-      const latinAvg =
-        latinEvents.reduce((sum, e) => sum + avgMidi(e.notes), 0) / latinEvents.length;
-      const swingAvg =
-        swingEvents.reduce((sum, e) => sum + avgMidi(e.notes), 0) / swingEvents.length;
-
-      // Latin high-comping is shifted +12, so notes should be higher
-      expect(latinAvg).toBeGreaterThan(swingAvg + 9); // at least ~9 semitones higher
-    });
-
-    it('latin rhodes uses rootless3 voicing density', () => {
-      const inst = new RhodesInstrument(new ChordTimeline([]));
-      inst.setStyleProfile(getStyleProfile('latin'));
-
-      const timeline = new ChordTimeline([{ barIndex: 0, chord: makeChord('C', 'major') }]);
-      inst.setTimeline(timeline);
-      inst.setHumanize(false);
-      inst.setLayerVolume(1.0);
-
-      const { ctx, events } = makeCtx();
-      inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
-
-      // rootless3 = 3 notes per voicing
-      for (const event of events) {
-        expect(event.notes).toHaveLength(3);
-      }
-    });
-
-    it('applies lower velocity for complementary layer', () => {
-      const inst = new RhodesInstrument(new ChordTimeline([]));
-      inst.setStyleProfile(getStyleProfile('latin'));
-
-      const timeline = new ChordTimeline([{ barIndex: 0, chord: makeChord('C', 'major') }]);
-      inst.setTimeline(timeline);
-      inst.setHumanize(false);
-      inst.setLayerVolume(1.0);
-
-      const capturedVelocities: number[] = [];
-      const { ctx, events } = makeCtx({
-        scheduleEvent: (_id, _payload, _at, vel, _dur) => {
-          capturedVelocities.push(vel);
-          const p = _payload as { notes: string[] };
-          events.push({ notes: [...p.notes] });
-        },
-      });
-      inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
-
-      // high-comping pattern velocities: 0.34 and 0.3 → scaled by layerVolume(1.0)=0.34, 0.3
-      for (const vel of capturedVelocities) {
-        expect(vel).toBeLessThanOrEqual(0.4);
-      }
-    });
-
+  describe('style rosters', () => {
     it('rhodes is not enabled by default in any style', () => {
       for (const style of ['swing', 'bossa', 'funk', 'latin', 'ballad'] as const) {
         const profile = getStyleProfile(style);
@@ -264,48 +173,35 @@ describe('RhodesInstrument', () => {
     });
   });
 
-  describe('style rosters', () => {
-    it('rhodes is recommended in swing', () => {
-      const profile = getStyleProfile('swing');
-      expect(profile.instrumentRoster.recommended).toContain('rhodes');
-    });
-
-    it('rhodes is optional in bossa', () => {
-      const profile = getStyleProfile('bossa');
-      expect(profile.instrumentRoster.optional).toContain('rhodes');
-    });
-
-    it('rhodes is recommended in funk', () => {
-      const profile = getStyleProfile('funk');
-      expect(profile.instrumentRoster.recommended).toContain('rhodes');
-    });
-
-    it('rhodes is optional in latin', () => {
-      const profile = getStyleProfile('latin');
-      expect(profile.instrumentRoster.optional).toContain('rhodes');
-    });
-
-    it('rhodes is recommended in ballad', () => {
-      const profile = getStyleProfile('ballad');
-      expect(profile.instrumentRoster.recommended).toContain('rhodes');
-    });
-  });
-
-  describe('setStyle (deprecated)', () => {
-    it('setStyle(latin) delegates to setStyleProfile', () => {
+  describe('setOrganismId', () => {
+    it('explicitly selects an organism by id', () => {
       const inst = new RhodesInstrument(new ChordTimeline([]));
-      inst.setStyle('latin');
+      inst.setStyleProfile(getStyleProfile('swing'));
+      inst.setOrganismId('rhodes-swing-sparse-form');
 
       const timeline = new ChordTimeline([{ barIndex: 0, chord: makeChord('C', 'major') }]);
       inst.setTimeline(timeline);
       inst.setHumanize(false);
-      inst.setLayerVolume(1.0);
 
       const { ctx, events } = makeCtx();
       inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
 
-      // Should produce 2 events (high-comping half notes)
-      expect(events).toHaveLength(2);
+      expect(events.length).toBeGreaterThan(0);
+    });
+
+    it('clears organism when set to null and falls back to style default', () => {
+      const inst = new RhodesInstrument(new ChordTimeline([]));
+      inst.setStyleProfile(getStyleProfile('swing'));
+      inst.setOrganismId(null);
+
+      const timeline = new ChordTimeline([{ barIndex: 0, chord: makeChord('C', 'major') }]);
+      inst.setTimeline(timeline);
+      inst.setHumanize(false);
+
+      const { ctx, events } = makeCtx();
+      inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
+
+      expect(events.length).toBeGreaterThan(0);
     });
   });
 });

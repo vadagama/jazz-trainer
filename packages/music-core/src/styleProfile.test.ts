@@ -168,8 +168,14 @@ describe('getVisibleInstruments', () => {
   it('latin returns instruments in group order (percussion at end)', () => {
     const visible = getVisibleInstruments('latin');
     // Groups: drums(1), bass(2), piano(3), winds(6), percussion(7)
-    // So order: drums, upright-bass, piano, trumpet-muted, percussion
-    expect(visible).toEqual(['funk-drum-kit', 'upright-bass', 'piano', 'trumpet-muted', 'percussion']);
+    // Latin uses electric-bass (montuno); order: drums, electric-bass, piano, trumpet-muted, percussion
+    expect(visible).toEqual([
+      'funk-drum-kit',
+      'electric-bass',
+      'piano',
+      'trumpet-muted',
+      'percussion',
+    ]);
   });
 });
 
@@ -280,12 +286,26 @@ describe('getEnsemblePreset', () => {
     const preset = getEnsemblePreset('swing', 'trio');
     const { instrumentSettings: s } = preset;
     expect(s.drums).toEqual({ enabled: true, volume: 0.7, pattern: 'swing' });
-    expect(s['upright-bass']).toEqual({ enabled: true, volume: 0.75, pattern: 'walking' });
+    expect(s['upright-bass']).toEqual({
+      enabled: true,
+      volume: 0.75,
+      pattern: 'walking',
+      tension: 'moderate',
+      humanize: { phrasing: 'expressive' },
+    });
     expect(s.piano).toEqual({
       enabled: true,
       volume: 0.7,
       pattern: 'swing-sparse',
       voicing: 'rootless3',
+      tension: 'moderate',
+      humanize: {
+        timingJitterMs: 'low',
+        velocityVariation: 'medium',
+        chordSpreadMs: 'low',
+        phrasing: 'expressive',
+        humanizeTiming: 'slight-lag',
+      },
     });
   });
 

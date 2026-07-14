@@ -8,12 +8,13 @@ const UPRIGHT_SAMPLE_MANIFEST: SampleManifest = {
   baseUrl: UPRIGHT_SAMPLER_BASE_URL,
   fallbackBaseUrl: '/samples/mp3/piano/upright/',
   layers: UPRIGHT_LAYERS,
-  release: 1.8,
+  release: 0.8,
 };
 
+/** @deprecated Use {@link uprightPianoManifest} from `@jazz/plugin-upright-piano`. */
 export const pianoManifest: InstrumentManifest = {
   id: 'piano',
-  name: 'Upright Piano KW',
+  name: 'Piano',
   family: 'pitched',
   settingsPrefix: 'piano',
   createInstrument: () => new PianoInstrument(new ChordTimeline()),
@@ -23,7 +24,7 @@ export const pianoManifest: InstrumentManifest = {
     volume: 0.7,
     profile: 'swing-sparse',
     voicingDensity: 'rootless3',
-    sampleLibrary: 'upright-kw',
+    sampleLibrary: 'upright',
   },
   perStyleDefaults: {
     swing: { profile: 'swing-sparse', voicingDensity: 'rootless3' },

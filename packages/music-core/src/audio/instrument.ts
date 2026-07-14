@@ -16,8 +16,24 @@ export interface ScheduleWindow {
   toTicks: number;
 }
 
-/** Articulation types available in the bass sample library. */
-export type BassArticulation = 'pluck' | 'mute';
+/**
+ * Articulation types available across the bass sample libraries.
+ *
+ * The articulation is the *only* expressive axis a bass molecule stores —
+ * which chord step to play is decided by the {@link BassStepEngine} at
+ * runtime (mirroring piano's VoiceRole → voicing model).
+ *
+ * - `regular` — full sustained tone (walking quarters, foundational downbeats).
+ *   Maps to Sneakybass `pluck` (upright) / darkblack `reg` (electric).
+ * - `muted` — damped/ghost-muted percussive tone (syncopations, approaches,
+ *   funk chatter). Maps to Sneakybass `mute` (upright) / darkblack `ghost`
+ *   (electric).
+ * - `rel` — ultra-short release tail for fast accents / phrase endings
+ *   (electric-only — darkblack `rel`).
+ * - `stac` — sharp staccato punches (offbeats, montuno stabs; electric-only —
+ *   darkblack `stac`).
+ */
+export type BassArticulation = 'regular' | 'muted' | 'rel' | 'stac';
 
 // ─── Instrument event payloads ────────────────────────────────────────────────
 
@@ -121,6 +137,8 @@ export interface ScheduleContext {
   gridSectionType?: SectionType;
   /** Индекс такта внутри секции, 0-based. */
   barInSection?: number;
+  /** Seed for deterministic pool variation — changes per playthrough, consistent within one. */
+  playSeed?: number;
 }
 
 /**

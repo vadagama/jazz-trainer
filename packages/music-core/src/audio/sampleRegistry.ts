@@ -74,6 +74,56 @@ export function buildBassMuteUrls(rr: 1 | 2 | 3 | 4): NoteMap {
   );
 }
 
+// ─── Electric bass (darkblack) — funk/latin palette { reg, stac, rel, ghost } ──
+//
+// Source: apps/web/public/samples/_source/bass/electric-bass/ (darkblack_*).
+// Filename quirks (must match the encoder):
+//  - reg/stac/rel/ghost live under electric/<artic>/
+//  - `reg` has NO articulation token in the filename — velocity follows the
+//    note directly: `electric/reg/darkblack_<note>_f_rr<n>.m4a` (we use the
+//    `f` velocity layer as the representative round-robin source).
+//  - stac/rel/ghost carry the artic token: `darkblack_<note>_<artic>_rr<n>.m4a`
+//  - ghost has velocity layers p/f; we use `f`.
+//
+// Anchor notes: every 3 semitones across B1–C4 (electric's usable bass range,
+// which extends one note lower than upright). Tone.js interpolates ±2.
+
+const ELECTRIC_BASS_ANCHOR_NOTES = [
+  'B1',
+  'D2',
+  'F2',
+  'Ab2',
+  'B2',
+  'D3',
+  'F3',
+  'Ab3',
+  'C4',
+] as const;
+
+/** Build a NoteMap for the electric `reg` articulation (no art token in filename). */
+export function buildBassRegUrls(rr: 1 | 2 | 3 | 4): NoteMap {
+  return Object.fromEntries(
+    ELECTRIC_BASS_ANCHOR_NOTES.map((note) => [
+      note,
+      `electric/reg/darkblack_${note.toLowerCase()}_f_rr${rr}.m4a`,
+    ]),
+  );
+}
+
+/** Build a NoteMap for an electric articulation that carries its token (stac/rel/ghost). */
+export function buildBassArticUrls(
+  artic: 'stac' | 'rel' | 'ghost',
+  rr: 1 | 2 | 3 | 4,
+): NoteMap {
+  const velToken = artic === 'ghost' ? '_f' : '';
+  return Object.fromEntries(
+    ELECTRIC_BASS_ANCHOR_NOTES.map((note) => [
+      note,
+      `electric/${artic}/darkblack_${note.toLowerCase()}_${artic}${velToken}_rr${rr}.m4a`,
+    ]),
+  );
+}
+
 export const BASS_SAMPLER: SamplerDef = {
   baseUrl: '/samples/aac/bass/',
   notes: buildBassPluckUrls(1),

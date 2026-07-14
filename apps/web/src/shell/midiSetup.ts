@@ -36,14 +36,22 @@ if (typeof window !== 'undefined') {
   (window as unknown as Record<string, unknown>).__computerKeyboardPort = keyboardAdapter;
 }
 
+let midiInitPromise: Promise<void> | null = null;
+
 /**
  * Initialize MIDI access.
  * Must be called after a user gesture (click, keydown, etc.).
- * Safe to call multiple times — subsequent calls are no-ops.
+ * Safe to call multiple times — concurrent calls share the same promise.
  */
 export async function initMidi(): Promise<void> {
-  await Promise.all([midiAdapter.init(), ensureAudioContext()]);
-  if (typeof window !== 'undefined') {
-    (window as unknown as Record<string, unknown>).__midiInitialized = true;
-  }
+  if (midiInitPromise) return midiInitPromise;
+
+  midiInitPromise = (async () => {
+    await Promise.all([midiAdapter.init(), ensureAudioContext()]);
+    if (typeof window !== 'undefined') {
+      (window as unknown as Record<string, unknown>).__midiInitialized = true;
+    }
+  })();
+
+  return midiInitPromise;
 }

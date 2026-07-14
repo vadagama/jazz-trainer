@@ -1,8 +1,12 @@
 # Grand Piano в джазовом тренажёре
 
-> **Статус:** 🟢 Реализовано
+> **Статус:** 🟢 Реализовано (частичная миграция в плагин)
 > **Модуль:** `packages/music-core/src/audio/pianoInstrument.ts`
-> **Манифесты:** `pianoManifest.ts` (Upright KW), `salamanderManifest.ts` (Salamander Grand)
+> **Манифесты:** `uprightPianoManifest` в плагине `@jazz/plugin-upright-piano` (Upright KW), `salamanderManifest` в `music-core` (Salamander Grand), `pianoManifest` (deprecated) в `music-core`
+> **Плагин:** `packages/plugins/instruments/upright-piano/` — экспортирует `uprightPianoManifest` через `contributes.instruments`
+> **Конструктор:** `packages/plugins/admin-piano-constructor/` — админ-инструмент для изучения/редактирования молекул, клеток и организмов
+> **Pattern-engine:** `pianoVoicing.ts`, `pianoUpperStructures.ts`, `pianoMolecules.ts`,
+> `pianoCells.ts`, `pianoOrganisms.ts`, `pianoPatternEngine.ts` — см. §11
 
 ## 1. Роль Grand Piano в аранжировке
 
@@ -32,13 +36,17 @@ Grand Piano — **основной гармонический инструмен
 
 ## 3. Сэмплы
 
-### 3.1. Upright KW (по умолчанию)
+### 3.1. Upright KW (по умолчанию, плагин `@jazz/plugin-upright-piano`)
 
 - **Источник:** UprightPianoKW-SFZ-20220221 (CC0, FreePats) — вертикальное пианино Kawai
 - **Формат:** AAC (`.m4a`) с MP3-фолбэком
-- **Velocity-слои:** 2 (`soft` — до 0.5, `hard` — от 0.5)
-- **Охват:** A0–C8, анкерные ноты через малую терцию
+- **Velocity-слои:** 3 (`soft` — до 0.33, `medium` — 0.33–0.66, `hard` — от 0.66)
+- **Охват:** C1–G7, анкерные ноты через квинту (C/G) с интерполяцией ±2 полутона (Tone.js)
+- **Release:** 1.8 сек
 - **Размещение:** `apps/web/public/samples/aac/piano/upright/`
+- **Плагин:** `packages/plugins/instruments/upright-piano/` — экспортирует `uprightPianoManifest` через `contributes.instruments`
+
+> Старый манифест `pianoManifest` (2 vel. слоя, release 0.8) в `music-core` помечен как `@deprecated`.
 
 ### 3.2. Salamander Grand Piano
 
@@ -79,6 +87,30 @@ Grand Piano — **основной гармонический инструмен
 2. Генерируются все уникальные перестановки pitch-классов в регистре C3–C6
 3. Отбрасываются варианты с размахом >24 полутонов
 4. При наличии предыдущего voicing'а — выбирается кандидат с минимальным voice-leading расстоянием
+
+### 4.4. Уровень напряжения (Tension) и надстройки
+
+> Подробное обоснование архитектуры: `docs/PIANO-EXTENDED-ARRANGEMENT-2.md`.
+
+`buildPianoVoicing(chord, density, prevVoicing, tension, seed)` — четвёртый параметр `tension`
+управляет тем, добавляется ли поверх базового voicing'а надстройка (upper structure triad):
+
+| `tension`  | Поведение |
+| ---------- | --------- |
+| `clean`    | Только density-voicing, надстройки выключены |
+| `moderate` | Надстройки изредка (35%), только «мягкие» цвета |
+| `altered`  | Надстройки часто (70%), включая альтерации на доминантах |
+| `max`      | Надстройки почти всегда (100%) |
+
+Выбор конкретной надстройки — `suggestUpperStructure(chord, functionHint, tension, seed)`
+(`pianoUpperStructures.ts`): таблица триад по `chord.quality` (dominant/major/minor/
+halfDiminished/diminished), **детерминированный** сидированный выбор (тот же LCG, что и
+`poolIndex` в pattern-движке — воспроизводимо для одного и того же такта). Найденная
+надстройка транспонируется в MIDI через `intervalToMidi()` и достраивается поверх верхней
+ноты base voicing'а (`mergeUpperStructure()`), с тем же жёстким потолком по регистру.
+
+`tension` задаётся в `StyleProfile.instrumentDefaults.piano.tension` (по умолчанию свинг —
+`'moderate'`) или через `PianoInstrument.setTension()`.
 
 ## 5. Голосоведение (Voice Leading)
 
@@ -155,8 +187,11 @@ Grand Piano — **основной гармонический инструмен
 1. **Skip beats** — пропуск неакцентных долей (beat 1 никогда не пропускается)
 2. **Eighth shifts** — сдвиг долей на восьмую (35% от базового шанса)
 3. **Anticipations** — антиципации на beat 3–4 (только если есть следующий аккорд)
-4. **Passing chords** — короткие проходящие аккорды на beat 4.5 (30% от базового шанса)
-5. **Voicing variation** — переключение между shell2 ↔ rootless4 (50% от базового шанса)
+4. **Voicing variation** — переключение между shell2 ↔ rootless4 (50% от базового шанса)
+
+Проходящие аккорды (passing chords) реализованы отдельно — не в рандомайзере, а в
+pattern-движке через молекулы категории `fill` + «pre-echo» войсинга следующего аккорда,
+см. §11.4.
 
 ## 9. Humanization
 
@@ -166,28 +201,44 @@ Grand Piano — **основной гармонический инструмен
 
 ## 10. Манифесты
 
+Фортепиано представлено тремя манифестами — один актуальный плагинный, один в `music-core` и один deprecated:
+
 ```ts
-// pianoManifest.ts — Upright KW (по умолчанию)
-export const pianoManifest: InstrumentManifest = {
-  id: 'piano',
-  name: 'Upright Piano KW',
+// packages/plugins/instruments/upright-piano/src/manifest.ts — актуальный (плагин)
+export const uprightPianoManifest: InstrumentManifest = {
+  id: 'upright',
+  name: 'Upright Piano',
+  family: 'pitched',
+  settingsPrefix: 'piano',
   createInstrument: () => new PianoInstrument(new ChordTimeline()),
-  sampleManifest: UPRIGHT_SAMPLE_MANIFEST,
+  sampleManifest: UPRIGHT_SAMPLE_MANIFEST,   // 3 vel. слоя, release 1.8
   defaultSettings: {
     enabled: false,
     volume: 0.7,
     profile: 'swing-sparse',
     voicingDensity: 'rootless3',
-    sampleLibrary: 'upright-kw',
+    sampleLibrary: 'upright',
+  },
+  perStyleDefaults: {
+    swing: { profile: 'swing-sparse', voicingDensity: 'rootless3' },
+    bossa: { profile: 'swing-sparse', voicingDensity: 'shell2' },
+    funk: { profile: 'offbeat-push', voicingDensity: 'rootless4' },
+    latin: { profile: 'basie-light', voicingDensity: 'quartal' },
+    ballad: { profile: 'beginner-safe', voicingDensity: 'rootless4' },
   },
 };
 
-// salamanderManifest.ts — Salamander Grand Piano
+// music-core/src/audio/pianoManifest.ts — @deprecated (2 vel. слоя, release 0.8)
+export const pianoManifest: InstrumentManifest = { /* ... */ };
+
+// music-core/src/audio/salamanderManifest.ts — Salamander Grand Piano
 export const salamanderManifest: InstrumentManifest = {
   id: 'piano',
   name: 'Salamander Grand Piano',
+  family: 'pitched',
+  settingsPrefix: 'piano',
   createInstrument: () => new PianoInstrument(new ChordTimeline()),
-  sampleManifest: SALAMANDER_SAMPLE_MANIFEST,
+  sampleManifest: SALAMANDER_SAMPLE_MANIFEST, // 3 vel. слоя
   defaultSettings: {
     enabled: false,
     volume: 0.7,
@@ -198,33 +249,130 @@ export const salamanderManifest: InstrumentManifest = {
 };
 ```
 
-Оба манифеста используют один и тот же `PianoInstrument`. Разница — в сэмплах и настройках по умолчанию.
+Все манифесты используют один и тот же `PianoInstrument`. Активный манифест выбирается через реестр инструментов: `pianoSampleLibrary === 'upright'` → `uprightPianoManifest` (плагин), иначе → `salamanderManifest`.
 
-## 11. API
+## 11. Молекулы, роли голоса и pattern-engine
+
+> Целевая архитектура и мотивация: `docs/PIANO-EXTENDED-ARRANGEMENT-2.md`.
+
+Альтернативный (более гибкий) путь планирования — `PianoPatternEngine`
+(`pianoPatternEngine.ts` + generic `pattern/engine.ts`), активируется через
+`setOrganismId()`. Иерархия та же, что у барабанов: **атом → молекула → клетка →
+организм**, но с ключевым отличием от версии v1 документа.
+
+### 11.1. Атом = роль голоса, не интервал и не MIDI-нота
+
+Атом молекулы (`PianoAtom`) хранит **когда**, **как громко**, **какой длительности** и
+**какую роль голоса** играть — `sound: VoiceRole`:
+
+| Роль       | Что играет |
+| ---------- | ---------- |
+| `chord`    | Весь текущий voicing (по умолчанию) |
+| `shell`    | Только 2 нижних голоса (3 + 7) |
+| `bass`     | Только самый нижний голос |
+| `top`      | Только самый верхний голос |
+| `upper`    | Цветные тона выше shell — надстройка, если `tension` её включил |
+
+Никаких «зашитых» интервалов в молекуле — один и тот же ритм (например, Charleston)
+корректно звучит на любом аккорде и любом уровне `tension`. Это устраняет
+комбинаторный взрыв `ритм × voicing × надстройка × качество аккорда`, описанный в
+`PIANO-EXTENDED-ARRANGEMENT-2.md`.
+
+### 11.2. Резолв ролей в ноты
+
+`PianoInstrument.scheduleWithPatternEngine()` на каждый хит:
+
+1. Строит полный voicing аккорда: `buildPianoVoicing(chord, density, prevVoicing, tension, seed)`
+2. Выбирает нужное подмножество нот по роли: `selectVoicingRole(voicing, hit.sound)`
+
+`selectVoicingRole` работает позиционно (voicing всегда bass→top по возрастанию):
+`shell` — первые 2 ноты, `upper` — всё, что выше shell (надстройка, если она включена
+`tension`, иначе просто верхние extension-тона density-voicing'а).
+
+### 11.3. Категории молекул
+
+`groove` (ритмический компинг, роль `chord`), `accent` (акценты/антиципации),
+`texture` (пауза), `fill` (проходящие — см. ниже).
+
+Отдельной категории «надстроечного акцента» нет: роль `chord` уже несёт
+надстроечные ноты, как только `tension` их добавил (они дописаны в тот же
+voicing, который `chord` читает целиком). Отдельный `upper`-хит **параллельно**
+с `chord` в той же точке такта дублировал бы те же ноты — так когда-то было
+устроено (лейн `upper` + 2 generic-молекулы `piano-upper-accent-long/short`),
+но это убрано как избыточное. Роль `upper` осталась в `VoiceRole` — для будущих
+авторских молекул, которые захотят звучать **только** цветными тонами
+(используется вместо `chord`, а не поверх него).
+
+### 11.4. Проходящие аккорды (passing) — voicing pre-echo
+
+Молекулы категории `fill` — чистый ритм на beat 4 или позже (тег `passing` + идиома
+подхода: `chromatic-above`, `tritone`, `diatonic-ii-V` и т.д. — сейчас теги
+документируют идиому, а не порождают разные ноты). Движок резолвит гармонию
+единым правилом: хит в последней доле такта «предвосхищает» **следующий** аккорд —
+если он отличается от текущего, voicing строится по нему. Это классический приём
+джазового пианиста (антиципация) и не требует отдельной молекулы под каждый
+переход аккордов.
+
+### 11.5. Уровень напряжения — единственная пользовательская настройка
+
+В UI (`InstrumentTile.tsx`) один select «Tension» (`clean|moderate|altered|max`,
+см. §4.4) заменяет собой прежние тумблеры «Upper Structures» / «Passing Chords» —
+они не были подключены к движку и не оказывали влияния на звук. Проброс:
+`InstrumentTile` → `settings.pianoTension` (DTO, `dto.ts`) → `user_settings.piano_tension`
+(БД) → `useTransport.ts` вызывает `PianoInstrument.setTension()` при монтировании,
+при live-обновлении настроек и при смене per-style overrides.
+
+Passing-хиты не имеют отдельного переключателя — они всегда часть ритма клетки;
+надстройки на них включаются тем же общим `tension`.
+
+## 12. API
 
 ```ts
 class PianoInstrument implements Instrument {
   setTimeline(timeline: ChordTimeline): void;
   setProfile(profileId: CompingProfileId): void;
   setVoicingDensity(density: PianoVoicingDensity): void; // shell2|rootless3|rootless4|quartal
+  setTension(tension: TensionLevel): void; // clean|moderate|altered|max — надстройки
   setBaseVelocity(velocity: number): void; // [0, 2]
   setHumanize(enabled: boolean): void;
   setStyle(style: Style): void; // меняет профиль по умолчанию
   setRandomizationLevel(level: PianoRandomizationLevel): void;
   setAdaptiveProfile(enabled: boolean): void; // авто-повышение плотности
+  setOrganismId(id: string | null): void; // выбор организма pattern-engine (§11)
   reset(): void; // сброс голосоведения
   dispose(): void;
   schedule(window: ScheduleWindow, ctx: ScheduleContext): void;
 }
 ```
 
-## 12. Тесты
+## 13. Тесты
 
-- `pianoInstrument.test.ts` — ≥25 тестов: все профили, voicing-типы, голосоведение, humanization
+- `pianoInstrument.test.ts` — ≥70 тестов: все профили, voicing-типы, голосоведение, humanization, tension/upper structures, passing pre-echo
 - `pianoRandomizer.test.ts` — ≥15 тестов: детерминизм, уровни, операции
-- `pianoVoicing.ts` — генерация voicing'ов для всех типов аккордов
+- `pianoVoicing.ts` — генерация voicing'ов для всех типов аккордов + слияние надстроек
 - `pianoRhodesInteraction.test.ts` — избегание конфликтов
+
+## 14. Конструктор фортепиано (admin)
+
+`packages/plugins/admin-piano-constructor/` — админ-инструмент для изучения и редактирования фортепианных молекул, клеток и организмов. Использует общую базу `admin-constructor-shared` (Strategy-паттерн).
+
+**Путь:** `/admin/piano-constructor` (требует `content:write`)
+
+**Особенности pitched-конструктора:**
+- **Piano-roll редактор молекул** (`PianoMoleculeTable`) — вместо step-grid'а барабанов, ноты отображаются в двумерной сетке (роль × tick)
+- **Роли голоса как «звуки»** — `sound: VoiceRole` (`chord`, `shell`, `bass`, `top`, `upper`)
+- **Предпрослушивание через сэмплер** (`usePianoPreview`) — загружает сэмплы выбранного варианта (Upright/Salamander) и играет плоские PianoHit'ы
+- **Варианты фортепиано** (`PianoVariantSelector`) — переключение между библиотеками сэмплов в тулбаре
+- **Сохранение:** localStorage (autosave) + публикация через `POST /api/dev/piano-source` (dev-режим)
+
+**Стратегия** (`pianoStrategy.ts`): family `pitched`, использует generic `assemblePatternBar` из `pattern/engine.ts`, валидация клеток опциональна (piano не имеет `validateCell`).
 
 ---
 
-_См. также: `docs/RHODES.md` (комплементарный слой), `docs/BASS.md` (бас)_
+## Changelog
+
+- **Плагинная миграция + 3 vel. слоя (2026-07):** Upright Piano вынесен в плагин `@jazz/plugin-upright-piano` (категория `core`). Новый манифест `uprightPianoManifest` (id: `'upright'`, 3 velocity-слоя, release 1.8). Старый `pianoManifest` в `music-core` помечен `@deprecated`. Диапазон обновлён: C1–G7 с анкерами C/G (вместо A0–C8 с анкерами через терцию).
+- **Конструктор фортепиано (2026-07):** Добавлен админ-плагин `admin-piano-constructor` на базе `admin-constructor-shared`. Strategy-паттерн: pitched family, piano-roll редактор, VoiceRole-звуки, sampler-based preview.
+
+_См. также: `docs/RHODES.md` (комплементарный слой), `docs/BASS.md` (бас),
+`docs/PIANO-EXTENDED-ARRANGEMENT-2.md` (архитектура молекул/tension, план миграции)_

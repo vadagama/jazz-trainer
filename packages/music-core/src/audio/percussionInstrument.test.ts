@@ -35,7 +35,6 @@ function makeDefaultSettings(
   return {
     enabled: true,
     volume: 0.7,
-    pattern: 'cascara-clave',
     congaHighEnabled: true,
     congaHighVolume: 0.7,
     congaLowEnabled: true,
@@ -52,11 +51,13 @@ function makeDefaultSettings(
     guiroVolume: 0.5,
     triangleEnabled: true,
     triangleVolume: 0.5,
-    bongoLowEnabled: false,
+    bongoHighEnabled: false,
+    bongoHighVolume: 0.62,
+    bongoLowEnabled: true,
     bongoLowVolume: 0.65,
     tumbaEnabled: false,
     tumbaVolume: 0.7,
-    cabasaEnabled: false,
+    cabasaEnabled: true,
     cabasaVolume: 0.55,
     tambourineEnabled: false,
     tambourineVolume: 0.5,
@@ -83,6 +84,7 @@ describe('PercussionInstrument — organism-driven (Latin)', () => {
   function makePerc(overrides?: Partial<PercussionInstrumentSettings>): PercussionInstrument {
     const perc = new PercussionInstrument();
     perc.setStyle('latin');
+    perc.setOrganismId('latin-default');
     perc.updateSettings(makeDefaultSettings({ humanizeIntensity: 'off', ...overrides }));
     return perc;
   }
@@ -128,6 +130,7 @@ describe('PercussionInstrument — organism-driven (Bossa)', () => {
   function makePerc(overrides?: Partial<PercussionInstrumentSettings>): PercussionInstrument {
     const perc = new PercussionInstrument();
     perc.setStyle('bossa');
+    perc.setOrganismId('bossa-default');
     perc.updateSettings(makeDefaultSettings({ humanizeIntensity: 'off', ...overrides }));
     return perc;
   }
@@ -161,6 +164,7 @@ describe('PercussionInstrument — organism-driven (Funk)', () => {
   function makePerc(overrides?: Partial<PercussionInstrumentSettings>): PercussionInstrument {
     const perc = new PercussionInstrument();
     perc.setStyle('funk');
+    perc.setOrganismId('funk-default');
     perc.updateSettings(makeDefaultSettings({ humanizeIntensity: 'off', ...overrides }));
     return perc;
   }
@@ -171,16 +175,18 @@ describe('PercussionInstrument — organism-driven (Funk)', () => {
     expect(hits.length).toBeGreaterThan(0);
   });
 
-  it('shaker is present in funk pattern', () => {
+  it('conga is present in funk pattern', () => {
     const hits: Hit[] = [];
     makePerc().schedule(oneBar(sig), makeCtx(sig, hits));
-    expect(hits.some((h) => h.sound === 'shaker')).toBe(true);
+    expect(hits.some((h) => h.sound === 'congaHigh' || h.sound === 'congaLow')).toBe(true);
   });
 
-  it('tambourine is present in funk pattern', () => {
+  it('bongo or conga is present in funk pattern when enabled', () => {
     const hits: Hit[] = [];
-    makePerc({ tambourineEnabled: true }).schedule(oneBar(sig), makeCtx(sig, hits));
-    expect(hits.some((h) => h.sound === 'tambourine')).toBe(true);
+    makePerc({ bongoLowEnabled: true }).schedule(oneBar(sig), makeCtx(sig, hits));
+    expect(
+      hits.some((h) => h.sound === 'bongoLow' || h.sound === 'congaHigh' || h.sound === 'congaLow'),
+    ).toBe(true);
   });
 });
 
@@ -211,10 +217,11 @@ describe('PercussionInstrument — style mapping', () => {
     expect(hits.some((h) => h.sound === 'shaker')).toBe(true);
   });
 
-  it('funk produces shaker', () => {
+  it('funk produces conga and cowbell', () => {
     const hits: Hit[] = [];
     makePerc('funk').schedule(oneBar(sig), makeCtx(sig, hits));
-    expect(hits.some((h) => h.sound === 'shaker')).toBe(true);
+    expect(hits.some((h) => h.sound === 'congaHigh' || h.sound === 'congaLow')).toBe(true);
+    expect(hits.some((h) => h.sound === 'cowbell')).toBe(true);
   });
 });
 
@@ -289,8 +296,6 @@ describe('PercussionInstrument — degraded fallback', () => {
     // Force organism to null so degraded fallback is used
     perc['currentOrganism'] = null;
     perc.setStyle(style);
-    // setStyle calls selectOrganismForStyle, so clear again
-    perc['currentOrganism'] = null;
     perc.updateSettings(makeDefaultSettings({ humanizeIntensity: 'off', ...overrides }));
     return perc;
   }
@@ -332,10 +337,10 @@ describe('PercussionInstrument — degraded fallback', () => {
     expect(ticks).toHaveLength(2);
   });
 
-  it('funk degraded produces shaker 16th notes', () => {
+  it('funk degraded produces cabasa 16th notes', () => {
     const hits: Hit[] = [];
     makeDegradedPerc('funk').schedule(oneBar(sig), makeCtx(sig, hits));
-    expect(hits.filter((h) => h.sound === 'shaker')).toHaveLength(16);
+    expect(hits.filter((h) => h.sound === 'cabasa')).toHaveLength(16);
   });
 
   it('funk degraded cowbell on beats 1 and 3', () => {

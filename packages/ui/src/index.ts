@@ -1,5 +1,11 @@
 export { cn } from './utils';
 export { useDebounce } from './useDebounce';
+export {
+  useClampedNumberInput,
+  clampNumber,
+  type UseClampedNumberInputOptions,
+  type ClampedNumberInputHandlers,
+} from './useClampedNumberInput';
 
 export { Button, buttonVariants } from './button';
 export type { ButtonProps } from './button';

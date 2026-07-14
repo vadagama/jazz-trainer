@@ -6,6 +6,7 @@ import { serializeGrid } from '@jazz/music-core';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -71,6 +72,9 @@ export function GeneratorModal({ open, onApply, onClose }: GeneratorModalProps) 
       <DialogContent className="max-w-lg" data-testid="generator-modal">
         <DialogHeader>
           <DialogTitle>Генератор прогрессии</DialogTitle>
+          <DialogDescription>
+            Выберите паттерн и тональность для генерации гармонической прогрессии.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">

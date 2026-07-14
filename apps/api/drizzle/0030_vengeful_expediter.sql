@@ -1,0 +1,1 @@
+ALTER TABLE `user_settings` DROP COLUMN `bass_octave_up`;

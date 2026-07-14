@@ -256,11 +256,6 @@ function BassBody({
         ]}
         onChange={(v) => onChange({ complexity: Number(v) })}
       />
-      <ToggleRow
-        label="Октава вверх"
-        enabled={getBool(s, 'octaveUp')}
-        onToggle={(v) => onChange({ octaveUp: v })}
-      />
     </div>
   );
 }
@@ -310,17 +305,18 @@ function RhodesBody({
   return (
     <div className="space-y-3">
       <SelectRow
-        label="Режим"
-        value={getStr(s, 'mode')}
+        label="Форма"
+        value={getStr(s, 'pattern')}
         options={[
-          { value: 'halfNotes', label: 'Half Notes' },
-          { value: 'subtleOffbeats', label: 'Subtle Offbeats' },
-          { value: 'ambientSwells', label: 'Ambient Swells' },
-          { value: 'stabAccents', label: 'Stab Accents' },
-          { value: 'highComping', label: 'High Comping' },
-          { value: 'pads', label: 'Pads' },
+          { value: 'rhodes-swing-form', label: 'Swing Complement' },
+          { value: 'rhodes-bossa-form', label: 'Bossa Gentle' },
+          { value: 'rhodes-funk-form', label: 'Funk Mellow' },
+          { value: 'rhodes-latin-form', label: 'Latin Cascade' },
+          { value: 'rhodes-ballad-form', label: 'Ballad Gentle' },
+          { value: 'rhodes-swing-sparse-form', label: 'Swing Sparse' },
+          { value: 'rhodes-ballad-ambient-form', label: 'Ballad Ambient' },
         ]}
-        onChange={(v) => onChange({ mode: v })}
+        onChange={(v) => onChange({ pattern: v })}
       />
       <SelectRow
         label="Voicing"
@@ -329,6 +325,7 @@ function RhodesBody({
           { value: 'shell2', label: 'Shell (2)' },
           { value: 'rootless3', label: 'Rootless (3)' },
           { value: 'rootless4', label: 'Rootless (4)' },
+          { value: 'quartal', label: 'Quartal' },
         ]}
         onChange={(v) => onChange({ voicingDensity: v })}
       />

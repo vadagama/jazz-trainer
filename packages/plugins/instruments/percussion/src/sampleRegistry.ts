@@ -12,6 +12,7 @@ import type { PercussionSound } from '@jazz/music-core';
 export const PERCUSSION_SAMPLE_FILES: Record<PercussionSound, string[]> = {
   congaHigh: ['conga_hi_rr1.m4a', 'conga_hi_rr2.m4a', 'conga_hi_rr3.m4a', 'conga_hi_rr4.m4a'],
   congaLow: ['conga_lo_rr1.m4a', 'conga_lo_rr2.m4a', 'conga_lo_rr3.m4a', 'conga_lo_rr4.m4a'],
+  bongoHigh: ['bongo_hi_rr1.m4a', 'bongo_hi_rr2.m4a', 'bongo_hi_rr3.m4a', 'bongo_hi_rr4.m4a'],
   bongoLow: ['bongo_lo_rr1.m4a', 'bongo_lo_rr2.m4a', 'bongo_lo_rr3.m4a', 'bongo_lo_rr4.m4a'],
   tumba: ['tumba_rr1.m4a', 'tumba_rr2.m4a', 'tumba_rr3.m4a', 'tumba_rr4.m4a'],
   timbales: ['timbales_rr1.m4a', 'timbales_rr2.m4a', 'timbales_rr3.m4a', 'timbales_rr4.m4a'],

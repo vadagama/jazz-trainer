@@ -13,6 +13,6 @@ export default definePlugin({
     description: 'Latin percussion — 16 sounds (congas, timbales, shaker, clave …), 4 RR.',
   },
   contributes: {
-    instruments: [{ manifest: percussionManifest }],
+    instruments: [{ manifest: percussionManifest, articulationMap: {} }],
   },
 });
