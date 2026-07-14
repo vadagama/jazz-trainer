@@ -6,3 +6,7 @@ export * from './grids.js';
 export * from './lectures.js';
 export * from './audioFormat.js';
 export * from './drums.js';
+export * from './percussion.js';
+export * from './piano.js';
+export * from './bass.js';
+export * from './rhodes.js';

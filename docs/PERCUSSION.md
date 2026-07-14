@@ -40,27 +40,20 @@
 | `whistle`      | Свисток — сигнальные акценты                |
 | `sleighBells`  | Бубенцы — праздничная текстура              |
 
-## 3. Паттерны и стили
+## 3. Стили и паттерны
 
-| Стиль    | Паттерн          | Описание                                         |
-| -------- | ---------------- | ------------------------------------------------ |
-| `swing`  | `cascara-clave`  | Кубинский cascara + clave для джазового контекста |
-| `bossa`  | `bossa-texture`  | Бразильская текстурная перкуссия                  |
-| `funk`   | `funk-accents`   | Синкопированные акценты для funk                  |
-| `latin`  | `cascara-clave`  | Основной латиноамериканский ритм                  |
-| `ballad` | `bossa-texture`  | Мягкая текстурная поддержка                       |
+Percussion работает только для **3 стилей**: `latin`, `bossa`, `funk`.
+Для `swing` и `ballad` percussion отключён (`enabled: false`).
 
-### 3.1. Cascara + Clave (cascara-clave)
+| Стиль    | Organism         | Описание                                                |
+| -------- | ---------------- | ------------------------------------------------------- |
+| `latin`  | `latin-default`  | Cascara + clave (son 3-2), tumbao, cowbell, montuno     |
+| `bossa`  | `bossa-default`  | Бразильская текстура: shaker 8-ми, clave, conga, guiro   |
+| `funk`   | `funk-default`   | Ровный текстурный бит: even 16-е shaker/tambourine, cowbell на 1/3. Humanize **off** |
 
-Кубинская ритмическая основа: cascara на timbales/conga + clave-паттерн (3-2 или 2-3). Ядро латиноамериканского groove.
-
-### 3.2. Bossa Texture (bossa-texture)
-
-Бразильская текстурная перкуссия: shaker-пульсация восьмыми, guiro-акценты, треугольник на сильных долях.
-
-### 3.3. Funk Accents (funk-accents)
-
-Синкопированные акценты: cowbell на offbeat'ах, conga-слэпы, timbales-акценты.
+Паттерны реализованы через pattern-engine (organism → cell → molecule → atom),
+как и drum kit. См. `packages/plugins/instruments/percussion/` и
+`packages/music-core/src/audio/percussionMolecules.ts`.
 
 ## 4. Настройки
 
@@ -68,7 +61,6 @@
 interface PercussionInstrumentSettings {
   enabled: boolean;            // мастер-выключатель
   volume: number;              // общая громкость
-  pattern: PercussionPattern;  // 'cascara-clave' | 'bossa-texture' | 'funk-accents'
 
   // Core (8 звуков) — per-sound enable + volume
   congaHighEnabled: boolean;   congaHighVolume: number;
@@ -114,8 +106,15 @@ export const percussionManifest: InstrumentManifest = {
   defaultSettings: {
     enabled: false,
     volume: 0.7,
-    pattern: 'cascara-clave',
+    organismId: null,
     // ... per-sound defaults (см. DEFAULT_PERCUSSION_SETTINGS)
+  },
+  perStyleDefaults: {
+    swing:  { enabled: false },
+    bossa:  { organismId: 'bossa-default', enabled: true },
+    funk:   { organismId: 'funk-default', enabled: true, humanizeIntensity: 'off' },
+    latin:  { organismId: 'latin-default', enabled: true },
+    ballad: { enabled: false },
   },
 };
 ```
@@ -130,7 +129,8 @@ export const percussionManifest: InstrumentManifest = {
 
 ## 8. Тесты
 
-- `percussionInstrument.test.ts` — все три паттерна, per-sound настройки, humanization, стилевая диспетчеризация
+- `percussionInstrument.test.ts` — organism-driven scheduling (latin/bossa/funk), per-sound настройки, humanization, degraded fallback
+- `packages/plugins/instruments/percussion/src/manifest.test.ts` — per-style defaults (все 5 стилей), schema validation
 
 ---
 

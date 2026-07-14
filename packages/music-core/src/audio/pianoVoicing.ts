@@ -1,6 +1,17 @@
 import type { ChordSymbol } from '@jazz/shared';
+import { suggestUpperStructure, type TensionLevel } from './pianoUpperStructures.js';
 
 export type PianoVoicingDensity = 'shell2' | 'rootless3' | 'rootless4' | 'quartal';
+export type { TensionLevel } from './pianoUpperStructures.js';
+
+/**
+ * Voice role — which part of the current voicing a molecule atom should play.
+ * Molecules describe rhythm + role; {@link buildPianoVoicing} + {@link selectVoicingRole}
+ * resolve the actual pitches from the real chord + density + tension, so a
+ * single rhythmic molecule works over any chord quality without baking in
+ * intervals (see docs/PIANO-EXTENDED-ARRANGEMENT-2.md).
+ */
+export type VoiceRole = 'chord' | 'shell' | 'top' | 'bass' | 'upper';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -25,7 +36,7 @@ const MAX_SPAN = 24;
 
 // ─── Pitch helpers ───────────────────────────────────────────────────────────
 
-function noteToMidi(note: string): number {
+export function noteToMidi(note: string): number {
   const m = /^([A-G])(#|b)?(-?\d+)$/.exec(note);
   if (!m) throw new Error(`Invalid note: ${note}`);
   const pc = (SEMITONE[m[1]!]! + (m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0) + 12) % 12;
@@ -85,9 +96,18 @@ function voicingIntervals(chord: ChordSymbol, density: PianoVoicingDensity): rea
 }
 
 /**
- * Quartal voicing: stacks of perfect fourths (5 semitones) from the 3rd or 7th.
- * For maj7/m7/7: 4-note stack from the 3rd.
- * For m7b5/dim7: 3-note stack from the 7th.
+ * Quartal voicing: stacks of perfect fourths (5 semitones) with idiomatic
+ * starting points per chord quality (after McCoy Tyner / Herbie Hancock).
+ *
+ *  - maj7:   4-note stack from 3rd  → 3 13 9 5  (bright, open)
+ *  - m7:     4-note stack from 5th  → 5 1 11 b7 (m11 — warm, consonant)
+ *  - 7:      4-note stack from 3rd  → 3 13 9 5  (same as maj7; the 5 on top
+ *             avoids the 11th/min9th clash with the 3rd)
+ *  - m7b5:   3-note stack from b7   → b7 b3 b13 (sparse, rootless-compatible)
+ *  - dim7:   4-note stack from bb7  → bb7 11 b5 1 (symmetrical — every note
+ *             is a dim7 chord tone)
+ *
+ *  All stacks produce a contiguous run of perfect 4ths (5-semitone steps).
  */
 function quartalIntervals(chord: ChordSymbol): readonly number[] {
   const third = chord.quality === 'major' ? 4 : 3;
@@ -95,15 +115,15 @@ function quartalIntervals(chord: ChordSymbol): readonly number[] {
 
   switch (chord.quality) {
     case 'major':
-      return [third, third + 5, third + 10, third + 15]; // 3, 7, 9, 5 — stack from 3rd
+      return [third, third + 5, third + 10, third + 15]; // 3, 13, 9, 5
     case 'minor':
-      return [third, third + 5, third + 10, third + 15]; // b3, b7, 9, 11
+      return [7, 12, 17, 22]; // 5, 1(8ve), 11, b7 — m11, stack from 5th
     case 'dominant':
-      return [third, third + 5, third + 10, third + 15]; // 3, b7, 9, sus4
+      return [third, third + 5, third + 10, third + 15]; // 3, 13, 9, 5
     case 'halfDiminished':
-      return [seventh, seventh + 5, seventh + 10]; // b7, 11, b5 — stack from 7th
+      return [seventh, seventh + 5, seventh + 10]; // b7, b3, b13
     case 'diminished':
-      return [seventh, seventh + 5, seventh + 10, seventh + 15]; // bb7, 11, b5, 1 — symm
+      return [seventh, seventh + 5, seventh + 10, seventh + 15]; // bb7, 11, b5, 1
     default:
       return [third, third + 5, third + 10, third + 15];
   }
@@ -218,29 +238,67 @@ function weightedDistance(prev: readonly number[], candidate: readonly number[])
   return dist;
 }
 
-// ─── Public API ──────────────────────────────────────────────────────────────
+// ─── Interval → MIDI mapping ────────────────────────────────────────────────
+
+/** Semitone offsets for diatonic degrees (from root). */
+const DIATONIC_SEMITONES: Record<number, number> = {
+  1: 0,
+  2: 2,
+  3: 4,
+  4: 5,
+  5: 7,
+  6: 9,
+  7: 11,
+  8: 12,
+  9: 14,
+  10: 16,
+  11: 17,
+  12: 19,
+  13: 21,
+};
 
 /**
- * Build a piano voicing for the given chord and density.
+ * Convert an interval string (relative to chord root) to a MIDI note number.
  *
- * - When `prevVoicing` is null: returns root-position voicing at lowest valid octave.
- * - When `prevVoicing` is provided: returns the candidate with minimum total
- *   voice movement; ties broken by choosing the narrower (smaller span) voicing.
- *
- * Supports quartal voicings in addition to standard rootless voicings.
+ * Examples:
+ * - `'3'`  → 4 semitones above root (major 3rd)
+ * - `'b7'` → 10 semitones above root (minor 7th)
+ * - `'#11'`→ 18 semitones above root (sharp 11th)
  */
-export function buildPianoVoicing(
+export function intervalToMidi(root: string, interval: string): number {
+  const rootMidi = noteToMidi(root);
+  const m = /^([b#]?)(\d+)$/.exec(interval);
+  if (!m) throw new Error(`Invalid interval: ${interval}`);
+  const accidental = m[1] === 'b' ? -1 : m[1] === '#' ? 1 : 0;
+  const degree = parseInt(m[2]!, 10);
+
+  const base = DIATONIC_SEMITONES[degree] ?? (degree - 1) * 2;
+  return rootMidi + base + accidental;
+}
+
+/**
+ * Convenience wrapper: resolve an interval string to a MIDI note for a given
+ * chord root.
+ */
+export function resolveInterval(sound: string, chordRoot: string): number {
+  return intervalToMidi(chordRoot, sound);
+}
+
+// ─── Public API ──────────────────────────────────────────────────────────────
+
+/** Core density-based voicing selection, in MIDI space (bass→top ascending). */
+function buildBaseVoicingMidi(
   chord: ChordSymbol,
   density: PianoVoicingDensity,
   prevVoicing: readonly string[] | null,
-): string[] {
+): number[] {
   if (!prevVoicing) {
-    return buildDefaultVoicing(chord, density).map(midiToNote);
+    return buildDefaultVoicing(chord, density);
   }
 
   const candidates = generateCandidates(chord, density);
   if (candidates.length === 0) {
-    return buildDefaultVoicing(chord, density).map(midiToNote);
+    return buildDefaultVoicing(chord, density);
   }
 
   const prevMidi = prevVoicing.map(noteToMidi);
@@ -261,8 +319,97 @@ export function buildPianoVoicing(
   // Hard emergency brake: if voicing is pushed against the ceiling, reset to default
   const HARD_CEIL = RANGE_MAX - 4; // 80
   if (best[best.length - 1]! > HARD_CEIL) {
-    return buildDefaultVoicing(chord, density).map(midiToNote);
+    return buildDefaultVoicing(chord, density);
   }
 
-  return best.map(midiToNote);
+  return best;
+}
+
+/** Pitch class (0-11) of an interval string relative to a root pitch class. */
+function upperIntervalPc(rootPc: number, interval: string): number {
+  const m = /^([b#]?)(\d+)$/.exec(interval);
+  if (!m) throw new Error(`Invalid interval: ${interval}`);
+  const accidental = m[1] === 'b' ? -1 : m[1] === '#' ? 1 : 0;
+  const degree = parseInt(m[2]!, 10);
+  const base = DIATONIC_SEMITONES[degree] ?? (degree - 1) * 2;
+  return (((rootPc + base + accidental) % 12) + 12) % 12;
+}
+
+/**
+ * Stack an upper-structure triad above the base voicing's top note.
+ * Degrades gracefully to the base voicing alone if there's no room within
+ * the comping register (mirrors the HARD_CEIL brake above).
+ */
+function mergeUpperStructure(
+  baseMidi: readonly number[],
+  rootPc: number,
+  intervals: readonly string[],
+): number[] {
+  const pcs = intervals.map((iv) => upperIntervalPc(rootPc, iv));
+  const top = baseMidi[baseMidi.length - 1]!;
+  const upper = stackAbove(top, pcs);
+  if (!upper) return [...baseMidi];
+
+  const merged = [...baseMidi, ...upper];
+  if (merged[merged.length - 1]! > RANGE_MAX) return [...baseMidi];
+  return merged;
+}
+
+/** Harmonic-function hint derived from the chord itself (no song-position analysis needed yet). */
+function harmonicFunctionHint(chord: ChordSymbol): string | undefined {
+  return chord.quality === 'dominant' ? 'dominant' : undefined;
+}
+
+/**
+ * Build a piano voicing for the given chord, density and tension level.
+ *
+ * - When `prevVoicing` is null: returns root-position voicing at lowest valid octave.
+ * - When `prevVoicing` is provided: returns the candidate with minimum total
+ *   voice movement; ties broken by choosing the narrower (smaller span) voicing.
+ * - When `tension` is above `'clean'`, an upper-structure triad may be stacked
+ *   on top of the base voicing (see {@link suggestUpperStructure}), gated by
+ *   probability and chord quality — deterministic via `seed`.
+ *
+ * Supports quartal voicings in addition to standard rootless voicings.
+ */
+export function buildPianoVoicing(
+  chord: ChordSymbol,
+  density: PianoVoicingDensity,
+  prevVoicing: readonly string[] | null,
+  tension: TensionLevel = 'clean',
+  seed = 0,
+): string[] {
+  const baseMidi = buildBaseVoicingMidi(chord, density, prevVoicing);
+  if (tension === 'clean') return baseMidi.map(midiToNote);
+
+  const us = suggestUpperStructure(chord, harmonicFunctionHint(chord), tension, seed);
+  if (!us) return baseMidi.map(midiToNote);
+
+  const merged = mergeUpperStructure(baseMidi, chordRootPc(chord), us.intervals);
+  return merged.map(midiToNote);
+}
+
+/**
+ * Resolve which notes of a fully-built voicing a molecule atom's {@link VoiceRole} should play.
+ *
+ * The voicing is always bass→top ascending (guaranteed by {@link buildPianoVoicing}), so
+ * roles are resolved positionally: 'shell' = the two lowest (guide-tone) voices, 'upper'
+ * = everything above them (the color tones — upper-structure notes when tension is engaged,
+ * or just the density's own extensions otherwise), 'bass'/'top' = the extremes.
+ */
+export function selectVoicingRole(voicing: readonly string[], role: VoiceRole): string[] {
+  if (voicing.length === 0) return [];
+  switch (role) {
+    case 'bass':
+      return [voicing[0]!];
+    case 'top':
+      return [voicing[voicing.length - 1]!];
+    case 'shell':
+      return voicing.slice(0, Math.min(2, voicing.length));
+    case 'upper':
+      return voicing.length > 2 ? voicing.slice(2) : voicing.slice(0, Math.min(2, voicing.length));
+    case 'chord':
+    default:
+      return [...voicing];
+  }
 }

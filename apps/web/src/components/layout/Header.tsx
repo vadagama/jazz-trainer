@@ -15,7 +15,7 @@ import {
 export function Header() {
   const { user, permissions } = useAuth();
   const logout = useLogout();
-  const canEditContent = permissions.includes('content:write');
+  const isAdmin = permissions.includes('admin');
   const navigate = useNavigate();
   const { theme, toggle } = useTheme();
   const location = useLocation();
@@ -77,16 +77,16 @@ export function Header() {
             Теория
           </Link>
 
-          {canEditContent && (
+          {isAdmin && (
             <Link
-              to="/admin/drum-constructor"
+              to="/admin/users"
               className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-                location.pathname === '/admin/drum-constructor'
+                location.pathname.startsWith('/admin')
                   ? 'bg-accent text-foreground'
                   : 'text-muted-foreground hover:bg-accent hover:text-foreground'
               }`}
             >
-              Конструктор
+              Администрирование
             </Link>
           )}
         </nav>

@@ -26,6 +26,7 @@ import type {
 export type PercussionSound =
   | 'congaHigh'
   | 'congaLow'
+  | 'bongoHigh'
   | 'bongoLow'
   | 'tumba'
   | 'timbales'
@@ -56,12 +57,5 @@ export type PercussionOrganism = Organism<PercussionPatternStyle>;
 
 // ─── Re-exported building blocks ─────────────────────────────────────────────
 
-export type {
-  MoleculeCategory,
-  MoleculeConditions,
-  DynamicsType,
-  Dynamics,
-  Lane,
-  OrganismSection,
-};
+export type { MoleculeCategory, MoleculeConditions, DynamicsType, Dynamics, Lane, OrganismSection };
 export type { Clip } from './pattern/types.js';

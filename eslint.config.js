@@ -70,6 +70,12 @@ export default tseslint.config(
         { type: 'packages/plugin-sdk', pattern: 'packages/plugin-sdk/*' },
         { type: 'packages/plugin-host', pattern: 'packages/plugin-host/*' },
         { type: 'packages/ui', pattern: 'packages/ui/*' },
+        // Shared-библиотека конструктора — отдельный тип (более специфичный паттерн
+        // должен идти ДО общего packages/plugins, чтобы получить собственный тип).
+        {
+          type: 'packages/plugins/admin-constructor-shared',
+          pattern: 'packages/plugins/admin-constructor-shared/*',
+        },
         { type: 'packages/plugins', pattern: 'packages/plugins/**/*' },
         { type: 'packages/adapters', pattern: 'packages/adapters/**/*' },
         { type: 'apps/web', pattern: 'apps/web/*' },
@@ -105,6 +111,18 @@ export default tseslint.config(
             },
             {
               from: 'packages/plugins',
+              allow: [
+                'packages/plugin-sdk',
+                'packages/music-core',
+                'packages/shared',
+                'packages/ui',
+                // Shared библиотека конструктора — потребляется admin-constructor плагинами.
+                'packages/plugins/admin-constructor-shared',
+              ],
+            },
+            {
+              // Сам shared-пакет зависит только от core/sdk/ui/shared (не от других plugins).
+              from: 'packages/plugins/admin-constructor-shared',
               allow: [
                 'packages/plugin-sdk',
                 'packages/music-core',

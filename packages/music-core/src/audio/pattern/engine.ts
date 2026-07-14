@@ -3,14 +3,7 @@
  * `TStyle` and `TSound`. Drum-specific {@link DrumPatternEngine} binds these
  * to the drum registries via callbacks; future instruments reuse the same core.
  */
-import type {
-  Atom,
-  Cell,
-  Dynamics,
-  Hit,
-  Molecule,
-  Organism,
-} from './types.js';
+import type { Atom, Cell, Dynamics, Hit, Molecule, Organism } from './types.js';
 
 const PPQ = 480;
 
@@ -35,11 +28,7 @@ export function applySwing(
 
 // ─── Dynamics ─────────────────────────────────────────────────────────────────
 
-export function dynamicsMultiplier(
-  dyn: Dynamics,
-  barInCell: number,
-  cellLength: number,
-): number {
+export function dynamicsMultiplier(dyn: Dynamics, barInCell: number, cellLength: number): number {
   const progress = cellLength > 1 ? barInCell / (cellLength - 1) : 0;
   const a = clamp01(dyn.amount);
   switch (dyn.type) {
@@ -62,6 +51,13 @@ export function dynamicsMultiplier(
   }
 }
 
+// ─── Pool selection ──────────────────────────────────────────────────────────
+
+/** Deterministic per-bar pool index — same (barInCell, seed) always picks the same molecule. */
+function poolIndex(barInCell: number, poolLen: number, seed: number): number {
+  return ((barInCell * 1664525 + 1013904223 + seed) >>> 0) % poolLen;
+}
+
 // ─── assembleBar ──────────────────────────────────────────────────────────────
 
 /**
@@ -74,6 +70,7 @@ export function assembleBar<TStyle extends string, TSound extends string = strin
   barInCell: number,
   swingRatio: number,
   resolveMolecule: (id: string) => Molecule<TStyle, TSound> | undefined,
+  seed = 0,
 ): Hit<TSound>[] {
   const hits: Hit<TSound>[] = [];
   const tpBeat = PPQ;
@@ -86,10 +83,11 @@ export function assembleBar<TStyle extends string, TSound extends string = strin
     );
     if (!clip) continue;
 
-    const mol = resolveMolecule(clip.pool[0]!);
+    const localBar = barInCell - clip.startBar;
+    const idx = poolIndex(barInCell, clip.pool.length, seed);
+    const mol = resolveMolecule(clip.pool[idx]!);
     if (!mol) continue;
 
-    const localBar = barInCell - clip.startBar;
     const molBar = ((localBar % mol.bars) + mol.bars) % mol.bars;
 
     for (const atom of mol.atoms) {

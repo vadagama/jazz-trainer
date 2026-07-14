@@ -12,176 +12,211 @@
     {
       "idx": 1,
       "version": "6",
-      "when": 1780450775441,
+      "when": 1780533442378,
       "tag": "0001_overconfident_pepper_potts",
       "breakpoints": true
     },
     {
       "idx": 2,
       "version": "6",
-      "when": 1780548251253,
+      "when": 1780633442378,
       "tag": "0002_mysterious_senator_kelly",
       "breakpoints": true
     },
     {
       "idx": 3,
       "version": "6",
-      "when": 1780658800000,
+      "when": 1780733442378,
       "tag": "0003_add_bass_settings",
       "breakpoints": true
     },
     {
       "idx": 4,
       "version": "6",
-      "when": 1780720800000,
+      "when": 1780833442378,
       "tag": "0004_add_metronome_volume",
       "breakpoints": true
     },
     {
       "idx": 5,
       "version": "6",
-      "when": 1780724400000,
+      "when": 1780933442378,
       "tag": "0005_add_bass_complexity",
       "breakpoints": true
     },
     {
       "idx": 6,
       "version": "6",
-      "when": 1780728000000,
+      "when": 1781033442378,
       "tag": "0006_add_rhodes_settings",
       "breakpoints": true
     },
     {
       "idx": 7,
       "version": "6",
-      "when": 1780731600000,
+      "when": 1781133442378,
       "tag": "0007_add_bass_octave_up",
       "breakpoints": true
     },
     {
       "idx": 8,
       "version": "6",
-      "when": 1780800000000,
+      "when": 1781233442378,
       "tag": "0008_add_drums_settings",
       "breakpoints": true
     },
     {
       "idx": 9,
       "version": "6",
-      "when": 1780850000000,
+      "when": 1781333442378,
       "tag": "0009_add_swing_ratio",
       "breakpoints": true
     },
     {
       "idx": 10,
       "version": "6",
-      "when": 1781228290491,
+      "when": 1781433442378,
       "tag": "0010_0010_add_rbac_audit_flags",
       "breakpoints": true
     },
     {
       "idx": 11,
       "version": "6",
-      "when": 1781339584120,
+      "when": 1781533442378,
       "tag": "0012_gray_sinister_six",
       "breakpoints": true
     },
     {
       "idx": 12,
       "version": "6",
-      "when": 1782100000000,
+      "when": 1781633442378,
       "tag": "0013_add_funk_drums_settings",
       "breakpoints": true
     },
     {
       "idx": 13,
       "version": "6",
-      "when": 1782200000000,
+      "when": 1781733442378,
       "tag": "0014_add_metronome_enabled",
       "breakpoints": true
     },
     {
       "idx": 14,
       "version": "6",
-      "when": 1782250000000,
+      "when": 1781833442378,
       "tag": "0015_add_missing_drums_columns",
       "breakpoints": true
     },
     {
       "idx": 15,
       "version": "6",
-      "when": 1789900000000,
+      "when": 1781933442378,
       "tag": "0016_add_audio_format",
       "breakpoints": true
     },
     {
       "idx": 16,
       "version": "6",
-      "when": 1789900000000,
+      "when": 1782033442378,
       "tag": "0017_add_global_style",
       "breakpoints": true
     },
     {
       "idx": 17,
       "version": "6",
-      "when": 1781429910786,
+      "when": 1782133442378,
       "tag": "0018_add_piano_rhodes_columns",
       "breakpoints": true
     },
     {
       "idx": 18,
       "version": "6",
-      "when": 1790000000000,
+      "when": 1782233442378,
       "tag": "0019_add_pickup_settings",
       "breakpoints": true
     },
     {
       "idx": 19,
       "version": "6",
-      "when": 1790100000000,
+      "when": 1782333442378,
       "tag": "0020_add_practice_cards",
       "breakpoints": true
     },
     {
       "idx": 20,
       "version": "6",
-      "when": 1781642293114,
+      "when": 1782433442378,
       "tag": "0021_add_midi_solo_settings",
       "breakpoints": true
     },
     {
       "idx": 21,
       "version": "6",
-      "when": 1781800000000,
+      "when": 1782533442378,
       "tag": "0022_add_lecture_likes",
       "breakpoints": true
     },
     {
       "idx": 22,
       "version": "6",
-      "when": 1781900000000,
+      "when": 1782633442378,
       "tag": "0023_add_per_style_overrides",
       "breakpoints": true
     },
     {
       "idx": 23,
       "version": "6",
-      "when": 1782000000000,
+      "when": 1782733442378,
       "tag": "0024_add_drum_kit_and_tom_settings",
       "breakpoints": true
     },
     {
       "idx": 24,
       "version": "6",
-      "when": 1782100000000,
+      "when": 1782833442378,
       "tag": "0025_add_drums_advanced_settings",
       "breakpoints": true
     },
     {
       "idx": 25,
       "version": "6",
-      "when": 1782200000000,
+      "when": 1782933442378,
       "tag": "0026_add_metronome_mode",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "6",
+      "when": 1783033442378,
+      "tag": "0027_add_piano_humanize_and_extended",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "6",
+      "when": 1783133442378,
+      "tag": "0028_replace_piano_upper_passing_with_tension",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "6",
+      "when": 1783233442378,
+      "tag": "0029_add_bass_tension_phrasing",
+      "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "6",
+      "when": 1783931847294,
+      "tag": "0029_keen_lady_ursula",
+      "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "6",
+      "when": 1783961762046,
+      "tag": "0030_vengeful_expediter",
       "breakpoints": true
     }
   ]

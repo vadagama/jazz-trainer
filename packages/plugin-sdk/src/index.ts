@@ -15,6 +15,7 @@ export {
   PluginProvider,
   usePluginTransport,
   usePluginDrumPreview,
+  usePluginPercussionPreview,
   useInstruments,
 } from './host-context';
 export type { UseTransportFn } from './host-context';
@@ -24,6 +25,11 @@ export type {
   DrumPreviewPlayOptions,
   UseDrumPreviewFn,
 } from './drumPreview';
+export type {
+  PercussionPreviewControls,
+  PercussionPreviewPlayOptions,
+  UsePercussionPreviewFn,
+} from './percussionPreview';
 export type { PluginManifest, PluginManifestInput } from './manifest.schema';
 export { instrumentManifestSchema, validateInstrumentManifest } from './instrumentManifest.schema';
 

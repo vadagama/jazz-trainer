@@ -184,11 +184,11 @@ export function useDrumPreview(): DrumPreviewControls {
       transport.start();
 
       // Playhead: сообщаем текущий такт цикла (для подсветки в редакторе).
-      const secPerBar = BEATS_PER_BAR * (60 / bpm);
+      const ticksPerBar = PPQ * BEATS_PER_BAR;
       const bars = Math.max(1, Math.round(loopBars));
       setCurrentBar(0);
       posTimerRef.current = setInterval(() => {
-        const bar = Math.floor(Tone.getTransport().seconds / secPerBar) % bars;
+        const bar = Math.floor(Tone.getTransport().ticks / ticksPerBar) % bars;
         setCurrentBar(bar);
       }, 60);
     },

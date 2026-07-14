@@ -31,6 +31,20 @@ if (typeof window !== 'undefined') {
 const rootElement = document.getElementById('root');
 if (!rootElement) throw new Error('Root element #root not found');
 
+// Suppress unavoidable Chrome internal IPC errors that occur during
+// Vite HMR page reloads when Web Audio / Web MIDI nodes are torn down
+// and recreated. These originate from Chrome's audio/midi service
+// messaging layer (chrome.runtime.sendMessage internally), not from
+// application code, and cannot be fixed at the JS level.
+if (typeof window !== 'undefined') {
+  window.addEventListener('unhandledrejection', (event) => {
+    const msg = event.reason?.message ?? String(event.reason);
+    if (msg.includes('Could not establish connection')) {
+      event.preventDefault(); // suppress "Uncaught (in promise)" in console
+    }
+  });
+}
+
 ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>

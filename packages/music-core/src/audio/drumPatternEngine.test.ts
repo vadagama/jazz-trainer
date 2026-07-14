@@ -43,7 +43,7 @@ describe('DrumPatternEngine.assembleBar', () => {
     expect(a.length).toBeGreaterThan(0);
   });
 
-  it('picks first molecule from pool', () => {
+  it('selects pool molecules deterministically per bar (not always pool[0])', () => {
     const c = cell({
       lanes: [
         lane('groove', {
@@ -53,10 +53,19 @@ describe('DrumPatternEngine.assembleBar', () => {
         }),
       ],
     });
-    const hits = engine.assembleBar(c, 0, 0.5);
-    // First molecule in pool is swing-ride-basic (ride), not feathering-1 (kick)
-    expect(hits.length).toBeGreaterThan(0);
-    expect(hits.every((h) => h.sound === 'ride')).toBe(true);
+    // Determinism: same bar always produces the same hits
+    const a0 = engine.assembleBar(c, 0, 0.5);
+    const b0 = engine.assembleBar(c, 0, 0.5);
+    expect(a0).toEqual(b0);
+    expect(a0.length).toBeGreaterThan(0);
+
+    // At least one bar should differ from bar 0 (pool has 2 items)
+    const sounds = new Set<string>();
+    for (let bar = 0; bar < 8; bar++) {
+      for (const h of engine.assembleBar(c, bar, 0.5)) sounds.add(h.sound);
+    }
+    expect(sounds.has('ride')).toBe(true);
+    expect(sounds.has('bassDrum')).toBe(true);
   });
 
   it('tiles a 2-bar molecule across the span (molBar cycles every 2 bars)', () => {
@@ -298,6 +307,41 @@ describe('DrumPatternEngine section-driven', () => {
     const r16 = engine.selectCellForSectionType(v3Organism, 'verseA', '4/4', 16, 'swing', 42);
     expect(r0.cell.id).toBe('swing-16-verse');
     expect(r16.cell.id).toBe('swing-16-brushes');
+  });
+
+  it('selectCellForSectionType cycles pool per form pass (passIndex)', () => {
+    // bar 0, pass 0 → cell[0]; bar 0, pass 1 → cell[1]; bar 0, pass 2 → cell[0]
+    const r0 = engine.selectCellForSectionType(v3Organism, 'verseA', '4/4', 0, 'swing', 42, 0);
+    const r1 = engine.selectCellForSectionType(v3Organism, 'verseA', '4/4', 0, 'swing', 42, 1);
+    const r2 = engine.selectCellForSectionType(v3Organism, 'verseA', '4/4', 0, 'swing', 42, 2);
+    expect(r0.cell.id).toBe('swing-16-verse');
+    expect(r1.cell.id).toBe('swing-16-brushes');
+    // pass 2 wraps back to cell[0]
+    expect(r2.cell.id).toBe('swing-16-verse');
+  });
+
+  it('passIndex composes with within-section bar cycling', () => {
+    // 32-bar section, 16-bar cells: pass 0 bar 16 → cell[1]; pass 1 bar 0 → cell[1]
+    const rPass0Bar16 = engine.selectCellForSectionType(
+      v3Organism,
+      'verseA',
+      '4/4',
+      16,
+      'swing',
+      42,
+      0,
+    );
+    const rPass1Bar0 = engine.selectCellForSectionType(
+      v3Organism,
+      'verseA',
+      '4/4',
+      0,
+      'swing',
+      42,
+      1,
+    );
+    expect(rPass0Bar16.cell.id).toBe('swing-16-brushes');
+    expect(rPass1Bar0.cell.id).toBe('swing-16-brushes');
   });
 
   it('selectOrganism returns a section-driven organism', () => {

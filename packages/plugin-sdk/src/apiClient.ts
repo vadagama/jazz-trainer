@@ -3,6 +3,7 @@ export class ApiError extends Error {
     public readonly status: number,
     public readonly code: string,
     message: string,
+    public readonly issues?: unknown[],
   ) {
     super(message);
     this.name = 'ApiError';
@@ -22,14 +23,18 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   if (!res.ok) {
     let code = 'INTERNAL';
     let message = res.statusText;
+    let issues: unknown[] | undefined;
     try {
-      const body = (await res.json()) as { error?: { code?: string; message?: string } } | null;
+      const body = (await res.json()) as {
+        error?: { code?: string; message?: string; issues?: unknown[] };
+      } | null;
       code = body?.error?.code ?? code;
       message = body?.error?.message ?? message;
+      issues = body?.error?.issues;
     } catch {
       // ignore parse errors
     }
-    throw new ApiError(res.status, code, message);
+    throw new ApiError(res.status, code, message, issues);
   }
 
   if (res.status === 204) return undefined as T;

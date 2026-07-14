@@ -228,6 +228,25 @@ Jazz Trainer — браузерный тренажёр джазовой гарм
 - Статистика использования
 - Health-check системы
 
+### 5.6. Конструктор фортепиано 🟢
+
+**Плагин:** `admin-piano-constructor` | **Маршрут:** `/admin/piano-constructor`
+
+- Изучение молекул, клеток и организмов фортепиано (роли голоса: chord, shell, bass, top, upper)
+- Piano-roll редактор молекул (двумерная сетка: роль × tick)
+- Предпрослушивание через сэмплер (Upright / Salamander)
+- Сохранение в localStorage (autosave) + публикация в код (dev-режим)
+
+### 5.7. Конструктор барабанов 🟢
+
+**Плагин:** `admin-drum-constructor` | **Маршрут:** `/admin/drum-constructor`
+
+- Изучение молекул, клеток и организмов барабанов (22 артикуляции для Jazz/Funk Kit)
+- Step-grid редактор молекул (строки по звукам: тарелки→райд→хэт→малый→томы→бочка)
+- Выбор активного кита (Jazz / Funk) и предпрослушивание
+- Валидация клеток (lane count, velocity, clip overlap, moleculeId)
+- Сохранение в localStorage (autosave) + публикация в код (dev-режим)
+
 ---
 
 ## 6. Аудио и MIDI
@@ -237,6 +256,7 @@ Jazz Trainer — браузерный тренажёр джазовой гарм
 - Звуковой движок на базе Tone.js (Web Audio API)
 - Изолирован от ядра через `AudioPort` (адаптер `tone-audio-adapter`)
 - Заменяем на другой движок без изменения ядра и плагинов
+- **Спецификации:** `docs/MELODIC-PLUGIN.md` (создание pitched-инструмента), `docs/RHYTHMIC-PLUGIN.md` (создание unpitched-инструмента)
 
 ### 6.2. MIDI-ввод и вывод 🟢
 
@@ -260,12 +280,13 @@ Jazz Trainer — браузерный тренажёр джазовой гарм
 **Барабаны (DrumInstrument) 🟢:**
 
 - Два набора сэмплов: Jazz Drum Kit (Swirly Drums 1104, 4 velocity-слоя) и Funk Drum Kit (Virtuosity Drums, 2–5 layers)
-- Organism-driven паттерны v2: organism → cell → molecule → atom для всех 5 стилей (swing/bossa/funk/latin/ballad)
+- Organism-driven паттерны v3 (section-driven scheduling): organism → sectionMap → cell → molecule → atom для всех 5 стилей (swing/bossa/funk/latin/ballad)
+- Per-kit артикуляции: Jazz Kit (swirl, stir, splash, dig, edge), Funk Kit (buzz, flam, rimshot, bell, sizzle)
 - Per-style defaults: per-kit overrides (swing ride-driven, bossa clave+rim, funk 16-е + акценты, …)
-- Per-sound настройки: раздельное включение/громкость для каждого звука
-- Humanization (timing jitter ±3–8 мс) и рандомайзер (off/subtle/moderate/high)
-- Fills каждые N тактов (4/8/16) с настраиваемой сложностью
-- Modern Kit: per-style defaults (bossa: snare off, rim on; ballad: громкость 0.6)
+- Per-sound настройки: раздельное включение/громкость для каждого звука (включая артикуляции)
+- Humanization (timing jitter ±3–8 мс)
+- Crash-accent overlay каждые N тактов
+- Generic pattern engine (pattern/engine.ts) — переиспользуется перкуссией и фортепиано
 - Подробнее: `docs/DRUMS.md`
 
 **Grand Piano (PianoInstrument) 🟢:**
@@ -277,7 +298,10 @@ Jazz Trainer — браузерный тренажёр джазовой гарм
 - Voice leading с минимальным движением голосов между аккордами (включая внутритактовые переходы)
 - Встроенный рандомайзер (off/subtle/moderate/high)
 - Стиле-зависимый выбор профиля по умолчанию
-- Два источника сэмплов: Salamander Grand Piano, Upright KW
+- Два источника сэмплов: Upright KW (3 vel. слоя, плагин `@jazz/plugin-upright-piano`), Salamander Grand Piano (3 vel. слоя)
+- Альтернативный pattern-engine: organism → sectionMap → cell → molecule → atom (VoiceRole вместо интервалов)
+- 4 уровня напряжения (Tension): clean/moderate/altered/max — управление надстройками (upper structures)
+- Конструктор фортепиано: `/admin/piano-constructor` для изучения и редактирования паттернов
 - Подробнее: `docs/PIANO.md`
 
 **Rhodes (RhodesInstrument) 🟢 — комплементарный слой:**

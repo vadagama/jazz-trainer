@@ -94,6 +94,8 @@ export class TransportEngine {
 
   /** Grid sections for section-driven scheduling (null = no sections). */
   private sections: Section[] | null = null;
+  /** Per-playthrough seed for molecule pool variation. Regenerated on each play(). */
+  private playSeed = 0;
 
   constructor(opts: TransportEngineOptions) {
     this.bpm = Math.max(20, Math.min(400, opts.bpm ?? 120));
@@ -147,11 +149,10 @@ export class TransportEngine {
   }
 
   /**
-   * Apply a full style profile: tempo and instrument defaults.
-   * Does NOT override swing ratio — that is a user-controlled setting.
+   * Apply a full style profile: instrument defaults.
+   * Does NOT override BPM or swing ratio — those are user-controlled settings.
    */
   setStyleProfile(profile: StyleProfile): void {
-    this.setBpm(profile.defaultTempo);
     for (const instrument of this.instruments) {
       instrument.setStyleProfile?.(profile);
     }
@@ -217,6 +218,7 @@ export class TransportEngine {
       swingRatio: this.swingRatio,
       gridSectionType,
       barInSection,
+      playSeed: this.playSeed,
       scheduleClick: (atTicks: number, beatType: BeatType) => this.sink(atTicks, beatType),
       // Canonical dispatch — each instrument calls this with its typed payload
       scheduleEvent: (
@@ -254,6 +256,7 @@ export class TransportEngine {
   }
 
   play(): void {
+    this.playSeed = (Date.now() * 2654435761) >>> 0;
     this.status = 'playing';
   }
 

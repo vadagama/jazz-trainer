@@ -65,12 +65,11 @@ describe('TransportEngine', () => {
   });
 
   describe('setStyleProfile', () => {
-    it('applies tempo and swing from the profile', () => {
+    it('propagates to instruments but does NOT override BPM or swing', () => {
       const engine = new TransportEngine({ bpm: 120, swingRatio: 0.5, sink: vi.fn() });
       const profile = getStyleProfile('swing');
       engine.setStyleProfile(profile);
-      expect(engine.bpm).toBe(140);
-      expect(engine.ticksToSeconds(480)).toBeCloseTo(480 / (140 / 60) / 480, 0);
+      expect(engine.bpm).toBe(120);
     });
 
     it('propagates profile to instruments that implement setStyleProfile', () => {
@@ -93,7 +92,7 @@ describe('TransportEngine', () => {
       engine.addInstrument(metronome);
       // Should not throw
       expect(() => engine.setStyleProfile(getStyleProfile('ballad'))).not.toThrow();
-      expect(engine.bpm).toBe(60);
+      expect(engine.bpm).toBe(120);
     });
 
     it('changing style updates all attached instruments', () => {
@@ -115,7 +114,7 @@ describe('TransportEngine', () => {
       engine.setStyleProfile(getStyleProfile('funk'));
       expect(receivedA).toEqual(['funk']);
       expect(receivedB).toEqual(['funk']);
-      expect(engine.bpm).toBe(100);
+      expect(engine.bpm).toBe(120);
     });
 
     it('switching Swing → Funk changes all instrument outputs (integration)', () => {
@@ -163,8 +162,11 @@ describe('TransportEngine', () => {
         velocity: number;
       }> = [];
 
-      engine.registerSink('bass', (p, atTicks, vel) =>
-        recordedEvents.push({ instrumentId: 'bass', payload: p, atTicks, velocity: vel }),
+      engine.registerSink('upright-bass', (p, atTicks, vel) =>
+        recordedEvents.push({ instrumentId: 'upright-bass', payload: p, atTicks, velocity: vel }),
+      );
+      engine.registerSink('electric-bass', (p, atTicks, vel) =>
+        recordedEvents.push({ instrumentId: 'electric-bass', payload: p, atTicks, velocity: vel }),
       );
       engine.registerSink('drums', (p, atTicks, vel) =>
         recordedEvents.push({ instrumentId: 'drums', payload: p, atTicks, velocity: vel }),
@@ -189,19 +191,19 @@ describe('TransportEngine', () => {
       engine.scheduleWindow({ fromTicks: 0, toTicks: 1920 });
       const funkEventsByInstrument = groupByInstrument(recordedEvents.splice(0));
 
-      // Verify tempo changed
-      expect(engine.bpm).toBe(100); // funk default
-
-      // All instruments produced events in both styles
-      for (const id of ['bass', 'drums', 'piano', 'rhodes', 'guitar']) {
+      // All instruments produced events in both styles. Bass is variant-scoped:
+      // swing → upright-bass, funk → electric-bass.
+      for (const id of ['drums', 'piano', 'rhodes', 'guitar']) {
         expect(swingEventsByInstrument.get(id)?.length).toBeGreaterThan(0);
         expect(funkEventsByInstrument.get(id)?.length).toBeGreaterThan(0);
       }
+      expect(swingEventsByInstrument.get('upright-bass')?.length).toBeGreaterThan(0);
+      expect(funkEventsByInstrument.get('electric-bass')?.length).toBeGreaterThan(0);
 
-      // Bass: swing produces walking bass events (many notes), funk produces syncopated
-      expect(swingEventsByInstrument.get('bass')!.length).not.toBe(
-        funkEventsByInstrument.get('bass')!.length,
-      );
+      // Bass variant switched: swing used upright-bass, funk used electric-bass
+      // (a single BassInstrument instance adapts to the style's active variant).
+      expect(swingEventsByInstrument.has('upright-bass')).toBe(true);
+      expect(funkEventsByInstrument.has('electric-bass')).toBe(true);
 
       // Drums: swing ride-heavy vs funk kick-heavy patterns differ
       expect(swingEventsByInstrument.get('drums')!.length).not.toBe(

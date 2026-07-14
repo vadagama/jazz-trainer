@@ -3,6 +3,8 @@ import type { Style, UserSettingsDTO } from '@jazz/shared';
 import {
   getStyleProfile,
   getOrganismsForStyle,
+  getPianoOrganismsForStyle,
+  getBassOrganismsForStyle,
   instrumentDefaultsFor,
   type InstrumentId,
 } from '@jazz/music-core';
@@ -143,7 +145,9 @@ export function InstrumentTile({ instrumentId, style }: InstrumentTileProps) {
     if (instrumentId === 'piano') return <PianoTile style={style} />;
     if (instrumentId === 'rhodes') return <RhodesTile style={style} />;
     if (instrumentId === 'guitar' || instrumentId === 'electric-guitar')
-      return <GuitarTile instrumentId={instrumentId as 'guitar' | 'electric-guitar'} style={style} />;
+      return (
+        <GuitarTile instrumentId={instrumentId as 'guitar' | 'electric-guitar'} style={style} />
+      );
     return <SimpleTile instrumentId={instrumentId} style={style} />;
   }
   if (info?.family === 'percussion') return <PercussionTile style={style} />;
@@ -250,8 +254,8 @@ function DrumsTile({
               kitOptions.length > 0
                 ? kitOptions
                 : [
-                    { value: 'jazz-drum-kit', label: 'Jazz Kit' },
-                    { value: 'funk-drum-kit', label: 'Funk Kit' },
+                    { value: 'jazz-drum-kit', label: 'Jazz Drum Kit' },
+                    { value: 'funk-drum-kit', label: 'Funk Drum Kit' },
                   ]
             }
             onChange={(v) => set({ drumKit: v })}
@@ -285,6 +289,9 @@ function BassTile({ style }: { style: Style }) {
   const defaults = getStyleProfile(style).instrumentDefaults['upright-bass'];
   const on = get(settings, `${prefix}Enabled`) !== false;
 
+  const organisms = useMemo(() => getBassOrganismsForStyle(getStyleProfile(style).id), [style]);
+  const currentPattern = (get(settings, `${prefix}Pattern`) as string | undefined | null) ?? null;
+
   const set = useCallback(
     (patch: Record<string, unknown>) => mutate.mutate(patch as Parameters<typeof mutate.mutate>[0]),
     [mutate],
@@ -309,30 +316,142 @@ function BassTile({ style }: { style: Style }) {
           />
         </SettingRow>
 
-        <SettingRow label="Сложность паттерна">
+        <SettingRow label="Tension">
           <SettingSelect
-            value={String(get(settings, `${prefix}Complexity`) ?? 1)}
-            defaultValue="1"
+            value={
+              (get(settings, `${prefix}Tension`) as string) ??
+              (defaults.tension as string) ??
+              'clean'
+            }
+            defaultValue="clean"
             disabled={!on}
             options={[
-              { value: '1', label: '1 — Корень на доле 1' },
-              { value: '2', label: '2 — Корень на каждой доле' },
-              { value: '3', label: '3 — Корень + квинта' },
-              { value: '4', label: '4 — Звуки аккорда' },
-              { value: '5', label: '5 — Walking + хроматика' },
-              { value: '6', label: '6 — Аккорд (1 2 3 4)' },
-              { value: '7', label: '7 — Аккорд (1 3)' },
+              { value: 'clean', label: 'Clean' },
+              { value: 'moderate', label: 'Moderate' },
+              { value: 'altered', label: 'Altered' },
+              { value: 'max', label: 'Max' },
             ]}
-            className="w-48 h-7 text-xs"
-            onChange={(v) => set({ [`${prefix}Complexity`]: Number(v) })}
+            className="w-36 h-7 text-xs"
+            onChange={(v) => set({ [`${prefix}Tension`]: v })}
           />
         </SettingRow>
 
-        <SettingRow label="+1 октава">
+        <SettingRow label="Паттерн">
+          <SettingSelect
+            value={currentPattern ?? '__auto__'}
+            defaultValue="__auto__"
+            disabled={!on}
+            options={[
+              { value: '__auto__', label: 'Авто' },
+              ...organisms.map((o) => ({ value: o.id, label: o.label })),
+            ]}
+            className="w-44 h-7 text-xs"
+            onChange={(v) => set({ [`${prefix}Pattern`]: v === '__auto__' ? null : v })}
+          />
+        </SettingRow>
+
+        <SettingRow label="Вариант">
+          <SettingSelect
+            value={(get(settings, `${prefix}Variant`) as string) ?? '__auto__'}
+            defaultValue="__auto__"
+            disabled={!on}
+            options={[
+              { value: '__auto__', label: 'Авто (по стилю)' },
+              { value: 'upright', label: 'Upright (контрабас)' },
+              { value: 'electric', label: 'Electric (бас-гитара)' },
+            ]}
+            className="w-44 h-7 text-xs"
+            onChange={(v) => set({ [`${prefix}Variant`]: v === '__auto__' ? null : v })}
+          />
+        </SettingRow>
+
+        {/* Humanize section */}
+        <div className="pt-2 border-t border-border space-y-3">
+          <Label className="text-xs font-medium text-muted-foreground">Humanize</Label>
+
+          <SettingRow label="Phrasing">
+            <SettingSelect
+              value={
+                ((get(settings, `${prefix}Humanize`) as Record<string, unknown>)
+                  ?.phrasing as string) ?? 'expressive'
+              }
+              defaultValue="expressive"
+              disabled={!on}
+              options={[
+                { value: 'flat', label: 'Flat' },
+                { value: 'gentle', label: 'Gentle' },
+                { value: 'expressive', label: 'Expressive' },
+              ]}
+              onChange={(v) => {
+                const h = (get(settings, `${prefix}Humanize`) as Record<string, unknown>) ?? {};
+                set({ [`${prefix}Humanize`]: { ...h, phrasing: v } });
+              }}
+            />
+          </SettingRow>
+
+          <SettingRow label="Velocity Variation">
+            <SettingSelect
+              value={
+                ((get(settings, `${prefix}Humanize`) as Record<string, unknown>)
+                  ?.velocityVariation as string) ?? 'medium'
+              }
+              defaultValue="medium"
+              disabled={!on}
+              options={[
+                { value: 'off', label: 'Off' },
+                { value: 'light', label: 'Light' },
+                { value: 'medium', label: 'Medium' },
+                { value: 'strong', label: 'Strong' },
+              ]}
+              onChange={(v) => {
+                const h = (get(settings, `${prefix}Humanize`) as Record<string, unknown>) ?? {};
+                set({ [`${prefix}Humanize`]: { ...h, velocityVariation: v } });
+              }}
+            />
+          </SettingRow>
+
+          <SettingRow label="Timing Jitter">
+            <SettingSelect
+              value={
+                ((get(settings, `${prefix}Humanize`) as Record<string, unknown>)
+                  ?.timingJitterMs as string) ?? 'low'
+              }
+              defaultValue="low"
+              disabled={!on}
+              options={[
+                { value: 'none', label: 'Нет' },
+                { value: 'low', label: 'Мало' },
+                { value: 'medium', label: 'Средне' },
+                { value: 'high', label: 'Много' },
+              ]}
+              onChange={(v) => {
+                const h = (get(settings, `${prefix}Humanize`) as Record<string, unknown>) ?? {};
+                set({ [`${prefix}Humanize`]: { ...h, timingJitterMs: v } });
+              }}
+            />
+          </SettingRow>
+        </div>
+
+        <SettingRow label="Ghost-ноты">
           <Checkbox
             disabled={!on}
-            checked={(get(settings, `${prefix}OctaveUp`) as boolean) ?? false}
-            onChange={(e) => set({ [`${prefix}OctaveUp`]: e.target.checked })}
+            checked={(get(settings, `${prefix}UseMutedNotes`) as boolean) ?? true}
+            onChange={(e) => set({ [`${prefix}UseMutedNotes`]: e.target.checked })}
+          />
+        </SettingRow>
+
+        <SettingRow label="Диапазон">
+          <SettingSelect
+            value={(get(settings, `${prefix}Range`) as string) ?? 'medium'}
+            defaultValue="medium"
+            disabled={!on}
+            options={[
+              { value: 'narrow', label: 'Узкий' },
+              { value: 'medium', label: 'Средний' },
+              { value: 'wide', label: 'Широкий' },
+            ]}
+            className="w-36 h-7 text-xs"
+            onChange={(v) => set({ [`${prefix}Range`]: v })}
           />
         </SettingRow>
       </CardContent>
@@ -355,11 +474,14 @@ function PianoTile({ style }: { style: Style }) {
     [mutate],
   );
 
+  const organisms = useMemo(() => getPianoOrganismsForStyle(getStyleProfile(style).id), [style]);
+  const currentPattern = (get(settings, 'pianoPattern') as string | undefined | null) ?? null;
+
   return (
     <Card className={!on ? 'opacity-50' : undefined}>
       <CardHeader className="pb-2">
         <TileHeader
-          name={useInstrumentName('piano')}
+          name="Piano"
           enabled={on}
           onToggle={() => set({ [`${prefix}Enabled`]: !on })}
         />
@@ -374,20 +496,16 @@ function PianoTile({ style }: { style: Style }) {
           />
         </SettingRow>
 
-        <SettingRow label="Профиль компинга">
+        <SettingRow label="Паттерны">
           <SettingSelect
-            value={(get(settings, `${prefix}Profile`) as string) ?? 'swing-sparse'}
-            defaultValue="swing-sparse"
+            value={currentPattern ?? '__auto__'}
+            defaultValue="__auto__"
             disabled={!on}
             options={[
-              { value: 'swing-sparse', label: 'Swing Sparse' },
-              { value: 'swing-medium', label: 'Swing Medium' },
-              { value: 'basie-light', label: 'Basie Light' },
-              { value: 'offbeat-push', label: 'Offbeat Push' },
-              { value: 'beginner-safe', label: 'Beginner Safe' },
+              { value: '__auto__', label: 'Авто' },
+              ...organisms.map((o) => ({ value: o.id, label: o.label })),
             ]}
-            className="w-40 h-7 text-xs"
-            onChange={(v) => set({ [`${prefix}Profile`]: v })}
+            onChange={(v) => set({ pianoPattern: v === '__auto__' ? null : v })}
           />
         </SettingRow>
 
@@ -414,12 +532,142 @@ function PianoTile({ style }: { style: Style }) {
             disabled={!on}
             options={[
               { value: 'salamander', label: 'Salamander Grand' },
-              { value: 'upright-kw', label: 'Upright KW' },
+              { value: 'upright', label: 'Upright Piano' },
             ]}
             className="w-44 h-7 text-xs"
             onChange={(v) => set({ [`${prefix}SampleLibrary`]: v })}
           />
         </SettingRow>
+
+        <SettingRow label="Tension">
+          <SettingSelect
+            value={
+              (get(settings, `${prefix}Tension`) as string) ??
+              (defaults.tension as string) ??
+              'clean'
+            }
+            defaultValue="clean"
+            disabled={!on}
+            options={[
+              { value: 'clean', label: 'Clean' },
+              { value: 'moderate', label: 'Moderate' },
+              { value: 'altered', label: 'Altered' },
+              { value: 'max', label: 'Max' },
+            ]}
+            className="w-36 h-7 text-xs"
+            onChange={(v) => set({ [`${prefix}Tension`]: v })}
+          />
+        </SettingRow>
+
+        {/* Humanize section */}
+        <div className="pt-2 border-t border-border space-y-3">
+          <Label className="text-xs font-medium text-muted-foreground">Humanize</Label>
+
+          <SettingRow label="Timing Jitter">
+            <SettingSelect
+              value={
+                ((get(settings, `${prefix}Humanize`) as Record<string, unknown>)
+                  ?.timingJitterMs as string) ?? 'low'
+              }
+              defaultValue="low"
+              disabled={!on}
+              options={[
+                { value: 'none', label: 'Нет' },
+                { value: 'low', label: 'Мало' },
+                { value: 'medium', label: 'Средне' },
+                { value: 'high', label: 'Много' },
+              ]}
+              onChange={(v) => {
+                const h = (get(settings, `${prefix}Humanize`) as Record<string, unknown>) ?? {};
+                set({ [`${prefix}Humanize`]: { ...h, timingJitterMs: v } });
+              }}
+            />
+          </SettingRow>
+
+          <SettingRow label="Chord Spread">
+            <SettingSelect
+              value={
+                ((get(settings, `${prefix}Humanize`) as Record<string, unknown>)
+                  ?.chordSpreadMs as string) ?? 'low'
+              }
+              defaultValue="low"
+              disabled={!on}
+              options={[
+                { value: 'none', label: 'Нет' },
+                { value: 'low', label: 'Мало' },
+                { value: 'medium', label: 'Средне' },
+                { value: 'high', label: 'Много' },
+              ]}
+              onChange={(v) => {
+                const h = (get(settings, `${prefix}Humanize`) as Record<string, unknown>) ?? {};
+                set({ [`${prefix}Humanize`]: { ...h, chordSpreadMs: v } });
+              }}
+            />
+          </SettingRow>
+
+          <SettingRow label="Velocity Variation">
+            <SettingSelect
+              value={
+                ((get(settings, `${prefix}Humanize`) as Record<string, unknown>)
+                  ?.velocityVariation as string) ?? 'medium'
+              }
+              defaultValue="medium"
+              disabled={!on}
+              options={[
+                { value: 'off', label: 'Off' },
+                { value: 'light', label: 'Light' },
+                { value: 'medium', label: 'Medium' },
+                { value: 'strong', label: 'Strong' },
+              ]}
+              onChange={(v) => {
+                const h = (get(settings, `${prefix}Humanize`) as Record<string, unknown>) ?? {};
+                set({ [`${prefix}Humanize`]: { ...h, velocityVariation: v } });
+              }}
+            />
+          </SettingRow>
+
+          <SettingRow label="Phrasing">
+            <SettingSelect
+              value={
+                ((get(settings, `${prefix}Humanize`) as Record<string, unknown>)
+                  ?.phrasing as string) ?? 'expressive'
+              }
+              defaultValue="expressive"
+              disabled={!on}
+              options={[
+                { value: 'flat', label: 'Flat' },
+                { value: 'gentle', label: 'Gentle' },
+                { value: 'expressive', label: 'Expressive' },
+              ]}
+              onChange={(v) => {
+                const h = (get(settings, `${prefix}Humanize`) as Record<string, unknown>) ?? {};
+                set({ [`${prefix}Humanize`]: { ...h, phrasing: v } });
+              }}
+            />
+          </SettingRow>
+
+          <SettingRow label="Timing">
+            <SettingSelect
+              value={
+                ((get(settings, `${prefix}Humanize`) as Record<string, unknown>)
+                  ?.humanizeTiming as string) ?? 'slight-lag'
+              }
+              defaultValue="slight-lag"
+              disabled={!on}
+              options={[
+                { value: 'none', label: 'None' },
+                { value: 'slight-rush', label: 'Slight Rush' },
+                { value: 'slight-lag', label: 'Slight Lag' },
+                { value: 'medium-rush', label: 'Medium Rush' },
+                { value: 'medium-lag', label: 'Medium Lag' },
+              ]}
+              onChange={(v) => {
+                const h = (get(settings, `${prefix}Humanize`) as Record<string, unknown>) ?? {};
+                set({ [`${prefix}Humanize`]: { ...h, humanizeTiming: v } });
+              }}
+            />
+          </SettingRow>
+        </div>
       </CardContent>
     </Card>
   );
@@ -444,14 +692,12 @@ function RhodesTile({ style }: { style: Style }) {
     <Card className={!on ? 'opacity-50' : undefined}>
       <CardHeader className="pb-2">
         <TileHeader
-          name={useInstrumentName('rhodes')}
+          name="Rhodes"
           enabled={on}
           onToggle={() => set({ [`${prefix}Enabled`]: !on })}
         />
       </CardHeader>
       <CardContent className={on ? 'space-y-3' : 'space-y-3 pointer-events-none opacity-60'}>
-        <p className="text-xs text-muted-foreground">Дополнительный слой поверх Piano</p>
-
         <SettingRow label="Режим слоя">
           <SettingSelect
             value={(get(settings, `${prefix}LayerMode`) as string) ?? 'none'}
@@ -534,7 +780,7 @@ function GuitarTile({
     <Card className={!on ? 'opacity-50' : undefined}>
       <CardHeader className="pb-2">
         <TileHeader
-          name={useInstrumentName(instrumentId)}
+          name="Guitar"
           enabled={on}
           onToggle={() => set({ [`${prefix}Enabled`]: !on })}
         />
@@ -607,6 +853,19 @@ function PercussionTile({ style }: { style: Style }) {
 
 // ─── Simple (vibraphone, organ, clarinet, trumpet-muted, flute) ─────────────────
 
+const SIMPLE_DISPLAY_NAMES: Record<string, string> = {
+  vibraphone: 'Vibraphone',
+  organ: 'Organ',
+  clarinet: 'Clarinet',
+  'trumpet-muted': 'Trumpet',
+  flute: 'Flute',
+};
+
+function useSimpleName(id: string): string {
+  const instruments = useInstruments();
+  return instruments.get(id)?.name ?? SIMPLE_DISPLAY_NAMES[id] ?? id;
+}
+
 function SimpleTile({ instrumentId, style }: { instrumentId: InstrumentId; style: Style }) {
   const { data: settings } = useSettings();
   const mutate = useUpdateSettings();
@@ -628,7 +887,7 @@ function SimpleTile({ instrumentId, style }: { instrumentId: InstrumentId; style
     <Card className={!on ? 'opacity-50' : undefined}>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
-          <span className="text-sm font-medium">{useInstrumentName(instrumentId)}</span>
+          <span className="text-sm font-medium">{useSimpleName(instrumentId)}</span>
           {isStyleOnly ? (
             <span className="text-xs text-muted-foreground">{on ? 'Вкл' : 'Выкл'}</span>
           ) : (

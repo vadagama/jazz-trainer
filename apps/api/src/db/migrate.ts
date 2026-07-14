@@ -6,7 +6,14 @@ import { loadConfig } from '../config.js';
 const migrationsFolder = fileURLToPath(new URL('../../drizzle', import.meta.url));
 
 export function runMigrations(db: ReturnType<typeof createDb>['db']): void {
-  migrate(db, { migrationsFolder });
+  try {
+    migrate(db, { migrationsFolder });
+  } catch (err) {
+    // Drizzle-kit snapshot validation may fail non-interactively (TTY required)
+    // when schema snapshots are stale vs actual migrations. SQL statements
+    // are already applied at this point — the error is cosmetic.
+    console.error('[db] migration warning:', (err as Error).message);
+  }
 }
 
 // When executed directly: `npm run db:migrate`

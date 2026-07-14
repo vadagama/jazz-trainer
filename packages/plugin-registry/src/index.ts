@@ -8,10 +8,17 @@ import adminFlags from '@jazz/plugin-admin-flags';
 import adminAssets from '@jazz/plugin-admin-assets';
 import adminDiagnostics from '@jazz/plugin-admin-diagnostics';
 import adminDrumConstructor from '@jazz/plugin-admin-drum-constructor';
+import adminPercussionConstructor from '@jazz/plugin-admin-percussion-constructor';
+import adminPianoConstructor from '@jazz/plugin-admin-piano-constructor';
+import adminBassConstructor from '@jazz/plugin-admin-bass-constructor';
+import adminRhodesConstructor from '@jazz/plugin-admin-rhodes-constructor';
 import jazzDrumKit from '@jazz/plugin-jazz-drum-kit';
 import funkDrumKit from '@jazz/plugin-funk-drum-kit';
 import percussion from '@jazz/plugin-percussion';
 import metronomePlugin from '@jazz/plugin-metronome';
+import uprightPiano from '@jazz/plugin-upright-piano';
+import bass from '@jazz/plugin-bass';
+import rhodes from '@jazz/plugin-rhodes';
 import theoryChordTones from '@jazz/plugin-theory-chord-tones';
 import theoryApproachNotes from '@jazz/plugin-theory-approach-notes';
 import theoryArpeggios from '@jazz/plugin-theory-arpeggios';
@@ -52,10 +59,17 @@ export const PLUGINS: PluginDefinition[] = [
   adminAssets,
   adminDiagnostics,
   adminDrumConstructor,
+  adminPercussionConstructor,
+  adminPianoConstructor,
+  adminBassConstructor,
+  adminRhodesConstructor,
   jazzDrumKit,
   funkDrumKit,
   percussion,
   metronomePlugin,
+  uprightPiano,
+  bass,
+  rhodes,
   theoryChordTones,
   theoryApproachNotes,
   theoryArpeggios,

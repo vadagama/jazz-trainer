@@ -139,6 +139,21 @@ export class ToneAudioAdapter implements AudioPort {
     this.duckingCompressor.reset();
   }
 
+  /**
+   * Dispose all internal Tone.js nodes and stop the ducking loop.
+   * Call when the adapter is no longer needed to prevent stale
+   * Web Audio connections from accumulating (especially under
+   * React StrictMode double-mounting).
+   */
+  dispose(): void {
+    this.stopDuckingLoop();
+    this.duckingCompressor.reset();
+    this.soloBus.dispose();
+    this.accompBus.dispose();
+    this.duckingGain.dispose();
+    this.events.clear();
+  }
+
   // -- Solo bus (T-008) ----------------------------------------------------
 
   /** Get the SoloBus gain node for connecting live instruments. */

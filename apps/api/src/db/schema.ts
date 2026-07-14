@@ -61,7 +61,14 @@ export const userSettings = sqliteTable('user_settings', {
   bassEnabled: integer('bass_enabled', { mode: 'boolean' }).notNull().default(true),
   bassVolume: real('bass_volume').notNull().default(0.7),
   bassComplexity: integer('bass_complexity').notNull().default(1),
-  bassOctaveUp: integer('bass_octave_up', { mode: 'boolean' }).notNull().default(false),
+  /** Вариант баса: upright | electric. Null = брать по стилю (upright для swing/bossa/ballad, electric для funk/latin). */
+  bassVariant: text('bass_variant'),
+  /** Ручка «сколько гармонической краски»: clean|moderate|altered|max (зеркало piano). */
+  bassTension: text('bass_tension').default('clean'),
+  /** JSON: { phrasing, timingJitterMs, velocityVariation, humanizeTiming } (зеркало pianoHumanize). */
+  bassHumanize: text('bass_humanize'),
+  /** Использовать ли приглушённые (ghost/mute) ноты в груве. */
+  bassUseMutedNotes: integer('bass_use_muted_notes', { mode: 'boolean' }).notNull().default(true),
   rhodesEnabled: integer('rhodes_enabled', { mode: 'boolean' }).notNull().default(false),
   rhodesVolume: real('rhodes_volume').notNull().default(0.6),
   rhodesMode: text('rhodes_mode').notNull().default('halfNotes'),
@@ -70,9 +77,13 @@ export const userSettings = sqliteTable('user_settings', {
   rhodesLayerVolume: real('rhodes_layer_volume').notNull().default(0.5),
   pianoEnabled: integer('piano_enabled', { mode: 'boolean' }).notNull().default(false),
   pianoVolume: real('piano_volume').notNull().default(0.7),
+  // pianoProfile: deprecated – компенсируется organism-based PianoPatternEngine
   pianoProfile: text('piano_profile').notNull().default('swing-sparse'),
   pianoVoicingDensity: text('piano_voicing_density').notNull().default('rootless3'),
   pianoSampleLibrary: text('piano_sample_library').notNull().default('salamander'),
+  /** Единственная ручка «сколько гармонической краски»: clean|moderate|altered|max. */
+  pianoTension: text('piano_tension').default('clean'),
+  pianoHumanize: text('piano_humanize'),
   drumsEnabled: integer('drums_enabled', { mode: 'boolean' }).notNull().default(true),
   drumsVolume: real('drums_volume').notNull().default(0.7),
   drumKit: text('drum_kit').notNull().default('jazz-drum-kit'),

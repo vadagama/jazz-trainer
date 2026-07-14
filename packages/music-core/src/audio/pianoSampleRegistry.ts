@@ -1,104 +1,91 @@
 import type { NoteMap } from './sampleRegistry.js';
 
 /**
- * Upright Piano KW — 2 velocity layers (vL = soft, vH = hard).
+ * Upright Piano — VSUpright1 (Versilian Studios Upright #1).
  *
- * Sample library: UprightPianoKW-SFZ-20220221 (CC0, FreePats).
- * Chromatic coverage at minor-third intervals across A0–C8.
+ * 3 velocity layers (soft / medium / hard) at C–G chromatic anchors
+ * across C1–G7 (scientific notation; source uses C3=middle-C convention).
+ * Tone.js interpolates ±2 semitones from each anchor.
  *
- * Tone.js interpolates ±2 semitones from each anchor note,
- * so minor-third spacing gives full-range coverage.
+ * Sample library: VSUpright1_SFZ (Versilian Studios Upright #1).
+ * Encoded via: scripts/encode-piano.sh (VSUpright1 section).
+ *
+ * IMPORTANT: VSUpright1 names files one octave lower than scientific pitch
+ * (C3=middle-C = MIDI 60). Keys here are scientific (C4=middle-C).
  */
 
-export type PianoVelocityLayer = 'soft' | 'hard';
+export type PianoVelocityLayer = 'soft' | 'medium' | 'hard';
 
-/** Velocity threshold: < 0.5 → soft, ≥ 0.5 → hard. */
-const PIANO_VELOCITY_THRESHOLD = 0.5;
-
+/** Velocity thresholds: <0.33 → soft, 0.33–0.66 → medium, >0.66 → hard. */
 export function pickPianoLayer(velocity: number): PianoVelocityLayer {
-  return velocity < PIANO_VELOCITY_THRESHOLD ? 'soft' : 'hard';
+  if (velocity < 0.33) return 'soft';
+  if (velocity < 0.66) return 'medium';
+  return 'hard';
 }
 
-// ─── Soft layer (vL) ──────────────────────────────────────────────────────────
+// ─── Soft layer (vl1, vel 0–65) ────────────────────────────────────────────────
+// VSUpright1 uses C3=middle-C convention; keys below are scientific (C4=middle-C).
 
 const UPRIGHT_SOFT: NoteMap = {
-  A0: 'A0vL.m4a',
-  A1: 'A1vL.m4a',
-  A2: 'A2vL.m4a',
-  A3: 'A3vL.m4a',
-  A4: 'A4vL.m4a',
-  A5: 'A5vL.m4a',
-  A6: 'A6vL.m4a',
-  A7: 'A7vL.m4a',
-  C1: 'C1vL.m4a',
-  C2: 'C2vL.m4a',
-  C3: 'C3vL.m4a',
-  C4: 'C4vL.m4a',
-  C5: 'C5vL.m4a',
-  C6: 'C6vL.m4a',
-  C7: 'C7vL.m4a',
-  C8: 'C8vL.m4a',
-  'D#1': 'Ds1vL.m4a',
-  'D#2': 'Ds2vL.m4a',
-  'D#3': 'Ds3vL.m4a',
-  'D#4': 'Ds4vL.m4a',
-  'D#5': 'Ds5vL.m4a',
-  'D#6': 'Ds6vL.m4a',
-  'D#7': 'Ds7vL.m4a',
-  'F#1': 'Fs1vL.m4a',
-  'F#2': 'Fs2vL.m4a',
-  'F#3': 'Fs3vL.m4a',
-  'F#4': 'Fs4vL.m4a',
-  'F#5': 'Fs5vL.m4a',
-  'F#6': 'Fs6vL.m4a',
-  'F#7': 'Fs7vL.m4a',
+  C1: 'C0_vl1_rr1.m4a',
+  C2: 'C1_vl1_rr1.m4a',
+  C3: 'C2_vl1_rr1.m4a',
+  C4: 'C3_vl1_rr1.m4a',
+  C5: 'C4_vl1_rr1.m4a',
+  C6: 'C5_vl1_rr1.m4a',
+  G1: 'G0_vl1_rr1.m4a',
+  G2: 'G1_vl1_rr1.m4a',
+  G3: 'G2_vl1_rr1.m4a',
+  G4: 'G3_vl1_rr1.m4a',
+  G5: 'G4_vl1_rr1.m4a',
+  G6: 'G5_vl1_rr1.m4a',
+  G7: 'G6_vl1_rr1.m4a',
 };
 
-// ─── Hard layer (vH) ──────────────────────────────────────────────────────────
+// ─── Medium layer (vl2, vel 66–99) ─────────────────────────────────────────────
+// VSUpright1 uses C3=middle-C convention; keys below are scientific (C4=middle-C).
+
+const UPRIGHT_MEDIUM: NoteMap = {
+  C1: 'C0_vl2_rr1.m4a',
+  C2: 'C1_vl2_rr1.m4a',
+  C3: 'C2_vl2_rr1.m4a',
+  C4: 'C3_vl2_rr1.m4a',
+  C5: 'C4_vl2_rr1.m4a',
+  C6: 'C5_vl2_rr1.m4a',
+  C7: 'C6_vl2_rr1.m4a',
+  G1: 'G0_vl2_rr1.m4a',
+  G2: 'G1_vl2_rr1.m4a',
+  G3: 'G2_vl2_rr1.m4a',
+  G4: 'G3_vl2_rr1.m4a',
+  G5: 'G4_vl2_rr1.m4a',
+  G6: 'G5_vl2_rr1.m4a',
+};
+
+// ─── Hard layer (vl3, vel 100–127) ─────────────────────────────────────────────
+// VSUpright1 uses C3=middle-C convention; keys below are scientific (C4=middle-C).
 
 const UPRIGHT_HARD: NoteMap = {
-  A0: 'A0vH.m4a',
-  A1: 'A1vH.m4a',
-  A3: 'A3vH.m4a',
-  A4: 'A4vH.m4a',
-  A5: 'A5vH.m4a',
-  A6: 'A6vH.m4a',
-  A7: 'A7vH.m4a',
-  B0: 'B0vH.m4a',
-  B1: 'B1vH.m4a',
-  B2: 'B2vH.m4a',
-  B3: 'B3vH.m4a',
-  B4: 'B4vH.m4a',
-  B5: 'B5vH.m4a',
-  B6: 'B6vH.m4a',
-  B7: 'B7vH.m4a',
-  C1: 'C1vH.m4a',
-  C2: 'C2vH.m4a',
-  C3: 'C3vH.m4a',
-  C5: 'C5vH.m4a',
-  C6: 'C6vH.m4a',
-  C7: 'C7vH.m4a',
-  C8: 'C8vH.m4a',
-  'D#1': 'Ds1vH.m4a',
-  'D#2': 'Ds2vH.m4a',
-  'D#3': 'Ds3vH.m4a',
-  'D#4': 'Ds4vH.m4a',
-  'D#5': 'Ds5vH.m4a',
-  'D#6': 'Ds6vH.m4a',
-  'D#7': 'Ds7vH.m4a',
-  'F#1': 'Fs1vH.m4a',
-  'F#2': 'Fs2vH.m4a',
-  'F#3': 'Fs3vH.m4a',
-  'F#4': 'Fs4vH.m4a',
-  'F#5': 'Fs5vH.m4a',
-  'F#6': 'Fs6vH.m4a',
-  'F#7': 'Fs7vH.m4a',
+  C1: 'C0_vl3_rr1.m4a',
+  C2: 'C1_vl3_rr1.m4a',
+  C3: 'C2_vl3_rr1.m4a',
+  C4: 'C3_vl3_rr1.m4a',
+  C5: 'C4_vl3_rr1.m4a',
+  C6: 'C5_vl3_rr1.m4a',
+  C7: 'C6_vl3_rr1.m4a',
+  G1: 'G0_vl3_rr1.m4a',
+  G2: 'G1_vl3_rr1.m4a',
+  G3: 'G2_vl3_rr1.m4a',
+  G4: 'G3_vl3_rr1.m4a',
+  G5: 'G4_vl3_rr1.m4a',
+  G6: 'G5_vl3_rr1.m4a',
+  G7: 'G6_vl3_rr2.m4a',
 };
 
 // ─── Exports ──────────────────────────────────────────────────────────────────
 
 export const UPRIGHT_LAYERS: Record<PianoVelocityLayer, NoteMap> = {
   soft: UPRIGHT_SOFT,
+  medium: UPRIGHT_MEDIUM,
   hard: UPRIGHT_HARD,
 };
 

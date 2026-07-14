@@ -1,5 +1,5 @@
 #!/bin/sh
-# Encode piano samples from .wav to .m4a (AAC) and .mp3
+# Encode piano samples from .wav/.flac to .m4a (AAC) and .mp3
 #
 # Upright Piano KW: 2 velocity layers already named vL/vH.
 # Salamander Grand Piano V3: 16 velocity layers → pick v4 (soft) and v12 (hard).
@@ -45,6 +45,27 @@ for f in "$SRC_SALAMANDER"/*v4.wav "$SRC_SALAMANDER"/*v12.wav; do
   echo "  $base"
   ffmpeg -y -i "$f" -codec:a aac -b:a 192k "$DST_SALAMANDER_AAC/${base}.m4a" 2>/dev/null
   ffmpeg -y -i "$f" -codec:a libmp3lame -b:a 192k "$DST_SALAMANDER_MP3/${base}.mp3" 2>/dev/null
+done
+
+# ─── VSUpright1 (Versilian Studios Upright #1) ────────────────────────────────
+
+SRC_VSUPRIGHT="apps/web/public/samples/_source/piano/VSUpright1_SFZ/Samples/Sustains"
+DST_VSUPRIGHT_AAC="apps/web/public/samples/aac/piano/upright"
+DST_VSUPRIGHT_MP3="apps/web/public/samples/mp3/piano/upright"
+
+# Clear destination dirs to remove old KW samples
+rm -rf "$DST_VSUPRIGHT_AAC" "$DST_VSUPRIGHT_MP3"
+mkdir -p "$DST_VSUPRIGHT_AAC" "$DST_VSUPRIGHT_MP3"
+
+echo ""
+echo "=== VSUpright1 (3 velocity layers × 2 round-robins) ==="
+for f in "$SRC_VSUPRIGHT"/*.flac; do
+  name="${f##*/}"
+  # Upright1_Sus_C0_vl1_rr1.flac → C0_vl1_rr1
+  base="$(echo "${name%.flac}" | sed 's/^Upright1_Sus_//')"
+  echo "  $base"
+  ffmpeg -y -i "$f" -codec:a aac -b:a 192k "$DST_VSUPRIGHT_AAC/${base}.m4a" 2>/dev/null
+  ffmpeg -y -i "$f" -codec:a libmp3lame -b:a 192k "$DST_VSUPRIGHT_MP3/${base}.mp3" 2>/dev/null
 done
 
 echo ""

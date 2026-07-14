@@ -154,11 +154,19 @@ bash scripts/encode-drums-jazz.sh    # WAV → AAC/MP3 для Jazz Kit
 
 ## 5. Конструктор барабанов (admin)
 
-`packages/plugins/admin-drum-constructor/` — UI для редактирования клеток/молекул/организмов. Сохранение идёт через `POST /api/dev/drum-source` (маршрут `dev.routes.ts`, только в dev-режиме), который:
+`packages/plugins/admin-drum-constructor/` — админ-инструмент для изучения и редактирования барабанных молекул, клеток и организмов. Использует общую базу `admin-constructor-shared` (Strategy-паттерн).
 
-1. **Валидирует payload** через zod-схемы из `@jazz/shared` (`drums.ts`): `DrumSourcePayloadSchema` покрывает cells/molecules/organisms с точечными сообщениями об ошибках.
-2. **Записывает** валидные данные в `drumCellsGenerated.ts` / `drumMoleculesGenerated.ts` / `drumOrganismsGenerated.ts`.
-3. При загрузке приложения generated-файлы **замещают** базовые реестры (если непусты), а клетки дополнительно проходят `validateCell()` — структурная проверка (lane count, velocity range, clip overlap, pool weights, корректность moleculeId).
+**Путь:** `/admin/drum-constructor` (требует `content:write`)
+
+**Особенности unpitched-конструктора:**
+- **Step-grid редактор молекул** (`DrumMoleculeTable`) — строки по звукам (сгруппированы: тарелки→райд→хэт→малый→томы→бочка), столбцы по долям/шестнадцатым
+- **Выбор кита** (`DrumKitSelector`) — переключение между Jazz Kit и Funk Kit для превью
+- **Предпрослушивание через `usePluginDrumPreview`** — использует хук из `@jazz/plugin-sdk`, который загружает сэмплы активного кита
+- **Валидация клеток** (`validateCell` из `drumCellValidator.ts`) — структурная проверка: lane count, velocity range, clip overlap, pool weights, корректность moleculeId
+- **Сохранение:** localStorage (autosave) + публикация через `POST /api/dev/drum-source` (dev-режим), который:
+  1. **Валидирует payload** через zod-схемы из `@jazz/shared` (`drums.ts`): `DrumSourcePayloadSchema` покрывает cells/molecules/organisms с точечными сообщениями об ошибках.
+  2. **Записывает** валидные данные в `drumCellsGenerated.ts` / `drumMoleculesGenerated.ts` / `drumOrganismsGenerated.ts`.
+  3. При загрузке приложения generated-файлы **замещают** базовые реестры (если непусты), а клетки дополнительно проходят `validateCell()`.
 
 Контракт Конструктора — канонический источник правды для формы данных: `packages/shared/src/drums.ts`.
 

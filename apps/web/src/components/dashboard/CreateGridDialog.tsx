@@ -6,6 +6,7 @@ import { useCreateGrid } from '@/queries/useMyGrids';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -44,6 +45,9 @@ export function CreateGridDialog() {
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Создать сетку</DialogTitle>
+          <DialogDescription>
+            Новая гармоническая сетка будет добавлена в вашу коллекцию.
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-2">
           <div className="space-y-1">

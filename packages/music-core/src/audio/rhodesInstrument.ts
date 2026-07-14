@@ -10,12 +10,16 @@ import {
   type RhodesLayerMode,
 } from './rhodesVoicing.js';
 import { noteToMidi, midiToNote, RANGE_MIN_HIGH } from './rhodesVoicing.js';
-import type { Style } from '@jazz/shared';
+import { selectRhodesVoicingRole } from './rhodesVoicingRoles.js';
+import type { RhodesVoicingRole, RhodesOrganism, RhodesPatternStyle } from './rhodesPatternTypes.js';
+import { RhodesPatternEngine } from './rhodesPatternEngine.js';
+import { flattenSections, type FlatSection } from './drumInstrument.js';
+import type { Style, Section } from '@jazz/shared';
 import { getStyleProfile, type StyleProfile } from '../styleProfile.js';
 
 const PPQ = 480;
 
-/** Style → default comping mode. */
+/** Style → default comping mode (@deprecated legacy path). */
 const STYLE_DEFAULT_MODE: Record<Style, RhodesCompingMode> = {
   swing: 'halfNotes',
   bossa: 'halfNotes',
@@ -39,6 +43,17 @@ export class RhodesInstrument implements Instrument {
   /** Bar counter for ambient-swells (trigger every 2 bars). */
   private barCounter = 0;
 
+  // ── Pattern engine (primary path) ──────────────────────────────────────
+  /** Internal pattern engine — instantiated directly, not injected. */
+  private patternEngine = new RhodesPatternEngine();
+  private organismId: string | null = null;
+  private currentOrganism: RhodesOrganism | null = null;
+  private currentPatternStyle: RhodesPatternStyle = 'swing';
+  /** Grid sections for per-bar section resolution (mirrors PianoInstrument). */
+  private gridSections: FlatSection[] | null = null;
+  private lastScheduledBar = -1;
+  private infiniteLoopCount = 0;
+
   constructor(timeline: ChordTimeline) {
     this.timeline = timeline;
   }
@@ -49,14 +64,24 @@ export class RhodesInstrument implements Instrument {
 
   setStyleProfile(profile: StyleProfile): void {
     this.style = profile.id;
-    this.mode = STYLE_DEFAULT_MODE[profile.id] ?? 'halfNotes';
-    const voicing = profile.instrumentDefaults.rhodes.voicing;
+    this.currentPatternStyle = (profile.id as RhodesPatternStyle) ?? 'swing';
+
+    const defs = profile.instrumentDefaults.rhodes;
+    // Pattern (organism) selection — primary path.
+    const pattern = defs?.pattern as string | undefined;
+    if (pattern) this.organismId = pattern;
+
+    const voicing = defs.voicing;
     if (voicing) this.density = voicing as RhodesVoicingDensity;
-    const layerMode = profile.instrumentDefaults.rhodes.mode as RhodesLayerMode | undefined;
+
+    // Legacy layer mode (deprecated fallback path).
+    const layerMode = defs.mode as RhodesLayerMode | undefined;
     if (layerMode) {
       this.layerMode = layerMode;
       this.layerModeSet = true;
     }
+
+    this.selectOrganismForStyle();
   }
 
   /** @deprecated Use {@link setStyleProfile}(getStyleProfile(style)) instead. */
@@ -64,12 +89,16 @@ export class RhodesInstrument implements Instrument {
     this.setStyleProfile(getStyleProfile(style));
   }
 
-  /** @deprecated Use setLayerMode() for the complementary layer API. */
+  /** @deprecated Use the pattern-engine path (organism selection) instead. */
   setMode(mode: RhodesCompingMode): void {
     this.mode = mode;
   }
 
-  /** Set the complementary layer mode. 'none' means Rhodes is off (no output). */
+  /**
+   * Set the complementary layer mode (@deprecated legacy path).
+   * `'none'` means Rhodes is off (no output) in the legacy path.
+   * Prefer organism-driven scheduling via {@link setStyleProfile}.
+   */
   setLayerMode(mode: RhodesLayerMode): void {
     this.layerMode = mode;
     this.layerModeSet = true;
@@ -92,31 +121,171 @@ export class RhodesInstrument implements Instrument {
     this.humanize = enabled;
   }
 
+  /** Explicitly select an organism by id (overrides style-driven selection). */
+  setOrganismId(id: string | null): void {
+    this.organismId = id;
+    this.selectOrganismForStyle();
+  }
+
+  setGridSections(sections: Section[] | null): void {
+    this.gridSections = flattenSections(sections);
+  }
+
   reset(): void {
     this.prevVoicing = null;
     this.lastScheduledTick = -1;
     this.barCounter = 0;
+    this.lastScheduledBar = -1;
+    this.infiniteLoopCount = 0;
+  }
+
+  // ── Organism selection ─────────────────────────────────────────────────
+
+  private selectOrganismForStyle(): void {
+    if (this.organismId !== null) {
+      const organisms = this.patternEngine.getOrganisms(this.currentPatternStyle);
+      const explicit = organisms.find((o) => o.id === this.organismId);
+      this.currentOrganism = explicit ?? organisms[0] ?? null;
+      return;
+    }
+    const organisms = this.patternEngine.getOrganisms(this.currentPatternStyle);
+    this.currentOrganism = organisms[0] ?? null;
   }
 
   schedule(window: ScheduleWindow, ctx: ScheduleContext): void {
-    // If layerMode was explicitly set, use it (including 'none' = no output)
+    // Primary path: pattern engine (molecules/cells/organisms).
+    if (this.currentOrganism) {
+      this.scheduleWithPatternEngine(window, ctx);
+      return;
+    }
+
+    // @deprecated legacy path: layer modes / comping modes.
     if (this.layerModeSet) {
       if (this.layerMode === 'none') return;
       this.scheduleLayer(window, ctx);
       return;
     }
 
+    this.scheduleComping(window, ctx);
+  }
+
+  // ── Pattern-engine scheduling (primary) ────────────────────────────────
+
+  private scheduleWithPatternEngine(window: ScheduleWindow, ctx: ScheduleContext): void {
+    const engine = this.patternEngine;
+    const organism = this.currentOrganism;
+    if (!organism) return;
+
     const sig = ctx.timeSignature;
     const tpBar = ticksPerBar(sig);
     const tpBeat = ticksPerBeat(sig);
 
-    // Backward seek: reset voice leading state
+    if (this.lastScheduledTick >= 0 && window.fromTicks < this.lastScheduledTick - tpBeat) {
+      this.prevVoicing = null;
+    }
+
+    const firstBar = Math.floor(window.fromTicks / tpBar);
+    const lastBar = Math.floor((window.toTicks - 1) / tpBar);
+
+    const maxJitterTicks = this.humanize ? Math.round(0.006 * (ctx.bpm / 60) * PPQ) : 0;
+
+    for (let bar = firstBar; bar <= lastBar; bar++) {
+      const barStartTicks = bar * tpBar;
+
+      const firstBeatChord = this.timeline.getChordAtTick(barStartTicks, sig);
+      if (!firstBeatChord) continue;
+
+      // Section resolution per bar (mirrors PianoInstrument / BassInstrument).
+      let sectionType: string = ctx.gridSectionType ?? 'verseA';
+      let barInSection: number = ctx.barInSection ?? bar % 32;
+      let passIndex = 0;
+      if (this.gridSections) {
+        for (const sec of this.gridSections) {
+          if (bar >= sec.startBar && bar < sec.startBar + sec.lengthBars) {
+            sectionType = sec.type;
+            barInSection = bar - sec.startBar;
+            if (sec.lengthBars === Infinity && sec.passLength != null) {
+              if (bar < this.lastScheduledBar) this.infiniteLoopCount++;
+              this.lastScheduledBar = bar;
+              passIndex = this.infiniteLoopCount;
+            } else {
+              passIndex = sec.passIndex;
+            }
+            break;
+          }
+        }
+      } else if (bar !== firstBar) {
+        barInSection = (ctx.barInSection ?? 0) + (bar - firstBar);
+      }
+      const tsStr = `${sig.beatsPerBar}/${sig.beatUnit}`;
+
+      const { cell, barInCell } = engine.selectCellForSectionType(
+        organism,
+        sectionType,
+        tsStr,
+        barInSection,
+        this.currentPatternStyle,
+        passIndex,
+      );
+
+      const hits = engine.resolveBar(cell.id, barInCell, ctx.swingRatio, ctx.playSeed);
+
+      for (const hit of hits) {
+        const eventTicks = barStartTicks + hit.atTick;
+        if (eventTicks < window.fromTicks || eventTicks >= window.toTicks) continue;
+
+        const currentChord = this.timeline.getChordAtTick(eventTicks, sig);
+        if (!currentChord) continue;
+
+        // Voicing pre-echo: a hit in the last beat anticipates the next chord.
+        let chord = currentChord;
+        if (hit.atTick >= tpBar - tpBeat) {
+          const next = this.timeline.getNextChord(eventTicks, sig);
+          if (next && next.raw !== currentChord.raw) chord = next;
+        }
+
+        const fullVoicing = buildVoicing(chord, this.density, this.prevVoicing);
+        this.prevVoicing = fullVoicing;
+        const voicing = selectRhodesVoicingRole(fullVoicing, hit.sound as RhodesVoicingRole);
+        if (voicing.length === 0) continue;
+
+        // Clip duration to the bar boundary.
+        const nextBarStart = barStartTicks + tpBar;
+        let durationTicks = hit.durationTicks;
+        if (durationTicks > nextBarStart - eventTicks) {
+          durationTicks = Math.max(1, nextBarStart - eventTicks);
+        }
+
+        let atTicks = eventTicks;
+        let velocity = hit.velocity * this.baseVelocity;
+
+        if (this.humanize) {
+          atTicks = Math.max(
+            window.fromTicks,
+            atTicks + Math.round((Math.random() * 2 - 1) * maxJitterTicks),
+          );
+          velocity = Math.max(0.01, Math.min(1, velocity + (Math.random() * 2 - 1) * 0.03));
+        }
+
+        ctx.scheduleEvent('rhodes', { notes: voicing }, atTicks, velocity, durationTicks);
+        this.lastScheduledTick = eventTicks;
+      }
+    }
+  }
+
+  // ── Legacy comping scheduling (@deprecated) ────────────────────────────
+
+  /** @deprecated Legacy comping path — superseded by scheduleWithPatternEngine. */
+  private scheduleComping(window: ScheduleWindow, ctx: ScheduleContext): void {
+    const sig = ctx.timeSignature;
+    const tpBar = ticksPerBar(sig);
+    const tpBeat = ticksPerBeat(sig);
+
     if (this.lastScheduledTick >= 0 && window.fromTicks < this.lastScheduledTick - tpBeat) {
       this.prevVoicing = null;
     }
 
     const pattern = getCompPattern(this.mode);
-    // Max jitter in ticks at the current tempo (±6 ms)
     const maxJitterTicks = this.humanize ? Math.round(0.006 * (ctx.bpm / 60) * PPQ) : 0;
 
     const firstBar = Math.floor(window.fromTicks / tpBar);
@@ -124,7 +293,6 @@ export class RhodesInstrument implements Instrument {
 
     for (let bar = firstBar; bar <= lastBar; bar++) {
       const barStartTicks = bar * tpBar;
-      // Quick guard: skip bars with no chord at all
       const firstBeatChord = this.timeline.getChordAtTick(barStartTicks, sig);
       if (!firstBeatChord) continue;
 
@@ -134,7 +302,6 @@ export class RhodesInstrument implements Instrument {
         const eventTicks = barStartTicks + (event.beat - 1) * tpBeat + subdivTicks;
         if (eventTicks < window.fromTicks || eventTicks >= window.toTicks) continue;
 
-        // Resolve chord at event time (sub-bar aware)
         const chord =
           event.chordRef === 'next'
             ? this.timeline.getNextChord(eventTicks, sig)
@@ -164,8 +331,8 @@ export class RhodesInstrument implements Instrument {
   }
 
   /**
-   * Schedule using the complementary layer mode.
-   * lower velocities, octave shift for high-comping, 2-bar ambient swells.
+   * Schedule using the complementary layer mode (@deprecated).
+   * Lower velocities, octave shift for high-comping, 2-bar ambient swells.
    */
   private scheduleLayer(window: ScheduleWindow, ctx: ScheduleContext): void {
     const sig = ctx.timeSignature;
@@ -189,7 +356,6 @@ export class RhodesInstrument implements Instrument {
       if (this.layerMode === 'ambient-swells' && this.barCounter % 2 !== 1) continue;
 
       const barStartTicks = bar * tpBar;
-      // Quick guard: skip bars with no chord at all
       const firstBeatChord = this.timeline.getChordAtTick(barStartTicks, sig);
       if (!firstBeatChord) continue;
 
@@ -199,7 +365,6 @@ export class RhodesInstrument implements Instrument {
         const eventTicks = barStartTicks + (event.beat - 1) * tpBeat + subdivTicks;
         if (eventTicks < window.fromTicks || eventTicks >= window.toTicks) continue;
 
-        // Resolve chord at event time (sub-bar aware)
         const chord =
           event.chordRef === 'next'
             ? this.timeline.getNextChord(eventTicks, sig)
@@ -209,7 +374,6 @@ export class RhodesInstrument implements Instrument {
         const voicing = buildVoicing(chord, this.density, this.prevVoicing, voicingRangeMin);
         this.prevVoicing = voicing;
 
-        // Apply octave shift for high-comping
         const shiftedVoicing =
           octaveShift !== 0 ? voicing.map((n) => midiToNote(noteToMidi(n) + octaveShift)) : voicing;
 

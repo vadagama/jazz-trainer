@@ -124,6 +124,7 @@ export class WebMidiAdapter implements AudioPort, InputPort {
   private accentNote: number;
   private velocity: number;
   private initialized = false;
+  private initPromise: Promise<void> | null = null;
 
   // Transport clock
   private startTime = 0;

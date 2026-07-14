@@ -25,6 +25,32 @@ function clampVolume(v: number | undefined | null): number {
   return Math.max(0, Math.min(1, v));
 }
 
+/** Normalize old numeric humanize values to new HumanizeAmount enum strings. */
+function normalizeHumanizeAmount(val: unknown): 'none' | 'low' | 'medium' | 'high' {
+  if (typeof val === 'string' && ['none', 'low', 'medium', 'high'].includes(val)) {
+    return val as 'none' | 'low' | 'medium' | 'high';
+  }
+  if (typeof val === 'number') {
+    if (val === 0) return 'none';
+    if (val <= 6) return 'low';
+    if (val <= 20) return 'medium';
+    return 'high';
+  }
+  return 'low';
+}
+
+function normalizeHumanize(raw: unknown): Record<string, string | undefined> | undefined {
+  if (!raw || typeof raw !== 'object') return undefined;
+  const h = raw as Record<string, unknown>;
+  return {
+    timingJitterMs: normalizeHumanizeAmount(h.timingJitterMs),
+    velocityVariation: h.velocityVariation as string | undefined,
+    chordSpreadMs: normalizeHumanizeAmount(h.chordSpreadMs),
+    phrasing: h.phrasing as string | undefined,
+    humanizeTiming: h.humanizeTiming as string | undefined,
+  };
+}
+
 export function toSettingsDTO(s: UserSettingsRecord): UserSettingsDTO {
   // Populate scalar instrument fields from perStyleOverrides[style]
   // so the UI always shows the current style's saved preferences.
@@ -53,7 +79,14 @@ export function toSettingsDTO(s: UserSettingsRecord): UserSettingsDTO {
     bassEnabled: s.bassEnabled,
     bassVolume: clampVolume(s.bassVolume),
     bassComplexity: s.bassComplexity,
-    bassOctaveUp: s.bassOctaveUp,
+    bassVariant: (s.bassVariant as UserSettingsDTO['bassVariant']) ?? undefined,
+    bassTension: (s.bassTension as UserSettingsDTO['bassTension']) ?? 'clean',
+    bassHumanize: normalizeHumanize(
+      s.bassHumanize ? JSON.parse(s.bassHumanize) : undefined,
+    ) as UserSettingsDTO['bassHumanize'],
+    bassUseMutedNotes: s.bassUseMutedNotes ?? true,
+    bassPattern: (so?.bassPattern as string | null) ?? null,
+    bassRange: (so?.bassRange as UserSettingsDTO['bassRange']) ?? 'medium',
     rhodesEnabled: s.rhodesEnabled,
     rhodesVolume: clampVolume(s.rhodesVolume),
     rhodesMode: s.rhodesMode as UserSettingsDTO['rhodesMode'],
@@ -62,9 +95,13 @@ export function toSettingsDTO(s: UserSettingsRecord): UserSettingsDTO {
     rhodesVoicingDensity: s.rhodesVoicingDensity as UserSettingsDTO['rhodesVoicingDensity'],
     pianoEnabled: s.pianoEnabled,
     pianoVolume: clampVolume(s.pianoVolume),
-    pianoProfile: s.pianoProfile as UserSettingsDTO['pianoProfile'],
     pianoVoicingDensity: s.pianoVoicingDensity as UserSettingsDTO['pianoVoicingDensity'],
     pianoSampleLibrary: s.pianoSampleLibrary as UserSettingsDTO['pianoSampleLibrary'],
+    pianoTension: s.pianoTension as UserSettingsDTO['pianoTension'],
+    pianoHumanize: normalizeHumanize(
+      s.pianoHumanize ? JSON.parse(s.pianoHumanize) : undefined,
+    ) as UserSettingsDTO['pianoHumanize'],
+    pianoPattern: (so?.pianoPattern as string | null) ?? null,
 
     drumsEnabled: s.drumsEnabled,
     drumsVolume: clampVolume(s.drumsVolume),
@@ -98,7 +135,12 @@ export function toSettingsDTO(s: UserSettingsRecord): UserSettingsDTO {
   if (so) {
     for (const [key, value] of Object.entries(so)) {
       if (value !== undefined) {
-        (dto as Record<string, unknown>)[key] = value;
+        // Normalize pianoHumanize / bassHumanize: old DB may store numbers instead of enum strings
+        if (key === 'pianoHumanize' || key === 'bassHumanize') {
+          (dto as Record<string, unknown>)[key] = normalizeHumanize(value);
+        } else {
+          (dto as Record<string, unknown>)[key] = value;
+        }
       }
     }
   }
@@ -115,6 +157,10 @@ export function toSettingsDTO(s: UserSettingsRecord): UserSettingsDTO {
 
   if (!has('bassEnabled')) dto.bassEnabled = pd[activeBass]?.enabled;
   if (!has('bassVolume')) dto.bassVolume = pd[activeBass]?.volume ?? 0.7;
+  if (!has('bassVariant'))
+    dto.bassVariant = activeBass === 'electric-bass' ? 'electric' : 'upright';
+  if (!has('bassTension'))
+    dto.bassTension = (pd[activeBass]?.tension as UserSettingsDTO['bassTension']) ?? 'clean';
   if (!has('pianoEnabled')) dto.pianoEnabled = pd.piano?.enabled;
   if (!has('pianoVolume')) dto.pianoVolume = pd.piano?.volume ?? 0.7;
   if (!has('rhodesEnabled')) dto.rhodesEnabled = pd.rhodes?.enabled;
@@ -128,6 +174,7 @@ export function toSettingsDTO(s: UserSettingsRecord): UserSettingsDTO {
   if (!has('guitarEnabled')) dto.guitarEnabled = pd[activeGuitar]?.enabled;
   if (!has('guitarVolume')) dto.guitarVolume = pd[activeGuitar]?.volume ?? 0.6;
   if (!has('swingRatio')) dto.swingRatio = profile.swingRatio;
+  if (!has('bpm')) dto.bpm = profile.defaultTempo;
 
   return dto;
 }

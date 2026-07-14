@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { resolveInstrumentDefaults } from './instrumentManifest.js';
-import { bassManifest } from './bassManifest.js';
+import { uprightBassManifest, electricBassManifest } from './bassManifest.js';
 import { pianoManifest } from './pianoManifest.js';
 import { rhodesManifest } from './rhodesManifest.js';
 import { guitarManifest } from './guitarManifest.js';
@@ -78,38 +78,51 @@ describe('resolveInstrumentDefaults', () => {
 
 // ─── Bass per-style defaults ──────────────────────────────────────────────────
 
-describe('bassManifest per-style defaults', () => {
-  it('swing returns walking bass (complexity 5)', () => {
-    const result = resolveInstrumentDefaults(bassManifest, 'swing');
-    expect(result.complexity).toBe(5);
+describe('bass manifests per-style defaults', () => {
+  it('upright swing returns walking bass', () => {
+    const result = resolveInstrumentDefaults(uprightBassManifest, 'swing');
+    expect(result.pattern).toBe('walking');
     expect(result.enabled).toBe(true);
   });
 
-  it('bossa returns root-5th (complexity 3)', () => {
-    const result = resolveInstrumentDefaults(bassManifest, 'bossa');
-    expect(result.complexity).toBe(3);
+  it('upright bossa returns root-5th', () => {
+    const result = resolveInstrumentDefaults(uprightBassManifest, 'bossa');
+    expect(result.pattern).toBe('root-5th');
   });
 
-  it('funk returns syncopated (complexity 5)', () => {
-    const result = resolveInstrumentDefaults(bassManifest, 'funk');
-    expect(result.complexity).toBe(5);
+  it('upright ballad returns two-feel', () => {
+    const result = resolveInstrumentDefaults(uprightBassManifest, 'ballad');
+    expect(result.pattern).toBe('two-feel');
   });
 
-  it('latin returns montuno (complexity 4)', () => {
-    const result = resolveInstrumentDefaults(bassManifest, 'latin');
-    expect(result.complexity).toBe(4);
+  it('upright is disabled for funk/latin (electric takes over)', () => {
+    expect(resolveInstrumentDefaults(uprightBassManifest, 'funk').enabled).toBe(false);
+    expect(resolveInstrumentDefaults(uprightBassManifest, 'latin').enabled).toBe(false);
   });
 
-  it('ballad returns two-feel (complexity 7)', () => {
-    const result = resolveInstrumentDefaults(bassManifest, 'ballad');
-    expect(result.complexity).toBe(7);
+  it('electric funk returns syncopated', () => {
+    const result = resolveInstrumentDefaults(electricBassManifest, 'funk');
+    expect(result.pattern).toBe('syncopated');
+    expect(result.enabled).toBe(true);
   });
 
-  it('all styles preserve non-overridden defaults', () => {
-    for (const style of ALL_STYLES) {
-      const result = resolveInstrumentDefaults(bassManifest, style);
-      expect(result.volume).toBe(0.8); // from defaultSettings, not overridden
-      expect(result.octaveUp).toBe(false);
+  it('electric latin returns montuno', () => {
+    const result = resolveInstrumentDefaults(electricBassManifest, 'latin');
+    expect(result.pattern).toBe('montuno');
+    expect(result.enabled).toBe(true);
+  });
+
+  it('electric is disabled for swing/bossa/ballad', () => {
+    for (const style of ['swing', 'bossa', 'ballad'] as const) {
+      expect(resolveInstrumentDefaults(electricBassManifest, style).enabled).toBe(false);
+    }
+  });
+
+  it('upright preserves default volume in its active styles', () => {
+    // Upright is active in swing/bossa/ballad; disabled (volume 0) in funk/latin.
+    for (const style of ['swing', 'bossa', 'ballad'] as const) {
+      const result = resolveInstrumentDefaults(uprightBassManifest, style);
+      expect(result.volume).toBe(0.8);
     }
   });
 });
@@ -244,7 +257,8 @@ describe('salamanderManifest per-style defaults', () => {
 
 describe('perStyleDefaults completeness', () => {
   const manifests = [
-    { name: 'bass', m: bassManifest },
+    { name: 'upright-bass', m: uprightBassManifest },
+    { name: 'electric-bass', m: electricBassManifest },
     { name: 'piano', m: pianoManifest },
     { name: 'rhodes', m: rhodesManifest },
     { name: 'guitar', m: guitarManifest },

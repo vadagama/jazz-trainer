@@ -17,8 +17,8 @@ packages/
   shared/                 DTO (Zod), константы, общие типы
   plugin-sdk/             Контракты плагинов (extension points, хуки, apiClient)
   plugin-host/            Загрузка плагинов, агрегация вкладов
-  plugin-registry/        Build-time реестр (37 плагинов)
-  plugins/                37 плагинов (вся фичевая логика)
+  plugin-registry/        Build-time реестр (44 плагина)
+  plugins/                44 плагина (вся фичевая логика)
   adapters/               Платформенные адаптеры (Tone.js → AudioPort, Web MIDI)
   ui/                     Общие UI-компоненты
 docs/                     Документация

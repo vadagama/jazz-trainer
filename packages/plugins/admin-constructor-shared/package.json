@@ -1,0 +1,23 @@
+{
+  "name": "@jazz/plugin-admin-constructor-shared",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@jazz/music-core": "*",
+    "@jazz/plugin-sdk": "*",
+    "@jazz/shared": "*",
+    "@jazz/ui": "*",
+    "react": "*",
+    "react-dom": "*",
+    "zustand": "*"
+  }
+}

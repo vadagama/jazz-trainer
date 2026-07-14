@@ -18,20 +18,27 @@ const SIXTEENTH_TICKS = 120; // PPQ 480 / 4
 /**
  * Apply conflict-avoidance to Rhodes events given Piano events for the same bar.
  *
+ * Piano events from the 'upper' lane (upper structures) have priority and are
+ * excluded from conflict detection — they should NOT cause Rhodes events to shift.
+ *
  * @param rhodesEvents — array of events to potentially modify (mutated in place).
- * @param pianoEvents — Piano events for the bar (beat positions only).
+ * @param pianoEvents — Piano events for the bar (beat positions, optional lane).
  * @param tpBeat — ticks per beat for the current time signature.
  * @returns The possibly modified rhodesEvents array.
  */
 export function avoidConflicts(
   rhodesEvents: CompEvent[],
-  pianoEvents: readonly { beat: number; subdivision?: number }[],
+  pianoEvents: readonly { beat: number; subdivision?: number; lane?: string }[],
   tpBeat: number,
 ): CompEvent[] {
   if (rhodesEvents.length === 0 || pianoEvents.length === 0) return rhodesEvents;
 
+  // Filter out upper-lane events (they have priority and should not suppress Rhodes)
+  const rhythmPianoEvents = pianoEvents.filter((e) => e.lane !== 'upper');
+  if (rhythmPianoEvents.length === 0) return rhodesEvents;
+
   const pianoPositions = new Set(
-    pianoEvents.map((e) => (e.beat - 1) * tpBeat + Math.round((e.subdivision ?? 0) * tpBeat)),
+    rhythmPianoEvents.map((e) => (e.beat - 1) * tpBeat + Math.round((e.subdivision ?? 0) * tpBeat)),
   );
 
   for (const re of rhodesEvents) {

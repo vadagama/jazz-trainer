@@ -1,9 +1,10 @@
 import * as React from 'react';
 import { useEffect, useState } from 'react';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm, Controller, useController, type Control } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { UserSettingsDTOSchema, type UserSettingsDTO } from '@jazz/shared';
-import { METRONOME_SAMPLES } from '@jazz/music-core';
+import { METRONOME_SAMPLES, INSTRUMENT_GROUPS } from '@jazz/music-core';
+import { useClampedNumberInput } from '@jazz/ui';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -27,15 +28,39 @@ interface Props {
 
 const NONE_VALUE = '__none__';
 
-function allowOnlyDigits(e: React.KeyboardEvent<HTMLInputElement>) {
-  if (e.ctrlKey || e.metaKey || e.altKey) return;
-  if (
-    ['Backspace', 'Delete', 'Tab', 'Enter', 'ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(
-      e.key,
-    )
-  )
-    return;
-  if (!/^\d$/.test(e.key)) e.preventDefault();
+interface ClampedNumberFieldProps {
+  control: Control<UserSettingsDTO>;
+  name: 'bpm' | 'countIn';
+  min: number;
+  max: number;
+  id: string;
+  className?: string;
+}
+
+function ClampedNumberField({ control, name, min, max, id, className }: ClampedNumberFieldProps) {
+  const { field } = useController({ control, name });
+  const { text, onChange, onBlur, onKeyDown } = useClampedNumberInput({
+    value: field.value ?? min,
+    onCommit: field.onChange,
+    min,
+    max,
+  });
+
+  return (
+    <Input
+      id={id}
+      type="text"
+      inputMode="numeric"
+      value={text}
+      onChange={onChange}
+      onBlur={() => {
+        onBlur();
+        field.onBlur();
+      }}
+      onKeyDown={onKeyDown}
+      className={className}
+    />
+  );
 }
 
 const BEAT_ROWS = [
@@ -104,13 +129,10 @@ export function SettingsForm({ defaultValues, onSave, themeControl }: Props) {
   const rhodesOn = form.watch('rhodesEnabled') ?? false;
   const pianoOn = form.watch('pianoEnabled') ?? false;
   const drumsOn = form.watch('drumsEnabled') ?? true;
-
-  const bpmField = form.register('bpm', {
-    setValueAs: (v: string) => (v === '' ? NaN : parseInt(v, 10)),
-  });
-  const countInField = form.register('countIn', {
-    setValueAs: (v: string) => (v === '' ? NaN : parseInt(v, 10)),
-  });
+  const drumKitName =
+    INSTRUMENT_GROUPS.find((g) => g.id === 'drums')?.variants.find(
+      (v) => v.instrumentId === (form.watch('drumKit') ?? 'jazz-drum-kit'),
+    )?.name ?? 'Drum Kit';
 
   return (
     <div className="space-y-6">
@@ -168,19 +190,12 @@ export function SettingsForm({ defaultValues, onSave, themeControl }: Props) {
                   BPM
                 </Label>
                 <div className="flex flex-col items-end gap-1">
-                  <Input
+                  <ClampedNumberField
+                    control={form.control}
+                    name="bpm"
+                    min={20}
+                    max={400}
                     id="bpm"
-                    type="text"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    onKeyDown={allowOnlyDigits}
-                    {...bpmField}
-                    onChange={(e) => {
-                      e.target.value = e.target.value.replace(/\D/g, '');
-                      const n = parseInt(e.target.value, 10);
-                      if (!isNaN(n) && n > 400) e.target.value = '400';
-                      bpmField.onChange(e);
-                    }}
                     className="w-24 text-right"
                   />
                   {form.formState.errors.bpm && (
@@ -194,19 +209,12 @@ export function SettingsForm({ defaultValues, onSave, themeControl }: Props) {
                   Count-in (тактов)
                 </Label>
                 <div className="flex flex-col items-end gap-1">
-                  <Input
+                  <ClampedNumberField
+                    control={form.control}
+                    name="countIn"
+                    min={0}
+                    max={4}
                     id="countIn"
-                    type="text"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    onKeyDown={allowOnlyDigits}
-                    {...countInField}
-                    onChange={(e) => {
-                      e.target.value = e.target.value.replace(/\D/g, '');
-                      const n = parseInt(e.target.value, 10);
-                      if (!isNaN(n) && n > 4) e.target.value = '4';
-                      countInField.onChange(e);
-                    }}
                     className="w-24 text-right"
                   />
                   {form.formState.errors.countIn && (
@@ -443,42 +451,21 @@ export function SettingsForm({ defaultValues, onSave, themeControl }: Props) {
                 />
               </div>
 
-              <div className="flex items-center justify-between gap-4">
-                <Label
-                  htmlFor="bassOctaveUp"
-                  className={`text-sm ${bassOn ? 'text-foreground' : 'text-muted-foreground'}`}
-                >
-                  +1 октава
-                </Label>
-                <Controller
-                  control={form.control}
-                  name="bassOctaveUp"
-                  render={({ field }) => (
-                    <input
-                      id="bassOctaveUp"
-                      type="checkbox"
-                      disabled={!bassOn}
-                      checked={field.value ?? false}
-                      onChange={(e) => field.onChange(e.target.checked)}
-                      className="h-4 w-4 cursor-pointer accent-primary"
-                    />
-                  )}
-                />
-              </div>
+
             </CardContent>
           </Card>
 
-          {/* Grand Piano */}
+          {/* Piano */}
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
-                Grand Piano
+                Piano
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between gap-4">
                 <Label htmlFor="pianoEnabled" className="text-sm text-foreground">
-                  Включить Grand Piano
+                  Включить Piano
                 </Label>
                 <Controller
                   control={form.control}
@@ -500,7 +487,7 @@ export function SettingsForm({ defaultValues, onSave, themeControl }: Props) {
                   <Label
                     className={`text-sm ${pianoOn ? 'text-foreground' : 'text-muted-foreground'}`}
                   >
-                    Громкость Grand Piano
+                    Громкость Piano
                   </Label>
                   <span className="text-sm tabular-nums text-muted-foreground">
                     {Math.round((form.watch('pianoVolume') ?? 0.7) * 100)}%
@@ -518,36 +505,6 @@ export function SettingsForm({ defaultValues, onSave, themeControl }: Props) {
                       value={[Math.round((field.value ?? 0.7) * 100)]}
                       onValueChange={(vals) => field.onChange((vals[0] ?? 70) / 100)}
                     />
-                  )}
-                />
-              </div>
-
-              <div className="flex items-center justify-between gap-4">
-                <Label
-                  className={`text-sm ${pianoOn ? 'text-foreground' : 'text-muted-foreground'}`}
-                >
-                  Профиль компинга
-                </Label>
-                <Controller
-                  control={form.control}
-                  name="pianoProfile"
-                  render={({ field }) => (
-                    <Select
-                      value={field.value ?? 'swing-sparse'}
-                      onValueChange={field.onChange}
-                      disabled={!pianoOn}
-                    >
-                      <SelectTrigger className="w-44">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="swing-sparse">Swing Sparse</SelectItem>
-                        <SelectItem value="swing-medium">Swing Medium</SelectItem>
-                        <SelectItem value="basie-light">Basie Light</SelectItem>
-                        <SelectItem value="offbeat-push">Offbeat Push</SelectItem>
-                        <SelectItem value="beginner-safe">Beginner Safe</SelectItem>
-                      </SelectContent>
-                    </Select>
                   )}
                 />
               </div>
@@ -601,7 +558,7 @@ export function SettingsForm({ defaultValues, onSave, themeControl }: Props) {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="salamander">Salamander Grand</SelectItem>
-                        <SelectItem value="upright-kw">Upright KW</SelectItem>
+                        <SelectItem value="upright">Upright Piano</SelectItem>
                       </SelectContent>
                     </Select>
                   )}
@@ -618,10 +575,6 @@ export function SettingsForm({ defaultValues, onSave, themeControl }: Props) {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <p className="text-xs text-muted-foreground">
-                Rhodes теперь работает как дополнительный слой поверх Piano
-              </p>
-
               <div className="flex items-center justify-between gap-4">
                 <Label htmlFor="rhodesEnabled" className="text-sm text-foreground">
                   Включить Rhodes
@@ -672,14 +625,14 @@ export function SettingsForm({ defaultValues, onSave, themeControl }: Props) {
                 <Label
                   className={`text-sm ${rhodesOn ? 'text-foreground' : 'text-muted-foreground'}`}
                 >
-                  Режим слоя
+                  Форма
                 </Label>
                 <Controller
                   control={form.control}
-                  name="rhodesLayerMode"
+                  name="rhodesPattern"
                   render={({ field }) => (
                     <Select
-                      value={field.value ?? 'none'}
+                      value={field.value ?? 'rhodes-swing-form'}
                       onValueChange={field.onChange}
                       disabled={!rhodesOn}
                     >
@@ -687,12 +640,13 @@ export function SettingsForm({ defaultValues, onSave, themeControl }: Props) {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="none">Выкл</SelectItem>
-                        <SelectItem value="pads">Pads</SelectItem>
-                        <SelectItem value="subtle-offbeats">Subtle Offbeats</SelectItem>
-                        <SelectItem value="high-comping">High Comping</SelectItem>
-                        <SelectItem value="ambient-swells">Ambient Swells</SelectItem>
-                        <SelectItem value="stab-accents">Stab Accents</SelectItem>
+                        <SelectItem value="rhodes-swing-form">Swing Complement</SelectItem>
+                        <SelectItem value="rhodes-swing-sparse-form">Swing Sparse</SelectItem>
+                        <SelectItem value="rhodes-bossa-form">Bossa Gentle</SelectItem>
+                        <SelectItem value="rhodes-funk-form">Funk Mellow</SelectItem>
+                        <SelectItem value="rhodes-latin-form">Latin Cascade</SelectItem>
+                        <SelectItem value="rhodes-ballad-form">Ballad Gentle</SelectItem>
+                        <SelectItem value="rhodes-ballad-ambient-form">Ballad Ambient</SelectItem>
                       </SelectContent>
                     </Select>
                   )}
@@ -748,6 +702,7 @@ export function SettingsForm({ defaultValues, onSave, themeControl }: Props) {
                         <SelectItem value="shell2">Shell (3 + 7)</SelectItem>
                         <SelectItem value="rootless3">Rootless 3 ноты</SelectItem>
                         <SelectItem value="rootless4">Rootless 4 ноты</SelectItem>
+                        <SelectItem value="quartal">Квартовый</SelectItem>
                       </SelectContent>
                     </Select>
                   )}
@@ -760,13 +715,13 @@ export function SettingsForm({ defaultValues, onSave, themeControl }: Props) {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
-                Drums
+                {drumKitName}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between gap-4">
                 <Label htmlFor="drumsEnabled" className="text-sm text-foreground">
-                  Включить Drums
+                  Включить ударные
                 </Label>
                 <Controller
                   control={form.control}
@@ -788,7 +743,7 @@ export function SettingsForm({ defaultValues, onSave, themeControl }: Props) {
                   <Label
                     className={`text-sm ${drumsOn ? 'text-foreground' : 'text-muted-foreground'}`}
                   >
-                    Громкость Drums
+                    Громкость ударных
                   </Label>
                   <span className="text-sm tabular-nums text-muted-foreground">
                     {Math.round((form.watch('drumsVolume') ?? 0.7) * 100)}%
@@ -807,6 +762,40 @@ export function SettingsForm({ defaultValues, onSave, themeControl }: Props) {
                       onValueChange={(vals) => field.onChange((vals[0] ?? 70) / 100)}
                     />
                   )}
+                />
+              </div>
+
+              <div className="flex items-center justify-between gap-4">
+                <Label
+                  className={`text-sm ${drumsOn ? 'text-foreground' : 'text-muted-foreground'}`}
+                >
+                  Набор сэмплов
+                </Label>
+                <Controller
+                  control={form.control}
+                  name="drumKit"
+                  render={({ field }) => {
+                    const drumKitVariants =
+                      INSTRUMENT_GROUPS.find((g) => g.id === 'drums')?.variants ?? [];
+                    return (
+                      <Select
+                        value={field.value ?? 'jazz-drum-kit'}
+                        onValueChange={field.onChange}
+                        disabled={!drumsOn}
+                      >
+                        <SelectTrigger className="w-44">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {drumKitVariants.map((v) => (
+                            <SelectItem key={v.instrumentId} value={v.instrumentId}>
+                              {v.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    );
+                  }}
                 />
               </div>
             </CardContent>

@@ -32,7 +32,14 @@ export interface Hit<TSound extends string = string> {
 
 // ─── Molecule (Level 1) ───────────────────────────────────────────────────────
 
-export type MoleculeCategory = 'groove' | 'fill' | 'texture' | 'accent' | 'intro' | 'ending';
+export type MoleculeCategory =
+  | 'groove'
+  | 'fill'
+  | 'texture'
+  | 'accent'
+  | 'intro'
+  | 'ending'
+  | 'upper';
 
 export interface MoleculeConditions {
   requireRide?: boolean;
@@ -79,7 +86,7 @@ export interface Dynamics {
 
 /**
  * Клип — молекулярный пул, размещённый на диапазоне тактов лейна.
- * На КАЖДЫЙ такт спана движок выбирает первую молекулу из `pool`.
+ * Движок циклически перебирает молекулы из `pool` потактово внутри спана.
  */
 export interface Clip {
   /** 0-based, 0 ≤ startBar < cell.length */
@@ -110,7 +117,7 @@ export interface Lane {
 export interface Cell<TStyle extends string = string> {
   id: string;
   style: TStyle;
-  length: 8 | 12 | 16 | 32;
+  length: 4 | 8 | 12 | 16 | 32;
   timeSignature: [4, 4] | [3, 4] | [5, 4];
 
   /** Мастер musical velocity 0..1 — масштабирует velocity молекул. */

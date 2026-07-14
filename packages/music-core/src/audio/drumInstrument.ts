@@ -109,14 +109,18 @@ function timeSignatureKey(beatsPerBar: number, beatUnit: number): string {
   return `${beatsPerBar}/${beatUnit}`;
 }
 
-interface FlatSection {
+export interface FlatSection {
   type: SectionType;
   timeSignature: string;
   startBar: number;
   lengthBars: number;
+  /** 0-based form pass index — used to cycle cell pools across grid replays. */
+  passIndex: number;
+  /** Bars in one pass (set for infinite forms to derive virtual passIndex). */
+  passLength?: number;
 }
 
-function flattenSections(sections: Section[] | null): FlatSection[] | null {
+export function flattenSections(sections: Section[] | null): FlatSection[] | null {
   if (!sections || sections.length === 0) return null;
 
   const lastSection = sections[sections.length - 1]!;
@@ -153,13 +157,19 @@ function flattenSections(sections: Section[] | null): FlatSection[] | null {
         timeSignature: timeSignatureKey(beatsPerBar ?? 4, beatUnit ?? 4),
         startBar: cursor,
         lengthBars: expanded.length,
+        passIndex: pass,
       });
       cursor += expanded.length;
     }
   }
 
-  // Infinite form loop: last section absorbs everything past the form end
+  // Infinite form loop: last section absorbs everything past the form end.
+  // Store the one-pass length so resolveBarSlot can derive a virtual passIndex.
   if (isFormInfinite && flat.length > 0) {
+    const onePassLen = cursor;
+    for (let i = 0; i < flat.length; i++) {
+      flat[i] = { ...flat[i]!, passLength: onePassLen };
+    }
     const last = flat[flat.length - 1]!;
     flat[flat.length - 1] = { ...last, lengthBars: Infinity };
   }
@@ -176,6 +186,8 @@ export class DrumInstrument implements Instrument {
   private currentOrganism: DrumOrganism | null = null;
   private organismId: string | null = null;
   private gridSections: FlatSection[] | null = null;
+  private lastScheduledBar = -1;
+  private infiniteLoopCount = 0;
 
   private static STYLE_TO_PATTERN: Record<string, DrumPatternStyle> = {
     swing: 'swing',
@@ -234,6 +246,8 @@ export class DrumInstrument implements Instrument {
     this.gridSections = null;
     this.organismId = null;
     this.currentOrganism = null;
+    this.lastScheduledBar = -1;
+    this.infiniteLoopCount = 0;
   }
 
   /* ── Scheduling ────────────────────────────────────────────────────────── */
@@ -280,14 +294,26 @@ export class DrumInstrument implements Instrument {
         if (absoluteBar >= sec.startBar && absoluteBar < sec.startBar + sec.lengthBars) {
           const barInSection = absoluteBar - sec.startBar;
           const seed = ORGANISM_SEED + absoluteBar;
-          return this.patternEngine.selectCellForSectionType(
+          // Infinite form: track loop wraps and use loop count as passIndex
+          let passIdx = sec.passIndex;
+          if (sec.lengthBars === Infinity && sec.passLength != null) {
+            // Detect loop wrap: bar went backwards
+            if (absoluteBar < this.lastScheduledBar) {
+              this.infiniteLoopCount++;
+            }
+            this.lastScheduledBar = absoluteBar;
+            passIdx = this.infiniteLoopCount;
+          }
+          const result = this.patternEngine.selectCellForSectionType(
             organism,
             sec.type,
             tsKey,
             barInSection,
             this.currentStyle,
             seed,
+            passIdx,
           );
+          return result;
         }
       }
     }
@@ -296,11 +322,37 @@ export class DrumInstrument implements Instrument {
     if (!form || form.length === 0) {
       const verseAPool = this.patternEngine.resolveSectionCells(organism, 'verseA', tsKey);
       if (verseAPool.length > 0) {
+        // Cycle cells per cell.length bars when no form structure exists
         const cell = DRUM_CELLS_LOOKUP[verseAPool[0]!];
-        if (cell) return { cell, barInCell: absoluteBar % cell.length };
+        if (cell) {
+          const passIdx = cell.length > 0 ? Math.floor(absoluteBar / cell.length) : 0;
+          return this.patternEngine.selectCellForSectionType(
+            organism,
+            'verseA',
+            tsKey,
+            absoluteBar % cell.length,
+            this.currentStyle,
+            ORGANISM_SEED + absoluteBar,
+            passIdx,
+          );
+        }
       }
       return null;
     }
+
+    // Calculate total form length for pass derivation
+    let totalLen = 0;
+    for (const section of form) {
+      const repeats = section.repeats ?? 1;
+      const pool = this.patternEngine.resolveSectionCells(organism, section.type, tsKey);
+      const cellId = pool[0];
+      const cell = cellId ? DRUM_CELLS_LOOKUP[cellId] : undefined;
+      if (!cell) continue;
+      totalLen += cell.length * repeats;
+    }
+
+    const passIdx = totalLen > 0 ? Math.floor(absoluteBar / totalLen) : 0;
+    const loopBar = totalLen > 0 ? absoluteBar % totalLen : absoluteBar;
 
     let cursor = 0;
     for (const section of form) {
@@ -310,18 +362,35 @@ export class DrumInstrument implements Instrument {
       const cell = cellId ? DRUM_CELLS_LOOKUP[cellId] : undefined;
       if (!cell) return null;
       const sectionLen = cell.length * repeats;
-      if (absoluteBar >= cursor && absoluteBar < cursor + sectionLen) {
-        const barInSection = absoluteBar - cursor;
-        return { cell, barInCell: barInSection % cell.length };
+      if (loopBar >= cursor && loopBar < cursor + sectionLen) {
+        const barInSection = loopBar - cursor;
+        return this.patternEngine.selectCellForSectionType(
+          organism,
+          section.type,
+          tsKey,
+          barInSection,
+          this.currentStyle,
+          ORGANISM_SEED + absoluteBar,
+          passIdx,
+        );
       }
       cursor += sectionLen;
     }
 
+    // Ultimate fallback: first section's first cell, with pass cycling
     const firstPool = this.patternEngine.resolveSectionCells(organism, form[0]!.type, tsKey);
     const firstCellId = firstPool[0];
     const firstCell = firstCellId ? DRUM_CELLS_LOOKUP[firstCellId] : undefined;
     if (!firstCell) return null;
-    return { cell: firstCell, barInCell: absoluteBar % firstCell.length };
+    return this.patternEngine.selectCellForSectionType(
+      organism,
+      form[0]!.type,
+      tsKey,
+      absoluteBar % firstCell.length,
+      this.currentStyle,
+      ORGANISM_SEED + absoluteBar,
+      passIdx,
+    );
   }
 
   private scheduleOrganism(
@@ -344,7 +413,12 @@ export class DrumInstrument implements Instrument {
       const barStart = bar * tpBar;
       const groove = barGrooveOffset(bar, maxJitter);
 
-      const hits = this.patternEngine.assembleBar(pos.cell, pos.barInCell, ctx.swingRatio);
+      const hits = this.patternEngine.assembleBar(
+        pos.cell,
+        pos.barInCell,
+        ctx.swingRatio,
+        ctx.playSeed ?? 0,
+      );
 
       scheduleHits(hits, barStart, groove, window, ctx, maxJitter);
     }

@@ -1,7 +1,4 @@
-import {
-  ticksPerBar,
-  ticksPerBeat,
-} from '../time/timeSignature.js';
+import { ticksPerBar, ticksPerBeat } from '../time/timeSignature.js';
 import type { Instrument, ScheduleContext, ScheduleWindow } from './instrument.js';
 import type { Section, SectionType } from '@jazz/shared';
 import type { StyleProfile } from '../styleProfile.js';
@@ -17,8 +14,6 @@ import { PERCUSSION_CELLS } from './percussionCells.js';
 import { expandRange } from '../playback/repeatExpansion.js';
 
 // ─── Types ─────────────────────────────────────────────────────────────────
-
-export type PercussionPattern = 'cascara-clave' | 'bossa-texture' | 'funk-accents';
 
 export type HumanizeIntensity = 'off' | 'low' | 'med' | 'high';
 
@@ -36,7 +31,6 @@ const PPQ = 480;
 export interface PercussionInstrumentSettings {
   enabled: boolean;
   volume: number;
-  pattern: PercussionPattern;
 
   // Core Latin percussion (8 original sounds)
   congaHighEnabled: boolean;
@@ -56,7 +50,9 @@ export interface PercussionInstrumentSettings {
   triangleEnabled: boolean;
   triangleVolume: number;
 
-  // Extended percussion (8 additional sounds)
+  // Extended percussion (9 additional sounds)
+  bongoHighEnabled: boolean;
+  bongoHighVolume: number;
   bongoLowEnabled: boolean;
   bongoLowVolume: number;
   tumbaEnabled: boolean;
@@ -80,7 +76,6 @@ export interface PercussionInstrumentSettings {
 export const DEFAULT_PERCUSSION_SETTINGS: PercussionInstrumentSettings = {
   enabled: false,
   volume: 0.7,
-  pattern: 'cascara-clave',
 
   congaHighEnabled: true,
   congaHighVolume: 0.7,
@@ -99,6 +94,8 @@ export const DEFAULT_PERCUSSION_SETTINGS: PercussionInstrumentSettings = {
   triangleEnabled: true,
   triangleVolume: 0.5,
 
+  bongoHighEnabled: false,
+  bongoHighVolume: 0.62,
   bongoLowEnabled: false,
   bongoLowVolume: 0.65,
   tumbaEnabled: false,
@@ -124,6 +121,7 @@ export const DEFAULT_PERCUSSION_SETTINGS: PercussionInstrumentSettings = {
 const SOUND_ENABLED_KEY: Record<PercussionSound, keyof PercussionInstrumentSettings> = {
   congaHigh: 'congaHighEnabled',
   congaLow: 'congaLowEnabled',
+  bongoHigh: 'bongoHighEnabled',
   bongoLow: 'bongoLowEnabled',
   tumba: 'tumbaEnabled',
   timbales: 'timbalesEnabled',
@@ -187,6 +185,10 @@ interface FlatSection {
   timeSignature: string;
   startBar: number;
   lengthBars: number;
+  /** 0-based form pass index — used to cycle cell pools across grid replays. */
+  passIndex: number;
+  /** Bars in one pass (set for infinite forms to derive virtual passIndex). */
+  passLength?: number;
 }
 
 function flattenSections(sections: Section[] | null): FlatSection[] | null {
@@ -223,12 +225,17 @@ function flattenSections(sections: Section[] | null): FlatSection[] | null {
         timeSignature: timeSignatureKey(beatsPerBar ?? 4, beatUnit ?? 4),
         startBar: cursor,
         lengthBars: expanded.length,
+        passIndex: pass,
       });
       cursor += expanded.length;
     }
   }
 
   if (isFormInfinite && flat.length > 0) {
+    const onePassLen = cursor;
+    for (let i = 0; i < flat.length; i++) {
+      flat[i] = { ...flat[i]!, passLength: onePassLen };
+    }
     const last = flat[flat.length - 1]!;
     flat[flat.length - 1] = { ...last, lengthBars: Infinity };
   }
@@ -242,10 +249,11 @@ export class PercussionInstrument implements Instrument {
   private settings: PercussionInstrumentSettings = { ...DEFAULT_PERCUSSION_SETTINGS };
   private patternEngine = new PercussionPatternEngine();
   private currentStyle: PercussionPatternStyle = 'latin';
-  private userStyle: string = 'latin';
   private currentOrganism: PercussionOrganism | null = null;
   private organismId: string | null = null;
   private gridSections: FlatSection[] | null = null;
+  private lastScheduledBar = -1;
+  private infiniteLoopCount = 0;
 
   private static STYLE_TO_PATTERN: Record<string, PercussionPatternStyle> = {
     swing: 'latin',
@@ -255,29 +263,11 @@ export class PercussionInstrument implements Instrument {
     ballad: 'bossa',
   };
 
-  private static STYLE_TO_LEGACY: Record<string, PercussionPattern> = {
-    swing: 'cascara-clave',
-    bossa: 'bossa-texture',
-    funk: 'funk-accents',
-    latin: 'cascara-clave',
-    ballad: 'bossa-texture',
-  };
-
   setStyleProfile(profile: StyleProfile): void {
-    this.userStyle = profile.id;
     const pat = PercussionInstrument.STYLE_TO_PATTERN[profile.id];
     if (pat) {
       this.currentStyle = pat;
       this.selectOrganismForStyle();
-    }
-
-    // Also update legacy pattern from profile defaults
-    const legacyPat = profile.instrumentDefaults.percussion.pattern as PercussionPattern | undefined;
-    if (legacyPat) {
-      this.settings.pattern = legacyPat;
-    } else {
-      this.settings.pattern =
-        PercussionInstrument.STYLE_TO_LEGACY[profile.id] ?? 'cascara-clave';
     }
   }
 
@@ -299,11 +289,7 @@ export class PercussionInstrument implements Instrument {
 
   setStyle(style: string): void {
     const pat = PercussionInstrument.STYLE_TO_PATTERN[style];
-    if (pat) {
-      this.currentStyle = pat;
-      this.userStyle = style;
-      this.selectOrganismForStyle();
-    }
+    if (pat) this.currentStyle = pat;
   }
 
   updateSettings(patch: Partial<PercussionInstrumentSettings>): void {
@@ -321,10 +307,11 @@ export class PercussionInstrument implements Instrument {
   reset(): void {
     this.settings = { ...DEFAULT_PERCUSSION_SETTINGS };
     this.currentStyle = 'latin';
-    this.userStyle = 'latin';
     this.gridSections = null;
     this.organismId = null;
     this.currentOrganism = null;
+    this.lastScheduledBar = -1;
+    this.infiniteLoopCount = 0;
   }
 
   /* ── Scheduling ──────────────────────────────────────────────────────── */
@@ -370,12 +357,21 @@ export class PercussionInstrument implements Instrument {
       for (const sec of this.gridSections) {
         if (absoluteBar >= sec.startBar && absoluteBar < sec.startBar + sec.lengthBars) {
           const barInSection = absoluteBar - sec.startBar;
+          let passIdx = sec.passIndex;
+          if (sec.lengthBars === Infinity && sec.passLength != null) {
+            if (absoluteBar < this.lastScheduledBar) {
+              this.infiniteLoopCount++;
+            }
+            this.lastScheduledBar = absoluteBar;
+            passIdx = this.infiniteLoopCount;
+          }
           return this.patternEngine.selectCellForSectionType(
             organism,
             sec.type,
             tsKey,
             barInSection,
             this.currentStyle,
+            passIdx,
           );
         }
       }
@@ -386,10 +382,33 @@ export class PercussionInstrument implements Instrument {
       const verseAPool = this.patternEngine.resolveSectionCells(organism, 'verseA', tsKey);
       if (verseAPool.length > 0) {
         const cell = PERCUSSION_CELLS[verseAPool[0]!];
-        if (cell) return { cell, barInCell: absoluteBar % cell.length };
+        if (cell) {
+          const passIdx = cell.length > 0 ? Math.floor(absoluteBar / cell.length) : 0;
+          return this.patternEngine.selectCellForSectionType(
+            organism,
+            'verseA',
+            tsKey,
+            absoluteBar % cell.length,
+            this.currentStyle,
+            passIdx,
+          );
+        }
       }
       return null;
     }
+
+    let totalLen = 0;
+    for (const section of form) {
+      const repeats = section.repeats ?? 1;
+      const pool = this.patternEngine.resolveSectionCells(organism, section.type, tsKey);
+      const cellId = pool[0];
+      const cell = cellId ? PERCUSSION_CELLS[cellId] : undefined;
+      if (!cell) continue;
+      totalLen += cell.length * repeats;
+    }
+
+    const passIdx = totalLen > 0 ? Math.floor(absoluteBar / totalLen) : 0;
+    const loopBar = totalLen > 0 ? absoluteBar % totalLen : absoluteBar;
 
     let cursor = 0;
     for (const section of form) {
@@ -399,9 +418,16 @@ export class PercussionInstrument implements Instrument {
       const cell = cellId ? PERCUSSION_CELLS[cellId] : undefined;
       if (!cell) return null;
       const sectionLen = cell.length * repeats;
-      if (absoluteBar >= cursor && absoluteBar < cursor + sectionLen) {
-        const barInSection = absoluteBar - cursor;
-        return { cell, barInCell: barInSection % cell.length };
+      if (loopBar >= cursor && loopBar < cursor + sectionLen) {
+        const barInSection = loopBar - cursor;
+        return this.patternEngine.selectCellForSectionType(
+          organism,
+          section.type,
+          tsKey,
+          barInSection,
+          this.currentStyle,
+          passIdx,
+        );
       }
       cursor += sectionLen;
     }
@@ -410,7 +436,14 @@ export class PercussionInstrument implements Instrument {
     const firstCellId = firstPool[0];
     const firstCell = firstCellId ? PERCUSSION_CELLS[firstCellId] : undefined;
     if (!firstCell) return null;
-    return { cell: firstCell, barInCell: absoluteBar % firstCell.length };
+    return this.patternEngine.selectCellForSectionType(
+      organism,
+      form[0]!.type,
+      tsKey,
+      absoluteBar % firstCell.length,
+      this.currentStyle,
+      passIdx,
+    );
   }
 
   private scheduleOrganism(
@@ -433,7 +466,12 @@ export class PercussionInstrument implements Instrument {
       const barStart = bar * tpBar;
       const groove = barGrooveOffset(bar, maxJitter);
 
-      const hits = this.patternEngine.assembleBar(pos.cell, pos.barInCell, ctx.swingRatio);
+      const hits = this.patternEngine.assembleBar(
+        pos.cell,
+        pos.barInCell,
+        ctx.swingRatio,
+        ctx.playSeed ?? 0,
+      );
 
       scheduleHits(hits, barStart, groove, window, ctx, maxJitter, s);
     }
@@ -446,16 +484,15 @@ export class PercussionInstrument implements Instrument {
     ctx: ScheduleContext,
     s: PercussionInstrumentSettings,
   ): void {
-    const pattern = PercussionInstrument.STYLE_TO_LEGACY[this.userStyle] ?? this.settings.pattern;
-    switch (pattern) {
-      case 'cascara-clave':
-        this.scheduleDegradedLatin(window, ctx, s);
-        break;
-      case 'bossa-texture':
+    switch (this.currentStyle) {
+      case 'bossa':
         this.scheduleDegradedBossa(window, ctx, s);
         break;
-      case 'funk-accents':
+      case 'funk':
         this.scheduleDegradedFunk(window, ctx, s);
+        break;
+      default:
+        this.scheduleDegradedLatin(window, ctx, s);
         break;
     }
   }
@@ -512,50 +549,117 @@ export class PercussionInstrument implements Instrument {
       if (s.claveEnabled) {
         if (claveCycle === 0) {
           hits.push(
-            { sound: 'clave', atTick: 0, velocity: s.claveVolume, durationTicks: Math.round(tpBeat * 0.25) },
-            { sound: 'clave', atTick: Math.round(tpBeat * 1.5), velocity: s.claveVolume * 0.9, durationTicks: Math.round(tpBeat * 0.25) },
-            { sound: 'clave', atTick: Math.round(tpBeat * 3), velocity: s.claveVolume * 0.85, durationTicks: Math.round(tpBeat * 0.25) },
+            {
+              sound: 'clave',
+              atTick: 0,
+              velocity: s.claveVolume,
+              durationTicks: Math.round(tpBeat * 0.25),
+            },
+            {
+              sound: 'clave',
+              atTick: Math.round(tpBeat * 1.5),
+              velocity: s.claveVolume * 0.9,
+              durationTicks: Math.round(tpBeat * 0.25),
+            },
+            {
+              sound: 'clave',
+              atTick: Math.round(tpBeat * 3),
+              velocity: s.claveVolume * 0.85,
+              durationTicks: Math.round(tpBeat * 0.25),
+            },
           );
         } else {
           hits.push(
-            { sound: 'clave', atTick: Math.round(tpBeat), velocity: s.claveVolume, durationTicks: Math.round(tpBeat * 0.25) },
-            { sound: 'clave', atTick: Math.round(tpBeat * 2), velocity: s.claveVolume * 0.9, durationTicks: Math.round(tpBeat * 0.25) },
+            {
+              sound: 'clave',
+              atTick: Math.round(tpBeat),
+              velocity: s.claveVolume,
+              durationTicks: Math.round(tpBeat * 0.25),
+            },
+            {
+              sound: 'clave',
+              atTick: Math.round(tpBeat * 2),
+              velocity: s.claveVolume * 0.9,
+              durationTicks: Math.round(tpBeat * 0.25),
+            },
           );
         }
       }
 
       // Cascara on timbales
       if (s.timbalesEnabled) {
-        const ticks = [0, Math.round(tpBeat * 1.5), Math.round(tpBeat * 2), Math.round(tpBeat * 2.5), Math.round(tpBeat * 3), Math.round(tpBeat * 3.5)];
+        const ticks = [
+          0,
+          Math.round(tpBeat * 1.5),
+          Math.round(tpBeat * 2),
+          Math.round(tpBeat * 2.5),
+          Math.round(tpBeat * 3),
+          Math.round(tpBeat * 3.5),
+        ];
         for (const ct of ticks) {
-          hits.push({ sound: 'timbales', atTick: ct, velocity: s.timbalesVolume * (ct === 0 ? 0.9 : 0.7), durationTicks: Math.round(tpBeat * 0.2) });
+          hits.push({
+            sound: 'timbales',
+            atTick: ct,
+            velocity: s.timbalesVolume * (ct === 0 ? 0.9 : 0.7),
+            durationTicks: Math.round(tpBeat * 0.2),
+          });
         }
       }
 
       // Tumbao
       if (s.congaLowEnabled) {
         for (const offset of [Math.round(tpBeat * 1.5), Math.round(tpBeat * 3.5)]) {
-          hits.push({ sound: 'congaLow', atTick: offset, velocity: s.congaLowVolume, durationTicks: Math.round(tpBeat * 0.3) });
+          hits.push({
+            sound: 'congaLow',
+            atTick: offset,
+            velocity: s.congaLowVolume,
+            durationTicks: Math.round(tpBeat * 0.3),
+          });
         }
       }
       if (s.tumbaEnabled) {
-        hits.push({ sound: 'tumba', atTick: Math.round(tpBeat * 3), velocity: s.tumbaVolume, durationTicks: Math.round(tpBeat * 0.35) });
+        hits.push({
+          sound: 'tumba',
+          atTick: Math.round(tpBeat * 3),
+          velocity: s.tumbaVolume,
+          durationTicks: Math.round(tpBeat * 0.35),
+        });
       }
 
       // CongaHigh + bongoLow
       if (s.congaHighEnabled) {
         for (const offset of [Math.round(tpBeat * 0.5), Math.round(tpBeat * 2.5)]) {
-          hits.push({ sound: 'congaHigh', atTick: offset, velocity: s.congaHighVolume * 0.8, durationTicks: Math.round(tpBeat * 0.2) });
+          hits.push({
+            sound: 'congaHigh',
+            atTick: offset,
+            velocity: s.congaHighVolume * 0.8,
+            durationTicks: Math.round(tpBeat * 0.2),
+          });
         }
       }
       if (s.bongoLowEnabled) {
-        hits.push({ sound: 'bongoLow', atTick: Math.round(tpBeat), velocity: s.bongoLowVolume, durationTicks: Math.round(tpBeat * 0.25) });
+        hits.push({
+          sound: 'bongoLow',
+          atTick: Math.round(tpBeat),
+          velocity: s.bongoLowVolume,
+          durationTicks: Math.round(tpBeat * 0.25),
+        });
       }
 
       // Cowbell
       if (s.cowbellEnabled) {
-        hits.push({ sound: 'cowbell', atTick: 0, velocity: s.cowbellVolume, durationTicks: Math.round(tpBeat * 0.3) });
-        hits.push({ sound: 'cowbell', atTick: Math.round(tpBeat * 2), velocity: s.cowbellVolume * 0.8, durationTicks: Math.round(tpBeat * 0.3) });
+        hits.push({
+          sound: 'cowbell',
+          atTick: 0,
+          velocity: s.cowbellVolume,
+          durationTicks: Math.round(tpBeat * 0.3),
+        });
+        hits.push({
+          sound: 'cowbell',
+          atTick: Math.round(tpBeat * 2),
+          velocity: s.cowbellVolume * 0.8,
+          durationTicks: Math.round(tpBeat * 0.3),
+        });
       }
 
       scheduleHits(hits, barStart, groove, window, ctx, maxJitter, s);
@@ -599,41 +703,91 @@ export class PercussionInstrument implements Instrument {
       // Cabasa: sparse
       if (s.cabasaEnabled) {
         hits.push(
-          { sound: 'cabasa', atTick: Math.round(tpBeat * 0.5), velocity: s.cabasaVolume * 0.7, durationTicks: Math.round(tpBeat * 0.3) },
-          { sound: 'cabasa', atTick: Math.round(tpBeat * 2.5), velocity: s.cabasaVolume * 0.6, durationTicks: Math.round(tpBeat * 0.3) },
+          {
+            sound: 'cabasa',
+            atTick: Math.round(tpBeat * 0.5),
+            velocity: s.cabasaVolume * 0.7,
+            durationTicks: Math.round(tpBeat * 0.3),
+          },
+          {
+            sound: 'cabasa',
+            atTick: Math.round(tpBeat * 2.5),
+            velocity: s.cabasaVolume * 0.6,
+            durationTicks: Math.round(tpBeat * 0.3),
+          },
         );
       }
 
       // Triangle
       if (s.triangleEnabled) {
         hits.push(
-          { sound: 'triangle', atTick: 0, velocity: s.triangleVolume, durationTicks: Math.round(tpBeat * 0.6) },
-          { sound: 'triangle', atTick: Math.round(tpBeat * 2), velocity: s.triangleVolume * 0.8, durationTicks: Math.round(tpBeat * 0.6) },
+          {
+            sound: 'triangle',
+            atTick: 0,
+            velocity: s.triangleVolume,
+            durationTicks: Math.round(tpBeat * 0.6),
+          },
+          {
+            sound: 'triangle',
+            atTick: Math.round(tpBeat * 2),
+            velocity: s.triangleVolume * 0.8,
+            durationTicks: Math.round(tpBeat * 0.6),
+          },
         );
       }
 
       // Tambourine
       if (s.tambourineEnabled) {
         hits.push(
-          { sound: 'tambourine', atTick: Math.round(tpBeat), velocity: s.tambourineVolume * 0.7, durationTicks: Math.round(tpBeat * 0.25) },
-          { sound: 'tambourine', atTick: Math.round(tpBeat * 3), velocity: s.tambourineVolume * 0.65, durationTicks: Math.round(tpBeat * 0.25) },
+          {
+            sound: 'tambourine',
+            atTick: Math.round(tpBeat),
+            velocity: s.tambourineVolume * 0.7,
+            durationTicks: Math.round(tpBeat * 0.25),
+          },
+          {
+            sound: 'tambourine',
+            atTick: Math.round(tpBeat * 3),
+            velocity: s.tambourineVolume * 0.65,
+            durationTicks: Math.round(tpBeat * 0.25),
+          },
         );
       }
 
       // Conga
       if (s.congaLowEnabled) {
         hits.push(
-          { sound: 'congaLow', atTick: Math.round(tpBeat), velocity: s.congaLowVolume, durationTicks: Math.round(tpBeat * 0.4) },
-          { sound: 'congaLow', atTick: Math.round(tpBeat * 2.5), velocity: s.congaLowVolume * 0.85, durationTicks: Math.round(tpBeat * 0.4) },
+          {
+            sound: 'congaLow',
+            atTick: Math.round(tpBeat),
+            velocity: s.congaLowVolume,
+            durationTicks: Math.round(tpBeat * 0.4),
+          },
+          {
+            sound: 'congaLow',
+            atTick: Math.round(tpBeat * 2.5),
+            velocity: s.congaLowVolume * 0.85,
+            durationTicks: Math.round(tpBeat * 0.4),
+          },
         );
       }
       if (s.congaHighEnabled) {
-        hits.push({ sound: 'congaHigh', atTick: Math.round(tpBeat * 1.5), velocity: s.congaHighVolume * 0.7, durationTicks: Math.round(tpBeat * 0.25) });
+        hits.push({
+          sound: 'congaHigh',
+          atTick: Math.round(tpBeat * 1.5),
+          velocity: s.congaHighVolume * 0.7,
+          durationTicks: Math.round(tpBeat * 0.25),
+        });
       }
 
       // Belltree
       if (s.belltreeEnabled && bar % 4 === 0) {
-        hits.push({ sound: 'belltree', atTick: 0, velocity: s.belltreeVolume, durationTicks: Math.round(tpBeat * 0.5) });
+        hits.push({
+          sound: 'belltree',
+          atTick: 0,
+          velocity: s.belltreeVolume,
+          durationTicks: Math.round(tpBeat * 0.5),
+        });
       }
 
       scheduleHits(hits, barStart, groove, window, ctx, maxJitter, s);
@@ -664,51 +818,119 @@ export class PercussionInstrument implements Instrument {
       // Cowbell
       if (s.cowbellEnabled) {
         hits.push(
-          { sound: 'cowbell', atTick: 0, velocity: s.cowbellVolume, durationTicks: Math.round(tpBeat * 0.4) },
-          { sound: 'cowbell', atTick: Math.round(tpBeat * 2), velocity: s.cowbellVolume * 0.9, durationTicks: Math.round(tpBeat * 0.4) },
+          {
+            sound: 'cowbell',
+            atTick: 0,
+            velocity: s.cowbellVolume,
+            durationTicks: Math.round(tpBeat * 0.4),
+          },
+          {
+            sound: 'cowbell',
+            atTick: Math.round(tpBeat * 2),
+            velocity: s.cowbellVolume * 0.9,
+            durationTicks: Math.round(tpBeat * 0.4),
+          },
         );
       }
 
       // Conga
       if (s.congaLowEnabled) {
         hits.push(
-          { sound: 'congaLow', atTick: Math.round(tpBeat * 0.5), velocity: s.congaLowVolume, durationTicks: Math.round(tpBeat * 0.4) },
-          { sound: 'congaLow', atTick: Math.round(tpBeat * 3), velocity: s.congaLowVolume * 0.9, durationTicks: Math.round(tpBeat * 0.4) },
+          {
+            sound: 'congaLow',
+            atTick: Math.round(tpBeat * 0.5),
+            velocity: s.congaLowVolume,
+            durationTicks: Math.round(tpBeat * 0.4),
+          },
+          {
+            sound: 'congaLow',
+            atTick: Math.round(tpBeat * 3),
+            velocity: s.congaLowVolume * 0.9,
+            durationTicks: Math.round(tpBeat * 0.4),
+          },
         );
       }
       if (s.tumbaEnabled) {
-        hits.push({ sound: 'tumba', atTick: 0, velocity: s.tumbaVolume, durationTicks: Math.round(tpBeat * 0.4) });
+        hits.push({
+          sound: 'tumba',
+          atTick: 0,
+          velocity: s.tumbaVolume,
+          durationTicks: Math.round(tpBeat * 0.4),
+        });
       }
       if (s.congaHighEnabled) {
         hits.push(
-          { sound: 'congaHigh', atTick: Math.round(tpBeat), velocity: s.congaHighVolume * 0.8, durationTicks: Math.round(tpBeat * 0.25) },
-          { sound: 'congaHigh', atTick: Math.round(tpBeat * 2.5), velocity: s.congaHighVolume * 0.7, durationTicks: Math.round(tpBeat * 0.25) },
+          {
+            sound: 'congaHigh',
+            atTick: Math.round(tpBeat),
+            velocity: s.congaHighVolume * 0.8,
+            durationTicks: Math.round(tpBeat * 0.25),
+          },
+          {
+            sound: 'congaHigh',
+            atTick: Math.round(tpBeat * 2.5),
+            velocity: s.congaHighVolume * 0.7,
+            durationTicks: Math.round(tpBeat * 0.25),
+          },
         );
       }
 
       // Timbales
       if (s.timbalesEnabled) {
         hits.push(
-          { sound: 'timbales', atTick: Math.round(tpBeat), velocity: s.timbalesVolume * 0.8, durationTicks: Math.round(tpBeat * 0.15) },
-          { sound: 'timbales', atTick: Math.round(tpBeat * 3), velocity: s.timbalesVolume, durationTicks: Math.round(tpBeat * 0.15) },
+          {
+            sound: 'timbales',
+            atTick: Math.round(tpBeat),
+            velocity: s.timbalesVolume * 0.8,
+            durationTicks: Math.round(tpBeat * 0.15),
+          },
+          {
+            sound: 'timbales',
+            atTick: Math.round(tpBeat * 3),
+            velocity: s.timbalesVolume,
+            durationTicks: Math.round(tpBeat * 0.15),
+          },
         );
       }
 
       // Vibraslap
       if (s.vibraslapEnabled && bar % 2 === 0) {
-        hits.push({ sound: 'vibraslap', atTick: Math.round(tpBeat * 2), velocity: s.vibraslapVolume, durationTicks: Math.round(tpBeat * 0.3) });
+        hits.push({
+          sound: 'vibraslap',
+          atTick: Math.round(tpBeat * 2),
+          velocity: s.vibraslapVolume,
+          durationTicks: Math.round(tpBeat * 0.3),
+        });
       }
 
-      // Shaker: 16th notes
-      if (s.shakerEnabled) {
+      // Cabasa: 16th notes — replaces shaker as the funk pulse bed
+      if (s.cabasaEnabled) {
         for (let sixteenth = 0; sixteenth < sig.beatsPerBar * 4; sixteenth++) {
           const atTick = Math.round(sixteenth * (tpBeat / 4));
           const isAccent = sixteenth % 4 === 0;
           hits.push({
-            sound: 'shaker',
+            sound: 'cabasa',
             atTick,
-            velocity: s.shakerVolume * (isAccent ? 0.7 : 0.35),
+            velocity: s.cabasaVolume * (isAccent ? 0.7 : 0.35),
             durationTicks: Math.round(tpBeat / 5),
+          });
+        }
+      }
+
+      // Bongo accents on offbeat 8ths (replaces shaker texture)
+      if (s.bongoLowEnabled) {
+        for (let eighth = 0; eighth < sig.beatsPerBar * 2; eighth++) {
+          const atTick = Math.round(eighth * (tpBeat / 2) + tpBeat / 4);
+          hits.push({
+            sound: eighth % 2 === 0 ? 'bongoLow' : 'bongoHigh',
+            atTick,
+            velocity:
+              (eighth % 2 === 0
+                ? s.bongoLowVolume
+                : s.bongoHighEnabled
+                  ? s.bongoHighVolume
+                  : s.bongoLowVolume * 0.85) * 0.45,
+            durationTicks: Math.round(tpBeat / 6),
           });
         }
       }

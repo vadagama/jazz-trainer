@@ -33,6 +33,8 @@ export {
   DRUMS_DRUMKIT,
   buildBassPluckUrls,
   buildBassMuteUrls,
+  buildBassRegUrls,
+  buildBassArticUrls,
   type MetronomeSampleDef,
   type SamplerDef,
   type DrumkitDef,
@@ -50,6 +52,7 @@ export {
 export {
   RHODES_LAYERS,
   RHODES_SAMPLER_BASE_URL,
+  RHODES_VELOCITY_THRESHOLDS,
   pickRhodesLayer,
   type RhodesVelocityLayer,
 } from './rhodesSampleRegistry.js';
@@ -118,7 +121,6 @@ export {
 export {
   PercussionInstrument,
   DEFAULT_PERCUSSION_SETTINGS,
-  type PercussionPattern,
   type PercussionInstrumentSettings,
 } from './percussionInstrument.js';
 export {
@@ -198,9 +200,56 @@ export {
   DEFAULT_BLACK_KEYS,
   type ComputerKeyMap,
 } from './computerKeyboardLayout.js';
-export { bassManifest } from './bassManifest.js';
+export { bassManifest, uprightBassManifest, electricBassManifest } from './bassManifest.js';
+export { BassPatternEngine } from './bassPatternEngine.js';
+export {
+  resolveBassStepPitch,
+  resolveRootNote,
+  resolveIntervalNote,
+  resolveApproachNote,
+  thirdInterval as bassThirdInterval,
+  fifthInterval as bassFifthInterval,
+  seventhInterval as bassSeventhInterval,
+  defaultApproachVariantFor,
+  BASS_CEILING_OCTAVE,
+  type ResolveBassStepPitchOptions,
+} from './bassPitch.js';
+export {
+  type BassStep,
+  type BassVariant,
+  type BassPatternStyle,
+  type BassTensionLevel,
+  type BassPhrasing,
+  type BassRange,
+  type BassAtom,
+  type BassHit,
+  type BassMolecule,
+  type BassCell,
+  type BassOrganism,
+} from './bassPatternTypes.js';
+export { resolveBassStep, type ResolveBassStepOptions } from './bassStepEngine.js';
+export {
+  UPRIGHT_BASS_MOLECULES,
+  UPRIGHT_BASS_MOLECULE_LIST,
+  ELECTRIC_BASS_MOLECULES,
+  ELECTRIC_BASS_MOLECULE_LIST,
+  getUprightBassMoleculesForStyle,
+  getElectricBassMoleculesForStyle,
+} from './bassMolecules.js';
+export {
+  UPRIGHT_BASS_CELLS,
+  ELECTRIC_BASS_CELLS,
+  getUprightBassCellsForStyle,
+  getElectricBassCellsForStyle,
+} from './bassCells.js';
+export {
+  UPRIGHT_BASS_ORGANISMS,
+  ELECTRIC_BASS_ORGANISMS,
+  getUprightBassOrganismsForStyle,
+  getElectricBassOrganismsForStyle,
+  getBassOrganismsForStyle,
+} from './bassOrganisms.js';
 export { rhodesManifest } from './rhodesManifest.js';
-export { pianoManifest } from './pianoManifest.js';
 export { salamanderManifest } from './salamanderManifest.js';
 export { guitarManifest } from './guitarManifest.js';
 export { electricGuitarManifest } from './electricGuitarManifest.js';
@@ -254,13 +303,23 @@ export {
   clamp01,
 } from './pattern/engine.js';
 export { PianoInstrument } from './pianoInstrument.js';
+export { PianoPatternEngine } from './pianoPatternEngine.js';
 export {
   PianoRandomizer,
   type PianoRandomizationLevel,
   type PianoBarContext,
 } from './pianoRandomizer.js';
-export { buildPianoVoicing, type PianoVoicingDensity } from './pianoVoicing.js';
+export {
+  buildPianoVoicing,
+  selectVoicingRole,
+  intervalToMidi,
+  resolveInterval,
+  type PianoVoicingDensity,
+  type VoiceRole,
+  type TensionLevel,
+} from './pianoVoicing.js';
 export { avoidConflicts } from './pianoRhodesInteraction.js';
+export { suggestUpperStructure, type UpperStructure } from './pianoUpperStructures.js';
 export { testSoloInstrumentContract } from './soloInstrument.contract.js';
 
 // -- Solo instrument manifests --
@@ -280,3 +339,59 @@ export {
   type CompingProfileId,
   type CompingProfile,
 } from './pianoComping.js';
+
+// ─── Piano pattern-engine types ────────────────────────────────────────────
+export type {
+  PianoPatternStyle,
+  PianoAtom,
+  PianoHit,
+  PianoMolecule,
+  PianoCell,
+  PianoOrganism,
+  PianoDynamicsType,
+  PianoDynamics,
+  PianoClip,
+  PianoLane,
+  HumanizeParams,
+} from './pianoPatternTypes.js';
+export { DEFAULT_HUMANIZE } from './pianoPatternTypes.js';
+export {
+  PIANO_MOLECULES,
+  PIANO_MOLECULE_LIST,
+  getPianoMoleculesForStyle,
+} from './pianoMolecules.js';
+export { PIANO_CELLS, PIANO_CELL_LIST, getPianoCellsForStyle } from './pianoCells.js';
+export {
+  PIANO_ORGANISMS,
+  PIANO_ORGANISM_LIST,
+  getPianoOrganismsForStyle,
+} from './pianoOrganisms.js';
+
+// ─── Rhodes pattern-engine (molecules/cells/organisms) ──────────────────────
+export { RhodesPatternEngine } from './rhodesPatternEngine.js';
+export { selectRhodesVoicingRole } from './rhodesVoicingRoles.js';
+export type {
+  RhodesPatternStyle,
+  RhodesVoicingRole,
+  RhodesAtom,
+  RhodesHit,
+  RhodesMolecule,
+  RhodesCell,
+  RhodesOrganism,
+  RhodesDynamicsType,
+  RhodesDynamics,
+  RhodesClip,
+  RhodesLane,
+} from './rhodesPatternTypes.js';
+export { RHODES_VOICING_ROLES } from './rhodesPatternTypes.js';
+export {
+  RHODES_MOLECULES,
+  RHODES_MOLECULE_LIST,
+  getRhodesMoleculesForStyle,
+} from './rhodesMolecules.js';
+export { RHODES_CELLS, RHODES_CELL_LIST, getRhodesCellsForStyle } from './rhodesCells.js';
+export {
+  RHODES_ORGANISMS,
+  RHODES_ORGANISM_LIST,
+  getRhodesOrganismsForStyle,
+} from './rhodesOrganisms.js';

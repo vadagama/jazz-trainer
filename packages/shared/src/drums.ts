@@ -147,7 +147,7 @@ export const DrumDynamicsSchema = z.object({
 export const DrumCellSchema = z.object({
   id: z.string().min(1),
   style: DrumPatternStyleSchema,
-  length: z.union([z.literal(8), z.literal(12), z.literal(16), z.literal(32)]),
+  length: z.union([z.literal(4), z.literal(8), z.literal(12), z.literal(16), z.literal(32)]),
   timeSignature: z
     .tuple([z.literal(3), z.literal(4)])
     .or(z.tuple([z.literal(4), z.literal(4)]))

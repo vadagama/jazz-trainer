@@ -48,7 +48,7 @@ describe('GET /api/settings', () => {
   it('returns default settings for newly created user', async () => {
     await devLogin(agent);
     const res = await agent.get('/api/settings');
-    expect(res.body.bpm).toBe(120);
+    expect(res.body.bpm).toBe(140); // swing default tempo
     expect(res.body.volume).toBe(0.8);
     expect(res.body.countIn).toBe(1);
   });

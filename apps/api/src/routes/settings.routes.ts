@@ -76,7 +76,10 @@ export async function settingsRoutes(
     if (data.bassEnabled !== undefined) patch.bassEnabled = data.bassEnabled;
     if (data.bassVolume !== undefined) patch.bassVolume = data.bassVolume;
     if (data.bassComplexity !== undefined) patch.bassComplexity = data.bassComplexity;
-    if (data.bassOctaveUp !== undefined) patch.bassOctaveUp = data.bassOctaveUp;
+    if (data.bassVariant !== undefined) patch.bassVariant = data.bassVariant;
+    if (data.bassTension !== undefined) patch.bassTension = data.bassTension;
+    if (data.bassHumanize !== undefined) patch.bassHumanize = JSON.stringify(data.bassHumanize);
+    if (data.bassUseMutedNotes !== undefined) patch.bassUseMutedNotes = data.bassUseMutedNotes;
     if (data.rhodesEnabled !== undefined) patch.rhodesEnabled = data.rhodesEnabled;
     if (data.rhodesVolume !== undefined) patch.rhodesVolume = data.rhodesVolume;
     if (data.rhodesMode !== undefined) patch.rhodesMode = data.rhodesMode;
@@ -90,10 +93,11 @@ export async function settingsRoutes(
     if (data.audioFormat !== undefined) patch.audioFormat = data.audioFormat;
     if (data.pianoEnabled !== undefined) patch.pianoEnabled = data.pianoEnabled;
     if (data.pianoVolume !== undefined) patch.pianoVolume = data.pianoVolume;
-    if (data.pianoProfile !== undefined) patch.pianoProfile = data.pianoProfile;
     if (data.pianoVoicingDensity !== undefined)
       patch.pianoVoicingDensity = data.pianoVoicingDensity;
     if (data.pianoSampleLibrary !== undefined) patch.pianoSampleLibrary = data.pianoSampleLibrary;
+    if (data.pianoTension !== undefined) patch.pianoTension = data.pianoTension;
+    if (data.pianoHumanize !== undefined) patch.pianoHumanize = JSON.stringify(data.pianoHumanize);
     if (data.rhodesLayerMode !== undefined) patch.rhodesLayerMode = data.rhodesLayerMode;
     if (data.rhodesLayerVolume !== undefined) patch.rhodesLayerVolume = data.rhodesLayerVolume;
     if (data.practiceCards !== undefined) patch.practiceCards = JSON.stringify(data.practiceCards);
@@ -113,14 +117,22 @@ export async function settingsRoutes(
     const currentStyle = (data.style ?? existing.style) as string;
     if (currentStyle) {
       const PER_STYLE_FIELDS = [
+        'bpm',
         'bassEnabled',
         'bassVolume',
         'bassComplexity',
-        'bassOctaveUp',
+        'bassVariant',
+        'bassTension',
+        'bassHumanize',
+        'bassUseMutedNotes',
+        'bassPattern',
+        'bassRange',
         'pianoEnabled',
         'pianoVolume',
-        'pianoProfile',
         'pianoVoicingDensity',
+        'pianoTension',
+        'pianoHumanize',
+        'pianoPattern',
         'rhodesEnabled',
         'rhodesVolume',
         'rhodesMode',

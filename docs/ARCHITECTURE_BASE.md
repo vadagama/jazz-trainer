@@ -107,25 +107,25 @@ export default definePlugin({
 | `instruments` / `generators` / `theoryProviders` | Звуковые движки, генераторы, теория                | 🟡 `instruments` типизирован (`InstrumentContribution`), 2 кита-плагина; `generators`/`theoryProviders` — `unknown[]` |
 | `settingsSchema`                                 | Декларация настроек плагина                        | 🟡 Тип есть, не используется  |
 
-### 3.3. Категории и плагины (37 шт.)
+### 3.3. Категории и плагины (44 шт.)
 
-| Категория   | Кол-во | Плагины |
-| ----------- | ------ | ------- |
-| `core`      | 4      | `core-editor` (грид-редактор), `core-player` (плеер), `catalog` (каталог), `core-settings` (настройки аранжировки) |
-| `theory`    | 22     | `theory-catalog` (каталог лекций), `theory-scales`, `theory-chords`, `theory-intervals`, `theory-chord-tones`, `theory-approach-notes`, `theory-arpeggios`, `theory-rhythm`, `theory-groove`, `theory-blues`, `theory-ii-v-i`, `theory-scales-jazz`, `theory-voicings`, `theory-voice-leading`, `theory-diminished-harmony`, `theory-coltrane-changes`, `theory-blues-advanced`, `theory-rhythm-changes`, `theory-turnarounds`, `theory-tritone-sub`, `theory-modal-interchange`, `theory-secondary-dominants` |
-| `practice`  | 3      | `ear-training` (MIDI, слух), `rhythm-drills` (MIDI, ритм), `practice-cards` (карточки) |
-| `assess`    | 2      | `chord-quiz`, `progression-recognition` |
-| `play`      | 1      | `visual-midi-keyboard` (виртуальная MIDI-клавиатура) |
-| `admin`     | 5      | `admin-users`, `admin-content`, `admin-flags`, `admin-assets`, `admin-diagnostics` |
+| Категория     | Кол-во | Плагины |
+| ------------- | ------ | ------- |
+| `core`        | 9      | `core-editor` (грид-редактор), `core-player` (плеер), `catalog` (каталог), `core-settings` (настройки аранжировки), `instrument.upright-piano` (Upright Piano, pitched), `instrument.jazz-drum-kit` (Jazz Kit, drums), `instrument.funk-drum-kit` (Funk Kit, drums), `instrument.percussion` (Latin Perc, percussion), `instrument.metronome` (метроном) |
+| `theory`      | 22     | `theory-catalog` (каталог лекций), `theory-scales`, `theory-chords`, `theory-intervals`, `theory-chord-tones`, `theory-approach-notes`, `theory-arpeggios`, `theory-rhythm`, `theory-groove`, `theory-blues`, `theory-ii-v-i`, `theory-scales-jazz`, `theory-voicings`, `theory-voice-leading`, `theory-diminished-harmony`, `theory-coltrane-changes`, `theory-blues-advanced`, `theory-rhythm-changes`, `theory-turnarounds`, `theory-tritone-sub`, `theory-modal-interchange`, `theory-secondary-dominants` |
+| `practice`    | 3      | `ear-training` (MIDI, слух), `rhythm-drills` (MIDI, ритм), `practice-cards` (карточки) |
+| `assess`      | 2      | `chord-quiz`, `progression-recognition` |
+| `play`        | 1      | `visual-midi-keyboard` (виртуальная MIDI-клавиатура) |
+| `admin`       | 7      | `admin-users`, `admin-content`, `admin-flags`, `admin-assets`, `admin-diagnostics`, `admin-piano-constructor` (конструктор фортепиано), `admin-drum-constructor` (конструктор барабанов) |
 
 ### 3.4. Реестр и загрузка
 
 ```ts
 // packages/plugin-registry/src/index.ts — build-time реестр
 import coreEditor from '@jazz/plugin-core-editor';
-// ... 36 импортов
+// ... 43 импорта
 
-export const PLUGINS = [coreEditor, corePlayer, catalog, ...]; // 37 плагинов
+export const PLUGINS = [coreEditor, corePlayer, catalog, ...]; // 44 плагина
 
 // apps/web/src/shell/bootstrap.ts — загрузка в shell
 const { loaded, errors } = loadPlugins(allPlugins, createPluginContext());
@@ -201,10 +201,11 @@ graph LR
 
 | Инструмент       | Класс                   | Манифест                                  | Семплы                                            | Стилей | Рандомайзер       |
 | ---------------- | ----------------------- | ----------------------------------------- | ------------------------------------------------- | ------ | ----------------- |
-| Bass             | `BassInstrument`        | `bassManifest`                            | SneakyBass, pluck/mute ×4 RR                      | 5      | `BassRandomizer`  |
+| Upright Bass     | `BassInstrument`        | `@jazz/plugin-bass` → `uprightBassManifest` (плагин)  | SneakyBass, pluck/mute ×4 RR           | 5      | `BassRandomizer`  |
+| Electric Bass    | `BassInstrument`        | `@jazz/plugin-bass` → `electricBassManifest` (плагин) | darkblack, reg/stac/rel/ghost ×4 RR   | 5      | `BassRandomizer`  |
 | Jazz Drum Kit    | `DrumInstrument`        | `@jazz/plugin-jazz-drum-kit` (плагин)     | Swirly Drums 1104, 4 velocity-слоя ×4 RR          | 5      | —                 |
 | Funk Drum Kit    | `DrumInstrument`        | `@jazz/plugin-funk-drum-kit` (плагин)     | Virtuosity Drums, 2–5 layers ×4 RR                | 5      | —                 |
-| Grand Piano      | `PianoInstrument`       | `pianoManifest` / `salamanderManifest`    | Upright KW / Salamander Grand                     | 5      | `PianoRandomizer` |
+| Grand Piano      | `PianoInstrument`       | `uprightPianoManifest` (плагин) / `salamanderManifest` | Upright KW (VSUpright1, 3 vel. слоя) / Salamander Grand | 5      | `PianoRandomizer` |
 | Rhodes           | `RhodesInstrument`      | `rhodesManifest`                          | jRhodes3c, 4 velocity-слоя                        | 5      | —                 |
 | Guitar           | `GuitarInstrument`      | `guitarManifest`                          | Nylon/Steel, E2–E5, 9 анкерных нот                | 5      | —                 |
 | Electric Guitar  | `GuitarInstrument`      | `electricGuitarManifest`                  | Electric, 2 velocity-слоя (normal/soft), E2–C#6    | 5      | —                 |
@@ -224,8 +225,10 @@ graph LR
 
 ```ts
 interface InstrumentManifest {
-  id: string; // уникальный ID: 'bass' | 'jazz-drum-kit' | 'funk-drum-kit' | 'piano' | ...
+  id: string; // уникальный ID: 'upright' | 'jazz-drum-kit' | 'funk-drum-kit' | 'piano' | ...
   name: string; // читаемое имя
+  family: InstrumentFamily; // 'pitched' | 'drums' | 'percussion'
+  settingsPrefix: string; // ключ для настроек (e.g. 'piano', 'drums')
   createInstrument(): Instrument; // фабрика (чистая логика, без Tone.js)
   sampleManifest: SampleManifest; // раскладка аудиофайлов
   defaultSettings?: Record<string, unknown>;
@@ -238,7 +241,8 @@ interface InstrumentManifest {
 `SampleManifest` унифицирует pitched (слои `layers`) и unpitched (`oneshots`) инструменты:
 
 - **Pitched** (Bass, Grand Piano, Rhodes, Guitar, Electric Guitar, Vibraphone, Organ, Clarinet): `layers` — `{ [layerName]: { [note]: filename } }`
-- **Unpitched** (Drums, Modern Kit, Percussion): `oneshots` — `{ [soundName]: [filename_rr1, ...] }` + `rrCount`
+
+- **Unpitched** (Drums, Percussion): `velocityOneshots` — `{ [soundName]: { [velocityLayer]: [filename_rr1, ...] } }` + `rrCount`
 
 ### 4.3. ChordTimeline
 
@@ -246,7 +250,7 @@ interface InstrumentManifest {
 
 ### 4.4. Взаимодействие инструментов
 
-- **Bass ↔ Drums/Modern Kit/Percussion:** независимы (разные частотные диапазоны и EventSink'и)
+- **Bass ↔ Drums/Percussion:** независимы (разные частотные диапазоны и EventSink'и)
 - **Grand Piano ↔ Rhodes:** комплементарная модель (ADR-014). Grand Piano — основной слой, Rhodes — фоновый. Конфликты разрешаются через `pianoRhodesInteraction.ts`: сдвиг Rhodes на 1/16 при пересечении с Grand Piano.
 - **Grand Piano/Rhodes/Vibraphone/Organ ↔ Bass:** гармонические инструменты избегают нижнего регистра (C3–C4), оставляя его басу.
 - **Clarinet:** монофонический — не конфликтует с полифоническими инструментами.

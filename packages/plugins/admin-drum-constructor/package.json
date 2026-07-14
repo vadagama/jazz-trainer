@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@jazz/plugin-admin-constructor-shared": "*",
     "@jazz/music-core": "*",
     "@jazz/plugin-sdk": "*",
     "@jazz/shared": "*",

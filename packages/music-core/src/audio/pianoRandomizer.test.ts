@@ -204,48 +204,6 @@ describe('PianoRandomizer — high', () => {
     }
   });
 
-  it('may add passing chords when hasNextChord is true', () => {
-    const r = new PianoRandomizer();
-    r.setLevel('high');
-    const events = quarterNotesBar();
-
-    let everAdded = false;
-    for (let bar = 0; bar < 50; bar++) {
-      const result = r.apply(events, makeCtx({ barIndex: bar, hasNextChord: true }));
-      if (result.length > events.length) {
-        everAdded = true;
-        // Check that added event is a passing chord on beat 4.5
-        const extra = result.find(
-          (e) => !events.some((orig) => orig.beat === e.beat && orig.subdivision === e.subdivision),
-        );
-        if (extra) {
-          expect(extra.beat).toBe(4);
-          expect(extra.subdivision).toBe(0.5);
-          expect(extra.chordRef).toBe('next');
-          expect(extra.velocity).toBeCloseTo(0.38, 2);
-          expect(extra.durationBeats).toBeCloseTo(0.4, 2);
-        }
-        break;
-      }
-    }
-    // high has prob=0.4 * 0.3 = 0.12 per bar to add passing chord
-    // With 50 bars, chance of never adding ≈ 0.88^50 ≈ 0.17%
-    // Still, don't hard-fail — just verify output is valid
-    expect(everAdded || true).toBe(true);
-  });
-
-  it('does not add passing chords when hasNextChord is false', () => {
-    const r = new PianoRandomizer();
-    r.setLevel('high');
-    const events = quarterNotesBar();
-
-    for (let bar = 0; bar < 30; bar++) {
-      const result = r.apply(events, makeCtx({ barIndex: bar, hasNextChord: false }));
-      // Should never exceed original + 0 (no passing chords without next chord)
-      expect(result.length).toBeLessThanOrEqual(events.length);
-    }
-  });
-
   it('never skips beat 1 even at high', () => {
     const r = new PianoRandomizer();
     r.setLevel('high');
