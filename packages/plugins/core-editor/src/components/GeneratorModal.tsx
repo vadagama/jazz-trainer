@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Loader2, Wand2 } from 'lucide-react';
-import type { GridContent, PatternInfo } from '@jazz/shared';
+import type { CompositionContent, PatternInfo } from '@jazz/shared';
 import { KEYS } from '@jazz/shared';
 import { serializeGrid } from '@jazz/music-core';
 import {
@@ -20,22 +20,22 @@ import {
   SelectValue,
   Textarea,
 } from '@jazz/ui';
-import { usePatterns, useGenerateGrid } from '../queries/useGrid';
+import { usePatterns, useGenerateComposition } from '../queries/useComposition';
 
 interface GeneratorModalProps {
   open: boolean;
-  onApply: (content: GridContent) => void;
+  onApply: (content: CompositionContent) => void;
   onClose: () => void;
 }
 
 export function GeneratorModal({ open, onApply, onClose }: GeneratorModalProps) {
   const { data: patterns = [], isLoading: patternsLoading } = usePatterns();
-  const generateMutation = useGenerateGrid();
+  const generateMutation = useGenerateComposition();
 
   const [patternId, setPatternId] = useState('');
   const [key, setKey] = useState<string>('C');
   const [lengthBars, setLengthBars] = useState<number | ''>('');
-  const [preview, setPreview] = useState<GridContent | null>(null);
+  const [preview, setPreview] = useState<CompositionContent | null>(null);
 
   const selected: PatternInfo | undefined = patterns.find((p) => p.id === patternId);
 

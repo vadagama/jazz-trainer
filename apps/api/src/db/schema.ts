@@ -119,8 +119,8 @@ export const sessions = sqliteTable(
   ],
 );
 
-export const harmonyGrids = sqliteTable(
-  'harmony_grids',
+export const harmonyCompositions = sqliteTable(
+  'harmony_compositions',
   {
     id: text('id').primaryKey(),
     userId: text('user_id')
@@ -132,36 +132,73 @@ export const harmonyGrids = sqliteTable(
     visibility: text('visibility', { enum: ['private', 'public'] })
       .notNull()
       .default('private'),
-    /** JSON-serialised GridContent */
+    /** JSON-serialised CompositionContent */
     content: text('content').notNull(),
-    /** for copied grids: id of the source grid */
-    sourceGridId: text('source_grid_id'),
+    /** for copied compositions: id of the source composition */
+    sourceCompositionId: text('source_composition_id'),
     likeCount: integer('like_count').notNull().default(0),
+    // ── Catalog metadata (§2.2 CATALOG-VISION.md) ───────────────────────────
+    description: text('description'),
+    difficulty: text('difficulty').notNull().default('intermediate'),
+    tags: text('tags').notNull().default('[]'),
+    author: text('author').notNull().default(''),
+    recommendedStyle: text('recommended_style'),
+    recommendedTempo: integer('recommended_tempo'),
+    catalogPublishedAt: integer('catalog_published_at')
+      .notNull()
+      .default(sql`(unixepoch())`),
+    copyCount: integer('copy_count').notNull().default(0),
+    featured: integer('featured', { mode: 'boolean' }).notNull().default(false),
+    featuredOrder: integer('featured_order'),
+    moderationStatus: text('moderation_status').notNull().default('approved'),
     createdAt: integer('created_at').notNull(),
     updatedAt: integer('updated_at').notNull(),
   },
   (t) => [
-    index('grids_user_id_idx').on(t.userId),
-    index('grids_visibility_idx').on(t.visibility),
-    index('grids_updated_at_idx').on(t.updatedAt),
+    index('compositions_user_id_idx').on(t.userId),
+    index('compositions_visibility_idx').on(t.visibility),
+    index('compositions_updated_at_idx').on(t.updatedAt),
+    index('idx_compositions_author').on(t.author),
+    index('idx_compositions_difficulty').on(t.difficulty),
+    index('idx_compositions_recommended_style').on(t.recommendedStyle),
+    index('idx_compositions_featured').on(t.featured),
+    index('idx_compositions_moderation_status').on(t.moderationStatus),
+    index('idx_compositions_catalog_published_at').on(t.catalogPublishedAt),
   ],
 );
 
-export const gridLikes = sqliteTable(
-  'grid_likes',
+export const compositionLikes = sqliteTable(
+  'composition_likes',
   {
-    gridId: text('grid_id')
+    compositionId: text('composition_id')
       .notNull()
-      .references(() => harmonyGrids.id, { onDelete: 'cascade' }),
+      .references(() => harmonyCompositions.id, { onDelete: 'cascade' }),
     userId: text('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
     createdAt: integer('created_at').notNull(),
   },
   (t) => [
-    primaryKey({ columns: [t.gridId, t.userId] }),
-    index('grid_likes_user_id_idx').on(t.userId),
+    primaryKey({ columns: [t.compositionId, t.userId] }),
+    index('composition_likes_user_id_idx').on(t.userId),
   ],
+);
+
+// ── Catalog tags (controlled vocabulary, §2.3 / §5.4) ─────────────────────
+
+export const catalogTags = sqliteTable(
+  'catalog_tags',
+  {
+    id: text('id').primaryKey(),
+    value: text('value').notNull().unique(),
+    category: text('category').notNull(),
+    description: text('description'),
+    hidden: integer('hidden', { mode: 'boolean' }).notNull().default(false),
+    createdAt: integer('created_at', { mode: 'timestamp' })
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+  (t) => [index('idx_catalog_tags_category').on(t.category)],
 );
 
 // ── RBAC tables (Phase R) ────────────────────────────────────────────────
@@ -204,6 +241,20 @@ export const userPermissions = sqliteTable(
     granted: integer('granted', { mode: 'boolean' }).notNull(),
   },
   (t) => ({ pk: primaryKey(t.userId, t.permissionCode) }),
+);
+
+/** Many-to-many user↔role junction (users can have multiple roles). */
+export const userRoles = sqliteTable(
+  'user_roles',
+  {
+    userId: text('user_id')
+      .references(() => users.id, { onDelete: 'cascade' })
+      .notNull(),
+    roleId: text('role_id')
+      .references(() => roles.id, { onDelete: 'cascade' })
+      .notNull(),
+  },
+  (t) => ({ pk: primaryKey(t.userId, t.roleId) }),
 );
 
 // ── Audit log (Phase R) ──────────────────────────────────────────────────
@@ -259,9 +310,11 @@ export type UserRecord = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type UserSettingsRecord = typeof userSettings.$inferSelect;
 export type SessionRecord = typeof sessions.$inferSelect;
-export type HarmonyGridRecord = typeof harmonyGrids.$inferSelect;
-export type NewHarmonyGrid = typeof harmonyGrids.$inferInsert;
-export type GridLikeRecord = typeof gridLikes.$inferSelect;
+export type HarmonyCompositionRecord = typeof harmonyCompositions.$inferSelect;
+export type NewHarmonyComposition = typeof harmonyCompositions.$inferInsert;
+export type CompositionLikeRecord = typeof compositionLikes.$inferSelect;
+export type CatalogTagRecord = typeof catalogTags.$inferSelect;
+export type NewCatalogTag = typeof catalogTags.$inferInsert;
 export type RoleRecord = typeof roles.$inferSelect;
 export type PermissionRecord = typeof permissions.$inferSelect;
 export type AuditLogRecord = typeof auditLog.$inferSelect;

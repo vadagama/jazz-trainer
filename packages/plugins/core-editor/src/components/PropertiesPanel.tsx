@@ -1,11 +1,11 @@
 import { ChevronRight } from 'lucide-react';
 import { cn } from '@jazz/ui';
-import type { Bar, HarmonyGridDTO } from '@jazz/shared';
+import type { Bar, HarmonyCompositionDTO } from '@jazz/shared';
 
 interface PropertiesPanelProps {
   isOpen: boolean;
   onToggle: () => void;
-  grid: HarmonyGridDTO | null;
+  grid: HarmonyCompositionDTO | null;
   selectedBar: Bar | null;
   selectedBarIndex: number | null;
 }

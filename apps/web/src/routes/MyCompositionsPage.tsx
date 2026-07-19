@@ -1,15 +1,15 @@
 import { useState } from 'react';
 import { Search } from 'lucide-react';
-import { useMyGrids } from '@/queries/useMyGrids';
-import { MyGridCard } from '@/components/dashboard/MyGridCard';
-import { CreateGridDialog } from '@/components/dashboard/CreateGridDialog';
+import { useMyCompositions } from '@/queries/useMyCompositions';
+import { MyCompositionCard } from '@/components/dashboard/MyCompositionCard';
+import { CreateCompositionDialog } from '@/components/dashboard/CreateCompositionDialog';
 import { Input } from '@/components/ui/input';
 
-export default function MyGridsPage() {
-  const { data: grids, isLoading } = useMyGrids();
+export default function MyCompositionsPage() {
+  const { data: compositions, isLoading } = useMyCompositions();
   const [query, setQuery] = useState('');
 
-  const filtered = grids?.filter(
+  const filtered = compositions?.filter(
     (g) =>
       g.name.toLowerCase().includes(query.toLowerCase()) ||
       g.key.toLowerCase().includes(query.toLowerCase()),
@@ -19,13 +19,13 @@ export default function MyGridsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Мои сетки</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Ваши гармонические сетки</p>
+          <h1 className="text-2xl font-semibold tracking-tight">Мои композиции</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Ваши гармонические композиции</p>
         </div>
-        <CreateGridDialog />
+        <CreateCompositionDialog />
       </div>
 
-      {grids && grids.length > 0 && (
+      {compositions && compositions.length > 0 && (
         <div className="relative">
           <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -43,10 +43,10 @@ export default function MyGridsPage() {
         </div>
       )}
 
-      {grids && grids.length === 0 && (
+      {compositions && compositions.length === 0 && (
         <div className="flex flex-col items-center gap-4 rounded-lg border border-dashed border-border py-16 text-center">
-          <p className="text-sm text-muted-foreground">У вас ещё нет сеток</p>
-          <CreateGridDialog />
+          <p className="text-sm text-muted-foreground">У вас ещё нет композиций</p>
+          <CreateCompositionDialog />
         </div>
       )}
 
@@ -58,8 +58,8 @@ export default function MyGridsPage() {
 
       {filtered && filtered.length > 0 && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((grid) => (
-            <MyGridCard key={grid.id} grid={grid} />
+          {filtered.map((composition) => (
+            <MyCompositionCard key={composition.id} composition={composition} />
           ))}
         </div>
       )}

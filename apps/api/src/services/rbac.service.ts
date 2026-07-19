@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm';
-import { users, roles, rolePermissions, userPermissions, featureFlags } from '../db/schema.js';
+import { users, roles, rolePermissions, userPermissions, userRoles, featureFlags } from '../db/schema.js';
 import type { DrizzleDb } from '../db/index.js';
 
 // ── Permission constants ────────────────────────────────────────────────────
@@ -16,6 +16,26 @@ export const RBAC_PERMISSIONS = {
   DIAGNOSTICS_READ: 'diagnostics:read',
   AUDIT_READ: 'audit:read',
   ADMIN: 'admin',
+  // Catalog
+  CATALOG_READ: 'catalog:read',
+  CATALOG_PUBLISH: 'catalog:publish',
+  CATALOG_MODERATE: 'catalog:moderate',
+  CATALOG_FEATURE: 'catalog:feature',
+  CATALOG_TAGS_WRITE: 'catalog:tags:write',
+  CATALOG_STATS_READ: 'catalog:stats:read',
+  // Roles management
+  ROLES_READ: 'roles:read',
+  ROLES_WRITE: 'roles:write',
+  // Feature-level
+  EXERCISES_READ: 'exercises:read',
+  COMPOSITIONS_READ: 'compositions:read',
+  COMPOSITIONS_WRITE: 'compositions:write',
+  THEORY_READ: 'theory:read',
+  PROFILE_READ: 'profile:read',
+  PROFILE_WRITE: 'profile:write',
+  // System settings (reserved for future)
+  SYSTEM_SETTINGS_READ: 'system:settings:read',
+  SYSTEM_SETTINGS_WRITE: 'system:settings:write',
 } as const;
 
 export type PermissionCode = (typeof RBAC_PERMISSIONS)[keyof typeof RBAC_PERMISSIONS];
@@ -26,6 +46,7 @@ export const RBAC_ROLES = {
   SUPER_ADMIN: 'super_admin',
   ADMIN: 'admin',
   USER: 'user',
+  CATALOG_EDITOR: 'catalog_editor',
 } as const;
 
 export type RoleName = (typeof RBAC_ROLES)[keyof typeof RBAC_ROLES];
@@ -34,7 +55,8 @@ export type RoleName = (typeof RBAC_ROLES)[keyof typeof RBAC_ROLES];
 
 /**
  * Resolve effective permissions for a user.
- * Order: role-based permissions ∪ user-specific grants \ user-specific revokes.
+ * Aggregates from all roles (via user_roles + legacy users.role),
+ * then applies user-specific overrides.
  */
 export function resolvePermissions(db: DrizzleDb, userId: string): Set<string> {
   const u = db
@@ -47,14 +69,35 @@ export function resolvePermissions(db: DrizzleDb, userId: string): Set<string> {
 
   const effective = new Set<string>();
 
-  // 1. Role-based permissions
-  const rps = db
-    .select({ code: rolePermissions.permissionCode })
-    .from(rolePermissions)
-    .innerJoin(roles, eq(roles.id, rolePermissions.roleId))
-    .where(eq(roles.name, u.role))
-    .all();
-  for (const rp of rps) effective.add(rp.code);
+  // Collect all role names: from user_roles (many-to-many) + legacy users.role
+  const roleNames = new Set<string>();
+
+  // user_roles table may not exist yet (pre-migration); fall back to legacy role
+  try {
+    const urRows = db
+      .select({ roleName: roles.name })
+      .from(userRoles)
+      .innerJoin(roles, eq(roles.id, userRoles.roleId))
+      .where(eq(userRoles.userId, userId))
+      .all();
+    for (const r of urRows) roleNames.add(r.roleName);
+  } catch {
+    // Table doesn't exist yet — skip, legacy role fallback below covers it
+  }
+
+  // Legacy single-role fallback
+  if (u.role) roleNames.add(u.role);
+
+  // 1. Aggregate permissions from all roles
+  for (const roleName of roleNames) {
+    const rps = db
+      .select({ code: rolePermissions.permissionCode })
+      .from(rolePermissions)
+      .innerJoin(roles, eq(roles.id, rolePermissions.roleId))
+      .where(eq(roles.name, roleName))
+      .all();
+    for (const rp of rps) effective.add(rp.code);
+  }
 
   // 2. User-specific overrides (grant/revoke)
   const ups = db

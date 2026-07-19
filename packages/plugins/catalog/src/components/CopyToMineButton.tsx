@@ -5,11 +5,11 @@ import { useCopyToMine } from '../queries/useCopyToMine';
 import { Button } from '@jazz/ui';
 
 interface Props {
-  gridId: string;
-  gridName: string;
+  compositionId: string;
+  compositionName: string;
 }
 
-export function CopyToMineButton({ gridId, gridName }: Props) {
+export function CopyToMineButton({ compositionId, compositionName }: Props) {
   const { user } = useAuth();
   const copy = useCopyToMine();
   const navigate = useNavigate();
@@ -17,8 +17,11 @@ export function CopyToMineButton({ gridId, gridName }: Props) {
   if (!user) return null;
 
   async function handleCopy() {
-    const result = await copy.mutateAsync({ gridId, name: `${gridName} (копия)` });
-    navigate(`/grids/${result.id}`);
+    const result = await copy.mutateAsync({
+      compositionId,
+      name: `${compositionName} (копия)`,
+    });
+    navigate(`/compositions/${result.id}`);
   }
 
   return (

@@ -1,15 +1,15 @@
 import { useQuery } from '@tanstack/react-query';
-import type { PublicGridSummaryDTO, PublicGridDTO } from '@jazz/shared';
+import type { PublicCompositionSummaryDTO, PublicCompositionDTO } from '@jazz/shared';
 import { apiClient } from '@/lib/apiClient';
 
-interface PublicGridsParams {
+interface PublicCompositionsParams {
   q?: string;
   sort?: 'updated' | 'likes' | 'name';
   limit?: number;
   offset?: number;
 }
 
-export function usePublicGrids(params: PublicGridsParams = {}) {
+export function usePublicCompositions(params: PublicCompositionsParams = {}) {
   const search = new URLSearchParams();
   if (params.q) search.set('q', params.q);
   if (params.sort) search.set('sort', params.sort);
@@ -18,16 +18,17 @@ export function usePublicGrids(params: PublicGridsParams = {}) {
 
   const qs = search.toString();
   return useQuery({
-    queryKey: ['grids', 'public', params],
-    queryFn: () => apiClient.get<PublicGridSummaryDTO[]>(`/api/grids/public${qs ? `?${qs}` : ''}`),
+    queryKey: ['compositions', 'public', params],
+    queryFn: () =>
+      apiClient.get<PublicCompositionSummaryDTO[]>(`/api/compositions/public${qs ? `?${qs}` : ''}`),
     staleTime: 15_000,
   });
 }
 
-export function usePublicGrid(id: string) {
+export function usePublicComposition(id: string) {
   return useQuery({
-    queryKey: ['grids', 'public', id],
-    queryFn: () => apiClient.get<PublicGridDTO>(`/api/grids/public/${id}`),
+    queryKey: ['compositions', 'public', id],
+    queryFn: () => apiClient.get<PublicCompositionDTO>(`/api/compositions/public/${id}`),
     enabled: Boolean(id),
   });
 }

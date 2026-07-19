@@ -112,7 +112,7 @@ export function MidiSoloProvider({ children }: { children: React.ReactNode }) {
       delete (window as unknown as Record<string, unknown>).__soloInstrumentHost;
       setHostReady(false);
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);  
 
   // ── React to adapters appearing / disappearing (transport init / teardown) ──
   useEffect(() => {
@@ -161,7 +161,7 @@ export function MidiSoloProvider({ children }: { children: React.ReactNode }) {
       }
     }, 200);
     return () => clearInterval(poll);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);  
 
   // ── Wire MIDI notes → SoloInstrumentHost + ducking ──
   useEffect(() => {

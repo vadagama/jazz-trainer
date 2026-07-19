@@ -53,7 +53,7 @@ export class ReuseSoloInstrument implements SoloInstrument {
   }
 
   /** No-op: shared sampler is already in the accompaniment audio graph. */
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   connect(_destination: unknown): void {
     // Shared sampler stays in the accompaniment chain only.
     // Solo volume is applied as velocity scaling by the host.

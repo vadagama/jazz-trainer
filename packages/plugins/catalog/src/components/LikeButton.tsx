@@ -5,12 +5,12 @@ import { useLikes } from '../queries/useLikes';
 import { Button } from '@jazz/ui';
 
 interface Props {
-  gridId: string;
+  compositionId: string;
   likeCount: number;
   likedByMe: boolean;
 }
 
-export function LikeButton({ gridId, likeCount, likedByMe }: Props) {
+export function LikeButton({ compositionId, likeCount, likedByMe }: Props) {
   const { user } = useAuth();
   const { like, unlike } = useLikes();
   const [localLiked, setLocalLiked] = useState(likedByMe);
@@ -29,7 +29,7 @@ export function LikeButton({ gridId, likeCount, likedByMe }: Props) {
     if (localLiked) {
       setLocalLiked(false);
       setLocalCount((c) => Math.max(0, c - 1));
-      unlike.mutate(gridId, {
+      unlike.mutate(compositionId, {
         onError: () => {
           setLocalLiked(true);
           setLocalCount((c) => c + 1);
@@ -38,7 +38,7 @@ export function LikeButton({ gridId, likeCount, likedByMe }: Props) {
     } else {
       setLocalLiked(true);
       setLocalCount((c) => c + 1);
-      like.mutate(gridId, {
+      like.mutate(compositionId, {
         onError: () => {
           setLocalLiked(false);
           setLocalCount((c) => Math.max(0, c - 1));

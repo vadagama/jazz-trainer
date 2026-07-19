@@ -47,7 +47,7 @@ function wrapRoute(r: RouteContribution, child: React.ReactNode): React.ReactNod
   // Auth-protected routes
   const isProtected =
     ['/my', '/settings', '/profile'].includes(r.path) ||
-    r.path.startsWith('/grids') ||
+    r.path.startsWith('/compositions') ||
     r.path.startsWith('/admin');
 
   if (isProtected) {
@@ -73,13 +73,15 @@ export function App() {
   const adminRoutes = contributions.routes.filter((r) => isAdminRoute(r.path));
   const editorRoutes = contributions.routes.filter(
     (r) =>
-      r.path.startsWith('/grids') || r.path.startsWith('/play') || r.path === '/practice-cards',
+      r.path.startsWith('/compositions') ||
+      r.path.startsWith('/play') ||
+      r.path === '/practice-cards',
   );
   const bareRoutes = contributions.routes.filter(
     (r) =>
       !isAppShellRoute(r.path) &&
       !isAdminRoute(r.path) &&
-      !r.path.startsWith('/grids') &&
+      !r.path.startsWith('/compositions') &&
       !r.path.startsWith('/play') &&
       r.path !== '/practice-cards',
   );

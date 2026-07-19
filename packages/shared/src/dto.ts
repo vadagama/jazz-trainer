@@ -16,6 +16,7 @@ export const UserDTOSchema = z.object({
   avatarUrl: z.string().url().nullable(),
   provider: z.enum(['google', 'dev', 'system']),
   role: z.string(),
+  roles: z.array(z.string()).optional(),
   status: z.enum(['active', 'disabled']),
   createdAt: z.number().int(),
 });
@@ -271,3 +272,35 @@ export const MeResponseSchema = z.object({
   flags: z.record(z.boolean()),
 });
 export type MeResponse = z.infer<typeof MeResponseSchema>;
+
+// ── RBAC DTOs ─────────────────────────────────────────────────────────────
+
+export const PermissionDTOSchema = z.object({
+  code: z.string(),
+});
+export type PermissionDTO = z.infer<typeof PermissionDTOSchema>;
+
+export const RoleDTOSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  permissions: z.array(z.string()),
+  createdAt: z.number(),
+});
+export type RoleDTO = z.infer<typeof RoleDTOSchema>;
+
+export const CreateRoleSchema = z.object({
+  name: z.string().min(1).max(64),
+  permissions: z.array(z.string()),
+});
+export type CreateRoleInput = z.infer<typeof CreateRoleSchema>;
+
+export const UpdateRoleSchema = z.object({
+  name: z.string().min(1).max(64).optional(),
+  permissions: z.array(z.string()).optional(),
+});
+export type UpdateRoleInput = z.infer<typeof UpdateRoleSchema>;
+
+export const UpdateUserRolesSchema = z.object({
+  roleIds: z.array(z.string()),
+});
+export type UpdateUserRolesInput = z.infer<typeof UpdateUserRolesSchema>;

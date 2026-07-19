@@ -23,14 +23,14 @@ describe('LikeButton — guest', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('shows SignInPrompt for guest', async () => {
-    renderWithProviders(<LikeButton gridId="g1" likeCount={5} likedByMe={false} />);
+    renderWithProviders(<LikeButton compositionId="g1" likeCount={5} likedByMe={false} />);
     await waitFor(() => {
       expect(screen.getByText('Войдите')).toBeTruthy();
     });
   });
 
   it('shows like count', async () => {
-    renderWithProviders(<LikeButton gridId="g1" likeCount={42} likedByMe={false} />);
+    renderWithProviders(<LikeButton compositionId="g1" likeCount={42} likedByMe={false} />);
     await waitFor(() => {
       expect(screen.getByText('42')).toBeTruthy();
     });
@@ -39,7 +39,7 @@ describe('LikeButton — guest', () => {
 
 describe('CopyToMineButton — guest', () => {
   it('shows SignInPrompt for guest', async () => {
-    renderWithProviders(<CopyToMineButton gridId="g1" gridName="Test" />);
+    renderWithProviders(<CopyToMineButton compositionId="g1" compositionName="Test" />);
     await waitFor(() => {
       expect(screen.getByText('Войдите')).toBeTruthy();
     });

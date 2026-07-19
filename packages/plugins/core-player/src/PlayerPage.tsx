@@ -6,7 +6,7 @@ import { transposeSections, getStyleProfile } from '@jazz/music-core';
 import type { InputPort } from '@jazz/music-core';
 import type { SoloInstrumentManifest } from '@jazz/music-core/audio';
 import { SOLO_INSTRUMENT_MANIFESTS } from '@jazz/music-core/audio';
-import { usePublicGrid } from './queries/usePublicGrids';
+import { usePublicComposition } from './queries/usePublicCompositions';
 import {
   useEffectiveSettings,
   usePlaybackStore,
@@ -22,8 +22,7 @@ import {
   VirtualKeyboardPanel,
   PlayerMidiControls,
   SoloSettingsDialog,
-} from '@jazz/ui';
-import { InstrumentsDialog } from '@jazz/ui';
+ InstrumentsDialog } from '@jazz/ui';
 
 // ---------------------------------------------------------------------------
 // -- Global adapter reference (for immediate solo volume/ducking feedback) --
@@ -51,7 +50,7 @@ function getToneAdapter() {
 
 export function PlayerPage() {
   const { id } = useParams<{ id: string }>();
-  const { data: grid, isLoading, isError } = usePublicGrid(id ?? '');
+  const { data: grid, isLoading, isError } = usePublicComposition(id ?? '');
   const settings = useEffectiveSettings();
   const updateSettings = useUpdateSettings();
   const { status, currentBar, currentBeat, countInActive, countInBeat } = usePlaybackStore();
@@ -62,6 +61,7 @@ export function PlayerPage() {
   const [instrumentsDialogOpen, setInstrumentsDialogOpen] = useState(false);
   const [localBpm, setLocalBpm] = useState<number | null>(null);
   const [localKey, setLocalKey] = useState<Key | null>(null);
+  const [localStyle, setLocalStyle] = useState<Style | null>(null);
   const [localVolume, setLocalVolume] = useState<number | null>(null);
   const [keyboardMode, setKeyboardMode] = useState<KeyboardMode>('free');
   const [keyboardVisible, setKeyboardVisible] = useState(false);
@@ -177,17 +177,26 @@ export function PlayerPage() {
     }
   }, []);
 
+  // Initialize local player state from composition metadata on load
+  useEffect(() => {
+    if (grid) {
+      if (grid.recommendedTempo != null) setLocalBpm(grid.recommendedTempo);
+      if (grid.recommendedStyle) setLocalStyle(grid.recommendedStyle as Style);
+      setLocalKey(grid.key as Key);
+    }
+  }, [grid?.id]);
+
   const handleStyleChange = (style: Style) => {
-    const profile = getStyleProfile(style);
-    const drumVariant = profile.defaultVariants.drums ?? 'drums';
-    updateSettings.mutate({
-      style,
-      drumKit: drumVariant === 'drums' ? 'jazz-drum-kit' : drumVariant,
-    });
+    setLocalStyle(style);
   };
 
-  const effectiveBpm = localBpm ?? settings.bpm;
+  const effectiveBpm = localBpm ?? grid?.recommendedTempo ?? settings.bpm;
   const effectiveVolume = localVolume ?? settings.volume;
+  const effectiveStyle = (localStyle ?? (grid?.recommendedStyle as Style | undefined) ?? settings.style ?? 'swing') as Style;
+  const effectiveDrumKit = useMemo(() => {
+    const profile = getStyleProfile(effectiveStyle);
+    return profile.defaultVariants.drums ?? 'jazz-drum-kit';
+  }, [effectiveStyle]);
   const effectiveTimeSig = grid?.timeSignature ?? '4/4';
   const effectiveKey = localKey ?? grid?.key ?? 'C';
 
@@ -265,7 +274,7 @@ export function PlayerPage() {
       : (grid?.barsCount ?? 0);
 
   const transport = usePluginTransport({
-    settings: { ...settings, bpm: effectiveBpm, volume: effectiveVolume },
+    settings: { ...settings, bpm: effectiveBpm, volume: effectiveVolume, style: effectiveStyle, drumKit: effectiveDrumKit },
     timeSignature: effectiveTimeSig,
     totalBars,
     sections: displaySections,
@@ -365,7 +374,7 @@ export function PlayerPage() {
         onKeyChange={setLocalKey}
         volume={effectiveVolume}
         onVolumeChange={setLocalVolume}
-        style={(settings.style ?? 'swing') as Style}
+        style={effectiveStyle}
         onStyleChange={handleStyleChange}
         repeatCount={repeatCount}
         onRepeatChange={handleRepeatChange}
@@ -396,6 +405,7 @@ export function PlayerPage() {
         open={instrumentsDialogOpen}
         onClose={() => setInstrumentsDialogOpen(false)}
         onStyleChange={handleStyleChange}
+        style={effectiveStyle}
       />
     </div>
   );

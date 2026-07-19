@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@jazz/plugin-admin-assets": "*",
+    "@jazz/plugin-admin-catalog": "*",
     "@jazz/plugin-admin-content": "*",
     "@jazz/plugin-admin-diagnostics": "*",
     "@jazz/plugin-admin-flags": "*",

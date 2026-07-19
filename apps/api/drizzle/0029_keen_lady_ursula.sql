@@ -1,4 +1,4 @@
-CREATE TABLE `audit_log` (
+CREATE TABLE IF NOT EXISTS `audit_log` (
 	`id` text PRIMARY KEY NOT NULL,
 	`actor_user_id` text NOT NULL,
 	`action` text NOT NULL,
@@ -12,7 +12,7 @@ CREATE TABLE `audit_log` (
 	`reason` text
 );
 --> statement-breakpoint
-CREATE TABLE `feature_flags` (
+CREATE TABLE IF NOT EXISTS `feature_flags` (
 	`key` text PRIMARY KEY NOT NULL,
 	`enabled` integer DEFAULT false NOT NULL,
 	`roles` text,
@@ -20,7 +20,7 @@ CREATE TABLE `feature_flags` (
 	`created_at` integer DEFAULT (unixepoch()) NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE `grid_likes` (
+CREATE TABLE IF NOT EXISTS `grid_likes` (
 	`grid_id` text NOT NULL,
 	`user_id` text NOT NULL,
 	`created_at` integer NOT NULL,
@@ -29,8 +29,8 @@ CREATE TABLE `grid_likes` (
 	FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
-CREATE INDEX `grid_likes_user_id_idx` ON `grid_likes` (`user_id`);--> statement-breakpoint
-CREATE TABLE `harmony_grids` (
+CREATE INDEX IF NOT EXISTS `grid_likes_user_id_idx` ON `grid_likes` (`user_id`);--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS `harmony_grids` (
 	`id` text PRIMARY KEY NOT NULL,
 	`user_id` text NOT NULL,
 	`name` text NOT NULL,
@@ -45,10 +45,10 @@ CREATE TABLE `harmony_grids` (
 	FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
-CREATE INDEX `grids_user_id_idx` ON `harmony_grids` (`user_id`);--> statement-breakpoint
-CREATE INDEX `grids_visibility_idx` ON `harmony_grids` (`visibility`);--> statement-breakpoint
-CREATE INDEX `grids_updated_at_idx` ON `harmony_grids` (`updated_at`);--> statement-breakpoint
-CREATE TABLE `lecture_likes` (
+CREATE INDEX IF NOT EXISTS `grids_user_id_idx` ON `harmony_grids` (`user_id`);--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `grids_visibility_idx` ON `harmony_grids` (`visibility`);--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `grids_updated_at_idx` ON `harmony_grids` (`updated_at`);--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS `lecture_likes` (
 	`lecture_id` text NOT NULL,
 	`user_id` text NOT NULL,
 	`created_at` integer NOT NULL,
@@ -56,14 +56,14 @@ CREATE TABLE `lecture_likes` (
 	FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
-CREATE INDEX `lecture_likes_user_id_idx` ON `lecture_likes` (`user_id`);--> statement-breakpoint
-CREATE TABLE `permissions` (
+CREATE INDEX IF NOT EXISTS `lecture_likes_user_id_idx` ON `lecture_likes` (`user_id`);--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS `permissions` (
 	`id` text PRIMARY KEY NOT NULL,
 	`code` text NOT NULL
 );
 --> statement-breakpoint
-CREATE UNIQUE INDEX `permissions_code_unique` ON `permissions` (`code`);--> statement-breakpoint
-CREATE TABLE `role_permissions` (
+CREATE UNIQUE INDEX IF NOT EXISTS `permissions_code_unique` ON `permissions` (`code`);--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS `role_permissions` (
 	`role_id` text NOT NULL,
 	`permission_code` text NOT NULL,
 	PRIMARY KEY(`role_id`, `permission_code`),
@@ -71,14 +71,14 @@ CREATE TABLE `role_permissions` (
 	FOREIGN KEY (`permission_code`) REFERENCES `permissions`(`code`) ON UPDATE no action ON DELETE no action
 );
 --> statement-breakpoint
-CREATE TABLE `roles` (
+CREATE TABLE IF NOT EXISTS `roles` (
 	`id` text PRIMARY KEY NOT NULL,
 	`name` text NOT NULL,
 	`created_at` integer DEFAULT (unixepoch()) NOT NULL
 );
 --> statement-breakpoint
-CREATE UNIQUE INDEX `roles_name_unique` ON `roles` (`name`);--> statement-breakpoint
-CREATE TABLE `sessions` (
+CREATE UNIQUE INDEX IF NOT EXISTS `roles_name_unique` ON `roles` (`name`);--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS `sessions` (
 	`id` text PRIMARY KEY NOT NULL,
 	`user_id` text NOT NULL,
 	`expires_at` integer NOT NULL,
@@ -86,9 +86,9 @@ CREATE TABLE `sessions` (
 	FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
-CREATE INDEX `sessions_user_id_idx` ON `sessions` (`user_id`);--> statement-breakpoint
-CREATE INDEX `sessions_expires_at_idx` ON `sessions` (`expires_at`);--> statement-breakpoint
-CREATE TABLE `user_permissions` (
+CREATE INDEX IF NOT EXISTS `sessions_user_id_idx` ON `sessions` (`user_id`);--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `sessions_expires_at_idx` ON `sessions` (`expires_at`);--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS `user_permissions` (
 	`user_id` text NOT NULL,
 	`permission_code` text NOT NULL,
 	`granted` integer NOT NULL,
@@ -97,7 +97,7 @@ CREATE TABLE `user_permissions` (
 	FOREIGN KEY (`permission_code`) REFERENCES `permissions`(`code`) ON UPDATE no action ON DELETE no action
 );
 --> statement-breakpoint
-CREATE TABLE `user_settings` (
+CREATE TABLE IF NOT EXISTS `user_settings` (
 	`user_id` text PRIMARY KEY NOT NULL,
 	`bpm` integer DEFAULT 120 NOT NULL,
 	`click_strong` text DEFAULT 'drum-stick',
@@ -153,7 +153,7 @@ CREATE TABLE `user_settings` (
 	FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
-CREATE TABLE `users` (
+CREATE TABLE IF NOT EXISTS `users` (
 	`id` text PRIMARY KEY NOT NULL,
 	`email` text NOT NULL,
 	`name` text NOT NULL,
@@ -166,5 +166,5 @@ CREATE TABLE `users` (
 	`updated_at` integer NOT NULL
 );
 --> statement-breakpoint
-CREATE UNIQUE INDEX `users_email_unique` ON `users` (`email`);--> statement-breakpoint
-CREATE UNIQUE INDEX `users_provider_provider_id` ON `users` (`provider`,`provider_id`);
+CREATE UNIQUE INDEX IF NOT EXISTS `users_email_unique` ON `users` (`email`);--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS `users_provider_provider_id` ON `users` (`provider`,`provider_id`);

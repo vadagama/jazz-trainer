@@ -84,14 +84,22 @@ describe('RBAC — resolvePermissions', () => {
     expect(perms.has(RBAC_PERMISSIONS.CONTENT_WRITE)).toBe(true);
     // admin does NOT get USERS_WRITE
     expect(perms.has(RBAC_PERMISSIONS.USERS_WRITE)).toBe(false);
-    // admin does NOT get ASSETS_WRITE
-    expect(perms.has(RBAC_PERMISSIONS.ASSETS_WRITE)).toBe(false);
+    // admin does NOT get ROLES_WRITE (reserved for super_admin)
+    expect(perms.has(RBAC_PERMISSIONS.ROLES_WRITE)).toBe(false);
+    // admin does NOT get SYSTEM_SETTINGS_WRITE (reserved for future)
+    expect(perms.has(RBAC_PERMISSIONS.SYSTEM_SETTINGS_WRITE)).toBe(false);
   });
 
-  it('regular user gets no role-based permissions', () => {
+  it('regular user gets basic permissions', () => {
     createUser(db, RBAC_ROLES.USER, 'plain-user');
     const perms = resolvePermissions(db, 'plain-user');
-    expect(perms.size).toBe(0);
+    expect(perms.has(RBAC_PERMISSIONS.CATALOG_READ)).toBe(true);
+    expect(perms.has(RBAC_PERMISSIONS.COMPOSITIONS_READ)).toBe(true);
+    expect(perms.has(RBAC_PERMISSIONS.COMPOSITIONS_WRITE)).toBe(true);
+    expect(perms.has(RBAC_PERMISSIONS.THEORY_READ)).toBe(true);
+    expect(perms.has(RBAC_PERMISSIONS.PROFILE_READ)).toBe(true);
+    expect(perms.has(RBAC_PERMISSIONS.ADMIN)).toBe(false);
+    expect(perms.has(RBAC_PERMISSIONS.USERS_WRITE)).toBe(false);
   });
 
   it('user-specific grant adds permission beyond role', () => {
