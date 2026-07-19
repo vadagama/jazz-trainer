@@ -4,10 +4,14 @@ import { useSettings, useUpdateSettings } from '@jazz/plugin-sdk';
 import { cn, Checkbox, Card, CardContent, CardHeader, CardTitle } from '@jazz/ui';
 import { generateChordExercise } from '../generators/chordExercise.js';
 import { generateScaleExercise } from '../generators/scaleExercise.js';
+import { generateEnclosureExercise } from '../generators/enclosureExercise.js';
+import { generateSequenceExercise } from '../generators/sequenceExercise.js';
 import type {
   ExerciseConfig,
   ChordExerciseConfig,
   ScaleExerciseConfig,
+  EnclosureExerciseConfig,
+  SequenceExerciseConfig,
   PracticeBar,
   CardMode,
   ChordSource,
@@ -23,10 +27,15 @@ import {
   DEF_CARD_MODE,
   DEF_INFINITE,
   DEF_PLAY_RANDOMLY,
+  DEF_SEQUENCE_TYPE,
+  DEF_SEQUENCE_START_DEGREES,
+  DEF_SEQUENCE_DIRECTION,
 } from '../defaults.js';
 import { StepTypeSelect } from './StepTypeSelect.js';
 import { StepChordConfig } from './StepChordConfig.js';
 import { StepScaleConfig } from './StepScaleConfig.js';
+import { StepEnclosureConfig } from './StepEnclosureConfig.js';
+import { StepSequenceConfig } from './StepSequenceConfig.js';
 import { StepPreview } from './StepPreview.js';
 import { Step2Shell } from './Step2Shell.js';
 
@@ -36,7 +45,7 @@ export interface ExerciseWizardProps {
 }
 
 type WizardStep = 1 | 2 | 3;
-type ExerciseKind = 'chords' | 'scales';
+type ExerciseKind = 'chords' | 'scales' | 'enclosures' | 'sequences';
 
 function buildDefaults(settings: ReturnType<typeof useSettings>['data']) {
   const pc = settings?.practiceCards;
@@ -55,11 +64,6 @@ function buildDefaults(settings: ReturnType<typeof useSettings>['data']) {
     barsPerChord: pc?.barsPerChord ?? DEF_BARS_PER_CHORD,
     timeSignature: pc?.timeSignature ?? DEF_TIME_SIGNATURE,
     playRandomly: pc?.playRandomly ?? DEF_PLAY_RANDOMLY,
-    // Read back write-only fields: source, keys, pattern
-    lastSource: pc?.lastSource,
-    lastPatternId: pc?.lastPatternId,
-    lastKeys: pc?.lastKeys,
-    lastExerciseType: pc?.lastExerciseType,
   };
 }
 
@@ -82,15 +86,47 @@ function buildInitialConfig(
           ? { type: 'dsl', dsl: '' }
           : { type: 'unified', symbols: [] };
 
-    return {
-      ...defs,
-      type: kind,
-      keys: pc.lastKeys,
-      source,
-      ...(kind === 'scales'
-        ? { scaleType: 'major' as const, direction: 'both' as const, octaves: 1 as const }
-        : {}),
-    };
+    const common = { ...defs, keys: pc.lastKeys };
+
+    if (kind === 'scales') {
+      return {
+        ...common,
+        type: 'scales' as const,
+        source,
+        scaleType: 'major' as const,
+        direction: 'both' as const,
+        octaves: 1 as const,
+      };
+    }
+    if (kind === 'enclosures') {
+      return {
+        ...common,
+        type: 'enclosures' as const,
+        source: { type: 'unified' as const, symbols: [] },
+        enclosureType: (pc.lastEnclosureType ?? 'diatonic-upper') as EnclosureExerciseConfig['enclosureType'],
+        targetDegrees:
+          (pc.lastEnclosureDegrees?.map(
+            (d) => Number(d) as EnclosureExerciseConfig['targetDegrees'][number],
+          ) ?? [1]),
+        scaleType: (pc.lastEnclosureScaleType ?? 'major') as EnclosureExerciseConfig['scaleType'],
+      };
+    }
+    if (kind === 'sequences') {
+      return {
+        ...common,
+        type: 'sequences' as const,
+        source: { type: 'unified' as const, symbols: [] },
+        sequenceType: (pc.lastSequenceType ?? DEF_SEQUENCE_TYPE) as SequenceExerciseConfig['sequenceType'],
+        startDegrees:
+          (pc.lastSequenceStartDegrees?.map(
+            (d) => Number(d) as SequenceExerciseConfig['startDegrees'][number],
+          ) ?? DEF_SEQUENCE_START_DEGREES),
+        scaleType: (pc.lastSequenceScaleType ?? 'major') as SequenceExerciseConfig['scaleType'],
+        direction: DEF_SEQUENCE_DIRECTION,
+      };
+    }
+    // chords fallback
+    return { ...common, type: 'chords' as const, source };
   }
 
   return defs;
@@ -120,6 +156,24 @@ function buildPracticeCardsSettings(
     barsPerChord: config.barsPerChord,
     timeSignature: config.timeSignature,
     playRandomly: config.playRandomly,
+    ...(kind === 'enclosures'
+      ? {
+          lastEnclosureType: (config as EnclosureExerciseConfig).enclosureType,
+          lastEnclosureDegrees: (config as EnclosureExerciseConfig).targetDegrees.map((d) =>
+            String(d),
+          ) as ('1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '10' | '11')[],
+          lastEnclosureScaleType: (config as EnclosureExerciseConfig).scaleType,
+        }
+      : {}),
+    ...(kind === 'sequences'
+      ? {
+          lastSequenceType: (config as SequenceExerciseConfig).sequenceType,
+          lastSequenceStartDegrees: (config as SequenceExerciseConfig).startDegrees.map((d) =>
+            String(d) as '1' | '2' | '3' | '4' | '5' | '6' | '7',
+          ),
+          lastSequenceScaleType: (config as SequenceExerciseConfig).scaleType,
+        }
+      : {}),
   };
 }
 
@@ -127,7 +181,9 @@ function isValidSource(src: ChordSource | undefined, kind?: ExerciseKind): boole
   if (!src) return false;
   switch (src.type) {
     case 'unified':
-      return kind === 'scales' ? true : (src.symbols?.length ?? 0) > 0;
+      return kind === 'scales' || kind === 'enclosures' || kind === 'sequences'
+        ? true
+        : (src.symbols?.length ?? 0) > 0;
     case 'pattern':
       return typeof src.patternId === 'string' && src.patternId.length > 0;
     case 'dsl':
@@ -174,17 +230,45 @@ function buildConfig(
     return { ...base, type: 'chords' as const, source } as ChordExerciseConfig;
   }
 
+  if (kind === 'scales') {
+    return {
+      ...base,
+      type: 'scales' as const,
+      source: (partial as Partial<ScaleExerciseConfig>).source ?? {
+        type: 'unified' as const,
+        symbols: [],
+      },
+      scaleType: (partial as Partial<ScaleExerciseConfig>).scaleType ?? 'major',
+      direction: (partial as Partial<ScaleExerciseConfig>).direction ?? 'both',
+      octaves: (partial as Partial<ScaleExerciseConfig>).octaves ?? 1,
+    } as ScaleExerciseConfig;
+  }
+
+  if (kind === 'sequences') {
+    return {
+      ...base,
+      type: 'sequences' as const,
+      source: (partial as Partial<SequenceExerciseConfig>).source ?? {
+        type: 'unified' as const,
+        symbols: [],
+      },
+      sequenceType:
+        (partial as Partial<SequenceExerciseConfig>).sequenceType ?? DEF_SEQUENCE_TYPE,
+      startDegrees:
+        (partial as Partial<SequenceExerciseConfig>).startDegrees ?? DEF_SEQUENCE_START_DEGREES,
+      scaleType: (partial as Partial<SequenceExerciseConfig>).scaleType ?? 'major',
+      direction: (partial as Partial<SequenceExerciseConfig>).direction ?? DEF_SEQUENCE_DIRECTION,
+    } as SequenceExerciseConfig;
+  }
+
   return {
     ...base,
-    type: 'scales' as const,
-    source: (partial as Partial<ScaleExerciseConfig>).source ?? {
-      type: 'unified' as const,
-      symbols: [],
-    },
-    scaleType: (partial as Partial<ScaleExerciseConfig>).scaleType ?? 'major',
-    direction: (partial as Partial<ScaleExerciseConfig>).direction ?? 'both',
-    octaves: (partial as Partial<ScaleExerciseConfig>).octaves ?? 1,
-  } as ScaleExerciseConfig;
+    type: 'enclosures' as const,
+    source: { type: 'unified' as const, symbols: [] },
+    enclosureType: (partial as Partial<EnclosureExerciseConfig>).enclosureType ?? 'diatonic-upper',
+    targetDegrees: (partial as Partial<EnclosureExerciseConfig>).targetDegrees ?? [1, 3, 5, 7],
+    scaleType: (partial as Partial<EnclosureExerciseConfig>).scaleType ?? 'major',
+  } as EnclosureExerciseConfig;
 }
 
 const STEPS = [
@@ -192,6 +276,22 @@ const STEPS = [
   { num: 2 as const, label: 'Параметры' },
   { num: 3 as const, label: 'Превью' },
 ];
+
+/** Сгенерировать PracticeBar[] по выбранному типу упражнения. */
+function generateExerciseBars(config: ExerciseConfig, kind: ExerciseKind | null): PracticeBar[] {
+  switch (kind) {
+    case 'chords':
+      return generateChordExercise(config as ChordExerciseConfig);
+    case 'scales':
+      return generateScaleExercise(config as ScaleExerciseConfig);
+    case 'enclosures':
+      return generateEnclosureExercise(config as EnclosureExerciseConfig);
+    case 'sequences':
+      return generateSequenceExercise(config as SequenceExerciseConfig);
+    default:
+      throw new Error('Тип упражнения не выбран');
+  }
+}
 
 export function ExerciseWizard({ onStart, initialConfig }: ExerciseWizardProps) {
   const { data: settings } = useSettings();
@@ -210,32 +310,47 @@ export function ExerciseWizard({ onStart, initialConfig }: ExerciseWizardProps) 
     (type: ExerciseKind) => {
       setKind(type);
       setError(null);
-      setConfig({
+      const next: Partial<ExerciseConfig> = {
         ...defaults,
         type,
         keys: [],
         source: { type: 'unified', symbols: [] },
-        ...(type === 'scales'
-          ? { scaleType: 'major' as const, direction: 'both' as const, octaves: 1 as const }
-          : {}),
-      });
+      };
+      if (type === 'scales') {
+        Object.assign(next, {
+          scaleType: 'major' as const,
+          direction: 'both' as const,
+          octaves: 1 as const,
+        });
+      } else if (type === 'enclosures') {
+        Object.assign(next, {
+          enclosureType: 'diatonic-upper' as const,
+          targetDegrees: [1, 3, 5, 7],
+          scaleType: 'major' as const,
+        });
+      } else if (type === 'sequences') {
+        Object.assign(next, {
+          sequenceType: DEF_SEQUENCE_TYPE,
+          startDegrees: DEF_SEQUENCE_START_DEGREES,
+          scaleType: 'major' as const,
+          direction: DEF_SEQUENCE_DIRECTION,
+        });
+      }
+      setConfig(next);
       setStep(2);
     },
     [defaults],
   );
 
   const handleConfigChange = useCallback((patch: Partial<ExerciseConfig>) => {
-    setConfig((prev) => ({ ...prev, ...patch }));
+    setConfig((prev) => ({ ...(prev as object), ...(patch as object) }) as Partial<ExerciseConfig>);
   }, []);
 
   const handlePreview = useCallback(() => {
     setError(null);
     try {
       const built = buildConfig(config, kind, defaults);
-      const bars =
-        kind === 'chords'
-          ? generateChordExercise(built as ChordExerciseConfig)
-          : generateScaleExercise(built as ScaleExerciseConfig);
+      const bars = generateExerciseBars(built, kind);
       setPreview(bars);
       setStep(3);
     } catch (e) {
@@ -246,10 +361,7 @@ export function ExerciseWizard({ onStart, initialConfig }: ExerciseWizardProps) 
   const handleQuickStart = useCallback(() => {
     try {
       const built = buildConfig(config, kind, defaults);
-      const bars =
-        kind === 'chords'
-          ? generateChordExercise(built as ChordExerciseConfig)
-          : generateScaleExercise(built as ScaleExerciseConfig);
+      const bars = generateExerciseBars(built, kind);
 
       updateSettings.mutate({ practiceCards: buildPracticeCardsSettings(built, kind!) });
       onStart(built, bars);
@@ -274,9 +386,21 @@ export function ExerciseWizard({ onStart, initialConfig }: ExerciseWizardProps) 
     kind != null &&
     (kind === 'chords'
       ? isValidSource((config as Partial<ChordExerciseConfig>).source, kind)
-      : isValidSource((config as Partial<ScaleExerciseConfig>).source, kind));
+      : isValidSource(
+          (config as Partial<
+            ScaleExerciseConfig | EnclosureExerciseConfig | SequenceExerciseConfig
+          >).source,
+          kind,
+        ));
 
-  const step2Label = kind === 'chords' ? 'Аккорды' : kind === 'scales' ? 'Гаммы' : 'Параметры';
+  const step2Label =
+    kind === 'chords'
+      ? 'Аккорды'
+      : kind === 'scales'
+        ? 'Гаммы'
+        : kind === 'enclosures'
+          ? 'Опевания'
+          : 'Секвенции';
 
   const effectiveSteps = STEPS.map((s, i) => ({
     ...s,
@@ -380,6 +504,38 @@ export function ExerciseWizard({ onStart, initialConfig }: ExerciseWizardProps) 
         >
           <StepScaleConfig
             config={config as Partial<ScaleExerciseConfig>}
+            onChange={handleConfigChange}
+            settings={settings}
+          />
+        </Step2Shell>
+      )}
+
+      {step === 2 && kind === 'enclosures' && (
+        <Step2Shell
+          canPreview={canPreview}
+          onBack={() => setStep(1)}
+          onPreview={handlePreview}
+          onQuickStart={handleQuickStart}
+          playRandomlyToggle={playRandomlyToggle}
+        >
+          <StepEnclosureConfig
+            config={config as Partial<EnclosureExerciseConfig>}
+            onChange={handleConfigChange}
+            settings={settings}
+          />
+        </Step2Shell>
+      )}
+
+      {step === 2 && kind === 'sequences' && (
+        <Step2Shell
+          canPreview={canPreview}
+          onBack={() => setStep(1)}
+          onPreview={handlePreview}
+          onQuickStart={handleQuickStart}
+          playRandomlyToggle={playRandomlyToggle}
+        >
+          <StepSequenceConfig
+            config={config as Partial<SequenceExerciseConfig>}
             onChange={handleConfigChange}
             settings={settings}
           />

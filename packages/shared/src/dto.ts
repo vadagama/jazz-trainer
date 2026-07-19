@@ -230,7 +230,69 @@ export const UserSettingsDTOSchema = z.object({
 
   practiceCards: z
     .object({
-      lastExerciseType: z.enum(['chords', 'scales']).optional(),
+      lastExerciseType: z.enum(['chords', 'scales', 'enclosures', 'sequences']).optional(),
+      lastEnclosureType: z
+        .enum([
+          'diatonic-upper',
+          'diatonic-lower',
+          'chromatic-upper',
+          'chromatic-lower',
+          'full-diatonic',
+          'full-chromatic',
+          'diatonic-upper-chromatic-lower',
+          'four-note-top-down',
+          'four-note-bottom-up',
+          'all',
+        ])
+        .optional(),
+      lastEnclosureDegrees: z
+        .array(z.enum(['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11']))
+        .optional(),
+      lastEnclosureScaleType: z
+        .enum([
+          'major',
+          'natural-minor',
+          'harmonic-minor',
+          'melodic-minor',
+          'dorian',
+          'mixolydian',
+          'phrygian',
+          'lydian',
+          'locrian',
+        ])
+        .optional(),
+      lastSequenceType: z
+        .enum([
+          '1235',
+          '1234',
+          '1357',
+          '1531',
+          'pentatonic',
+          '5321',
+          '8765',
+          '1324',
+          '1345',
+          '1356',
+          '1231',
+          '3212',
+          '3579',
+          'all',
+        ])
+        .optional(),
+      lastSequenceStartDegrees: z.array(z.enum(['1', '2', '3', '4', '5', '6', '7'])).optional(),
+      lastSequenceScaleType: z
+        .enum([
+          'major',
+          'natural-minor',
+          'harmonic-minor',
+          'melodic-minor',
+          'dorian',
+          'mixolydian',
+          'phrygian',
+          'lydian',
+          'locrian',
+        ])
+        .optional(),
       lastSource: z.enum(['pattern', 'random', 'dsl', 'unified']).optional(),
       lastPatternId: z.string().optional(),
       lastKeys: z.array(z.enum(KEYS)).optional(),

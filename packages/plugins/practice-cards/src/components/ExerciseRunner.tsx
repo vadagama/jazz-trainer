@@ -19,7 +19,7 @@ import {
   PlayerMidiControls,
   SoloSettingsDialog,
 } from '@jazz/ui';
-import { Settings } from 'lucide-react';
+import { Play, Settings } from 'lucide-react';
 import { CardDisplay } from './CardDisplay.js';
 import type { PracticeBar, ExerciseConfig } from '../generators/types.js';
 
@@ -294,19 +294,29 @@ export function ExerciseRunner({ bars, config, onComplete, onReconfigure }: Exer
         </button>
       </div>
 
-      {/* Cards / count-in dots */}
+      {/* Cards / count-in dots / start prompt */}
       <main className="relative flex flex-1 items-center justify-center overflow-hidden">
-        {status === 'idle' || countInActive ? (
+        {status === 'idle' ? (
+          <p
+            className="text-center text-2xl text-muted-foreground max-w-sm leading-relaxed"
+            role="status"
+            aria-label="Готов к старту"
+          >
+            Для старта упражнения нажмите на{' '}
+            <Play className="inline size-5 align-[-3px]" />
+            {' '}или Space на клавиатуре
+          </p>
+        ) : countInActive ? (
           <div
             className="flex items-center gap-5"
             role="status"
-            aria-label={countInActive ? 'Затакт' : 'Готов к старту'}
+            aria-label="Затакт"
           >
             {Array.from({ length: beatsPerBar }, (_, i) => (
               <span
                 key={i}
                 className={`block rounded-full transition-all duration-100 ${
-                  countInActive && i === countInBeat
+                  i === countInBeat
                     ? 'h-8 w-8 bg-primary scale-110'
                     : 'h-6 w-6 bg-muted-foreground/30'
                 }`}

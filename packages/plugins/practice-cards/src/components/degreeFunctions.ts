@@ -98,6 +98,10 @@ export type FunctionPreview =
   | { kind: 'scale-standalone'; scaleLabels: string[]; direction: string }
   /** Гаммы поверх прогрессии: ступени + гамма с направлением. */
   | { kind: 'scale-over-chords'; chordLabels: string[]; scaleLabel: string; direction: string }
+  /** Опевания: целевые ступени или аккорды прогрессии. */
+  | { kind: 'enclosures'; labels: string[] }
+  /** Секвенции: стартовые ступени или аккорды прогрессии. */
+  | { kind: 'sequences'; labels: string[] }
   /** Нечего показать (пустой выбор / неподдержанный источник). */
   | { kind: 'empty' };
 
@@ -156,6 +160,70 @@ export function buildFunctionPreview(config: ExerciseConfig): FunctionPreview {
     }
 
     return { kind: 'empty' };
+  }
+
+  // ── Enclosures ────────────────────────────────────────────────────────
+  if (config.type === 'enclosures') {
+    const degrees = config.targetDegrees.join(', ');
+
+    if (config.source.type === 'unified') {
+      const labels = (config.keys ?? []).map((key) => `${key}: ступени ${degrees}`);
+      return labels.length ? { kind: 'enclosures', labels } : { kind: 'empty' };
+    }
+
+    const source = config.source;
+    let chordLabels: string[] = [];
+
+    if (source.type === 'pattern') {
+      const def = PATTERNS.find((p) => p.id === source.patternId);
+      if (def) {
+        const seq = patternSequence(def);
+        if (seq === 'random') return { kind: 'enclosures', labels: ['произв.'] };
+        if (seq) chordLabels = seq.map((s) => degreeLabel(s.degree, s.quality));
+      }
+    } else if (source.type === 'dsl') {
+      const result = parseDegreeGrid(source.dsl);
+      if (result.ok && result.value) {
+        chordLabels = result.value.bars.flatMap((bar) => bar.slots.map((s) => prettyDegree(s.symbol)));
+      }
+    } else if (source.type === 'random') {
+      return { kind: 'enclosures', labels: ['произв.'] };
+    }
+
+    return chordLabels.length ? { kind: 'enclosures', labels: chordLabels } : { kind: 'empty' };
+  }
+
+  // ── Sequences ────────────────────────────────────────────────────────
+  if (config.type === 'sequences') {
+    const degrees = config.startDegrees.join('-');
+
+    if (config.source.type === 'unified') {
+      const labels = (config.keys ?? []).map((key) => `${key}: ступени ${degrees}`);
+      return labels.length ? { kind: 'sequences', labels } : { kind: 'empty' };
+    }
+
+    const source = config.source;
+    let chordLabels: string[] = [];
+
+    if (source.type === 'pattern') {
+      const def = PATTERNS.find((p) => p.id === source.patternId);
+      if (def) {
+        const seq = patternSequence(def);
+        if (seq === 'random') return { kind: 'sequences', labels: ['произв.'] };
+        if (seq) chordLabels = seq.map((s) => degreeLabel(s.degree, s.quality));
+      }
+    } else if (source.type === 'dsl') {
+      const result = parseDegreeGrid(source.dsl);
+      if (result.ok && result.value) {
+        chordLabels = result.value.bars.flatMap((bar) =>
+          bar.slots.map((s) => prettyDegree(s.symbol)),
+        );
+      }
+    } else if (source.type === 'random') {
+      return { kind: 'sequences', labels: ['произв.'] };
+    }
+
+    return chordLabels.length ? { kind: 'sequences', labels: chordLabels } : { kind: 'empty' };
   }
 
   // ── Chords ────────────────────────────────────────────────────────────

@@ -3,6 +3,8 @@ import type { ExerciseConfig } from '../generators/types.js';
 const TYPE_LABEL: Record<string, string> = {
   chords: 'Аккорды',
   scales: 'Гаммы',
+  enclosures: 'Опевания',
+  sequences: 'Секвенции',
 };
 
 export interface ExerciseCompleteProps {

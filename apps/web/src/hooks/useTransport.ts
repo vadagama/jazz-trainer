@@ -847,6 +847,12 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
       usePlaybackStore.getState()._setState(state);
     });
 
+    // Reset global playback state when a new transport instance is created.
+    // This prevents stale count-in / playing state from a previous exercise
+    // from blocking the UI (cards staying hidden behind count-in dots).
+    usePlaybackStore.getState()._reset();
+    usePlaybackStore.getState()._setCountIn(false, 0);
+
     // Sync initial state
     usePlaybackStore.getState()._setState(machine.getState());
 
@@ -863,6 +869,9 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
       document.removeEventListener('pointerdown', warmAudioContext);
       unsub();
       if (scheduleTimerRef.current !== null) clearTimeout(scheduleTimerRef.current);
+      countInTimeoutsRef.current.forEach(clearTimeout);
+      countInTimeoutsRef.current = [];
+      usePlaybackStore.getState()._setCountIn(false, 0);
       adapter.stop();
       adapter.dispose();
       // Dispose the metronome player pool
