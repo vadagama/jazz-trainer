@@ -33,6 +33,48 @@ const DIRECTION_LABELS: Record<NonNullable<PracticeBar['direction']>, string> = 
 };
 
 function CardContent({ bar }: { bar: PracticeBar }) {
+  if (bar.enclosure) {
+    const approachNames = bar.enclosure.notes
+      .filter((n) => n.role === 'approach')
+      .map((n) => n.name);
+    const target = bar.enclosure.notes.find((n) => n.role === 'target');
+    return (
+      <div className="flex flex-col items-center gap-1">
+        <span className="text-xl font-semibold text-muted-foreground">
+          Ступень {bar.enclosure.targetDegree}
+        </span>
+        {bar.chords[0] && (
+          <span className="text-6xl font-bold text-foreground">{bar.chords[0]}</span>
+        )}
+        <span className="text-3xl font-semibold text-foreground">
+          {approachNames.length > 0 ? `${approachNames.join(' ')} → ` : ''}
+          {target?.name ?? ''}
+        </span>
+      </div>
+    );
+  }
+
+  if (bar.sequence) {
+    const patternNotes = bar.sequence.notes.filter((n) => n.role === 'pattern');
+    const root = bar.sequence.notes.find((n) => n.role === 'root');
+    return (
+      <div className="flex flex-col items-center gap-1">
+        <span className="text-xl font-semibold text-muted-foreground">
+          Ступень {bar.sequence.startDegree}
+        </span>
+        {bar.chords[0] && (
+          <span className="text-6xl font-bold text-foreground">{bar.chords[0]}</span>
+        )}
+        <span className="text-3xl font-semibold leading-tight text-foreground">
+          {root && <span className="text-primary">{root.name}</span>}
+          {patternNotes.length > 0 && (
+            <span className="text-foreground"> {patternNotes.map((n) => n.name).join(' ')}</span>
+          )}
+        </span>
+      </div>
+    );
+  }
+
   if (bar.scaleLabel) {
     const spaceIdx = bar.scaleLabel.indexOf(' ');
     const root = spaceIdx >= 0 ? bar.scaleLabel.slice(0, spaceIdx) : bar.scaleLabel;

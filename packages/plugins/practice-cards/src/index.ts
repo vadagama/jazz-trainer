@@ -17,3 +17,5 @@ export default definePlugin({
 export * from './generators/types.js';
 export { generateChordExercise } from './generators/chordExercise.js';
 export { generateScaleExercise } from './generators/scaleExercise.js';
+export { generateEnclosureExercise } from './generators/enclosureExercise.js';
+export { generateSequenceExercise } from './generators/sequenceExercise.js';

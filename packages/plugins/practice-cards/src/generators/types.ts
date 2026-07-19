@@ -1,5 +1,14 @@
 import type { Key, TimeSignatureString } from '@jazz/shared';
-import type { ScaleType } from '@jazz/music-core';
+import type {
+  ScaleType,
+  EnclosureType,
+  ConcreteEnclosureType,
+  TargetDegree,
+  EnclosureNote,
+  SequenceType,
+  ConcreteSequenceType,
+  SequenceNote,
+} from '@jazz/music-core';
 
 // ---------------------------------------------------------------------------
 // Источник контента для аккордовых прогрессий
@@ -87,7 +96,57 @@ export interface ScaleExerciseConfig extends BaseExerciseConfig {
   octaves: 1 | 2;
 }
 
-export type ExerciseConfig = ChordExerciseConfig | ScaleExerciseConfig;
+// ---------------------------------------------------------------------------
+// Опевания
+// ---------------------------------------------------------------------------
+
+export interface EnclosureExerciseConfig extends BaseExerciseConfig {
+  type: 'enclosures';
+  /**
+   * Источник определяет режим:
+   * - `unified` — опевания отдельно, на тонике выбранной тональности.
+   * - `pattern` / `dsl` / `random` — опевания поверх каждого аккорда прогрессии.
+   */
+  source: ChordSource;
+  /** Тип опевания. 'all' означает случайный выбор на каждый такт. */
+  enclosureType: EnclosureType;
+  /** Аккордовые ступени, которые будут опеваться. */
+  targetDegrees: TargetDegree[];
+  /** Лад для диатонических опеваний в standalone-режиме. */
+  scaleType: ScaleType;
+}
+
+// ---------------------------------------------------------------------------
+// Секвенции
+// ---------------------------------------------------------------------------
+
+export type { SequenceType };
+
+export type SequenceDirection = 'up' | 'down' | 'both';
+
+export interface SequenceExerciseConfig extends BaseExerciseConfig {
+  type: 'sequences';
+  /**
+   * Источник определяет режим:
+   * - `unified` — секвенции отдельно, на тонике выбранной тональности.
+   * - `pattern` / `dsl` / `random` — секвенции поверх каждого аккорда прогрессии.
+   */
+  source: ChordSource;
+  /** Тип паттерна. 'all' означает случайный выбор на каждый такт. */
+  sequenceType: SequenceType;
+  /** Стартовые ступени лада (1-7), с которых стартует паттерн. */
+  startDegrees: TargetDegree[];
+  /** Лад для расчёта диатонических ступеней. */
+  scaleType: ScaleType;
+  /** Направление обхода стартовых ступеней. */
+  direction: SequenceDirection;
+}
+
+export type ExerciseConfig =
+  | ChordExerciseConfig
+  | ScaleExerciseConfig
+  | EnclosureExerciseConfig
+  | SequenceExerciseConfig;
 
 // ---------------------------------------------------------------------------
 // Такт практики
@@ -98,6 +157,19 @@ export interface PracticeBar {
   chords: string[];
   scaleLabel?: string;
   direction?: 'up' | 'down';
+  /** Данные опевания (если упражнение типа 'enclosures'). */
+  enclosure?: {
+    type: ConcreteEnclosureType;
+    targetDegree: TargetDegree;
+    notes: EnclosureNote[];
+  };
+  /** Данные секвенции (если упражнение типа 'sequences'). */
+  sequence?: {
+    type: ConcreteSequenceType;
+    startDegree: number;
+    notes: SequenceNote[];
+    direction: 'up' | 'down';
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -105,7 +177,7 @@ export interface PracticeBar {
 // ---------------------------------------------------------------------------
 
 export interface ExerciseSession {
-  type: 'chords' | 'scales';
+  type: 'chords' | 'scales' | 'enclosures' | 'sequences';
   bars: PracticeBar[];
   config: ExerciseConfig;
 }

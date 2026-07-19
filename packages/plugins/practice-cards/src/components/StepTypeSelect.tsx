@@ -1,7 +1,7 @@
 import { cn } from '@jazz/ui';
 
 export interface StepTypeSelectProps {
-  onSelect: (type: 'chords' | 'scales') => void;
+  onSelect: (type: 'chords' | 'scales' | 'enclosures' | 'sequences') => void;
 }
 
 interface TileDef {
@@ -29,17 +29,17 @@ const TILES: TileDef[] = [
   },
   {
     type: 'sequences',
-    icon: '⏳',
+    icon: '🎯',
     label: 'Секвенции',
-    description: 'Мелодические и гармонические секвенции (скоро)',
-    disabled: true,
+    description: 'Мелодические паттерны, повторяемые с разных ступеней лада',
+    disabled: false,
   },
   {
     type: 'embellishments',
-    icon: '⏳',
+    icon: '〰️',
     label: 'Опевания',
-    description: 'Хроматические и диатонические опевания аккордовых тонов (скоро)',
-    disabled: true,
+    description: 'Хроматические и диатонические опевания аккордовых тонов',
+    disabled: false,
   },
 ];
 
@@ -56,6 +56,12 @@ export function StepTypeSelect({ onSelect }: StepTypeSelectProps) {
             onClick={() => {
               if (tile.type === 'chords' || tile.type === 'scales') {
                 onSelect(tile.type);
+              }
+              if (tile.type === 'embellishments') {
+                onSelect('enclosures');
+              }
+              if (tile.type === 'sequences') {
+                onSelect('sequences');
               }
             }}
             className={cn(

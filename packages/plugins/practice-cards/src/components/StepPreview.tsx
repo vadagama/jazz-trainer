@@ -20,6 +20,31 @@ function makeRows(bars: PracticeBar[], rowSize: number): PracticeBar[][] {
 }
 
 function BarChip({ bar }: { bar: PracticeBar }) {
+  if (bar.enclosure) {
+    const target = bar.enclosure.notes.find((n) => n.role === 'target');
+    return (
+      <div
+        title={target?.name}
+        className="flex items-center justify-center gap-0.5 rounded bg-primary/10 px-1.5 py-2 text-center text-xs font-semibold leading-tight text-foreground"
+      >
+        <span className="min-w-0 break-words hyphens-auto">{target?.name ?? '—'}</span>
+      </div>
+    );
+  }
+  if (bar.sequence) {
+    const root = bar.sequence.notes.find((n) => n.role === 'root');
+    const title = `${bar.sequence.type} · ст.${bar.sequence.startDegree} · ${
+      bar.sequence.notes.map((n) => n.name).join(' ')
+    }`;
+    return (
+      <div
+        title={title}
+        className="flex items-center justify-center gap-0.5 rounded bg-primary/10 px-1.5 py-2 text-center text-xs font-semibold leading-tight text-foreground"
+      >
+        <span className="min-w-0 break-words hyphens-auto">{root?.name ?? '—'}</span>
+      </div>
+    );
+  }
   if (bar.chords.length > 0) {
     return (
       <div className="flex min-w-0 items-center justify-center gap-0.5 truncate rounded bg-primary/10 px-1 py-2.5 text-xs font-semibold text-foreground">
@@ -112,6 +137,19 @@ function explainPlayback(config: ExerciseConfig): string {
     return `Гаммы поверх прогрессии будут проигрываться ${order}${tail}. Направление: ${dir}.`;
   }
 
+  if (config.type === 'enclosures') {
+    const order = random ? 'в произвольном порядке' : 'по очереди';
+    const degrees = config.targetDegrees.join(', ');
+    return `Опевания ступеней ${degrees} будут проигрываться ${order}, ${keyPhrase}${tail}.`;
+  }
+
+  if (config.type === 'sequences') {
+    const order = random ? 'в произвольном порядке' : 'по очереди';
+    const degrees = config.startDegrees.join('-');
+    const dir = DIRECTION_LABEL[config.direction] ?? config.direction;
+    return `Секвенции по ступеням ${degrees} будут проигрываться ${order}, ${keyPhrase}${tail}. Направление: ${dir}.`;
+  }
+
   const source = config.source;
   if (source?.type === 'unified') {
     const order = random ? 'в произвольном порядке' : 'по очереди, по одному на такт';
@@ -135,7 +173,14 @@ export function StepPreview({ config, bars, onBack, onStart }: StepPreviewProps)
   const summary = useMemo(() => {
     const tempo = config.tempo ?? 120;
     const keysStr = (config.keys ?? []).join(', ');
-    const typeLabel = config.type === 'chords' ? 'аккордов' : 'гамм';
+    const typeLabel =
+      config.type === 'chords'
+        ? 'аккордов'
+        : config.type === 'scales'
+          ? 'гамм'
+          : config.type === 'enclosures'
+            ? 'опеваний'
+            : 'секвенций';
     const sourceLabel = chordSourceLabel[config.source.type] ?? config.source.type;
     const repeatLabel = config.infinite ? '∞ повторов' : `${bars.length} тактов ${typeLabel}`;
     return `${repeatLabel}, ${sourceLabel}, ${keysStr || 'C'}, ${tempo} BPM`;
@@ -177,6 +222,8 @@ export function StepPreview({ config, bars, onBack, onStart }: StepPreviewProps)
                 Произвольные диатонические аккорды
               </p>
             )}
+            {fnPreview.kind === 'enclosures' && <ChipSequence labels={fnPreview.labels} />}
+            {fnPreview.kind === 'sequences' && <ChipSequence labels={fnPreview.labels} />}
             {fnPreview.kind === 'empty' && (
               <p className="text-sm text-muted-foreground">Ничего не выбрано.</p>
             )}
