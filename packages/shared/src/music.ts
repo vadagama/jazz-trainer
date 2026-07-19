@@ -111,7 +111,7 @@ export const ChordSymbolSchema = z.object({
 });
 export type ChordSymbol = z.infer<typeof ChordSymbolSchema>;
 
-// ── Harmony grid content (stored as JSON, see docs/03-data-model.md §3) ──
+// ── Harmony composition content (stored as JSON, see docs/03-data-model.md §3) ──
 
 export const ChordSlotSchema = z.object({
   /** stable identity for React keys and optimistic updates */
@@ -145,7 +145,7 @@ export const SectionSchema = z.object({
 });
 export type Section = z.infer<typeof SectionSchema>;
 
-export const GridContentSchema = z.object({
+export const CompositionContentSchema = z.object({
   /** content format version (for JSON migrations) */
   version: z.literal(1),
   /** legacy flat bar list — kept for backward-compat with existing API barsCount */
@@ -153,7 +153,11 @@ export const GridContentSchema = z.object({
   /** when present, sections are the primary structure; bars is a derived flat view */
   sections: z.array(SectionSchema).optional(),
 });
-export type GridContent = z.infer<typeof GridContentSchema>;
+export type CompositionContent = z.infer<typeof CompositionContentSchema>;
+/** @deprecated use {@link CompositionContent} — kept for DSL parser compat (§12) */
+export type GridContent = CompositionContent;
+/** @deprecated use {@link CompositionContentSchema} */
+export const GridContentSchema = CompositionContentSchema;
 
 // ── Parser result contract (see docs/06-dsl.md §5) ─────────────
 

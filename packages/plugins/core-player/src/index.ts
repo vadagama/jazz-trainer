@@ -14,7 +14,7 @@ export default definePlugin({
     name: 'Player',
     apiVersion: 1,
     category: 'play',
-    description: 'Read-only grid player for public compositions.',
+    description: 'Read-only player for public compositions.',
   },
   contributes: {
     routes: [

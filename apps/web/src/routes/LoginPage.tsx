@@ -70,7 +70,7 @@ export default function LoginPage() {
             <div>
               <h1 className="text-xl font-semibold tracking-tight">Вход в Jazz Trainer</h1>
               <p className="mt-1 text-sm text-muted-foreground">
-                Сохраняйте сетки, настройки и прогресс
+                Сохраняйте композиции, настройки и прогресс
               </p>
             </div>
           </div>

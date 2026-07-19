@@ -330,13 +330,14 @@ sequenceDiagram
 Роль → permissions (n:n)
 ```
 
-| Роль          | Permissions                                                                        |
-| ------------- | ---------------------------------------------------------------------------------- |
-| `super_admin` | Все 11 permissions                                                                 |
-| `admin`       | `users:read`, `content:*`, `flags:*`, `assets:*`, `diagnostics:read`, `audit:read` |
-| `user`        | `users:read` (свой профиль), `content:read`                                        |
+| Роль              | Краткое описание                             |
+| ----------------- | -------------------------------------------- |
+| `super_admin`     | Все 27 permissions                           |
+| `admin`           | 24 permissions (всё, кроме `users:write`, `roles:write`, `system:settings:write`) |
+| `catalog_editor`  | 13 permissions (база `user` + управление каталогом + `admin`) |
+| `user`            | 7 permissions (каталог, упражнения, композиции, теория, профиль) |
 
-**Permissions (11 шт.):** `users:read`, `users:write`, `content:read`, `content:write`, `flags:read`, `flags:write`, `assets:read`, `assets:write`, `diagnostics:read`, `audit:read`, `admin`.
+**Permissions (27 шт.):** Подробный каталог всех разрешений и полная матрица ролей — в [`ROLES.md`](ROLES.md).
 
 **Механизм:** Middleware `rbac.plugin.ts` → `RbacGuard` проверяет permission на каждом защищённом маршруте.
 
@@ -590,9 +591,9 @@ jazz-trainer/
 
 | Фаза                | Статус | Ключевой результат                                                                    |
 | ------------------- | ------ | ------------------------------------------------------------------------------------- |
-| Ф0 — Границы        | ✅     | ESLint boundaries + strict, 0 нарушений                                               |
+Ф0 — Границы        | ✅     | ESLint boundaries + strict, 0 нарушений                                               |
 | Ф1 — SDK + Host     | ✅     | `plugin-sdk`, `plugin-host`, `plugin-registry`, shell bootstrap                       |
-| ФR — RBAC + аудит   | ✅     | 3 роли, 11 permissions, audit log, `usePermission`/`useFlag`                          |
+| ФR — RBAC + аудит   | ✅     | 4 роли, 27 permissions, audit log, `usePermission`/`useFlag` ([ROLES.md](ROLES.md))   |
 | Ф2 — AudioPort      | 🟢     | `tone-audio-adapter` + `webmidi-adapter` готовы, 12 инструментов, манифесты, EventSink |
 | Ф3 — Фичи → плагины | ✅     | `core-editor`, `core-player`, `catalog` вынесены                                      |
 | Ф4 — Новые домены   | 🟡     | 22 theory-плагина, 3 practice, 2 assess, 1 play созданы. StyleProfile, per-style overrides 🟢 |

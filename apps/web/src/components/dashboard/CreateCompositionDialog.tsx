@@ -1,8 +1,8 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Plus } from 'lucide-react';
-import { CreateGridSchema, type CreateGridInput } from '@jazz/shared';
-import { useCreateGrid } from '@/queries/useMyGrids';
+import { CreateCompositionSchema, type CreateCompositionInput } from '@jazz/shared';
+import { useCreateComposition } from '@/queries/useMyCompositions';
 import {
   Dialog,
   DialogContent,
@@ -18,41 +18,45 @@ import { Label } from '@/components/ui/label';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-export function CreateGridDialog() {
+export function CreateCompositionDialog() {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
-  const createGrid = useCreateGrid();
+  const createComposition = useCreateComposition();
 
-  const form = useForm<CreateGridInput>({
-    resolver: zodResolver(CreateGridSchema),
+  const form = useForm<CreateCompositionInput>({
+    resolver: zodResolver(CreateCompositionSchema),
     defaultValues: { name: '' },
   });
 
-  async function onSubmit(data: CreateGridInput) {
-    const grid = await createGrid.mutateAsync(data);
+  async function onSubmit(data: CreateCompositionInput) {
+    const composition = await createComposition.mutateAsync(data);
     setOpen(false);
     form.reset();
-    navigate(`/grids/${grid.id}`);
+    navigate(`/compositions/${composition.id}`);
   }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button size="sm" className="gap-1.5">
-          <Plus className="size-4" /> Новая сетка
+          <Plus className="size-4" /> Новая композиция
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Создать сетку</DialogTitle>
+          <DialogTitle>Создать композицию</DialogTitle>
           <DialogDescription>
-            Новая гармоническая сетка будет добавлена в вашу коллекцию.
+            Новая гармоническая композиция будет добавлена в вашу коллекцию.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-2">
           <div className="space-y-1">
-            <Label htmlFor="grid-name">Название</Label>
-            <Input id="grid-name" placeholder="ii-V-I in C major" {...form.register('name')} />
+            <Label htmlFor="composition-name">Название</Label>
+            <Input
+              id="composition-name"
+              placeholder="ii-V-I in C major"
+              {...form.register('name')}
+            />
             {form.formState.errors.name && (
               <p className="text-xs text-destructive">{form.formState.errors.name.message}</p>
             )}
@@ -63,8 +67,8 @@ export function CreateGridDialog() {
                 Отмена
               </Button>
             </DialogClose>
-            <Button type="submit" disabled={createGrid.isPending}>
-              {createGrid.isPending ? 'Создаём...' : 'Создать'}
+            <Button type="submit" disabled={createComposition.isPending}>
+              {createComposition.isPending ? 'Создаём...' : 'Создать'}
             </Button>
           </div>
         </form>

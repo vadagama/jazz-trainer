@@ -1,15 +1,19 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { HarmonyGridDTO } from '@jazz/shared';
+import type { HarmonyCompositionDTO } from '@jazz/shared';
 import { apiClient } from '@jazz/plugin-sdk';
 
 export function useCopyToMine() {
   const qc = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ gridId, name }: { gridId: string; name?: string }) =>
-      apiClient.post<HarmonyGridDTO>(`/api/grids/${gridId}/copy`, name ? { name } : {}),
+    mutationFn: ({ compositionId, name }: { compositionId: string; name?: string }) =>
+      apiClient.post<HarmonyCompositionDTO>(
+        `/api/compositions/${compositionId}/copy`,
+        name ? { name } : {},
+      ),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['grids', 'mine'] });
+      qc.invalidateQueries({ queryKey: ['compositions', 'mine'] });
+      qc.invalidateQueries({ queryKey: ['catalog'] });
     },
   });
 }

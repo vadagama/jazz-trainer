@@ -46,7 +46,7 @@ export function Header() {
           {[
             { to: '/', label: 'Каталог', auth: false },
             { to: '/practice-cards', label: 'Упражнения', auth: false },
-            { to: '/my', label: 'Мои сетки', auth: true },
+            { to: '/my', label: 'Мои композиции', auth: true },
           ]
             .filter(({ auth }) => !auth || !!user)
             .map(({ to, label }) => {

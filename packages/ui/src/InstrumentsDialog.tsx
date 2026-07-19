@@ -25,6 +25,8 @@ export interface InstrumentsDialogProps {
   open: boolean;
   onClose: () => void;
   onStyleChange?: (style: Style) => void;
+  /** Active style override. When provided, used instead of settings.style for badge highlighting. */
+  style?: Style;
 }
 
 const ROSTER_BADGE_LABEL: Record<string, string> = {
@@ -158,10 +160,10 @@ function GroupRow({ group, style, rosterBadge }: GroupRowProps) {
 
 // ─── Dialog ─────────────────────────────────────────────────────────────────
 
-export function InstrumentsDialog({ open, onClose, onStyleChange }: InstrumentsDialogProps) {
+export function InstrumentsDialog({ open, onClose, onStyleChange, style: styleOverride }: InstrumentsDialogProps) {
   const { data: settings } = useSettings();
   const updateSettings = useUpdateSettings();
-  const currentStyle: Style = (settings?.style as Style) ?? 'swing';
+  const currentStyle: Style = styleOverride ?? (settings?.style as Style) ?? 'swing';
 
   const metronomeOn = settings?.metronomeEnabled ?? true;
   const metronomeVolume = (settings?.metronomeVolume as number) ?? 0.8;

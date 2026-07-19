@@ -2,7 +2,7 @@ export * from './constants.js';
 export * from './music.js';
 export * from './generator.js';
 export * from './dto.js';
-export * from './grids.js';
+export * from './compositions.js';
 export * from './lectures.js';
 export * from './audioFormat.js';
 export * from './drums.js';

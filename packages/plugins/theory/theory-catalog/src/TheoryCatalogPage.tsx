@@ -1,15 +1,14 @@
 import { useState, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { useDebounce } from '@jazz/ui';
+import { useDebounce ,
+  Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Badge, Card, CardContent, CardFooter, Button,
+} from '@jazz/ui';
 import {
   Search, Clock, Heart, Music4, Waves, Guitar, Drum, Triangle, Piano,
   Mic, Disc3, ListMusic, ArrowRightLeft, Workflow, Sparkles, Shuffle,
   Route, Compass, Gauge,
 } from 'lucide-react';
-import {
-  Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-  Badge, Card, CardContent, CardFooter, Button,
-} from '@jazz/ui';
 
 // ── Static data ────────────────────────────────────────────────────────────
 

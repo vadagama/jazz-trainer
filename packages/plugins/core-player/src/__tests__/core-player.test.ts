@@ -7,7 +7,7 @@ describe('core-player plugin definition', () => {
     expect(plugin.manifest.name).toBe('Player');
     expect(plugin.manifest.apiVersion).toBe(1);
     expect(plugin.manifest.category).toBe('play');
-    expect(plugin.manifest.description).toBe('Read-only grid player for public compositions.');
+    expect(plugin.manifest.description).toBe('Read-only player for public compositions.');
   });
 
   it('contributes routes for /play and /play/:id', () => {

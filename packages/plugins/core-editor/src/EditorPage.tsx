@@ -5,7 +5,7 @@ import type { TimeSignatureString, Key, Style } from '@jazz/shared';
 import { transposeSections, getStyleProfile } from '@jazz/music-core';
 import type { InputPort } from '@jazz/music-core';
 import { SOLO_INSTRUMENT_MANIFESTS } from '@jazz/music-core/audio';
-import { useGrid, useUpdateGrid } from './queries/useGrid';
+import { useComposition, useUpdateComposition } from './queries/useComposition';
 import {
   useEditorStore,
   usePlaybackStore,
@@ -27,6 +27,30 @@ import {
   InstrumentsDialog,
 } from '@jazz/ui';
 import { ChordPalette } from './components/ChordPalette';
+
+// ── Moderation status badge for catalog compositions ────────────────────────
+// Matches admin panel styling (CatalogModerationPage.tsx).
+
+const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
+  approved: { label: 'Опубликовано', className: 'bg-green-500/15 text-green-400' },
+  modified: { label: 'Изменено', className: 'bg-blue-500/15 text-blue-400' },
+};
+
+function ModerationBadge({ status }: { status: string }) {
+  const cfg = STATUS_CONFIG[status];
+  if (!cfg) {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-xs text-amber-400">
+        Не опубликовано
+      </span>
+    );
+  }
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs ${cfg.className}`}>
+      {cfg.label}
+    </span>
+  );
+}
 
 // -- Global adapter reference (for immediate solo volume/ducking feedback) --
 
@@ -98,8 +122,8 @@ export function EditorPage() {
   const { id } = useParams<{ id: string }>();
   const gridId = id ?? '';
 
-  const { data: grid, isLoading, isError } = useGrid(gridId);
-  const updateMutation = useUpdateGrid(gridId);
+  const { data: grid, isLoading, isError } = useComposition(gridId);
+  const updateMutation = useUpdateComposition(gridId);
   const {
     localContent,
     selectedBarId,
@@ -138,7 +162,12 @@ export function EditorPage() {
   const [soloDialogOpen, setSoloDialogOpen] = useState(false);
   const [instrumentsDialogOpen, setInstrumentsDialogOpen] = useState(false);
   const [playerKey, setPlayerKey] = useState<Key>(grid?.key ?? 'C');
-  const [localBpm, setLocalBpm] = useState<number | null>(null);
+  const [localBpm, setLocalBpm] = useState<number | null>(
+    grid?.recommendedTempo ?? null,
+  );
+  const [localStyle, setLocalStyle] = useState<Style | null>(
+    (grid?.recommendedStyle as Style | undefined) ?? null,
+  );
   const [localVolume, setLocalVolume] = useState<number | null>(null);
 
   // -- MIDI ----------------------------------------------------------------
@@ -264,7 +293,7 @@ export function EditorPage() {
   const availableTones = SOLO_INSTRUMENT_MANIFESTS;
 
   useEffect(() => {
-    if (grid?.content) {
+    if (grid?.content && !autoSavePendingRef.current) {
       setContent(grid.content, grid.timeSignature);
     }
   }, [grid?.content, setContent]);
@@ -277,6 +306,7 @@ export function EditorPage() {
   const isDirtyRef = useRef(isDirty);
   isDirtyRef.current = isDirty;
   const autoSavePendingRef = useRef(false);
+  const metaSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!isDirty || !gridRef.current) return;
@@ -284,14 +314,19 @@ export function EditorPage() {
       const g = gridRef.current;
       if (!g) return;
       autoSavePendingRef.current = true;
+      const savedContent = contentRef.current;
+      const firstSectionTimeSig = savedContent.sections?.[0]?.timeSignature;
       try {
         await updateMutation.mutateAsync({
           name: g.name,
-          timeSignature: g.timeSignature,
+          timeSignature: firstSectionTimeSig ?? g.timeSignature,
           key: g.key,
-          content: contentRef.current,
+          content: savedContent,
         });
-        markClean();
+        // Only mark clean if nothing changed during the save
+        if (contentRef.current === savedContent) {
+          markClean();
+        }
       } finally {
         autoSavePendingRef.current = false;
       }
@@ -305,12 +340,15 @@ export function EditorPage() {
       if (autoSavePendingRef.current) return;
       const g = gridRef.current;
       if (isDirtyRef.current && g) {
+        const c = contentRef.current;
+        const firstSectionTimeSig = c.sections?.[0]?.timeSignature;
         updateMutation.mutate({
           name: g.name,
-          timeSignature: g.timeSignature,
+          timeSignature: firstSectionTimeSig ?? g.timeSignature,
           key: g.key,
-          content: contentRef.current,
+          content: c,
         });
+        markClean();
       }
     };
   }, []);
@@ -417,11 +455,16 @@ export function EditorPage() {
     sections[0]?.timeSignature ?? grid?.timeSignature ?? '4/4';
   const effectiveBpm = localBpm ?? settings.bpm;
   const effectiveVolume = localVolume ?? settings.volume;
+  const effectiveStyle = (localStyle ?? (grid?.recommendedStyle as Style | undefined) ?? settings.style ?? 'swing') as Style;
+  const effectiveDrumKit = useMemo(() => {
+    const profile = getStyleProfile(effectiveStyle);
+    return profile.defaultVariants.drums ?? 'jazz-drum-kit';
+  }, [effectiveStyle]);
   const effectiveTimeSig = defaultTimeSignature;
   const totalBars = sections.reduce((sum, s) => sum + s.bars.length, 0);
 
   const transport = usePluginTransport({
-    settings: { ...settings, bpm: effectiveBpm, volume: effectiveVolume },
+    settings: { ...settings, bpm: effectiveBpm, volume: effectiveVolume, style: effectiveStyle, drumKit: effectiveDrumKit },
     timeSignature: effectiveTimeSig,
     totalBars,
     sections: displaySections,
@@ -487,6 +530,43 @@ export function EditorPage() {
     transport.nextBar();
   }, [allBars, selectedBarFlatIndex, currentBar, selectBar, transport]);
 
+  const scheduleMetaSave = useCallback(
+    (bpm: number, style: Style) => {
+      if (metaSaveTimerRef.current) clearTimeout(metaSaveTimerRef.current);
+      metaSaveTimerRef.current = setTimeout(() => {
+        updateMutation.mutate({ recommendedTempo: bpm, recommendedStyle: style as Style | null });
+      }, 600);
+    },
+    [updateMutation],
+  );
+
+  const handleStyleChange = useCallback(
+    (style: Style) => {
+      setLocalStyle(style);
+      const profile = getStyleProfile(style);
+      const drumKit = profile.defaultVariants.drums ?? 'jazz-drum-kit';
+      updateSettings.mutate({ style, drumKit });
+      scheduleMetaSave(effectiveBpm, style);
+    },
+    [setLocalStyle, updateSettings, scheduleMetaSave, effectiveBpm],
+  );
+
+  const handleBpmChange = useCallback(
+    (bpm: number) => {
+      setLocalBpm(bpm);
+      scheduleMetaSave(bpm, effectiveStyle);
+    },
+    [effectiveStyle, scheduleMetaSave],
+  );
+
+  const handleKeyChange = useCallback(
+    (key: Key) => {
+      setPlayerKey(key);
+      updateMutation.mutate({ key });
+    },
+    [updateMutation],
+  );
+
   if (isLoading) {
     return (
       <div className="flex h-screen items-center justify-center gap-2 bg-background text-muted-foreground">
@@ -508,11 +588,6 @@ export function EditorPage() {
     );
   }
 
-  const handleStyleChange = (style: Style) => {
-    const profile = getStyleProfile(style);
-    const drumKit = profile.defaultVariants.drums ?? 'jazz-drum-kit';
-    updateSettings.mutate({ style, drumKit });
-  };
   async function handleSaveTitle(name: string) {
     await updateMutation.mutateAsync({ name });
   }
@@ -568,6 +643,9 @@ export function EditorPage() {
                     <span className="text-xs font-semibold uppercase tracking-widest text-primary">
                       Currently Editing
                     </span>
+                    {grid.visibility === 'public' && grid.moderationStatus != null && (
+                      <ModerationBadge status={grid.moderationStatus} />
+                    )}
                   </div>
                   {totalBars > 0 && (
                     <span className="text-base font-semibold tabular-nums text-foreground">
@@ -646,11 +724,11 @@ export function EditorPage() {
         onStop={transport.stop}
         onPrevBar={handlePrevBar}
         onNextBar={handleNextBar}
-        onBpmChange={setLocalBpm}
-        onKeyChange={setPlayerKey}
+        onBpmChange={handleBpmChange}
+        onKeyChange={handleKeyChange}
         volume={effectiveVolume}
         onVolumeChange={setLocalVolume}
-        style={(settings.style ?? 'swing') as Style}
+        style={effectiveStyle}
         onStyleChange={handleStyleChange}
         repeatCount={repeatCount}
         onRepeatChange={handleRepeatChange}
@@ -681,6 +759,7 @@ export function EditorPage() {
         open={instrumentsDialogOpen}
         onClose={() => setInstrumentsDialogOpen(false)}
         onStyleChange={handleStyleChange}
+        style={effectiveStyle}
       />
     </div>
   );

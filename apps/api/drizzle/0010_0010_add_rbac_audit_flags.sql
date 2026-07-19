@@ -1,4 +1,4 @@
-CREATE TABLE `audit_log` (
+CREATE TABLE IF NOT EXISTS `audit_log` (
 	`id` text PRIMARY KEY NOT NULL,
 	`actor_user_id` text NOT NULL,
 	`action` text NOT NULL,
@@ -12,7 +12,7 @@ CREATE TABLE `audit_log` (
 	`reason` text
 );
 --> statement-breakpoint
-CREATE TABLE `feature_flags` (
+CREATE TABLE IF NOT EXISTS `feature_flags` (
 	`key` text PRIMARY KEY NOT NULL,
 	`enabled` integer DEFAULT false NOT NULL,
 	`roles` text,
@@ -20,13 +20,13 @@ CREATE TABLE `feature_flags` (
 	`created_at` integer DEFAULT (unixepoch()) NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE `permissions` (
+CREATE TABLE IF NOT EXISTS `permissions` (
 	`id` text PRIMARY KEY NOT NULL,
 	`code` text NOT NULL
 );
 --> statement-breakpoint
-CREATE UNIQUE INDEX `permissions_code_unique` ON `permissions` (`code`);--> statement-breakpoint
-CREATE TABLE `role_permissions` (
+CREATE UNIQUE INDEX IF NOT EXISTS `permissions_code_unique` ON `permissions` (`code`);--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS `role_permissions` (
 	`role_id` text NOT NULL,
 	`permission_code` text NOT NULL,
 	PRIMARY KEY(`role_id`, `permission_code`),
@@ -34,14 +34,14 @@ CREATE TABLE `role_permissions` (
 	FOREIGN KEY (`permission_code`) REFERENCES `permissions`(`code`) ON UPDATE no action ON DELETE no action
 );
 --> statement-breakpoint
-CREATE TABLE `roles` (
+CREATE TABLE IF NOT EXISTS `roles` (
 	`id` text PRIMARY KEY NOT NULL,
 	`name` text NOT NULL,
 	`created_at` integer DEFAULT (unixepoch()) NOT NULL
 );
 --> statement-breakpoint
-CREATE UNIQUE INDEX `roles_name_unique` ON `roles` (`name`);--> statement-breakpoint
-CREATE TABLE `user_permissions` (
+CREATE UNIQUE INDEX IF NOT EXISTS `roles_name_unique` ON `roles` (`name`);--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS `user_permissions` (
 	`user_id` text NOT NULL,
 	`permission_code` text NOT NULL,
 	`granted` integer NOT NULL,

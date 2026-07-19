@@ -12,13 +12,13 @@ export { PropertiesPanel } from './components/PropertiesPanel';
 export default definePlugin({
   manifest: {
     id: 'core.editor',
-    name: 'Grid Editor',
+    name: 'Composition Editor',
     apiVersion: 1,
     category: 'core',
-    description: 'Harmony grid editor with DSL support.',
+    description: 'Harmony composition editor with DSL support.',
   },
   contributes: {
-    routes: [{ path: '/grids/:id', element: () => import('./EditorPage') }],
-    navItems: [{ section: 'create', label: 'Editor', to: '/grids/new', icon: 'edit' }],
+    routes: [{ path: '/compositions/:id', element: () => import('./EditorPage') }],
+    navItems: [{ section: 'create', label: 'Editor', to: '/compositions/new', icon: 'edit' }],
   },
 });

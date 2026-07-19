@@ -11,6 +11,7 @@ import {
   Drum,
   Music,
   Piano,
+  Shield,
   ChevronDown,
   ChevronRight,
   type LucideIcon,
@@ -48,6 +49,7 @@ const CONSTRUCTOR_ITEMS: AdminSubItem[] = [
 
 const SECTIONS: AdminSection[] = [
   { label: 'Пользователи', to: '/admin/users', icon: Users },
+  { label: 'Роли', to: '/admin/roles', icon: Shield },
   { label: 'Каталог', to: '/admin/catalog', icon: Library },
   { label: 'Упражнения', to: '/admin/exercises', icon: Dumbbell },
   { label: 'Теория', to: '/admin/theory', icon: BookOpen },

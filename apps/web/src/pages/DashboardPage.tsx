@@ -10,7 +10,7 @@ export function DashboardPage() {
         <h1 className="text-3xl font-semibold tracking-tight">Jazz Trainer</h1>
       </div>
       <p className="max-w-md text-muted-foreground">
-        Гармонические сетки, точный метроном, DSL для гармонии и генераторы прогрессий. Каркас
+        Гармонические композиции, точный метроном, DSL для гармонии и генераторы прогрессий. Каркас
         приложения — публичный каталог и плеер появятся в следующих фичах.
       </p>
       <Link

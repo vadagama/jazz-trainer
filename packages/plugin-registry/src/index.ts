@@ -2,7 +2,9 @@ import type { PluginDefinition } from '@jazz/plugin-sdk';
 import coreEditor from '@jazz/plugin-core-editor';
 import corePlayer from '@jazz/plugin-core-player';
 import catalog from '@jazz/plugin-catalog';
+import adminCatalog from '@jazz/plugin-admin-catalog';
 import adminUsers from '@jazz/plugin-admin-users';
+import adminRoles from '@jazz/plugin-admin-roles';
 import adminContent from '@jazz/plugin-admin-content';
 import adminFlags from '@jazz/plugin-admin-flags';
 import adminAssets from '@jazz/plugin-admin-assets';
@@ -53,7 +55,9 @@ export const PLUGINS: PluginDefinition[] = [
   coreEditor,
   corePlayer,
   catalog,
+  adminCatalog,
   adminUsers,
+  adminRoles,
   adminContent,
   adminFlags,
   adminAssets,

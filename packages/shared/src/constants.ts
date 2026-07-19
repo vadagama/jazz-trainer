@@ -54,3 +54,59 @@ export type AuthProvider = (typeof AUTH_PROVIDERS)[number];
 /** Global playback styles — affects all instruments (drums, piano, bass, rhodes). */
 export const STYLES = ['swing', 'bossa', 'funk', 'latin', 'ballad'] as const;
 export type Style = (typeof STYLES)[number];
+
+// ── Catalog (§2.2, §2.3 CATALOG-VISION.md) ─────────────────────────────────
+
+/** Composition difficulty levels for the public catalog. */
+export const CATALOG_DIFFICULTIES = ['beginner', 'intermediate', 'advanced'] as const;
+export type CatalogDifficulty = (typeof CATALOG_DIFFICULTIES)[number];
+
+/** Moderation status for catalog entries. */
+export const CATALOG_MODERATION_STATUS = ['draft', 'approved', 'modified', 'rejected'] as const;
+export type CatalogModerationStatus = (typeof CATALOG_MODERATION_STATUS)[number];
+
+/** Tag categories for the controlled catalog vocabulary (§2.3). */
+export const CATALOG_TAG_CATEGORIES = ['genre', 'harmony', 'ensemble', 'method'] as const;
+export type CatalogTagCategory = (typeof CATALOG_TAG_CATEGORIES)[number];
+
+export interface CatalogTagDef {
+  value: string;
+  category: CatalogTagCategory;
+}
+
+/**
+ * Closed tag vocabulary for the catalog (§2.3).
+ * Controlled by admins via the admin-catalog plugin; not free-form.
+ */
+export const CATALOG_TAGS: readonly CatalogTagDef[] = [
+  // Genre / Form
+  { value: 'jazz-standard', category: 'genre' },
+  { value: 'blues', category: 'genre' },
+  { value: 'bebop', category: 'genre' },
+  { value: 'modal', category: 'genre' },
+  { value: 'latin', category: 'genre' },
+  { value: 'funk', category: 'genre' },
+  { value: 'ballad', category: 'genre' },
+  { value: 'free-jazz', category: 'genre' },
+  // Harmony
+  { value: 'ii-V-I', category: 'harmony' },
+  { value: 'rhythm-changes', category: 'harmony' },
+  { value: 'coltrane-changes', category: 'harmony' },
+  { value: 'modal-interchange', category: 'harmony' },
+  { value: 'turnaround', category: 'harmony' },
+  { value: 'tritone-sub', category: 'harmony' },
+  { value: 'secondary-dominants', category: 'harmony' },
+  { value: 'diminished', category: 'harmony' },
+  // Ensemble
+  { value: 'trio', category: 'ensemble' },
+  { value: 'quartet', category: 'ensemble' },
+  { value: 'quintet', category: 'ensemble' },
+  { value: 'big-band', category: 'ensemble' },
+  { value: 'solo-piano', category: 'ensemble' },
+  // Method
+  { value: 'voice-leading', category: 'method' },
+  { value: 'rootless-voicings', category: 'method' },
+  { value: 'shell-voicings', category: 'method' },
+  { value: 'walking-bass', category: 'method' },
+  { value: 'comping', category: 'method' },
+] as const;

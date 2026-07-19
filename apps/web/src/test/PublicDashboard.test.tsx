@@ -3,8 +3,8 @@ import { screen, waitFor } from '@testing-library/react';
 import { CatalogPage } from '@jazz/plugin-catalog';
 import { renderWithProviders } from './renderWithProviders';
 
-vi.mock('@/queries/usePublicGrids', () => ({
-  usePublicGrids: vi.fn(),
+vi.mock('@/queries/usePublicCompositions', () => ({
+  usePublicCompositions: vi.fn(),
 }));
 
 vi.mock('@/queries/useAuth', () => ({
@@ -12,8 +12,8 @@ vi.mock('@/queries/useAuth', () => ({
   useLogout: vi.fn(() => ({ mutate: vi.fn() })),
 }));
 
-import { usePublicGrids } from '@/queries/usePublicGrids';
-const mockUsePublicGrids = vi.mocked(usePublicGrids);
+import { usePublicCompositions } from '@/queries/usePublicCompositions';
+const mockUsePublicCompositions = vi.mocked(usePublicCompositions);
 
 const MOCK_GRIDS = [
   {
@@ -32,11 +32,11 @@ describe('CatalogPage', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('renders without auth (guest)', async () => {
-    mockUsePublicGrids.mockReturnValue({
+    mockUsePublicCompositions.mockReturnValue({
       data: MOCK_GRIDS,
       isLoading: false,
       isError: false,
-    } as unknown as ReturnType<typeof usePublicGrids>);
+    } as unknown as ReturnType<typeof usePublicCompositions>);
 
     renderWithProviders(<CatalogPage />);
 
@@ -47,22 +47,22 @@ describe('CatalogPage', () => {
   });
 
   it('shows spinner while loading', () => {
-    mockUsePublicGrids.mockReturnValue({
+    mockUsePublicCompositions.mockReturnValue({
       data: undefined,
       isLoading: true,
       isError: false,
-    } as unknown as ReturnType<typeof usePublicGrids>);
+    } as unknown as ReturnType<typeof usePublicCompositions>);
 
     renderWithProviders(<CatalogPage />);
     expect(document.querySelector('.animate-spin')).toBeTruthy();
   });
 
   it('shows empty state when no grids', async () => {
-    mockUsePublicGrids.mockReturnValue({
+    mockUsePublicCompositions.mockReturnValue({
       data: [],
       isLoading: false,
       isError: false,
-    } as unknown as ReturnType<typeof usePublicGrids>);
+    } as unknown as ReturnType<typeof usePublicCompositions>);
 
     renderWithProviders(<CatalogPage />);
     await waitFor(() => {

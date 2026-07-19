@@ -7,9 +7,12 @@ import { authPlugin } from './plugins/auth.plugin.js';
 import { rbacPlugin } from './plugins/rbac.plugin.js';
 import { authRoutes, type AuthRoutesOptions } from './routes/auth.routes.js';
 import { settingsRoutes } from './routes/settings.routes.js';
-import { gridsRoutes } from './routes/grids.routes.js';
+import { compositionsRoutes } from './routes/compositions.routes.js';
+import { catalogRoutes } from './routes/catalog.routes.js';
+import { adminCatalogRoutes } from './routes/admin-catalog.routes.js';
 import { patternsRoutes } from './routes/patterns.routes.js';
 import { adminUsersRoutes } from './routes/admin-users.routes.js';
+import { adminRolesRoutes } from './routes/admin-roles.routes.js';
 import { devRoutes } from './routes/dev.routes.js';
 
 export interface BuildServerOptions {
@@ -58,9 +61,12 @@ export async function buildServer(opts: BuildServerOptions = {}): Promise<Fastif
   app.get('/api/health', async () => ({ status: 'ok' }));
   await app.register(authRoutes, { db, config, exchangeGoogleCode: opts.exchangeGoogleCode });
   await app.register(settingsRoutes, { prefix: '/api', db });
-  await app.register(gridsRoutes, { prefix: '/api', db });
+  await app.register(compositionsRoutes, { prefix: '/api', db });
+  await app.register(catalogRoutes, { prefix: '/api', db });
+  await app.register(adminCatalogRoutes, { prefix: '/api', db });
   await app.register(patternsRoutes, { prefix: '/api' });
   await app.register(adminUsersRoutes, { prefix: '/api', db });
+  await app.register(adminRolesRoutes, { prefix: '/api', db });
   if (config.authDevMode) {
     await app.register(devRoutes, { prefix: '/api' });
   }

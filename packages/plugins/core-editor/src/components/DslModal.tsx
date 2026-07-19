@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { parseGrid, serializeGrid } from '@jazz/music-core';
-import type { GridContent } from '@jazz/shared';
+import type { CompositionContent } from '@jazz/shared';
 import {
   Dialog,
   DialogContent,
@@ -14,8 +14,8 @@ import {
 
 interface DslModalProps {
   open: boolean;
-  content: GridContent;
-  onImport: (content: GridContent) => void;
+  content: CompositionContent;
+  onImport: (content: CompositionContent) => void;
   onClose: () => void;
 }
 

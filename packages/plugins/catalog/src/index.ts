@@ -2,7 +2,9 @@ import { definePlugin } from '@jazz/plugin-sdk';
 
 // Re-export components for use by tests and other consumers
 export { SearchBar } from './components/SearchBar';
-export { PublicGridCard } from './components/PublicGridCard';
+export { PublicCompositionCard } from './components/PublicCompositionCard';
+export { CatalogFilters } from './components/CatalogFilters';
+export { CatalogFeatured } from './components/CatalogFeatured';
 export { LikeButton } from './components/LikeButton';
 export { CopyToMineButton } from './components/CopyToMineButton';
 export { CatalogPage } from './CatalogPage';
@@ -13,10 +15,10 @@ export default definePlugin({
     name: 'Catalog',
     apiVersion: 1,
     category: 'core',
-    description: 'Public grid catalog and dashboard.',
+    description: 'Public composition catalog with rich filters, search and featured block.',
   },
   contributes: {
     routes: [{ path: '/', element: () => import('./CatalogPage') }],
-    navItems: [{ section: 'main', label: 'Dashboard', to: '/', icon: 'home' }],
+    navItems: [{ section: 'main', label: 'Каталог', to: '/', icon: 'library' }],
   },
 });

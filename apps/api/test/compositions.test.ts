@@ -19,7 +19,7 @@ async function login(agent: Agent, email: string, name: string): Promise<void> {
 
 // ── Public endpoints (no auth) ────────────────────────────────────────────
 
-describe('GET /api/grids/public — public catalog', () => {
+describe('GET /api/compositions/public — public catalog', () => {
   let app: FastifyInstance;
   let agent: Agent;
 
@@ -31,15 +31,15 @@ describe('GET /api/grids/public — public catalog', () => {
 
   afterEach(() => app.close());
 
-  it('returns demo grids without auth (200)', async () => {
-    const res = await agent.get('/api/grids/public');
+  it('returns demo compositions without auth (200)', async () => {
+    const res = await agent.get('/api/compositions/public');
     expect(res.status).toBe(200);
     expect(Array.isArray(res.body)).toBe(true);
     expect(res.body.length).toBeGreaterThanOrEqual(5);
   });
 
   it('each entry has expected shape', async () => {
-    const res = await agent.get('/api/grids/public');
+    const res = await agent.get('/api/compositions/public');
     const first = res.body[0];
     expect(first).toMatchObject({
       id: expect.any(String),
@@ -51,7 +51,7 @@ describe('GET /api/grids/public — public catalog', () => {
   });
 
   it('filters by name with ?q=', async () => {
-    const res = await agent.get('/api/grids/public?q=Blues');
+    const res = await agent.get('/api/compositions/public?q=Blues');
     expect(res.status).toBe(200);
     expect(res.body.every((g: { name: string }) => g.name.toLowerCase().includes('blues'))).toBe(
       true,
@@ -59,22 +59,22 @@ describe('GET /api/grids/public — public catalog', () => {
   });
 
   it('supports sort=name', async () => {
-    const res = await agent.get('/api/grids/public?sort=name');
+    const res = await agent.get('/api/compositions/public?sort=name');
     expect(res.status).toBe(200);
     const names: string[] = res.body.map((g: { name: string }) => g.name);
     expect(names).toEqual([...names].sort());
   });
 
   it('supports limit + offset pagination', async () => {
-    const page1 = await agent.get('/api/grids/public?limit=2&offset=0');
-    const page2 = await agent.get('/api/grids/public?limit=2&offset=2');
+    const page1 = await agent.get('/api/compositions/public?limit=2&offset=0');
+    const page2 = await agent.get('/api/compositions/public?limit=2&offset=2');
     expect(page1.body).toHaveLength(2);
     expect(page2.body).toHaveLength(2);
     expect(page1.body[0].id).not.toBe(page2.body[0].id);
   });
 });
 
-describe('GET /api/grids/public/:id', () => {
+describe('GET /api/compositions/public/:id', () => {
   let app: FastifyInstance;
   let agent: Agent;
 
@@ -86,8 +86,8 @@ describe('GET /api/grids/public/:id', () => {
 
   afterEach(() => app.close());
 
-  it('returns full public grid with content + owner', async () => {
-    const res = await agent.get('/api/grids/public/demo-blues-f');
+  it('returns full public composition with content + owner', async () => {
+    const res = await agent.get('/api/compositions/public/demo-blues-f');
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject({
       id: 'demo-blues-f',
@@ -99,7 +99,7 @@ describe('GET /api/grids/public/:id', () => {
   });
 
   it('returns 404 for unknown id', async () => {
-    const res = await agent.get('/api/grids/public/does-not-exist');
+    const res = await agent.get('/api/compositions/public/does-not-exist');
     expect(res.status).toBe(404);
   });
 });
@@ -124,7 +124,7 @@ describe('GET /api/patterns and POST /api/generate', () => {
     expect(res.body[0]).toMatchObject({ id: expect.any(String), name: expect.any(String) });
   });
 
-  it('POST /api/generate returns GridContent without auth', async () => {
+  it('POST /api/generate returns CompositionContent without auth', async () => {
     const patternsRes = await agent.get('/api/patterns');
     const patternId = patternsRes.body[0].id;
 
@@ -158,12 +158,12 @@ describe('permission: anonymous gets 401 on protected endpoints', () => {
 
   afterEach(() => app.close());
 
-  it('GET /api/grids/mine → 401', async () => {
-    expect((await agent.get('/api/grids/mine')).status).toBe(401);
+  it('GET /api/compositions/mine → 401', async () => {
+    expect((await agent.get('/api/compositions/mine')).status).toBe(401);
   });
 
-  it('POST /api/grids → 401', async () => {
-    expect((await agent.post('/api/grids').send({ name: 'x' })).status).toBe(401);
+  it('POST /api/compositions → 401', async () => {
+    expect((await agent.post('/api/compositions').send({ name: 'x' })).status).toBe(401);
   });
 
   it('GET /api/settings → 401', async () => {
@@ -174,12 +174,12 @@ describe('permission: anonymous gets 401 on protected endpoints', () => {
     expect((await agent.patch('/api/settings').send({ bpm: 100 })).status).toBe(401);
   });
 
-  it('POST /api/grids/:id/like → 401', async () => {
-    expect((await agent.post('/api/grids/demo-blues-f/like')).status).toBe(401);
+  it('POST /api/compositions/:id/like → 401', async () => {
+    expect((await agent.post('/api/compositions/demo-blues-f/like')).status).toBe(401);
   });
 
-  it('DELETE /api/grids/:id/like → 401', async () => {
-    expect((await agent.delete('/api/grids/demo-blues-f/like')).status).toBe(401);
+  it('DELETE /api/compositions/:id/like → 401', async () => {
+    expect((await agent.delete('/api/compositions/demo-blues-f/like')).status).toBe(401);
   });
 });
 
@@ -219,9 +219,9 @@ describe('GET + PATCH /api/settings', () => {
   });
 });
 
-// ── Grids CRUD ─────────────────────────────────────────────────────────────
+// ── Compositions CRUD ─────────────────────────────────────────────────────────────
 
-describe('grids CRUD (authenticated)', () => {
+describe('compositions CRUD (authenticated)', () => {
   let app: FastifyInstance;
   let agent: Agent;
 
@@ -234,64 +234,64 @@ describe('grids CRUD (authenticated)', () => {
 
   afterEach(() => app.close());
 
-  it('POST /api/grids creates a private grid (201)', async () => {
-    const res = await agent.post('/api/grids').send({ name: 'My grid' });
+  it('POST /api/compositions creates a private grid (201)', async () => {
+    const res = await agent.post('/api/compositions').send({ name: 'My composition' });
     expect(res.status).toBe(201);
-    expect(res.body).toMatchObject({ name: 'My grid', visibility: 'private' });
+    expect(res.body).toMatchObject({ name: 'My composition', visibility: 'private' });
     expect(res.body.id).toBeTruthy();
   });
 
-  it('GET /api/grids/mine lists own grids', async () => {
-    await agent.post('/api/grids').send({ name: 'Grid A' });
-    await agent.post('/api/grids').send({ name: 'Grid B' });
-    const res = await agent.get('/api/grids/mine');
+  it('GET /api/compositions/mine lists own grids', async () => {
+    await agent.post('/api/compositions').send({ name: 'Composition A' });
+    await agent.post('/api/compositions').send({ name: 'Composition B' });
+    const res = await agent.get('/api/compositions/mine');
     expect(res.status).toBe(200);
-    expect(res.body.some((g: { name: string }) => g.name === 'Grid A')).toBe(true);
-    expect(res.body.some((g: { name: string }) => g.name === 'Grid B')).toBe(true);
+    expect(res.body.some((g: { name: string }) => g.name === 'Composition A')).toBe(true);
+    expect(res.body.some((g: { name: string }) => g.name === 'Composition B')).toBe(true);
   });
 
-  it('GET /api/grids/:id returns own grid', async () => {
-    const created = await agent.post('/api/grids').send({ name: 'Test' });
-    const res = await agent.get(`/api/grids/${created.body.id}`);
+  it('GET /api/compositions/:id returns own composition', async () => {
+    const created = await agent.post('/api/compositions').send({ name: 'Test' });
+    const res = await agent.get(`/api/compositions/${created.body.id}`);
     expect(res.status).toBe(200);
     expect(res.body.name).toBe('Test');
   });
 
-  it('PATCH /api/grids/:id updates own grid', async () => {
-    const created = await agent.post('/api/grids').send({ name: 'Original' });
-    const res = await agent.patch(`/api/grids/${created.body.id}`).send({ name: 'Updated' });
+  it('PATCH /api/compositions/:id updates own composition', async () => {
+    const created = await agent.post('/api/compositions').send({ name: 'Original' });
+    const res = await agent.patch(`/api/compositions/${created.body.id}`).send({ name: 'Updated' });
     expect(res.status).toBe(200);
     expect(res.body.name).toBe('Updated');
   });
 
-  it('PATCH /api/grids/:id can set visibility to public', async () => {
-    const created = await agent.post('/api/grids').send({ name: 'Will be public' });
-    const res = await agent.patch(`/api/grids/${created.body.id}`).send({ visibility: 'public' });
+  it('PATCH /api/compositions/:id can set visibility to public', async () => {
+    const created = await agent.post('/api/compositions').send({ name: 'Will be public' });
+    const res = await agent.patch(`/api/compositions/${created.body.id}`).send({ visibility: 'public' });
     expect(res.status).toBe(200);
     expect(res.body.visibility).toBe('public');
   });
 
-  it('DELETE /api/grids/:id removes own grid (204)', async () => {
-    const created = await agent.post('/api/grids').send({ name: 'To delete' });
-    const del = await agent.delete(`/api/grids/${created.body.id}`);
+  it('DELETE /api/compositions/:id removes own grid (204)', async () => {
+    const created = await agent.post('/api/compositions').send({ name: 'To delete' });
+    const del = await agent.delete(`/api/compositions/${created.body.id}`);
     expect(del.status).toBe(204);
-    const get = await agent.get(`/api/grids/${created.body.id}`);
+    const get = await agent.get(`/api/compositions/${created.body.id}`);
     expect(get.status).toBe(404);
   });
 
-  it('POST /api/grids requires name', async () => {
-    const res = await agent.post('/api/grids').send({});
+  it('POST /api/compositions requires name', async () => {
+    const res = await agent.post('/api/compositions').send({});
     expect(res.status).toBe(400);
   });
 });
 
 // ── Permission isolation (user A vs user B) ────────────────────────────────
 
-describe('permission isolation: user B cannot access user A grids', () => {
+describe('permission isolation: user B cannot access user A compositions', () => {
   let app: FastifyInstance;
   let agentA: Agent;
   let agentB: Agent;
-  let gridId: string;
+  let compositionId: string;
 
   beforeEach(async () => {
     const db = createTestDb();
@@ -304,36 +304,36 @@ describe('permission isolation: user B cannot access user A grids', () => {
     await login(agentA, 'alice@example.com', 'Alice');
     await login(agentB, 'bob@example.com', 'Bob');
 
-    const res = await agentA.post('/api/grids').send({ name: "Alice's grid" });
-    gridId = res.body.id;
+    const res = await agentA.post('/api/compositions').send({ name: "Alice's composition" });
+    compositionId = res.body.id;
   });
 
   afterEach(() => app.close());
 
-  it("GET /api/grids/:id — B gets 404 on A's private grid", async () => {
-    expect((await agentB.get(`/api/grids/${gridId}`)).status).toBe(404);
+  it("GET /api/compositions/:id — B gets 404 on A's private composition", async () => {
+    expect((await agentB.get(`/api/compositions/${compositionId}`)).status).toBe(404);
   });
 
-  it("PATCH /api/grids/:id — B gets 404 on A's private grid", async () => {
-    expect((await agentB.patch(`/api/grids/${gridId}`).send({ name: 'Hacked' })).status).toBe(404);
+  it("PATCH /api/compositions/:id — B gets 404 on A's private composition", async () => {
+    expect((await agentB.patch(`/api/compositions/${compositionId}`).send({ name: 'Hacked' })).status).toBe(404);
   });
 
-  it("DELETE /api/grids/:id — B gets 404 on A's private grid", async () => {
-    expect((await agentB.delete(`/api/grids/${gridId}`)).status).toBe(404);
+  it("DELETE /api/compositions/:id — B gets 404 on A's private composition", async () => {
+    expect((await agentB.delete(`/api/compositions/${compositionId}`)).status).toBe(404);
   });
 
-  it("GET /api/grids/:id/export — B gets 404 on A's private grid", async () => {
-    expect((await agentB.get(`/api/grids/${gridId}/export`)).status).toBe(404);
+  it("GET /api/compositions/:id/export — B gets 404 on A's private composition", async () => {
+    expect((await agentB.get(`/api/compositions/${compositionId}/export`)).status).toBe(404);
   });
 
-  it("B cannot copy A's private grid", async () => {
-    expect((await agentB.post(`/api/grids/${gridId}/copy`).send({})).status).toBe(404);
+  it("B cannot copy A's private composition", async () => {
+    expect((await agentB.post(`/api/compositions/${compositionId}/copy`).send({})).status).toBe(404);
   });
 
-  it('B can copy a public grid (creates private copy with sourceGridId)', async () => {
-    const res = await agentB.post('/api/grids/demo-blues-f/copy').send({});
+  it('B can copy a public composition (creates private copy with sourceCompositionId)', async () => {
+    const res = await agentB.post('/api/compositions/demo-blues-f/copy').send({});
     expect(res.status).toBe(201);
-    expect(res.body.sourceGridId).toBe('demo-blues-f');
+    expect(res.body.sourceCompositionId).toBe('demo-blues-f');
     expect(res.body.visibility).toBe('private');
   });
 });
@@ -353,24 +353,24 @@ describe('import / export DSL', () => {
 
   afterEach(() => app.close());
 
-  it('POST /api/grids/import creates grid from DSL (201)', async () => {
+  it('POST /api/compositions/import creates grid from DSL (201)', async () => {
     const res = await agent
-      .post('/api/grids/import')
+      .post('/api/compositions/import')
       .send({ name: 'Imported', dsl: 'Dm7 | G7 | Cmaj7 |' });
     expect(res.status).toBe(201);
     expect(res.body.content.bars).toHaveLength(3);
   });
 
-  it('POST /api/grids/import returns 400 for empty DSL', async () => {
-    const res = await agent.post('/api/grids/import').send({ name: 'Bad', dsl: '' });
+  it('POST /api/compositions/import returns 400 for empty DSL', async () => {
+    const res = await agent.post('/api/compositions/import').send({ name: 'Bad', dsl: '' });
     expect(res.status).toBe(400);
   });
 
-  it('GET /api/grids/:id/export returns DSL string', async () => {
+  it('GET /api/compositions/:id/export returns DSL string', async () => {
     const imp = await agent
-      .post('/api/grids/import')
+      .post('/api/compositions/import')
       .send({ name: 'Round trip', dsl: 'Dm7 | G7 | Cmaj7 |' });
-    const exp = await agent.get(`/api/grids/${imp.body.id}/export`);
+    const exp = await agent.get(`/api/compositions/${imp.body.id}/export`);
     expect(exp.status).toBe(200);
     expect(typeof exp.body.dsl).toBe('string');
     expect(exp.body.dsl).toContain('Dm7');
@@ -392,42 +392,42 @@ describe('likes', () => {
 
   afterEach(() => app.close());
 
-  it('POST /api/grids/:id/like increments likeCount', async () => {
-    const res = await agent.post('/api/grids/demo-blues-f/like');
+  it('POST /api/compositions/:id/like increments likeCount', async () => {
+    const res = await agent.post('/api/compositions/demo-blues-f/like');
     expect(res.status).toBe(200);
     expect(res.body.likedByMe).toBe(true);
     expect(res.body.likeCount).toBe(1);
   });
 
   it('POST like is idempotent (does not double-count)', async () => {
-    await agent.post('/api/grids/demo-blues-f/like');
-    const res = await agent.post('/api/grids/demo-blues-f/like');
+    await agent.post('/api/compositions/demo-blues-f/like');
+    const res = await agent.post('/api/compositions/demo-blues-f/like');
     expect(res.body.likeCount).toBe(1);
   });
 
-  it('DELETE /api/grids/:id/like decrements likeCount', async () => {
-    await agent.post('/api/grids/demo-blues-f/like');
-    const res = await agent.delete('/api/grids/demo-blues-f/like');
+  it('DELETE /api/compositions/:id/like decrements likeCount', async () => {
+    await agent.post('/api/compositions/demo-blues-f/like');
+    const res = await agent.delete('/api/compositions/demo-blues-f/like');
     expect(res.status).toBe(200);
     expect(res.body.likedByMe).toBe(false);
     expect(res.body.likeCount).toBe(0);
   });
 
   it('DELETE like is idempotent (does not go below 0)', async () => {
-    const res = await agent.delete('/api/grids/demo-blues-f/like');
+    const res = await agent.delete('/api/compositions/demo-blues-f/like');
     expect(res.status).toBe(200);
     expect(res.body.likeCount).toBe(0);
   });
 
   it('likedByMe is true in public catalog after liking', async () => {
-    await agent.post('/api/grids/demo-blues-f/like');
-    const catalog = await agent.get('/api/grids/public');
+    await agent.post('/api/compositions/demo-blues-f/like');
+    const catalog = await agent.get('/api/compositions/public');
     const entry = catalog.body.find((g: { id: string }) => g.id === 'demo-blues-f');
     expect(entry?.likedByMe).toBe(true);
   });
 
-  it('POST like on private/non-existent grid returns 404', async () => {
-    const res = await agent.post('/api/grids/does-not-exist/like');
+  it('POST like on private/non-existent composition returns 404', async () => {
+    const res = await agent.post('/api/compositions/does-not-exist/like');
     expect(res.status).toBe(404);
   });
 });
