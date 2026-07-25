@@ -8,7 +8,9 @@
     "paths": {
       "@jazz/plugin-sdk": ["../../plugin-sdk/src/index.ts"],
       "@jazz/music-core": ["../../music-core/src/index.ts"],
+      "@jazz/music-core/*": ["../../music-core/src/*"],
       "@jazz/shared": ["../../shared/src/index.ts"],
+      "@jazz/shared/*": ["../../shared/src/*"],
       "@jazz/ui": ["../../ui/src/index.ts"]
     }
   },

@@ -74,7 +74,7 @@ export default tseslint.config(
         // должен идти ДО общего packages/plugins, чтобы получить собственный тип).
         {
           type: 'packages/plugins/admin-constructor-shared',
-          pattern: 'packages/plugins/admin-constructor-shared/*',
+          pattern: 'packages/plugins/admin/admin-constructor-shared/*',
         },
         { type: 'packages/plugins', pattern: 'packages/plugins/**/*' },
         { type: 'packages/adapters', pattern: 'packages/adapters/**/*' },

@@ -8,7 +8,7 @@ import {
   instrumentDefaultsFor,
   type InstrumentId,
 } from '@jazz/music-core';
-import { useSettings, useUpdateSettings, useInstruments } from '@jazz/plugin-sdk';
+import { useEffectiveSettings, useUpdateSettings, useInstruments } from '@jazz/plugin-sdk';
 import {
   Card,
   CardContent,
@@ -206,7 +206,7 @@ function DrumsTile({
   instrumentId: 'drums' | 'jazz-drum-kit' | 'funk-drum-kit' | string;
   style: Style;
 }) {
-  const { data: settings } = useSettings();
+  const settings = useEffectiveSettings();
   const mutate = useUpdateSettings();
   const instruments = useInstruments();
   const prefix = 'drums';
@@ -282,7 +282,7 @@ function DrumsTile({
 // ─── Bass ──────────────────────────────────────────────────────────────────────
 
 function BassTile({ style }: { style: Style }) {
-  const { data: settings } = useSettings();
+  const settings = useEffectiveSettings();
   const mutate = useUpdateSettings();
   const prefix = 'bass';
 
@@ -462,7 +462,7 @@ function BassTile({ style }: { style: Style }) {
 // ─── Piano ─────────────────────────────────────────────────────────────────────
 
 function PianoTile({ style }: { style: Style }) {
-  const { data: settings } = useSettings();
+  const settings = useEffectiveSettings();
   const mutate = useUpdateSettings();
   const prefix = 'piano';
 
@@ -676,7 +676,7 @@ function PianoTile({ style }: { style: Style }) {
 // ─── Rhodes ────────────────────────────────────────────────────────────────────
 
 function RhodesTile({ style }: { style: Style }) {
-  const { data: settings } = useSettings();
+  const settings = useEffectiveSettings();
   const mutate = useUpdateSettings();
   const prefix = 'rhodes';
 
@@ -762,7 +762,7 @@ function GuitarTile({
   instrumentId: 'guitar' | 'electric-guitar';
   style: Style;
 }) {
-  const { data: settings } = useSettings();
+  const settings = useEffectiveSettings();
   const mutate = useUpdateSettings();
   const prefix = 'guitar';
 
@@ -802,7 +802,7 @@ function GuitarTile({
 // ─── Percussion ────────────────────────────────────────────────────────────────
 
 function PercussionTile({ style }: { style: Style }) {
-  const { data: settings } = useSettings();
+  const settings = useEffectiveSettings();
   const mutate = useUpdateSettings();
   const prefix = 'percussion';
 
@@ -867,7 +867,7 @@ function useSimpleName(id: string): string {
 }
 
 function SimpleTile({ instrumentId, style }: { instrumentId: InstrumentId; style: Style }) {
-  const { data: settings } = useSettings();
+  const settings = useEffectiveSettings();
   const mutate = useUpdateSettings();
   const prefix = useInstrumentPrefix(instrumentId);
 

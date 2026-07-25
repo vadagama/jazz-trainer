@@ -1,0 +1,14 @@
+{
+  "extends": "../../../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "noEmit": true,
+    "baseUrl": ".",
+    "paths": {
+      "@jazz/music-core": ["../../../music-core/src/index.ts"],
+      "@jazz/plugin-sdk": ["../../../plugin-sdk/src/index.ts"],
+      "@jazz/shared": ["../../../shared/src/index.ts"]
+    }
+  },
+  "include": ["src"]
+}

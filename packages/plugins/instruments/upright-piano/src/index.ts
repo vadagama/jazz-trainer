@@ -11,7 +11,7 @@ export {
 
 // Piano pattern engine (molecules/cells/organisms) lives entirely in
 // @jazz/music-core — import PianoPatternEngine, PIANO_MOLECULES, etc. from
-// there directly. See docs/PIANO-EXTENDED-ARRANGEMENT-2.md.
+// there directly. See docs/Instruments/PIANO-EXTENDED-ARRANGEMENT.md.
 
 export default definePlugin({
   manifest: {

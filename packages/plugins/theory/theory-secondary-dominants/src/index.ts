@@ -10,7 +10,7 @@ export default definePlugin({
   },
   contributes: {
     routes: [
-      { path: '/theory/secondary-dominants', element: () => import('./SecondaryDominantsPage') },
+      { path: '/theory/secondary-dominants', element: () => import('./SecondaryDominantsPage'), requires: 'theory:secondaryDominants' },
     ],
     navItems: [
       {

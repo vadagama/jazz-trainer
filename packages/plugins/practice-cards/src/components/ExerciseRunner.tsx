@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import {
   usePluginTransport,
   usePlaybackStore,
@@ -9,8 +9,7 @@ import {
   type KeyboardMode,
 } from '@jazz/plugin-sdk';
 import type { Section, Style, TimeSignatureString } from '@jazz/shared';
-import { parseTimeSignature } from '@jazz/music-core';
-import type { InputPort } from '@jazz/music-core';
+import { parseTimeSignature, applyStyleDefaults, type InputPort } from '@jazz/music-core';
 import type { SoloInstrumentManifest } from '@jazz/music-core/audio';
 import { SOLO_INSTRUMENT_MANIFESTS } from '@jazz/music-core/audio';
 import {
@@ -213,10 +212,15 @@ export function ExerciseRunner({ bars, config, onComplete, onReconfigure }: Exer
   // ── Sections ───────────────────────────────────────────────────────────
   const sections = buildSections(bars, config.infinite, timeSignature);
 
+  const resolvedSettings = useMemo(
+    () => applyStyleDefaults({ ...serverSettings, style: effectiveStyle }, effectiveStyle),
+    [serverSettings, effectiveStyle],
+  );
+
   // ── Transport ──────────────────────────────────────────────────────────
   const transport = usePluginTransport({
     settings: {
-      ...serverSettings,
+      ...resolvedSettings,
       bpm: effectiveBpm,
       volume: effectiveVolume,
       style: effectiveStyle,

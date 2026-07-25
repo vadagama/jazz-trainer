@@ -9,7 +9,7 @@ export default definePlugin({
     description: 'Лекция: тритоновая замена — замена доминанты (G7 → D♭7).',
   },
   contributes: {
-    routes: [{ path: '/theory/tritone-sub', element: () => import('./TritoneSubPage') }],
+    routes: [{ path: '/theory/tritone-sub', element: () => import('./TritoneSubPage'), requires: 'theory:tritoneSub' }],
     navItems: [
       { section: 'learn', label: 'Тритоновая замена', to: '/theory/tritone-sub', icon: 'music' },
     ],

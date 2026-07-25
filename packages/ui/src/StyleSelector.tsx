@@ -8,6 +8,8 @@ const STYLE_LABELS: Record<Style, string> = {
   funk: 'Funk',
   latin: 'Latin',
   ballad: 'Ballad',
+  blues: 'Blues',
+  soul: 'Soul',
 } as const;
 
 interface StyleSelectorProps {

@@ -9,7 +9,7 @@ export default definePlugin({
     description: 'Лекция: продвинутый блюз — гармонические усложнения блюзовой формы.',
   },
   contributes: {
-    routes: [{ path: '/theory/blues-advanced', element: () => import('./BluesAdvancedPage') }],
+    routes: [{ path: '/theory/blues-advanced', element: () => import('./BluesAdvancedPage'), requires: 'theory:bluesAdvanced' }],
     navItems: [
       { section: 'learn', label: 'Продвинутый блюз', to: '/theory/blues-advanced', icon: 'music' },
     ],

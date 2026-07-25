@@ -50,6 +50,8 @@ const STYLE_LABELS: Record<Style, string> = {
   funk: 'Funk',
   latin: 'Latin',
   ballad: 'Ballad',
+  blues: 'Blues',
+  soul: 'Soul',
 };
 
 const MODE_LABELS: Record<MetronomeMode, string> = {
@@ -505,7 +507,7 @@ export function SettingsPage() {
                     const enabled = e.target.checked;
                     mutate(
                       enabled
-                        ? { metronomeEnabled: true }
+                        ? { metronomeEnabled: true, ...(settings?.countIn === 0 ? { countIn: 1 } : {}) }
                         : { metronomeEnabled: false, countIn: 0 },
                     );
                   }}
