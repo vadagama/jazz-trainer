@@ -158,7 +158,7 @@ Live-нота извлекается без явного времени:
 
 ### P3-11 — Doc-drift
 - Комментарий `PlayerPage.tsx:326` «shown above toolbar» не соответствует факту (рендерится ниже) — поправится в P1-3.
-- `docs/MIDI_INSTRUMENT_ARCHITECTURE.md` описывает `MidiRecorder` (§6), `JamEval` (§7), Scene Presets (§10), MIDI Output (§3.7), но в коде ветки они не подключены (провайдер/хост их не используют).
+- `docs/ARCHIVE/MIDI_INSTRUMENT_ARCHITECTURE.md` описывает `MidiRecorder` (§6), `JamEval` (§7), Scene Presets (§10), MIDI Output (§3.7), но в коде ветки они не подключены (провайдер/хост их не используют).
 **План:** проставить статусы 🟢/🟡/🔴 по компонентам в архитектурном документе, чтобы исключить doc-drift (передать tech-writer).
 
 ---

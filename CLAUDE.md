@@ -22,8 +22,8 @@
 ### Добавить инструмент в аранжировку
 
 ```
-docs/MELODIC-PLUGIN.md                     ← спецификация pitched-инструмента
-docs/RHYTHMIC-PLUGIN.md                   ← спецификация unpitched-инструмента
+docs/Instruments/MELODIC-PLUGIN.md         ← спецификация pitched-инструмента
+docs/Instruments/RHYTHMIC-PLUGIN.md        ← спецификация unpitched-инструмента
 packages/music-core/src/audio/<имя>Instrument.ts ← эталон: rhodes/guitar/vibraphone/organ/clarinet
 packages/plugins/instruments/<имя>/       ← плагинная обёртка (рекомендовано)
 packages/music-core/src/styleProfile.ts   ← InstrumentId + INSTRUMENT_GROUPS
@@ -68,6 +68,8 @@ packages/shared/src/dto.ts                 ← Zod-DTO (контракт фро�
 ### RBAC / доступ / аудит
 
 ```
+docs/AUTH.md                               ← целевое решение: OAuth, Magic Link, Stripe, GDPR
+apps/api/src/routes/auth.routes.ts         ← OAuth-эндпоинты, Magic Link, сессии
 docs/ROLES.md                              ← каталог ролей и матрица разрешений
 apps/api/src/services/rbac.service.ts       ← permissions, resolvePermissions, resolveFlags
 apps/api/src/plugins/rbac.plugin.ts         ← middleware, requirePermission
@@ -101,7 +103,7 @@ README.md                                  ← первое знакомство
 docs/ARCHITECTURE_BASE.md                  ← текущая архитектура: слои, фазы, ограничения, ADR
 docs/ARCHITECTURE_VISION.md                ← целевое видение архитектуры
 docs/FUNCTIONS.md                          ← scope проекта
-docs/TECH_DEPT.md                          ← результат анализа (создаётся агентом)
+docs/ARCHIVE/TECH_DEPT.md                  ← результат анализа (создаётся агентом)
 eslint.config.js                           ← границы слоёв (boundaries)
 ```
 
@@ -112,7 +114,7 @@ eslint.config.js                           ← границы слоёв (bounda
 docs/ARCHITECTURE_BASE.md                  ← архитектура: слои, фазы, ограничения
 docs/FUNCTIONS.md                          ← текущие возможности
 docs/VISION.md                             ← текущее видение (если есть)
-docs/EXERSISE-PLAN.md                      ← план задач (упражнения)
+docs/ARCHIVE/EXERSISE-PLAN.md                      ← план задач (упражнения)
 docs/ARCHIVE/                              ← архив предыдущих VISION и PLAN
 ```
 
@@ -225,13 +227,13 @@ npm run typecheck && npm run lint && npm run test
 Multi-chord бары (механизм)      → docs/CHORDS.md + music-core/src/audio/chordTimeline.ts
 Работа с транспортом/звуком      → music-core/src/audio/TransportEngine
 Инструменты (бас, барабаны)      → music-core/src/audio/BassInstrument, DrumInstrument
-Спецификация инструментов         → docs/BASS.md, docs/PIANO.md, docs/RHODES.md, docs/DRUMS.md, docs/GUITAR.md, docs/VIBRAPHONE.md, docs/ORGAN.md, docs/PERCUSSION.md, docs/CLARINET.md, docs/ALL_CHORDS.md
-Барабанные киты (плагины)         → packages/plugins/instruments/{jazz,funk}-drum-kit/ + docs/DRUMS.md
-Бас (плагин: upright + electric)  → packages/plugins/instruments/bass/ + docs/BASS.md
+Спецификация инструментов         → docs/Instruments/BASS.md, docs/Instruments/PIANO.md, docs/Instruments/RHODES.md, docs/Instruments/DRUMS.md, docs/Instruments/GUITAR.md, docs/Instruments/VIBRAPHONE.md, docs/Instruments/ORGAN.md, docs/Instruments/PERCUSSION.md, docs/Instruments/CLARINET.md, docs/Instruments/ALL_CHORDS.md
+Барабанные киты (плагины)         → packages/plugins/instruments/{jazz,funk}-drum-kit/ + docs/Instruments/DRUMS.md
+Бас (плагин: upright + electric)  → packages/plugins/instruments/bass/ + docs/Instruments/BASS.md
 Бас step engine (выбор ступеней) → music-core/src/audio/bassStepEngine.ts (молекула хранит артикуляцию, движок выбирает step по tension/style)
-Метроном (плагин)                  → packages/plugins/instruments/metronome/ + docs/METRONOME-VISION.md, docs/METRONOME-PLAN.md
-Упражнения (practice-cards)       → docs/EXERSISE-VISION.md, docs/EXERSISE-ARCHITECTURE.md
-Лады и гаммы                      → docs/SCALES-VISION.md + music-core/src/chords/modes.ts
+Метроном (плагин)                  → packages/plugins/instruments/metronome/ + docs/Instruments/METRONOME-VISION.md, docs/Instruments/METRONOME-PLAN.md
+Упражнения (practice-cards)       → docs/ARCHIVE/EXERSISE-VISION.md, docs/ARCHIVE/EXERSISE-ARCHITECTURE.md
+Лады и гаммы                      → docs/ARCHIVE/SCALES-VISION.md + music-core/src/chords/modes.ts
 Rhodes (комплементарный слой)    → music-core/src/audio/rhodesInstrument.ts, rhodesVoicing.ts, pianoRhodesInteraction.ts
 Grand Piano (основной компинг)   → music-core/src/audio/pianoInstrument.ts, pianoComping.ts, pianoVoicing.ts
 Guitar (гитара)                  → music-core/src/audio/guitarInstrument.ts, guitarManifest.ts, electricGuitarManifest.ts
@@ -242,19 +244,21 @@ MIDI-оценка                      → music-core/src/audio/midiEval
 DTO / валидация API              → shared/src/dto.ts
 Константы (звуки, типы)          → shared/src/constants.ts
 Схема БД                         → apps/api/src/db/schema.ts
-Auth / сессии                    → apps/api/src/routes/auth.routes.ts
+Auth / сессии / OAuth / Magic Link → docs/AUTH.md + apps/api/src/routes/auth.routes.ts
+Платежи / подписки (Stripe)      → docs/AUTH.md (целевое) + apps/api/src/routes/billing.routes.ts (план)
+GDPR / защита данных              → docs/AUTH.md (целевое) + apps/api/src/routes/gdpr.routes.ts (план)
 Настройки пользователя           → apps/api/src/routes/settings.routes.ts
 RBAC-мидлварь                    → apps/api/src/plugins/rbac.plugin.ts
 Роли и разрешения                → docs/ROLES.md
 Аудит                            → apps/api/src/services/audit.service.ts
 ESLint-границы                   → eslint.config.js (секция boundaries)
 Алиасы                           → tsconfig.base.json + vite.config.ts + vitest.config.ts
-Спецификация инструментов         → docs/MELODIC-PLUGIN.md (pitched), docs/RHYTHMIC-PLUGIN.md (unpitched)
+Спецификация инструментов         → docs/Instruments/MELODIC-PLUGIN.md (pitched), docs/Instruments/RHYTHMIC-PLUGIN.md (unpitched)
 Архитектура (текущая + ADR)         → docs/ARCHITECTURE_BASE.md
 Архитектура (целевое видение)        → docs/ARCHITECTURE_VISION.md
 Возможности сервиса              → docs/FUNCTIONS.md
 Продуктовое видение              → docs/VISION.md + .agents/skills/analyst/SKILL.md
-План задач                       → docs/EXERSISE-PLAN.md (упражнения), docs/ARCHIVE/ (архив)
+План задач                       → docs/ARCHIVE/EXERSISE-PLAN.md (упражнения), docs/ARCHIVE/ (архив)
 Архив версий                     → docs/ARCHIVE/
 Анализ качества кода             → .agents/skills/software-architect/SKILL.md
 Обновление документации          → .agents/skills/tech-writer/SKILL.md

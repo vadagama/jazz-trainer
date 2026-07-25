@@ -158,7 +158,7 @@ Jazz Trainer — браузерный тренажёр джазовой гарм
 - Затакт (count-in) с точками-светофором
 - Сводка после упражнения: количество карточек, время, настройки
 - Генераторы упражнений: `chordExercise` (аккорды), `scaleExercise` (гаммы)
-- Подробнее: `docs/EXERSISE-VISION.md`, `docs/EXERSISE-ARCHITECTURE.md`
+- Подробнее: `docs/ARCHIVE/EXERSISE-VISION.md`, `docs/ARCHIVE/EXERSISE-ARCHITECTURE.md`
 
 ---
 
@@ -247,6 +247,25 @@ Jazz Trainer — браузерный тренажёр джазовой гарм
 - Валидация клеток (lane count, velocity, clip overlap, moleculeId)
 - Сохранение в localStorage (autosave) + публикация в код (dev-режим)
 
+### 5.8. Настройки по умолчанию 🟢
+
+**Плагин:** `admin-defaults` | **Маршрут:** `/admin/defaults` | **Permission:** `system:settings:write`
+
+«Заводские настройки» — глобальные значения, которые становятся стартовой точкой для двух категорий пользователей:
+
+1. **Новые зарегистрированные пользователи** — при создании аккаунта наследуют значения из `default_settings` (через `ensureUserSettings`).
+2. **Гостевые (незарегистрированные) пользователи** — получают дефолты через `useEffectiveSettings`, где `default_settings` служит базовым слоем под их локальными правками.
+
+После инициализации пользователь волен менять любые значения через `/settings`; его индивидуальные настройки не перезаписываются при обновлении дефолтов.
+
+- **Singleton-таблица** `default_settings` — зеркало `user_settings` без персональных полей (`practiceCards`, `midiDeviceId`, `midiChannel`)
+- **Per-style значения** (включение/громкость/паттерн/voicing) не дублируются в БД — резолвятся на лету из `StyleProfile` через `applyStyleDefaults`, как и у `user_settings`. Админ переопределяет через `perStyleOverrides`
+- **Вкладки UI:** Основные (bpm, volume, метроном, swing), Инструменты (по стилям — таблица с Enabled/Volume/Pattern/Voicing), Системные (соло, ducking)
+- **Сброс к заводским** — восстанавливает профильные дефолты (очищает `perStyleOverrides`)
+- **API:** `GET/PATCH/PUT /api/admin/default-settings` (RBAC), `POST /api/admin/default-settings/reset`, публичный `GET /api/default-settings` (для гостей, кеш 60с)
+- **RBAC:** просмотр — `system:settings:read` (есть у `admin` и `super_admin`), редактирование — `system:settings:write` (только `super_admin`)
+- **Аудит:** все мутации пишутся в `audit_log` (`default_settings.update`, `default_settings.reset`)
+
 ---
 
 ## 6. Аудио и MIDI
@@ -256,7 +275,7 @@ Jazz Trainer — браузерный тренажёр джазовой гарм
 - Звуковой движок на базе Tone.js (Web Audio API)
 - Изолирован от ядра через `AudioPort` (адаптер `tone-audio-adapter`)
 - Заменяем на другой движок без изменения ядра и плагинов
-- **Спецификации:** `docs/MELODIC-PLUGIN.md` (создание pitched-инструмента), `docs/RHYTHMIC-PLUGIN.md` (создание unpitched-инструмента)
+- **Спецификации:** `docs/Instruments/MELODIC-PLUGIN.md` (создание pitched-инструмента), `docs/Instruments/RHYTHMIC-PLUGIN.md` (создание unpitched-инструмента)
 
 ### 6.2. MIDI-ввод и вывод 🟢
 
@@ -275,7 +294,7 @@ Jazz Trainer — браузерный тренажёр джазовой гарм
 - **Sub-bar chord resolution:** корректная смена аккордов внутри такта (multi-chord бары)
 - Встроенный рандомайзер с вариантами approach (chromatic above/below, diatonic), sparse-режимом и октавными прыжками
 - Использование сэмплов контрабаса
-- Подробнее: `docs/BASS.md`
+- Подробнее: `docs/Instruments/BASS.md`
 
 **Барабаны (DrumInstrument) 🟢:**
 
@@ -287,7 +306,7 @@ Jazz Trainer — браузерный тренажёр джазовой гарм
 - Humanization (timing jitter ±3–8 мс)
 - Crash-accent overlay каждые N тактов
 - Generic pattern engine (pattern/engine.ts) — переиспользуется перкуссией и фортепиано
-- Подробнее: `docs/DRUMS.md`
+- Подробнее: `docs/Instruments/DRUMS.md`
 
 **Grand Piano (PianoInstrument) 🟢:**
 
@@ -302,7 +321,7 @@ Jazz Trainer — браузерный тренажёр джазовой гарм
 - Альтернативный pattern-engine: organism → sectionMap → cell → molecule → atom (VoiceRole вместо интервалов)
 - 4 уровня напряжения (Tension): clean/moderate/altered/max — управление надстройками (upper structures)
 - Конструктор фортепиано: `/admin/piano-constructor` для изучения и редактирования паттернов
-- Подробнее: `docs/PIANO.md`
+- Подробнее: `docs/Instruments/PIANO.md`
 
 **Rhodes (RhodesInstrument) 🟢 — комплементарный слой:**
 
@@ -312,7 +331,7 @@ Jazz Trainer — браузерный тренажёр джазовой гарм
 - Верхний регистр (C4–C6), избегает конфликтов с Grand Piano (проверка `avoidConflicts`)
 - Rootless voicings (shell2, rootless3, rootless4)
 - Voice leading между аккордами (включая внутритактовые переходы)
-- Подробнее: `docs/RHODES.md`
+- Подробнее: `docs/Instruments/RHODES.md`
 
 **Гитара (GuitarInstrument) 🟢:**
 
@@ -321,14 +340,14 @@ Jazz Trainer — браузерный тренажёр джазовой гарм
 - Стиле-специфичные паттерны: bossa-comping (bossa), funk-chops (funk), freddie-green (swing)
 - Два типа voicing'ов: open (5–6 нот) и jazz (shell: root, 3, 7)
 - Диапазон E2–E5, голосоведение в пределах гитарного диапазона
-- Подробнее: `docs/GUITAR.md`
+- Подробнее: `docs/Instruments/GUITAR.md`
 
 **Электрогитара (ElectricGuitarManifest) 🟢:**
 
 - Использует тот же `GuitarInstrument`, электрические сэмплы
 - 2 velocity-слоя (normal — полный пик, soft — finger/palm mute)
 - Диапазон E2–C#6, per-style defaults для всех 5 стилей
-- Подробнее: `docs/GUITAR.md`
+- Подробнее: `docs/Instruments/GUITAR.md`
 
 **Вибрафон (VibraphoneInstrument) 🟢:**
 
@@ -336,7 +355,7 @@ Jazz Trainer — браузерный тренажёр джазовой гарм
 - Использует voicing-движок Grand Piano (rootless3/rootless4)
 - Стиле-зависимый выбор паттерна: latin → inserts, остальные → pads
 - Humanization ±6 мс, velocity variation ±0.05
-- Подробнее: `docs/VIBRAPHONE.md`
+- Подробнее: `docs/Instruments/VIBRAPHONE.md`
 
 **Орган (OrganInstrument) 🟢:**
 
@@ -344,7 +363,7 @@ Jazz Trainer — браузерный тренажёр джазовой гарм
 - Использует voicing-движок Grand Piano, плотность rootless4 по умолчанию
 - Стиле-зависимый выбор: funk → pads-stabs, остальные → pads
 - Humanization ±6 мс, velocity variation ±0.05
-- Подробнее: `docs/ORGAN.md`
+- Подробнее: `docs/Instruments/ORGAN.md`
 
 **Перкуссия (PercussionInstrument) 🟢:**
 
@@ -352,7 +371,7 @@ Jazz Trainer — браузерный тренажёр джазовой гарм
 - 16 звуков: core (conga high/low, timbales, cowbell, clave, shaker, guiro, triangle) + extended (bongo low, tumba, cabasa, tambourine, vibraslap, belltree, whistle, sleighBells)
 - Три паттерна: cascara-clave (latin/swing), bossa-texture, funk-accents
 - Humanization ±2–6 мс, per-sound настройки включения/громкости
-- Подробнее: `docs/PERCUSSION.md`
+- Подробнее: `docs/Instruments/PERCUSSION.md`
 
 **Кларнет (ClarinetInstrument) 🟢:**
 
@@ -361,7 +380,7 @@ Jazz Trainer — браузерный тренажёр джазовой гарм
 - Использует voicing-движок Grand Piano для пула нот
 - Стиле-зависимый выбор: swing/funk/ballad → counterpoint, bossa/latin → melodicPhrases
 - Humanization ±6 мс, velocity variation ±0.05
-- Подробнее: `docs/CLARINET.md`
+- Подробнее: `docs/Instruments/CLARINET.md`
 
 ### 6.5. Сольные инструменты (SoloInstrument) 🟢
 
@@ -371,7 +390,7 @@ Jazz Trainer — браузерный тренажёр джазовой гарм
 - 7 доступных тембров: synthDefault, pianoUprightSolo, pianoSalamanderSolo, rhodesJRhodes3cSolo, clarinetSolo, vibraphoneSolo, guitarNylonSolo
 - `SoloInstrumentManifest` — самодостаточное описание (аналог `InstrumentManifest` для сольных)
 - `SoloInstrumentHost` — управление жизненным циклом (создание, переключение, dispose)
-- Подробнее: `docs/MIDI_INSTRUMENT_ARCHITECTURE.md`, `docs/MIDI_ARCHITECTURE.md`
+- Подробнее: `docs/ARCHIVE/MIDI_INSTRUMENT_ARCHITECTURE.md`, `docs/ARCHIVE/MIDI_ARCHITECTURE.md`
 
 ### 6.6. MIDI-визуализатор 🟢
 
@@ -392,7 +411,7 @@ Jazz Trainer — браузерный тренажёр джазовой гарм
 - Loop: зацикливание выбранного диапазона тактов
 - Предсчёт (count-in) с учётом режима метронома
 - **Глобальный стиль:** единый `Style` (swing, bossa, funk, latin, ballad) управляет поведением всех инструментов (Bass, Piano, Rhodes, Drums) согласованно
-- **StyleProfile:** централизованные стиле-специфичные настройки — ростеры инструментов, per-instrument дефолты, ансамбли-предсеты (duet/trio/quartet/quintet/full). Подробнее: `docs/STYLES.md`
+- **StyleProfile:** централизованные стиле-специфичные настройки — ростеры инструментов, per-instrument дефолты, ансамбли-предсеты (duet/trio/quartet/quintet/full). Подробнее: `docs/Genres/STYLES.md`
 - **Sub-bar chord timeline:** `ChordTimeline` поддерживает multi-chord бары (несколько аккордов в одном такте), инструменты резолвят аккорд на момент звучания ноты. Подробнее: `docs/CHORDS.md`
 
 ---
