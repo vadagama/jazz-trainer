@@ -26,6 +26,8 @@ const STYLE_DEFAULT_MODE: Record<Style, RhodesCompingMode> = {
   funk: 'oneand-three',
   latin: 'one-twoand-four',
   ballad: 'wholeNotes',
+  blues: 'halfNotes',
+  soul: 'oneand-three',
 };
 
 export class RhodesInstrument implements Instrument {

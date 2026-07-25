@@ -31,7 +31,7 @@ export type { VoiceRole, TensionLevel } from './pianoVoicing.js';
 /**
  * PianoAtom sound = {@link VoiceRole} — which part of the current chord voicing
  * to play (resolved from the real chord + density + tension at playback time),
- * NOT a baked-in interval or MIDI note. See docs/PIANO-EXTENDED-ARRANGEMENT-2.md.
+ * NOT a baked-in interval or MIDI note. See docs/Instruments/PIANO-EXTENDED-ARRANGEMENT.md.
  */
 export type PianoAtom = Atom<VoiceRole>;
 export type PianoHit = Hit<VoiceRole>;

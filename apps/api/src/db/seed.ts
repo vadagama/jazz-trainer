@@ -2,16 +2,22 @@ import { eq } from 'drizzle-orm';
 import {
   users,
   userSettings,
+  defaultSettings,
   harmonyCompositions,
   catalogTags,
   roles,
   permissions,
   rolePermissions,
   userRoles,
+  featureAccess,
 } from './schema.js';
 import type { DrizzleDb } from './index.js';
 import type { CompositionContent } from '@jazz/shared';
-import { CATALOG_TAGS } from '@jazz/shared';
+import {
+  CATALOG_TAGS,
+  ALL_FEATURE_CODES,
+  DEFAULT_ACTIVE_FEATURE_CODES,
+} from '@jazz/shared';
 import { RBAC_PERMISSIONS, RBAC_ROLES } from '../services/rbac.service.js';
 
 const SYSTEM_USER_ID = 'system';
@@ -93,6 +99,25 @@ export function seedDevUser(db: DrizzleDb): void {
     .run();
 }
 
+// ── Default settings singleton (ADMIN-DEFAULT-INSTRUMENT-SETTINGS) ─────────
+
+/**
+ * Idempotent: create the default_settings singleton row (id = 1).
+ *
+ * Holds the "factory" starting point inherited by new users
+ * (`ensureUserSettings`) and guest users (`useEffectiveSettings`). Per-style
+ * instrument values are NOT seeded — they resolve at runtime via
+ * `applyStyleDefaults` from `StyleProfile`. `onConflictDoNothing` keeps admin
+ * edits across server restarts.
+ */
+export function seedDefaultSettings(db: DrizzleDb): void {
+  const now = Date.now();
+  db.insert(defaultSettings)
+    .values({ id: 1, createdAt: now, updatedAt: now })
+    .onConflictDoNothing()
+    .run();
+}
+
 // ── RBAC seed (Phase R) ─────────────────────────────────────────────────────
 
 const SEED_PERMISSIONS = [
@@ -115,10 +140,10 @@ const SEED_PERMISSIONS = [
   RBAC_PERMISSIONS.CATALOG_STATS_READ,
   RBAC_PERMISSIONS.ROLES_READ,
   RBAC_PERMISSIONS.ROLES_WRITE,
-  RBAC_PERMISSIONS.EXERCISES_READ,
+  // Granular exercise/theory feature codes — single source: @jazz/shared
+  ...ALL_FEATURE_CODES,
   RBAC_PERMISSIONS.COMPOSITIONS_READ,
   RBAC_PERMISSIONS.COMPOSITIONS_WRITE,
-  RBAC_PERMISSIONS.THEORY_READ,
   RBAC_PERMISSIONS.PROFILE_READ,
   RBAC_PERMISSIONS.PROFILE_WRITE,
   RBAC_PERMISSIONS.SYSTEM_SETTINGS_READ,
@@ -151,10 +176,9 @@ const ADMIN_PERMISSIONS = [
   RBAC_PERMISSIONS.CATALOG_TAGS_WRITE,
   RBAC_PERMISSIONS.CATALOG_STATS_READ,
   RBAC_PERMISSIONS.ROLES_READ,
-  RBAC_PERMISSIONS.EXERCISES_READ,
+  ...DEFAULT_ACTIVE_FEATURE_CODES,
   RBAC_PERMISSIONS.COMPOSITIONS_READ,
   RBAC_PERMISSIONS.COMPOSITIONS_WRITE,
-  RBAC_PERMISSIONS.THEORY_READ,
   RBAC_PERMISSIONS.PROFILE_READ,
   RBAC_PERMISSIONS.PROFILE_WRITE,
   RBAC_PERMISSIONS.SYSTEM_SETTINGS_READ,
@@ -162,10 +186,9 @@ const ADMIN_PERMISSIONS = [
 
 const USER_PERMISSIONS = [
   RBAC_PERMISSIONS.CATALOG_READ,
-  RBAC_PERMISSIONS.EXERCISES_READ,
+  ...DEFAULT_ACTIVE_FEATURE_CODES,
   RBAC_PERMISSIONS.COMPOSITIONS_READ,
   RBAC_PERMISSIONS.COMPOSITIONS_WRITE,
-  RBAC_PERMISSIONS.THEORY_READ,
   RBAC_PERMISSIONS.PROFILE_READ,
   RBAC_PERMISSIONS.PROFILE_WRITE,
 ];
@@ -234,13 +257,50 @@ export function seedRbac(db: DrizzleDb): void {
 
     for (const permCode of roleDef.permissions) {
       const allRps = db
-        .select()
+        .select({ permissionCode: rolePermissions.permissionCode })
         .from(rolePermissions)
         .where(eq(rolePermissions.roleId, roleDef.id))
         .all();
-      const hasPerm = allRps.some((rp) => rp.permissionCode === permCode);
-      if (hasPerm) continue;
+      if (allRps.some((rp) => rp.permissionCode === permCode)) continue;
       db.insert(rolePermissions).values({ roleId: roleDef.id, permissionCode: permCode }).run();
+    }
+  }
+
+  // Default feature visibility rows depend on roles + permissions just seeded.
+  seedFeatureStates(db);
+}
+
+// ── Feature access defaults ────────────────────────────────────────────────
+
+/**
+ * Idempotent: insert default 3-state feature visibility rows
+ * (FEATURES-VISION.md §4). Uses onConflictDoNothing — feature states changed
+ * by an admin via /api/admin/feature-* survive server restarts.
+ *
+ * - feature_access: global "Public" column (applies to anonymous users too);
+ * - role_permissions.state: per-role visibility. Only seeded for roles that
+ *   already exist (seedRbac calls this at the end; bare test DBs without
+ *   seeded roles get just the global rows). Codes and default-active set come
+ *   from @jazz/shared — the single source of truth.
+ */
+export function seedFeatureStates(db: DrizzleDb): void {
+  for (const code of ALL_FEATURE_CODES) {
+    const state: 'active' | 'inactive' = DEFAULT_ACTIVE_FEATURE_CODES.includes(code)
+      ? 'active'
+      : 'inactive';
+    db.insert(featureAccess).values({ featureCode: code, state }).onConflictDoNothing().run();
+  }
+
+  const roleRows = db.select({ id: roles.id }).from(roles).all();
+  for (const role of roleRows) {
+    for (const code of ALL_FEATURE_CODES) {
+      const state: 'active' | 'inactive' = DEFAULT_ACTIVE_FEATURE_CODES.includes(code)
+        ? 'active'
+        : 'inactive';
+      db.insert(rolePermissions)
+        .values({ roleId: role.id, permissionCode: code, state })
+        .onConflictDoNothing()
+        .run();
     }
   }
 }
@@ -642,26 +702,7 @@ export function seedDemoCompositions(db: DrizzleDb): void {
       .from(harmonyCompositions)
       .where(eq(harmonyCompositions.id, demo.id))
       .get();
-    if (existing) {
-      db.update(harmonyCompositions)
-        .set({
-          name: demo.name,
-          content: JSON.stringify(demo.content),
-          description: demo.description,
-          difficulty: demo.difficulty,
-          tags: JSON.stringify(demo.tags),
-          author: demo.author,
-          recommendedStyle: demo.recommendedStyle,
-          recommendedTempo: demo.recommendedTempo,
-          timeSignature: demo.timeSignature,
-          key: demo.key,
-          moderationStatus: demo.moderationStatus ?? 'approved',
-          updatedAt: now,
-        })
-        .where(eq(harmonyCompositions.id, demo.id))
-        .run();
-      continue;
-    }
+    if (existing) continue;
     db.insert(harmonyCompositions)
       .values({
         id: demo.id,
@@ -727,6 +768,7 @@ if (process.argv[1] && import.meta.url.endsWith(process.argv[1].replace(/\\/g, '
   seedRbac(db);
   seedCatalogTags(db);
   seedDemoCompositions(db);
+  seedDefaultSettings(db);
   if (config.authDevMode) seedDevUser(db);
   console.log('[db] seed complete');
 }

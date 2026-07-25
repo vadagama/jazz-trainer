@@ -550,6 +550,137 @@ const BALLAD_PROFILE: StyleProfile = {
   },
 };
 
+const BLUES_PROFILE: StyleProfile = {
+  id: 'blues',
+  name: 'Blues',
+  description:
+    'Блюзовый шаффл: свинговые барабаны, walking-бас, блюзовые voicing на фортепиано.',
+  defaultTempo: 90,
+  swingRatio: 0.67,
+  timeSignaturePresets: ['4/4', '12/8'],
+  defaultVariants: {
+    drums: 'jazz-drum-kit',
+    bass: 'upright-bass',
+    piano: 'piano',
+    rhodes: 'rhodes',
+    guitar: 'electric-guitar',
+    winds: 'trumpet-muted',
+    percussion: 'percussion',
+    synth: 'organ',
+  },
+  instrumentRoster: {
+    required: ['drums', 'bass', 'piano'],
+    recommended: ['guitar', 'winds'],
+    optional: ['synth', 'rhodes'],
+    hidden: ['percussion'],
+  },
+  instrumentDefaults: {
+    drums: { enabled: true, volume: 0.7, pattern: 'swing' },
+    'jazz-drum-kit': { enabled: true, volume: 0.7, pattern: 'swing' },
+    'funk-drum-kit': { ...OFF },
+    'upright-bass': {
+      enabled: true,
+      volume: 0.75,
+      pattern: 'walking',
+      tension: 'moderate',
+      humanize: { phrasing: 'expressive' },
+    },
+    'electric-bass': { ...OFF },
+    piano: {
+      enabled: true,
+      volume: 0.7,
+      pattern: 'swing-sparse',
+      voicing: 'shell2',
+      tension: 'altered',
+      humanize: {
+        timingJitterMs: 'low',
+        velocityVariation: 'medium',
+        chordSpreadMs: 'low',
+        phrasing: 'expressive',
+        humanizeTiming: 'slight-lag',
+      },
+    },
+    'upright-piano': { ...OFF },
+    rhodes: { enabled: false, volume: 0.55, pattern: 'rhodes-swing-form', voicing: 'shell2' },
+    guitar: { ...OFF },
+    'electric-guitar': { enabled: false, volume: 0.65, pattern: 'blues' },
+    vibraphone: { enabled: false, volume: 0.55, pattern: 'pads' },
+    organ: { enabled: false, volume: 0.6, pattern: 'pads' },
+    clarinet: { enabled: false, volume: 0.6, pattern: 'counterpoint' },
+    percussion: { ...OFF },
+    'trumpet-muted': { enabled: false, volume: 0.65, pattern: 'melodic' },
+    flute: { ...OFF },
+  },
+};
+
+const SOUL_PROFILE: StyleProfile = {
+  id: 'soul',
+  name: 'Soul',
+  description:
+    'Соул-грув: Rhodes — ведущий гармонический, прямой бит, электрический бас.',
+  defaultTempo: 100,
+  swingRatio: 0.5,
+  timeSignaturePresets: ['4/4'],
+  defaultVariants: {
+    drums: 'funk-drum-kit',
+    bass: 'electric-bass',
+    piano: 'piano',
+    rhodes: 'rhodes',
+    guitar: 'electric-guitar',
+    winds: 'trumpet-muted',
+    percussion: 'percussion',
+    synth: 'organ',
+  },
+  instrumentRoster: {
+    required: ['drums', 'bass', 'rhodes'],
+    recommended: ['piano', 'synth'],
+    optional: ['guitar', 'winds', 'percussion'],
+    hidden: [],
+  },
+  instrumentDefaults: {
+    drums: { enabled: true, volume: 0.7, pattern: 'funk' },
+    'jazz-drum-kit': { ...OFF },
+    'funk-drum-kit': { enabled: true, volume: 0.75, pattern: 'funk' },
+    'upright-bass': { ...OFF },
+    'electric-bass': {
+      enabled: true,
+      volume: 0.8,
+      pattern: 'funk',
+      tension: 'moderate',
+      humanize: { phrasing: 'tight' },
+    },
+    piano: {
+      enabled: false,
+      volume: 0.6,
+      pattern: 'beginner-safe',
+      voicing: 'rootless4',
+      tension: 'moderate',
+      humanize: {
+        timingJitterMs: 'low',
+        velocityVariation: 'medium',
+        chordSpreadMs: 'low',
+        phrasing: 'expressive',
+        humanizeTiming: 'medium-lag',
+      },
+    },
+    'upright-piano': { ...OFF },
+    rhodes: {
+      enabled: true,
+      volume: 0.7,
+      pattern: 'rhodes-swing-form',
+      voicing: 'rootless4',
+    },
+    guitar: { ...OFF },
+    'electric-guitar': { enabled: false, volume: 0.6, pattern: 'funk' },
+    vibraphone: { enabled: false, volume: 0.55, pattern: 'pads' },
+    organ: { enabled: false, volume: 0.6, pattern: 'pads' },
+    clarinet: { ...OFF },
+    percussion: { enabled: false, volume: 0.5 },
+    'trumpet-muted': { enabled: false, volume: 0.6, pattern: 'melodic' },
+    flute: { ...OFF },
+  },
+};
+
 // ─── Registry ─────────────────────────────────────────────────────────────────
 
 const STYLE_PROFILES: Record<Style, StyleProfile> = {
@@ -558,6 +689,8 @@ const STYLE_PROFILES: Record<Style, StyleProfile> = {
   funk: FUNK_PROFILE,
   latin: LATIN_PROFILE,
   ballad: BALLAD_PROFILE,
+  blues: BLUES_PROFILE,
+  soul: SOUL_PROFILE,
 };
 
 // ─── Ensemble presets ─────────────────────────────────────────────────────────
@@ -787,12 +920,104 @@ const BALLAD_ENSEMBLES: StyleEnsembles = {
   },
 };
 
+const BLUES_ENSEMBLES: StyleEnsembles = {
+  duet: {
+    instruments: {
+      piano: { enabled: true, volume: 0.7 },
+      'upright-bass': { enabled: true, volume: 0.75 },
+    },
+  },
+  trio: {
+    instruments: {
+      'jazz-drum-kit': { enabled: true, volume: 0.7 },
+      piano: { enabled: true, volume: 0.7 },
+      'upright-bass': { enabled: true, volume: 0.75 },
+    },
+  },
+  quartet: {
+    instruments: {
+      'jazz-drum-kit': { enabled: true, volume: 0.7 },
+      piano: { enabled: true, volume: 0.7 },
+      'upright-bass': { enabled: true, volume: 0.75 },
+      'electric-guitar': { enabled: true, volume: 0.65 },
+    },
+  },
+  quintet: {
+    instruments: {
+      'jazz-drum-kit': { enabled: true, volume: 0.7 },
+      piano: { enabled: true, volume: 0.7 },
+      'upright-bass': { enabled: true, volume: 0.75 },
+      'electric-guitar': { enabled: true, volume: 0.65 },
+      organ: { enabled: true, volume: 0.6 },
+    },
+  },
+  full: {
+    instruments: {
+      'jazz-drum-kit': { enabled: true, volume: 0.7 },
+      'upright-bass': { enabled: true, volume: 0.75 },
+      piano: { enabled: true, volume: 0.7 },
+      'electric-guitar': { enabled: true, volume: 0.65 },
+      organ: { enabled: true, volume: 0.6 },
+      'trumpet-muted': { enabled: true, volume: 0.65 },
+      vibraphone: { enabled: true, volume: 0.55 },
+      clarinet: { enabled: true, volume: 0.6 },
+    },
+  },
+};
+
+const SOUL_ENSEMBLES: StyleEnsembles = {
+  duet: {
+    instruments: {
+      rhodes: { enabled: true, volume: 0.7 },
+      'electric-bass': { enabled: true, volume: 0.8 },
+    },
+  },
+  trio: {
+    instruments: {
+      'funk-drum-kit': { enabled: true, volume: 0.75 },
+      'electric-bass': { enabled: true, volume: 0.8 },
+      rhodes: { enabled: true, volume: 0.7 },
+    },
+  },
+  quartet: {
+    instruments: {
+      'funk-drum-kit': { enabled: true, volume: 0.75 },
+      'electric-bass': { enabled: true, volume: 0.8 },
+      rhodes: { enabled: true, volume: 0.7 },
+      piano: { enabled: true, volume: 0.6 },
+    },
+  },
+  quintet: {
+    instruments: {
+      'funk-drum-kit': { enabled: true, volume: 0.75 },
+      'electric-bass': { enabled: true, volume: 0.8 },
+      rhodes: { enabled: true, volume: 0.7 },
+      piano: { enabled: true, volume: 0.6 },
+      organ: { enabled: true, volume: 0.6 },
+    },
+  },
+  full: {
+    instruments: {
+      'funk-drum-kit': { enabled: true, volume: 0.75 },
+      'electric-bass': { enabled: true, volume: 0.8 },
+      rhodes: { enabled: true, volume: 0.7 },
+      piano: { enabled: true, volume: 0.6 },
+      organ: { enabled: true, volume: 0.6 },
+      'electric-guitar': { enabled: true, volume: 0.6 },
+      'trumpet-muted': { enabled: true, volume: 0.6 },
+      percussion: { enabled: true, volume: 0.5 },
+    },
+  },
+};
+
 const ENSEMBLE_PRESETS: Record<Style, StyleEnsembles> = {
   swing: SWING_ENSEMBLES,
   bossa: BOSSA_ENSEMBLES,
   funk: FUNK_ENSEMBLES,
   latin: LATIN_ENSEMBLES,
   ballad: BALLAD_ENSEMBLES,
+  blues: BLUES_ENSEMBLES,
+  soul: SOUL_ENSEMBLES,
 };
 
 // ─── Public API ───────────────────────────────────────────────────────────────

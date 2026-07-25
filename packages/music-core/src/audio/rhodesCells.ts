@@ -4,7 +4,7 @@
  * Each cell is a complementary texture layer: lanes have low-ish
  * probabilities so Rhodes sits behind the piano. `pads` is the backbone
  * (always or near-always on), `arpeggio` adds gentle motion, `insert`/`accent`
- * are sparse fills. See docs/RHODES.md.
+ * are sparse fills. See docs/Instruments/RHODES.md.
  */
 import type { RhodesCell, RhodesPatternStyle, Lane } from './rhodesPatternTypes.js';
 import { GENERATED_RHODES_CELLS } from './rhodesCellsGenerated.js';

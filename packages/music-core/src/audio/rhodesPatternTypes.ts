@@ -8,7 +8,7 @@
  * selecting the n-th note of the resolved voicing, enabling gentle arpeggio
  * lines and rolls that complement the piano comping.
  *
- * See docs/MELODIC-PLUGIN.md §4 and docs/RHODES.md.
+ * See docs/Instruments/MELODIC-PLUGIN.md §4 and docs/Instruments/RHODES.md.
  */
 
 import type {

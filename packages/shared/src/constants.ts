@@ -52,8 +52,73 @@ export const AUTH_PROVIDERS = ['google', 'dev', 'system'] as const;
 export type AuthProvider = (typeof AUTH_PROVIDERS)[number];
 
 /** Global playback styles — affects all instruments (drums, piano, bass, rhodes). */
-export const STYLES = ['swing', 'bossa', 'funk', 'latin', 'ballad'] as const;
+export const STYLES = ['swing', 'bossa', 'funk', 'latin', 'ballad', 'blues', 'soul'] as const;
 export type Style = (typeof STYLES)[number];
+
+// ── Exercise & Theory feature lists (admin feature-role matrix) ────────────
+
+export interface FeatureDef {
+  code: string;
+  label: string;
+}
+
+export const EXERCISE_FEATURES: readonly FeatureDef[] = [
+  { code: 'exercises:read', label: 'Все упражнения' },
+  { code: 'exercises:chords', label: 'Аккорды' },
+  { code: 'exercises:scales', label: 'Гаммы' },
+  { code: 'exercises:sequences', label: 'Секвенции' },
+  { code: 'exercises:enclosures', label: 'Опевания' },
+  { code: 'exercises:arpeggios', label: 'Арпеджио' },
+  { code: 'exercises:earTraining', label: 'Тренировка слуха' },
+  { code: 'exercises:rhythmDrills', label: 'Ритм' },
+  { code: 'exercises:sightReading', label: 'Чтение с листа' },
+] as const;
+
+export const THEORY_FEATURES: readonly FeatureDef[] = [
+  { code: 'theory:read', label: 'Каталог теории' },
+  { code: 'theory:chordTones', label: 'Аккордовые звуки' },
+  { code: 'theory:approachNotes', label: 'Подходные ноты' },
+  { code: 'theory:arpeggios', label: 'Арпеджио' },
+  { code: 'theory:rhythm', label: 'Ритм в джазе' },
+  { code: 'theory:groove', label: 'Грув' },
+  { code: 'theory:blues', label: 'Блюз' },
+  { code: 'theory:iiVI', label: 'ii–V–I прогрессия' },
+  { code: 'theory:voicings', label: 'Аккордовые голосоведения' },
+  { code: 'theory:voiceLeading', label: 'Голосоведение в ii–V–I' },
+  { code: 'theory:diminishedHarmony', label: 'Уменьшённая гармония' },
+  { code: 'theory:coltraneChanges', label: 'Coltrane Changes' },
+  { code: 'theory:rhythmChanges', label: 'Rhythm Changes' },
+  { code: 'theory:turnarounds', label: 'Обороты' },
+  { code: 'theory:tritoneSub', label: 'Тритоновая замена' },
+  { code: 'theory:modalInterchange', label: 'Ладовый обмен' },
+  { code: 'theory:secondaryDominants', label: 'Побочные доминанты' },
+  { code: 'theory:bluesAdvanced', label: 'Продвинутый блюз' },
+  { code: 'theory:scalesJazz', label: 'Джазовые гаммы' },
+] as const;
+
+/**
+ * Single source of truth for all granular feature codes (exercises + theory).
+ * Every consumer — seed, /api/auth/me resolver, admin feature-role matrix —
+ * must derive its code list from here, never hardcode its own copy.
+ */
+export const ALL_FEATURE_CODES: readonly string[] = [
+  ...EXERCISE_FEATURES.map((f) => f.code),
+  ...THEORY_FEATURES.map((f) => f.code),
+];
+
+/** Feature codes that are active by default (seeded); the rest seed as inactive. */
+export const DEFAULT_ACTIVE_FEATURE_CODES: readonly string[] = [
+  'exercises:read',
+  'theory:read',
+];
+
+/**
+ * Canonical list of system roles. The API layer maps these onto the
+ * UPPER_SNAKE `RBAC_ROLES` constant; the shared package cannot import from
+ * apps/api, so this list is the cross-layer source of truth.
+ */
+export const SYSTEM_ROLES = ['super_admin', 'admin', 'catalog_editor', 'user'] as const;
+export type SystemRole = (typeof SYSTEM_ROLES)[number];
 
 // ── Catalog (§2.2, §2.3 CATALOG-VISION.md) ─────────────────────────────────
 

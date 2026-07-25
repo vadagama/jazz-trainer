@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { CLICK_SOUNDS, METRONOME_MODES, STYLES, KEYS, TIME_SIGNATURES } from './constants.js';
+import { CLICK_SOUNDS, METRONOME_MODES, STYLES, KEYS, TIME_SIGNATURES, SYSTEM_ROLES } from './constants.js';
 
 /**
  * DTO types and Zod validation schemas for the auth + settings layer (F4).
@@ -318,6 +318,24 @@ export type UserSettingsDTO = z.infer<typeof UserSettingsDTOSchema>;
 export const UpdateSettingsSchema = UserSettingsDTOSchema.partial();
 export type UpdateSettingsInput = z.infer<typeof UpdateSettingsSchema>;
 
+// ── Default settings (admin "factory defaults" singleton) ──────────────────
+
+/**
+ * Factory defaults managed by admins and inherited by new users
+ * (`ensureUserSettings`) and guests (`useEffectiveSettings`). A subset of
+ * {@link UserSettingsDTOSchema} — personal fields (practice cards, MIDI
+ * device/channel) are excluded: they have no meaning as a global default.
+ */
+export const DefaultSettingsSchema = UserSettingsDTOSchema.omit({
+  practiceCards: true,
+  midiDeviceId: true,
+  midiChannel: true,
+});
+export type DefaultSettingsDTO = z.infer<typeof DefaultSettingsSchema>;
+
+export const UpdateDefaultSettingsSchema = DefaultSettingsSchema.partial();
+export type UpdateDefaultSettingsInput = z.infer<typeof UpdateDefaultSettingsSchema>;
+
 // ── Auth requests ─────────────────────────────────────────────────────────
 
 export const DevLoginSchema = z.object({
@@ -331,6 +349,7 @@ export type DevLoginInput = z.infer<typeof DevLoginSchema>;
 export const MeResponseSchema = z.object({
   user: UserDTOSchema.nullable(),
   permissions: z.array(z.string()),
+  inactivePermissions: z.array(z.string()),
   flags: z.record(z.boolean()),
 });
 export type MeResponse = z.infer<typeof MeResponseSchema>;
@@ -346,6 +365,7 @@ export const RoleDTOSchema = z.object({
   id: z.string(),
   name: z.string(),
   permissions: z.array(z.string()),
+  inactivePermissions: z.array(z.string()),
   createdAt: z.number(),
 });
 export type RoleDTO = z.infer<typeof RoleDTOSchema>;
@@ -353,12 +373,14 @@ export type RoleDTO = z.infer<typeof RoleDTOSchema>;
 export const CreateRoleSchema = z.object({
   name: z.string().min(1).max(64),
   permissions: z.array(z.string()),
+  inactivePermissions: z.array(z.string()).optional(),
 });
 export type CreateRoleInput = z.infer<typeof CreateRoleSchema>;
 
 export const UpdateRoleSchema = z.object({
   name: z.string().min(1).max(64).optional(),
   permissions: z.array(z.string()).optional(),
+  inactivePermissions: z.array(z.string()).optional(),
 });
 export type UpdateRoleInput = z.infer<typeof UpdateRoleSchema>;
 
@@ -366,3 +388,65 @@ export const UpdateUserRolesSchema = z.object({
   roleIds: z.array(z.string()),
 });
 export type UpdateUserRolesInput = z.infer<typeof UpdateUserRolesSchema>;
+
+// ── Feature flags ─────────────────────────────────────────────────────────
+
+export const FLAG_CATEGORIES = ['feature', 'experiment', 'maintenance', 'killswitch'] as const;
+export type FlagCategory = (typeof FLAG_CATEGORIES)[number];
+
+/**
+ * Role options for flag targeting in the admin UI.
+ * Alias of SYSTEM_ROLES — exporting RBAC_ROLES from the api package would break
+ * layer boundaries (shared cannot depend on apps/api).
+ */
+export const FLAG_TARGET_ROLES = SYSTEM_ROLES;
+export type FlagTargetRole = (typeof FLAG_TARGET_ROLES)[number];
+
+export const FeatureFlagDTOSchema = z.object({
+  key: z.string(),
+  description: z.string().nullable(),
+  category: z.enum(FLAG_CATEGORIES).nullable(),
+  enabled: z.boolean(),
+  roles: z.array(z.string()),
+  userIds: z.array(z.string()),
+  rolloutPercent: z.number().int().min(0).max(100).nullable(),
+  expiresAt: z.number().int().nullable(),
+  /** Computed: expiresAt < now */
+  isExpired: z.boolean(),
+  createdBy: z.string().nullable(),
+  updatedAt: z.number().nullable(),
+  updatedBy: z.string().nullable(),
+  createdAt: z.number(),
+});
+export type FeatureFlagDTO = z.infer<typeof FeatureFlagDTOSchema>;
+
+export const CreateFlagSchema = z.object({
+  key: z
+    .string()
+    .min(1)
+    .max(100)
+    .regex(/^[a-z0-9._-]+$/, 'Only lowercase, digits, dot, dash, underscore'),
+  description: z.string().max(500).optional(),
+  category: z.enum(FLAG_CATEGORIES).optional(),
+  enabled: z.boolean().default(false),
+  roles: z.array(z.string()).optional(),
+  userIds: z.array(z.string()).optional(),
+  rolloutPercent: z.number().int().min(0).max(100).optional(),
+  expiresAt: z.number().int().positive().optional(),
+});
+export type CreateFlagInput = z.infer<typeof CreateFlagSchema>;
+
+export const UpdateFlagSchema = CreateFlagSchema.partial().omit({ key: true });
+export type UpdateFlagInput = z.infer<typeof UpdateFlagSchema>;
+
+/** Audit log entry for a flag — returned by GET /api/admin/flags/:key. */
+export const FlagHistoryEntryDTOSchema = z.object({
+  id: z.string(),
+  action: z.string(),
+  actorUserId: z.string(),
+  before: z.unknown().nullable(),
+  after: z.unknown().nullable(),
+  timestamp: z.number(),
+  reason: z.string().nullable(),
+});
+export type FlagHistoryEntryDTO = z.infer<typeof FlagHistoryEntryDTOSchema>;

@@ -1,8 +1,14 @@
 import { eq } from 'drizzle-orm';
 import { users, roles, rolePermissions, userPermissions, userRoles, featureFlags } from '../db/schema.js';
 import type { DrizzleDb } from '../db/index.js';
+import type { SystemRole } from '@jazz/shared';
 
 // ── Permission constants ────────────────────────────────────────────────────
+//
+// Granular exercise/theory feature codes are NOT listed here on purpose:
+// their single source of truth is ALL_FEATURE_CODES in @jazz/shared, and their
+// 3-state visibility lives in role_permissions.state (resolved by
+// featureAccess.service.ts), not in plain RBAC grants.
 
 export const RBAC_PERMISSIONS = {
   USERS_READ: 'users:read',
@@ -26,11 +32,8 @@ export const RBAC_PERMISSIONS = {
   // Roles management
   ROLES_READ: 'roles:read',
   ROLES_WRITE: 'roles:write',
-  // Feature-level
-  EXERCISES_READ: 'exercises:read',
   COMPOSITIONS_READ: 'compositions:read',
   COMPOSITIONS_WRITE: 'compositions:write',
-  THEORY_READ: 'theory:read',
   PROFILE_READ: 'profile:read',
   PROFILE_WRITE: 'profile:write',
   // System settings (reserved for future)
@@ -42,22 +45,18 @@ export type PermissionCode = (typeof RBAC_PERMISSIONS)[keyof typeof RBAC_PERMISS
 
 // ── Role constants ───────────────────────────────────────────────────────────
 
+/** Values are canonical SYSTEM_ROLES from @jazz/shared — `satisfies` enforces sync. */
 export const RBAC_ROLES = {
   SUPER_ADMIN: 'super_admin',
   ADMIN: 'admin',
   USER: 'user',
   CATALOG_EDITOR: 'catalog_editor',
-} as const;
+} as const satisfies Record<string, SystemRole>;
 
 export type RoleName = (typeof RBAC_ROLES)[keyof typeof RBAC_ROLES];
 
 // ── Permission resolution ───────────────────────────────────────────────────
 
-/**
- * Resolve effective permissions for a user.
- * Aggregates from all roles (via user_roles + legacy users.role),
- * then applies user-specific overrides.
- */
 export function resolvePermissions(db: DrizzleDb, userId: string): Set<string> {
   const u = db
     .select({ role: users.role, status: users.status })
@@ -69,26 +68,16 @@ export function resolvePermissions(db: DrizzleDb, userId: string): Set<string> {
 
   const effective = new Set<string>();
 
-  // Collect all role names: from user_roles (many-to-many) + legacy users.role
   const roleNames = new Set<string>();
-
-  // user_roles table may not exist yet (pre-migration); fall back to legacy role
-  try {
-    const urRows = db
-      .select({ roleName: roles.name })
-      .from(userRoles)
-      .innerJoin(roles, eq(roles.id, userRoles.roleId))
-      .where(eq(userRoles.userId, userId))
-      .all();
-    for (const r of urRows) roleNames.add(r.roleName);
-  } catch {
-    // Table doesn't exist yet — skip, legacy role fallback below covers it
-  }
-
-  // Legacy single-role fallback
+  const urRows = db
+    .select({ roleName: roles.name })
+    .from(userRoles)
+    .innerJoin(roles, eq(roles.id, userRoles.roleId))
+    .where(eq(userRoles.userId, userId))
+    .all();
+  for (const r of urRows) roleNames.add(r.roleName);
   if (u.role) roleNames.add(u.role);
 
-  // 1. Aggregate permissions from all roles
   for (const roleName of roleNames) {
     const rps = db
       .select({ code: rolePermissions.permissionCode })
@@ -99,13 +88,11 @@ export function resolvePermissions(db: DrizzleDb, userId: string): Set<string> {
     for (const rp of rps) effective.add(rp.code);
   }
 
-  // 2. User-specific overrides (grant/revoke)
   const ups = db
     .select({ code: userPermissions.permissionCode, granted: userPermissions.granted })
     .from(userPermissions)
     .where(eq(userPermissions.userId, userId))
     .all();
-
   for (const up of ups) {
     if (up.granted) effective.add(up.code);
     else effective.delete(up.code);
@@ -123,6 +110,34 @@ export function hasPermission(db: DrizzleDb, userId: string, permission: string)
 
 // ── Feature flag resolution ──────────────────────────────────────────────────
 
+/**
+ * cyrb53 — deterministic hash (https://github.com/bryc/code/blob/master/jshash/README.md).
+ * Used for percentage rollout: same (key + userId) always produces the same bucket.
+ */
+function cyrb53(str: string, seed = 0): number {
+  let h1 = 0xdeadbeef ^ seed;
+  let h2 = 0x41c6ce57 ^ seed;
+  for (let i = 0; i < str.length; i++) {
+    const ch = str.charCodeAt(i);
+    h1 = Math.imul(h1 ^ ch, 2654435761);
+    h2 = Math.imul(h2 ^ ch, 1597334677);
+  }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507);
+  h1 ^= Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507);
+  h2 ^= Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  return 4294967296 * (2097151 & h2) + (h1 >>> 0);
+}
+
+/**
+ * Resolve effective feature flags for a user.
+ *
+ * Resolution priority per flag (FEATURES-VISION.md §4.4):
+ *  1. `enabled = false` → false
+ *  2. `expiresAt` in the past → false (auto-disable)
+ *  3. `rolloutPercent` set → deterministic bucket hash (roles/userIds ignored)
+ *  4. otherwise → role OR userId match (no filters = available to everyone)
+ */
 export function resolveFlags(
   db: DrizzleDb,
   userRole: string,
@@ -130,10 +145,24 @@ export function resolveFlags(
 ): Record<string, boolean> {
   const flags = db.select().from(featureFlags).all();
   const result: Record<string, boolean> = {};
+  const now = Date.now();
 
   for (const flag of flags) {
     if (!flag.enabled) {
       result[flag.key] = false;
+      continue;
+    }
+
+    // Auto-disable past expiry
+    if (flag.expiresAt != null && now > flag.expiresAt) {
+      result[flag.key] = false;
+      continue;
+    }
+
+    // Percentage rollout takes precedence over role/user targeting
+    if (flag.rolloutPercent != null) {
+      const bucket = cyrb53(flag.key + userId) % 100;
+      result[flag.key] = bucket < flag.rolloutPercent;
       continue;
     }
 

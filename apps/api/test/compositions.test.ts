@@ -201,7 +201,9 @@ describe('GET + PATCH /api/settings', () => {
   it('GET returns default settings', async () => {
     const res = await agent.get('/api/settings');
     expect(res.status).toBe(200);
-    expect(res.body).toMatchObject({ bpm: 120, volume: 0.8 });
+    // Default settings follow the swing style profile (defaultTempo 140),
+    // applied at settings creation via applyStyleDefaults.
+    expect(res.body).toMatchObject({ bpm: 140, volume: 0.8 });
   });
 
   it('PATCH updates partial settings', async () => {

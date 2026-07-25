@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import type { DrizzleDb } from '../db/index.js';
 import type { ApiConfig } from '../config.js';
-import { DevLoginSchema } from '@jazz/shared';
+import { DevLoginSchema, ALL_FEATURE_CODES } from '@jazz/shared';
 import {
   upsertUser,
   ensureUserSettings,
@@ -9,8 +9,13 @@ import {
   deleteSession,
   toUserDTO,
 } from '../services/auth.service.js';
+import type { UserRecord } from '../db/schema.js';
 import { requireAuth } from '../plugins/auth.plugin.js';
 import { resolvePermissions, resolveFlags } from '../services/rbac.service.js';
+import {
+  resolvePublicFeatureAccess,
+  resolveUserFeatureAccess,
+} from '../services/featureAccess.service.js';
 
 const COOKIE_OPTS = { httpOnly: true, sameSite: 'lax', path: '/' } as const;
 
@@ -62,24 +67,45 @@ async function realGoogleExchange(code: string, cfg: ApiConfig): Promise<GoogleP
   return profileRes.json() as Promise<GoogleProfile>;
 }
 
+/**
+ * Compose the effective permission payload for a user: RBAC permissions with
+ * feature codes replaced by the 3-state feature resolution.
+ * (featureAccess.service.ts is the single source of truth for feature codes.)
+ */
+function composeMePayload(db: DrizzleDb, user: UserRecord) {
+  const permSet = resolvePermissions(db, user.id);
+  for (const code of ALL_FEATURE_CODES) permSet.delete(code);
+  const feature = resolveUserFeatureAccess(db, user);
+  for (const code of feature.active) permSet.add(code);
+  const flags = resolveFlags(db, user.role, user.id);
+  return {
+    user: toUserDTO(user),
+    permissions: [...permSet],
+    inactivePermissions: [...feature.inactive],
+    flags,
+  };
+}
+
 export async function authRoutes(app: FastifyInstance, opts: AuthRoutesOptions): Promise<void> {
   const { db, config } = opts;
   const exchangeCode = opts.exchangeGoogleCode ?? realGoogleExchange;
 
   // ── GET /api/auth/me ─────────────────────────────────────────────────────
-  // Public: returns { user, permissions, flags } or { user: null } — never 401.
-  app.get('/api/auth/me', async (request) => {
+  // Public: returns { user, permissions, inactivePermissions, flags } or
+  // { user: null } — never 401. Feature visibility for anonymous users comes
+  // from the public layer (feature_access).
+  app.get('/api/auth/me', async (request, reply) => {
     const user = request.user;
     if (!user) {
-      return { user: null, permissions: [], flags: {} };
+      const pub = resolvePublicFeatureAccess(db);
+      return reply.send({
+        user: null,
+        permissions: [...pub.active],
+        inactivePermissions: [...pub.inactive],
+        flags: {},
+      });
     }
-    const permSet = resolvePermissions(db, user.id);
-    const flags = resolveFlags(db, user.role, user.id);
-    return {
-      user: toUserDTO(user),
-      permissions: [...permSet],
-      flags,
-    };
+    return reply.send(composeMePayload(db, user));
   });
 
   // ── POST /api/auth/logout ────────────────────────────────────────────────
@@ -125,13 +151,7 @@ export async function authRoutes(app: FastifyInstance, opts: AuthRoutesOptions):
       ensureUserSettings(db, user.id);
       const sid = createSession(db, user.id, config.sessionTtlMs);
       reply.setCookie('sid', sid, COOKIE_OPTS);
-      const permSet = resolvePermissions(db, user.id);
-      const flags = resolveFlags(db, user.role, user.id);
-      return {
-        user: toUserDTO(user),
-        permissions: [...permSet],
-        flags,
-      };
+      return composeMePayload(db, user);
     });
   }
 

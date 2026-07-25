@@ -22,7 +22,7 @@ function makeChord(
     extensions: [],
     alterations: [],
     alt: false,
-    bass: bass ? { root: bass as ChordSymbol['root'], rootAccidental: '' } : undefined,
+    bass: bass ? { note: bass as ChordSymbol['root'], accidental: '' } : undefined,
   };
 }
 

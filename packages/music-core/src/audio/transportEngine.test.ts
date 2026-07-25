@@ -120,7 +120,7 @@ describe('TransportEngine', () => {
     it('switching Swing → Funk changes all instrument outputs (integration)', () => {
       const cmaj7 = {
         raw: 'Cmaj7',
-        root: 'C',
+        root: 'C' as const,
         quality: 'major' as const,
         extensions: [],
         alterations: [],
@@ -129,7 +129,7 @@ describe('TransportEngine', () => {
       };
       const fmaj7 = {
         raw: 'Fmaj7',
-        root: 'F',
+        root: 'F' as const,
         quality: 'major' as const,
         extensions: [],
         alterations: [],
@@ -191,19 +191,23 @@ describe('TransportEngine', () => {
       engine.scheduleWindow({ fromTicks: 0, toTicks: 1920 });
       const funkEventsByInstrument = groupByInstrument(recordedEvents.splice(0));
 
-      // All instruments produced events in both styles. Bass is variant-scoped:
-      // swing → upright-bass, funk → electric-bass.
+      // All instruments produced events in both styles. The bass variant is
+      // user-controlled: switching the style no longer auto-switches the
+      // variant, so the default 'upright' variant serves both styles.
       for (const id of ['drums', 'piano', 'rhodes', 'guitar']) {
         expect(swingEventsByInstrument.get(id)?.length).toBeGreaterThan(0);
         expect(funkEventsByInstrument.get(id)?.length).toBeGreaterThan(0);
       }
       expect(swingEventsByInstrument.get('upright-bass')?.length).toBeGreaterThan(0);
-      expect(funkEventsByInstrument.get('electric-bass')?.length).toBeGreaterThan(0);
+      expect(funkEventsByInstrument.get('upright-bass')?.length).toBeGreaterThan(0);
+      expect(funkEventsByInstrument.has('electric-bass')).toBe(false);
 
-      // Bass variant switched: swing used upright-bass, funk used electric-bass
-      // (a single BassInstrument instance adapts to the style's active variant).
-      expect(swingEventsByInstrument.has('upright-bass')).toBe(true);
-      expect(funkEventsByInstrument.has('electric-bass')).toBe(true);
+      // Explicit setVariant('electric') switches the sink target, even mid-style.
+      bass.setVariant('electric');
+      engine.scheduleWindow({ fromTicks: 0, toTicks: 1920 });
+      const electricEventsByInstrument = groupByInstrument(recordedEvents.splice(0));
+      expect(electricEventsByInstrument.get('electric-bass')?.length).toBeGreaterThan(0);
+      expect(electricEventsByInstrument.has('upright-bass')).toBe(false);
 
       // Drums: swing ride-heavy vs funk kick-heavy patterns differ
       expect(swingEventsByInstrument.get('drums')!.length).not.toBe(

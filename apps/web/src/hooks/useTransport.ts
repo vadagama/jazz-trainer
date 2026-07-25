@@ -1062,9 +1062,15 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     const overrides = settings.perStyleOverrides?.[style];
     if (!overrides) return;
 
-    // Mutate optsRef so event sinks pick up per-style enabled/volume
+    // Mutate optsRef so event sinks pick up per-style enabled/volume.
+    // NEVER copy `bpm`: the tempo is authoritatively resolved by the caller
+    // (composition recommendedTempo → effectiveBpm) and passed explicitly as
+    // settings.bpm. Copying the per-style admin default here would clobber a
+    // catalog composition's own tempo and make it play at the style tempo
+    // while the toolbar still shows the composition tempo.
     const s = optsRef.current.settings as Record<string, unknown>;
     for (const [key, value] of Object.entries(overrides)) {
+      if (key === 'bpm') continue;
       if (value !== undefined) s[key] = value;
     }
 

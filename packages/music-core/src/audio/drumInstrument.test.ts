@@ -58,10 +58,6 @@ function makeDefaultSettings(
     funkComplexity: 'medium',
     randomizationLevel: 'off',
     fillFrequency: '8bars',
-    fillComplexity: 'medium',
-    rideVariation: true,
-    snareGhosts: true,
-    bassDrumVariation: true,
     ...overrides,
   };
 }

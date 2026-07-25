@@ -7,6 +7,10 @@ export type DrizzleDb = BetterSQLite3Database<typeof schema>;
 /**
  * Open (or create) a SQLite database and return a Drizzle instance.
  * Pass `:memory:` as `url` for an isolated in-memory test database.
+ *
+ * Table creation is owned by drizzle migrations (see ./migrate.ts) — this
+ * function deliberately does no DDL. Default feature-access rows are seeded
+ * by `seedFeatureStates` in ./seed.ts.
  */
 export function createDb(url: string): { db: DrizzleDb; sqlite: SQLiteDatabase } {
   const sqlite = new Database(url);

@@ -16,6 +16,8 @@ const STYLE_DEFAULT_PATTERN: Record<Style, OrganPattern> = {
   funk: 'pads-stabs',
   latin: 'pads',
   ballad: 'pads',
+  blues: 'pads',
+  soul: 'pads-stabs',
 };
 
 /**

@@ -1,4 +1,4 @@
-import { useForm } from 'react-hook-form';
+import { useForm, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Plus } from 'lucide-react';
 import { CreateCompositionSchema, type CreateCompositionInput } from '@jazz/shared';
@@ -24,7 +24,9 @@ export function CreateCompositionDialog() {
   const createComposition = useCreateComposition();
 
   const form = useForm<CreateCompositionInput>({
-    resolver: zodResolver(CreateCompositionSchema),
+    // Schema has fields with .default() → input ≠ output; runtime output
+    // conforms to CreateCompositionInput. Narrow the resolver once here.
+    resolver: zodResolver(CreateCompositionSchema) as Resolver<CreateCompositionInput>,
     defaultValues: { name: '' },
   });
 

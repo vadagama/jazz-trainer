@@ -32,6 +32,8 @@ const STYLE_DEFAULT_PATTERN: Record<Style, BassPattern> = {
   funk: 'syncopated',
   latin: 'montuno',
   ballad: 'two-feel',
+  blues: 'walking',
+  soul: 'syncopated',
 };
 
 /** Phrase length (bars) used by the phrasing velocity curve. */

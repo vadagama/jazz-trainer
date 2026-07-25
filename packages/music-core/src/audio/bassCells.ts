@@ -8,7 +8,7 @@
  * Cells are variant×style-scoped: upright (swing/bossa/ballad) and electric
  * (funk/latin). One organism per variant×style picks a cell pool per section.
  *
- * @see docs/BASS.md
+ * @see docs/Instruments/BASS.md
  */
 import type { BassCell, BassLane, BassPatternStyle } from './bassPatternTypes.js';
 

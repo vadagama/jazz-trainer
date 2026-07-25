@@ -19,16 +19,6 @@ export const builtinCorePlugin = definePlugin({
       { path: '/my', element: () => import('../routes/MyCompositionsPage') },
       { path: '/profile', element: () => import('../routes/ProfilePage') },
       {
-        path: '/admin/exercises',
-        element: () => import('../routes/AdminPlaceholderPage'),
-        requires: 'admin',
-      },
-      {
-        path: '/admin/theory',
-        element: () => import('../routes/AdminPlaceholderPage'),
-        requires: 'admin',
-      },
-      {
         path: '/admin/analytics',
         element: () => import('../routes/AdminPlaceholderPage'),
         requires: 'admin',

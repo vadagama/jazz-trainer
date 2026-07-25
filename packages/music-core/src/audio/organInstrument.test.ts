@@ -329,7 +329,9 @@ describe('OrganInstrument — humanize', () => {
 
     inst.schedule({ fromTicks: 0, toTicks: TPBAR }, ctx);
 
-    // With humanize, timing may shift slightly from exact tick 0
-    expect(Math.abs(events[0]!.at)).toBeLessThanOrEqual(5); // ~6ms jitter max
+    // With humanize, timing may shift slightly from exact tick 0.
+    // Max jitter is ±6 ms = ±6 ticks at bpm 120 / PPQ 480 (see organInstrument),
+    // so 6 is the hard upper bound — this assertion must not be tighter.
+    expect(Math.abs(events[0]!.at)).toBeLessThanOrEqual(6);
   });
 });

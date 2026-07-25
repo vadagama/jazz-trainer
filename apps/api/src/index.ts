@@ -2,7 +2,13 @@ import { buildServer } from './server.js';
 import { loadConfig } from './config.js';
 import { createDb } from './db/index.js';
 import { runMigrations } from './db/migrate.js';
-import { seedSystemUser, seedDevUser, seedDemoCompositions, seedRbac } from './db/seed.js';
+import {
+  seedSystemUser,
+  seedDevUser,
+  seedDemoCompositions,
+  seedRbac,
+  seedDefaultSettings,
+} from './db/seed.js';
 import { execSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -26,7 +32,7 @@ async function main(): Promise<void> {
   }
 
   const { db, sqlite } = createDb(config.databaseUrl);
-  runMigrations(db);
+  runMigrations(db, sqlite);
 
   // Auto-generate migrations from schema changes AFTER migrations are applied.
   // Drizzle needs the DB to exist and be up-to-date for correct incremental diffs.
@@ -43,6 +49,7 @@ async function main(): Promise<void> {
   seedSystemUser(db);
   seedRbac(db);
   seedDemoCompositions(db);
+  seedDefaultSettings(db);
   if (config.authDevMode) seedDevUser(db);
 
   const app = await buildServer({ config, db });

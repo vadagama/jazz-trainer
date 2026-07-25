@@ -16,6 +16,8 @@ const STYLE_DEFAULT_PATTERN: Record<Style, ClarinetPattern> = {
   funk: 'counterpoint',
   latin: 'melodicPhrases',
   ballad: 'counterpoint',
+  blues: 'counterpoint',
+  soul: 'melodicPhrases',
 };
 
 /**

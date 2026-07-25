@@ -10,7 +10,7 @@
  * This is what lets a single rhythm (e.g. Charleston) sound correct over any
  * chord quality and any tension setting, instead of requiring one molecule
  * per (rhythm × voicing × chord-quality) combination.
- * See docs/PIANO-EXTENDED-ARRANGEMENT-2.md.
+ * See docs/Instruments/PIANO-EXTENDED-ARRANGEMENT.md.
  *
  // 45 base rhythms covering all jazz piano comping idioms, × 5 styles.
  */
