@@ -59,7 +59,7 @@ import type {
   Style,
 } from '@jazz/shared';
 import { CLICK_SOUNDS, audioUrl } from '@jazz/shared';
-import { usePlaybackStore, useLocalSettingsStore } from '@jazz/plugin-sdk';
+import { usePlaybackStore } from '@jazz/plugin-sdk';
 import { resolveDrumKit, drumArticulationMap, getInstrument } from '../shell/instrumentRegistry';
 
 const LOOKAHEAD_TICKS = 480 * 4;
@@ -647,7 +647,7 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
 
     // ── Percussion setup ───────────────────────────────────────────────────
     // Resolved from the live instrument registry (contributed by the percussion
-    // plugin), never imported directly — see docs/INSTRUMENT-PLUGIN.md.
+    // plugin), never imported directly — see docs/Instruments/INSTRUMENT-PLUGIN.md.
     const percussionEntry = getInstrument('percussion')!;
     const percussionManifest = percussionEntry.manifest;
     percussionManifestRef.current = percussionManifest;
@@ -792,17 +792,11 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     guitarInstrumentRef.current = guitarInstrument;
 
     // ── Transport engine ───────────────────────────────────────────────────
-    // Read swingRatio per-style, falling back to Zustand and profile default.
+    // swingRatio is already resolved per-style by applyStyleDefaults upstream
+    // (every transport consumer passes resolvedSettings). Trust it; fall back to
+    // the profile default only if it is somehow absent.
     const style = (settings.style ?? 'swing') as Style;
-    const profile = getStyleProfile(style);
-    const perStyleSwing = (
-      settings.perStyleOverrides?.[style] as Record<string, unknown> | undefined
-    )?.swingRatio as number | undefined;
-    const zustandStore = useLocalSettingsStore.getState().settings;
-    const zustandPerStyleSwing = (
-      zustandStore.perStyleOverrides?.[style] as Record<string, unknown> | undefined
-    )?.swingRatio as number | undefined;
-    const effectiveSwingRatio = perStyleSwing ?? zustandPerStyleSwing ?? profile.swingRatio;
+    const effectiveSwingRatio = settings.swingRatio ?? getStyleProfile(style).swingRatio;
 
     const engine = new TransportEngine({
       bpm: settings.bpm,
@@ -1402,20 +1396,12 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     drumsRrRef.current = {};
   }, [settings.drumKit, settings.audioFormat]);
 
-  // Update swing ratio — read per-style from settings + Zustand
+  // Update swing ratio — resolved per-style by applyStyleDefaults upstream.
   useEffect(() => {
     if (!engineRef.current) return;
     const style = (settings.style ?? 'swing') as Style;
-    const profile = getStyleProfile(style);
-    const perStyleSwing = (
-      settings.perStyleOverrides?.[style] as Record<string, unknown> | undefined
-    )?.swingRatio as number | undefined;
-    const zs = useLocalSettingsStore.getState().settings;
-    const zustandPerStyleSwing = (
-      zs.perStyleOverrides?.[style] as Record<string, unknown> | undefined
-    )?.swingRatio as number | undefined;
-    engineRef.current.setSwingRatio(perStyleSwing ?? zustandPerStyleSwing ?? profile.swingRatio);
-  }, [settings.style, settings.perStyleOverrides]);
+    engineRef.current.setSwingRatio(settings.swingRatio ?? getStyleProfile(style).swingRatio);
+  }, [settings.style, settings.swingRatio]);
 
   // Update time signature on the engine when it changes
   useEffect(() => {

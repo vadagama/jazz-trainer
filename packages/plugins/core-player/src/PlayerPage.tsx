@@ -2,8 +2,7 @@ import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Loader2, AlertCircle } from 'lucide-react';
 import type { Key, Section, Style } from '@jazz/shared';
-import { transposeSections, getStyleProfile } from '@jazz/music-core';
-import type { InputPort } from '@jazz/music-core';
+import { transposeSections, getStyleProfile, applyStyleDefaults, type InputPort } from '@jazz/music-core';
 import type { SoloInstrumentManifest } from '@jazz/music-core/audio';
 import { SOLO_INSTRUMENT_MANIFESTS } from '@jazz/music-core/audio';
 import { usePublicComposition } from './queries/usePublicCompositions';
@@ -177,12 +176,14 @@ export function PlayerPage() {
     }
   }, []);
 
-  // Initialize local player state from composition metadata on load
+  // Initialize local player state from composition metadata on load.
+  // Always reset overrides so stale values from a previous composition
+  // don't leak into the new one (especially when recommendedTempo is null).
   useEffect(() => {
     if (grid) {
-      if (grid.recommendedTempo != null) setLocalBpm(grid.recommendedTempo);
-      if (grid.recommendedStyle) setLocalStyle(grid.recommendedStyle as Style);
-      setLocalKey(grid.key as Key);
+      setLocalBpm(grid.recommendedTempo ?? null);
+      setLocalStyle((grid.recommendedStyle as Style) ?? null);
+      setLocalKey((grid.key as Key) ?? null);
     }
   }, [grid?.id]);
 
@@ -190,9 +191,23 @@ export function PlayerPage() {
     setLocalStyle(style);
   };
 
-  const effectiveBpm = localBpm ?? grid?.recommendedTempo ?? settings.bpm;
   const effectiveVolume = localVolume ?? settings.volume;
   const effectiveStyle = (localStyle ?? (grid?.recommendedStyle as Style | undefined) ?? settings.style ?? 'swing') as Style;
+
+  // Effective settings resolved for the active style — includes admin per-style
+  // defaults (tempo, swing, instruments). Declared before effectiveBpm so the
+  // tempo fallback can read the admin per-style bpm.
+  const resolvedSettings = useMemo(
+    () => applyStyleDefaults({ ...settings, style: effectiveStyle }, effectiveStyle),
+    [settings, effectiveStyle],
+  );
+
+  // BPM priority: local override → composition's own recommendedTempo (catalog
+  // compositions carry their tempo) → admin per-style default for the active
+  // style. New "from scratch" compositions have no recommendedTempo, so they
+  // start from the admin per-style tempo (resolvedSettings.bpm), not a hardcode.
+  const effectiveBpm = localBpm ?? grid?.recommendedTempo ?? resolvedSettings.bpm;
+
   const effectiveDrumKit = useMemo(() => {
     const profile = getStyleProfile(effectiveStyle);
     return profile.defaultVariants.drums ?? 'jazz-drum-kit';
@@ -274,7 +289,7 @@ export function PlayerPage() {
       : (grid?.barsCount ?? 0);
 
   const transport = usePluginTransport({
-    settings: { ...settings, bpm: effectiveBpm, volume: effectiveVolume, style: effectiveStyle, drumKit: effectiveDrumKit },
+    settings: { ...resolvedSettings, bpm: effectiveBpm, volume: effectiveVolume, style: effectiveStyle, drumKit: effectiveDrumKit },
     timeSignature: effectiveTimeSig,
     totalBars,
     sections: displaySections,
