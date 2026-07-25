@@ -5,9 +5,10 @@ import {
   getStyleProfile,
   getVisibleInstrumentGroups,
   instrumentDefaultsFor,
+  applyStyleDefaults,
   type DisplayGroup,
 } from '@jazz/music-core';
-import { useSettings, useUpdateSettings } from '@jazz/plugin-sdk';
+import { useEffectiveSettings, useUpdateSettings, useLocalSettingsStore } from '@jazz/plugin-sdk';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './dialog';
 import { Slider } from './slider';
 import { cn } from './utils';
@@ -19,6 +20,8 @@ const STYLE_LABELS: Record<Style, string> = {
   funk: 'Funk',
   latin: 'Latin',
   ballad: 'Ballad',
+  blues: 'Blues',
+  soul: 'Soul',
 } as const;
 
 export interface InstrumentsDialogProps {
@@ -67,38 +70,77 @@ interface GroupRowProps {
 }
 
 function GroupRow({ group, style, rosterBadge }: GroupRowProps) {
-  const { data: settings } = useSettings();
+  const settings = useEffectiveSettings();
   const updateSettings = useUpdateSettings();
 
   const profile = useMemo(() => getStyleProfile(style), [style]);
   const defaults = instrumentDefaultsFor(profile, group.activeInstrumentId);
   const prefix = group.settingsPrefix;
 
+  // Resolve enabled/volume for THIS style — not settings.style — so the toggles
+  // match what the transport actually plays for the active style. Without this,
+  // useEffectiveSettings resolves under the user's default style and the UI
+  // drifts from the audio (e.g. funk shows Rhodes on while drums play).
+  const resolved = useMemo(
+    () => applyStyleDefaults({ ...settings, style }, style),
+    [settings, style],
+  );
+
   const enabled =
-    prefix && settings
-      ? (settings as Record<string, unknown>)[`${prefix}Enabled`] !== false
+    prefix
+      ? (resolved as Record<string, unknown>)[`${prefix}Enabled`] !== false
       : defaults.enabled;
 
   const volume =
-    prefix && settings
-      ? (((settings as Record<string, unknown>)[`${prefix}Volume`] as number) ?? defaults.volume)
+    prefix
+      ? (((resolved as Record<string, unknown>)[`${prefix}Volume`] as number) ?? defaults.volume)
       : defaults.volume;
 
   const handleToggle = useCallback(() => {
     if (!prefix) return;
+    const key = `${prefix}Enabled`;
+    const newValue = !enabled;
+
+    // Merge with existing per-style overrides so other instrument
+    // settings for this style are preserved (e.g. toggling piano doesn't
+    // lose a previously-set bass override).
+    const existingPerStyle = {
+      ...(useLocalSettingsStore.getState().settings.perStyleOverrides ?? {}),
+    } as Record<string, Record<string, unknown>>;
+    const styleOverrides = { ...(existingPerStyle[style] ?? {}) };
+    styleOverrides[key] = newValue;
+    existingPerStyle[style] = styleOverrides;
+
+    // Write both the scalar value (backwards compat) and the per-style
+    // override so that applyStyleDefaults always respects the user's
+    // explicit choice — even when the value matches the hardcoded
+    // DEFAULT_SETTINGS (e.g. pianoEnabled: false) but differs from the
+    // style profile (e.g. swing piano.enabled: true).
     updateSettings.mutate({
-      [`${prefix}Enabled`]: !enabled,
+      [key]: newValue,
+      perStyleOverrides: existingPerStyle,
     } as Parameters<typeof updateSettings.mutate>[0]);
-  }, [prefix, enabled, updateSettings]);
+  }, [prefix, enabled, updateSettings, style]);
 
   const handleVolumeChange = useCallback(
     (value: number[]) => {
       if (!prefix) return;
+      const key = `${prefix}Volume`;
+      const newValue = value[0];
+
+      const existingPerStyle = {
+        ...(useLocalSettingsStore.getState().settings.perStyleOverrides ?? {}),
+      } as Record<string, Record<string, unknown>>;
+      const styleOverrides = { ...(existingPerStyle[style] ?? {}) };
+      styleOverrides[key] = newValue;
+      existingPerStyle[style] = styleOverrides;
+
       updateSettings.mutate({
-        [`${prefix}Volume`]: value[0],
+        [key]: newValue,
+        perStyleOverrides: existingPerStyle,
       } as Parameters<typeof updateSettings.mutate>[0]);
     },
-    [prefix, updateSettings],
+    [prefix, updateSettings, style],
   );
 
   const Icon = INSTRUMENT_ICONS[group.activeInstrumentId] ?? DrumsIcon;
@@ -161,12 +203,12 @@ function GroupRow({ group, style, rosterBadge }: GroupRowProps) {
 // ─── Dialog ─────────────────────────────────────────────────────────────────
 
 export function InstrumentsDialog({ open, onClose, onStyleChange, style: styleOverride }: InstrumentsDialogProps) {
-  const { data: settings } = useSettings();
+  const settings = useEffectiveSettings();
   const updateSettings = useUpdateSettings();
-  const currentStyle: Style = styleOverride ?? (settings?.style as Style) ?? 'swing';
+  const currentStyle: Style = styleOverride ?? (settings.style as Style) ?? 'swing';
 
-  const metronomeOn = settings?.metronomeEnabled ?? true;
-  const metronomeVolume = (settings?.metronomeVolume as number) ?? 0.8;
+  const metronomeOn = settings.metronomeEnabled ?? true;
+  const metronomeVolume = (settings.metronomeVolume as number) ?? 0.8;
 
   const roster = useMemo(() => getStyleProfile(currentStyle).instrumentRoster, [currentStyle]);
   const visibleGroups = useMemo(() => getVisibleInstrumentGroups(currentStyle), [currentStyle]);

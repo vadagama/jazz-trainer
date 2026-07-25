@@ -96,7 +96,7 @@ describe('RBAC — resolvePermissions', () => {
     expect(perms.has(RBAC_PERMISSIONS.CATALOG_READ)).toBe(true);
     expect(perms.has(RBAC_PERMISSIONS.COMPOSITIONS_READ)).toBe(true);
     expect(perms.has(RBAC_PERMISSIONS.COMPOSITIONS_WRITE)).toBe(true);
-    expect(perms.has(RBAC_PERMISSIONS.THEORY_READ)).toBe(true);
+    expect(perms.has('theory:read')).toBe(true);
     expect(perms.has(RBAC_PERMISSIONS.PROFILE_READ)).toBe(true);
     expect(perms.has(RBAC_PERMISSIONS.ADMIN)).toBe(false);
     expect(perms.has(RBAC_PERMISSIONS.USERS_WRITE)).toBe(false);
@@ -248,5 +248,83 @@ describe('RBAC — resolveFlags', () => {
     // Should not throw, returns false because no filter matched
     const flags = resolveFlags(db, RBAC_ROLES.ADMIN, 'u1');
     expect(flags['broken-json']).toBe(false);
+  });
+
+  // ── Percentage rollout (FEATURES-VISION.md §4.4) ──────────────────────────
+
+  it('rolloutPercent=100 includes every user', () => {
+    db.insert(featureFlags)
+      .values({ key: 'rollout-100', enabled: true, rolloutPercent: 100 })
+      .run();
+    expect(resolveFlags(db, RBAC_ROLES.USER, 'user-a')['rollout-100']).toBe(true);
+    expect(resolveFlags(db, RBAC_ROLES.USER, 'user-b')['rollout-100']).toBe(true);
+  });
+
+  it('rolloutPercent=0 excludes every user', () => {
+    db.insert(featureFlags)
+      .values({ key: 'rollout-0', enabled: true, rolloutPercent: 0 })
+      .run();
+    expect(resolveFlags(db, RBAC_ROLES.USER, 'user-a')['rollout-0']).toBe(false);
+  });
+
+  it('rolloutPercent is deterministic for the same user', () => {
+    db.insert(featureFlags)
+      .values({ key: 'rollout-50', enabled: true, rolloutPercent: 50 })
+      .run();
+    const first = resolveFlags(db, RBAC_ROLES.USER, 'user-a')['rollout-50'];
+    const second = resolveFlags(db, RBAC_ROLES.USER, 'user-a')['rollout-50'];
+    expect(first).toBe(second);
+  });
+
+  it('rolloutPercent ignores role/user targeting (precedence)', () => {
+    // Even though roles/userIds would deny access, active rollout takes precedence.
+    db.insert(featureFlags)
+      .values({
+        key: 'rollout-precedence',
+        enabled: true,
+        roles: JSON.stringify([RBAC_ROLES.ADMIN]),
+        userIds: JSON.stringify(['someone-else']),
+        rolloutPercent: 100,
+      })
+      .run();
+    expect(resolveFlags(db, RBAC_ROLES.USER, 'any-user')['rollout-precedence']).toBe(true);
+  });
+
+  it('rolloutPercent is ignored when flag is disabled', () => {
+    db.insert(featureFlags)
+      .values({ key: 'rollout-disabled', enabled: false, rolloutPercent: 100 })
+      .run();
+    expect(resolveFlags(db, RBAC_ROLES.USER, 'user-a')['rollout-disabled']).toBe(false);
+  });
+
+  it('rolloutPercent approximates even distribution over many users', () => {
+    db.insert(featureFlags)
+      .values({ key: 'rollout-dist', enabled: true, rolloutPercent: 50 })
+      .run();
+    let enabled = 0;
+    const total = 500;
+    for (let i = 0; i < total; i++) {
+      if (resolveFlags(db, RBAC_ROLES.USER, `user-${i}`)['rollout-dist']) enabled++;
+    }
+    // Expect ~50% with reasonable tolerance for a good hash.
+    const ratio = enabled / total;
+    expect(ratio).toBeGreaterThan(0.4);
+    expect(ratio).toBeLessThan(0.6);
+  });
+
+  // ── expiresAt (auto-disable) ───────────────────────────────────────────────
+
+  it('expired flag returns false even when enabled', () => {
+    db.insert(featureFlags)
+      .values({ key: 'expired', enabled: true, expiresAt: Date.now() - 1000 })
+      .run();
+    expect(resolveFlags(db, RBAC_ROLES.SUPER_ADMIN, 'u1')['expired']).toBe(false);
+  });
+
+  it('non-expired flag with future expiresAt resolves normally', () => {
+    db.insert(featureFlags)
+      .values({ key: 'future-expiry', enabled: true, expiresAt: Date.now() + 60_000 })
+      .run();
+    expect(resolveFlags(db, RBAC_ROLES.USER, 'u1')['future-expiry']).toBe(true);
   });
 });

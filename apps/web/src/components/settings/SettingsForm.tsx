@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { useEffect, useState } from 'react';
-import { useForm, Controller, useController, type Control } from 'react-hook-form';
+import { useForm, Controller, useController, type Control, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { UserSettingsDTOSchema, type UserSettingsDTO } from '@jazz/shared';
 import { METRONOME_SAMPLES, INSTRUMENT_GROUPS } from '@jazz/music-core';
@@ -71,7 +71,10 @@ const BEAT_ROWS = [
 
 export function SettingsForm({ defaultValues, onSave, themeControl }: Props) {
   const form = useForm<UserSettingsDTO>({
-    resolver: zodResolver(UserSettingsDTOSchema),
+    // UserSettingsDTOSchema uses .catch() extensively, so its input type is
+    // `unknown` and cannot parameterize useForm. The resolver's runtime
+    // output always conforms to UserSettingsDTO — narrow it here once.
+    resolver: zodResolver(UserSettingsDTOSchema) as Resolver<UserSettingsDTO>,
     defaultValues,
   });
 
@@ -250,7 +253,11 @@ export function SettingsForm({ defaultValues, onSave, themeControl }: Props) {
                       onChange={(e) => {
                         const enabled = e.target.checked;
                         field.onChange(enabled);
-                        if (!enabled) form.setValue('countIn', 0);
+                        if (enabled && form.getValues('countIn') === 0) {
+                          form.setValue('countIn', 1);
+                        } else if (!enabled) {
+                          form.setValue('countIn', 0);
+                        }
                       }}
                       className="h-4 w-4 cursor-pointer accent-primary"
                     />

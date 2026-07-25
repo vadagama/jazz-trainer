@@ -86,7 +86,7 @@ Jazz Trainer: барабаны, бас, фортепиано/rhodes, гитар�
 |---|---|---|
 | 1 | `packages/music-core/src/audio/bassStepEngine.ts` | `BassStep`, `resolveBassStep` — движок выбора ступеней по гармонии/стилю/tension. |
 | 2 | `packages/music-core/src/audio/BassInstrument.ts` | Инструмент: звук, артикуляция, mute/legato. |
-| Спека | `docs/BASS.md` | Спецификация басового движка, артикуляции, стили. |
+| Спека | `docs/Instruments/BASS.md` | Спецификация басового движка, артикуляции, стили. |
 | Плагин | `packages/plugins/instruments/bass/` | Плагинная обёртка (upright + electric). |
 
 ### Фортепиано / Rhodes
@@ -97,7 +97,7 @@ Jazz Trainer: барабаны, бас, фортепиано/rhodes, гитар�
 | 3 | `packages/music-core/src/audio/pianoInstrument.ts` | Основной piano-инструмент, manifest. |
 | 4 | `packages/music-core/src/audio/rhodesInstrument.ts`, `rhodesVoicing.ts` | Rhodes — комплементарный слой к piano. |
 | 5 | `packages/music-core/src/audio/pianoRhodesInteraction.ts` | Координация piano и rhodes в ансамбле. |
-| Спеки | `docs/PIANO.md`, `docs/RHODES.md` | Спецификации инструментов. |
+| Спеки | `docs/Instruments/PIANO.md`, `docs/Instruments/RHODES.md` | Спецификации инструментов. |
 
 ### Гармония
 | Порядок | Файл | Зачем |
@@ -105,18 +105,18 @@ Jazz Trainer: барабаны, бас, фортепиано/rhodes, гитар�
 | 1 | `packages/music-core/src/chords/` | `parseChord`, структуры аккордов, tensions, extensions. |
 | 2 | `packages/music-core/src/chords/modes.ts` | Лады и гаммы для импровизации. |
 | 3 | `packages/music-core/src/audio/chordTimeline.ts` | Multi-chord бары, гармоническая сетка во времени. |
-| Спека | `docs/CHORDS.md`, `docs/ALL_CHORDS.md` | Структуры аккордов. |
+| Спека | `docs/CHORDS.md`, `docs/Instruments/ALL_CHORDS.md` | Структуры аккордов. |
 
 ### Прочие инструменты
 | Инструмент | Файл / Спека |
 |---|---|
-| Гитара | `packages/music-core/src/audio/guitarInstrument.ts`, `guitarManifest.ts`, `docs/GUITAR.md` |
-| Вибрафон | `packages/music-core/src/audio/vibraphoneInstrument.ts`, `docs/VIBRAPHONE.md` |
-| Орган | `packages/music-core/src/audio/organInstrument.ts`, `docs/ORGAN.md` |
-| Кларнет | `packages/music-core/src/audio/clarinetInstrument.ts`, `docs/CLARINET.md` |
-| Труба | `packages/music-core/src/audio/soloInstrument.ts`, `soloInstrumentHost.ts`, `docs/MELODIC-PLUGIN.md` |
-| Перкуссия | `docs/PERCUSSION.md` |
-| Соло (MIDI) | `packages/music-core/src/audio/soloInstrument.ts`, `soloInstrumentHost.ts`, `docs/MELODIC-PLUGIN.md` |
+| Гитара | `packages/music-core/src/audio/guitarInstrument.ts`, `guitarManifest.ts`, `docs/Instruments/GUITAR.md` |
+| Вибрафон | `packages/music-core/src/audio/vibraphoneInstrument.ts`, `docs/Instruments/VIBRAPHONE.md` |
+| Орган | `packages/music-core/src/audio/organInstrument.ts`, `docs/Instruments/ORGAN.md` |
+| Кларнет | `packages/music-core/src/audio/clarinetInstrument.ts`, `docs/Instruments/CLARINET.md` |
+| Труба | `packages/music-core/src/audio/soloInstrument.ts`, `soloInstrumentHost.ts`, `docs/Instruments/MELODIC-PLUGIN.md` |
+| Перкуссия | `docs/Instruments/PERCUSSION.md` |
+| Соло (MIDI) | `packages/music-core/src/audio/soloInstrument.ts`, `soloInstrumentHost.ts`, `docs/Instruments/MELODIC-PLUGIN.md` |
 
 ### Стиль и форма
 | Порядок | Файл | Зачем |
@@ -167,8 +167,8 @@ Jazz Trainer: барабаны, бас, фортепиано/rhodes, гитар�
 | **Вибрафон** | Мелодико-гармонический: тёплый тембр, 2–4 голоса, shimmer-текстуры | `vibraphoneInstrument.ts` | Баллады, cool jazz, контрастный тембр |
 | **Орган** | Пады/swell, басовые линии (pedal), soul-jazz грув | `organInstrument.ts` | Soul-jazz, hard bop, gospel |
 | **Кларнет** | Мелодическая линия, контрапункт | `clarinetInstrument.ts` | Контрастный тембр к трубе/саксофону |
-| **Труба** | Мелодический голос: лидирующая мелодия, контрапункт, яркий тембр; brass-секция в Soul/Funk | `soloInstrument.ts`, `docs/MELODIC-PLUGIN.md` | Мелодические секции, соло, brass-линии в Soul/Blues |
-| **Перкуссия** | Ритмический окрас и текстура: конги, бонго, шейкер, треугольник — не дублирует барабаны, добавляет латинский/фанковый/соуловый оттенок | `docs/PERCUSSION.md` | Bossa/Latin/Funk/Soul для текстурного groove |
+| **Труба** | Мелодический голос: лидирующая мелодия, контрапункт, яркий тембр; brass-секция в Soul/Funk | `soloInstrument.ts`, `docs/Instruments/MELODIC-PLUGIN.md` | Мелодические секции, соло, brass-линии в Soul/Blues |
+| **Перкуссия** | Ритмический окрас и текстура: конги, бонго, шейкер, треугольник — не дублирует барабаны, добавляет латинский/фанковый/соуловый оттенок | `docs/Instruments/PERCUSSION.md` | Bossa/Latin/Funk/Soul для текстурного groove |
 | **Соло (MIDI)** | Универсальный pitched-инструмент: саксофон, флейта и др. | `soloInstrument.ts`, `soloInstrumentHost.ts` | Для любого солирующего тембра |
 
 **Принцип ансамбля.** Каждый инструмент занимает свою нишу:

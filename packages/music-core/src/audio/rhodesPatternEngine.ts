@@ -5,7 +5,7 @@
  * generic engine functions so RhodesInstrument can self-manage organism-driven
  * scheduling. Stateless: no fields, no constructor args.
  *
- * Mirrors PianoPatternEngine; see docs/MELODIC-PLUGIN.md §11.
+ * Mirrors PianoPatternEngine; see docs/Instruments/MELODIC-PLUGIN.md §11.
  */
 import type {
   RhodesPatternStyle,

@@ -4,7 +4,7 @@
  * Naming convention: <articulation>_vl<layer>_rr<index>.m4a
  * Velocity layers vary per sound (3-5 layers, see §7.3).
  *
- * See docs/DRUMS-VISION.md §4.3 and §7.3 for the full specification.
+ * See docs/Instruments/DRUMS-VISION.md §4.3 and §7.3 for the full specification.
  */
 import type { DrumSound } from '@jazz/music-core';
 import { buildVelocityRR } from '@jazz/music-core';

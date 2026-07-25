@@ -13,7 +13,7 @@ export {
 
 // The bass pattern engine (molecules/cells/organisms) lives entirely in
 // @jazz/music-core — import BassPatternEngine, UPRIGHT_BASS_MOLECULES, etc.
-// from there directly. See docs/BASS.md.
+// from there directly. See docs/Instruments/BASS.md.
 
 export default definePlugin({
   manifest: {

@@ -1,12 +1,30 @@
-import { describe, it, expect } from 'vitest';
+/**
+ * @vitest-environment jsdom
+ */
+import { describe, it, expect, beforeAll } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { CardDisplay } from '../components/CardDisplay.js';
 import type { PracticeBar } from '../generators/types.js';
 
+// jsdom does not implement window.matchMedia — stub it for useSyncExternalStore.
+beforeAll(() => {
+  window.matchMedia = ((query: string) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    addListener: () => {},
+    removeListener: () => {},
+    dispatchEvent: () => false,
+  })) as unknown as typeof window.matchMedia;
+});
+
+// Note: no scaleLabel here — a multi-chord bar is not a scale-practice bar;
+// CardDisplay prioritizes scaleLabel over chords when both are present.
 const makeBar = (index: number, chords: string[]): PracticeBar => ({
   index,
   chords,
-  scaleLabel: chords.length > 1 ? chords.join(' ') : undefined,
 });
 
 const twoBars: PracticeBar[] = [makeBar(0, ['Cmaj7']), makeBar(1, ['Dm7', 'G7'])];
@@ -80,14 +98,17 @@ describe('CardDisplay', () => {
         { index: 0, chords: ['Cmaj7'], scaleLabel: 'C Major', direction: 'up' },
       ];
       render(<CardDisplay bars={bars} currentIndex={0} mode="current" />);
-      expect(screen.getByText('C Major')).toBeDefined();
+      // The label is split into a large root span and a smaller scale-name span.
+      expect(screen.getByText('C')).toBeDefined();
+      expect(screen.getByText('Major')).toBeDefined();
+      expect(screen.getByText('↑ вверх')).toBeDefined();
     });
 
     it('reduces font size for many chords', () => {
       render(<CardDisplay bars={multiChordBar} currentIndex={0} mode="current" />);
       const span = screen.getByText('Cmaj7 A7 Dm7 G7 Cmaj7');
-      // Should use a smaller font class for 5 chords
-      expect(span.className).toContain('text-2xl');
+      // 5 chords → smallest step of the font ladder (text-lg)
+      expect(span.className).toContain('text-lg');
     });
   });
 

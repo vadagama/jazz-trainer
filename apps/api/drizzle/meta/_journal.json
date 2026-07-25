@@ -225,6 +225,34 @@
       "when": 1784080000000,
       "tag": "0031_catalog_schema",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "6",
+      "when": 1784166400000,
+      "tag": "0033_add_feature_flags_columns",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "6",
+      "when": 1784946107898,
+      "tag": "0034_feature_access_tables",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "6",
+      "when": 1784947557096,
+      "tag": "0035_role_permissions_state",
+      "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "6",
+      "when": 1785033957000,
+      "tag": "0036_default_settings",
+      "breakpoints": true
     }
   ]
 }

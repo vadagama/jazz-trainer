@@ -16,6 +16,8 @@ const STYLE_DEFAULT_PATTERN: Record<Style, VibraphonePattern> = {
   funk: 'pads',
   latin: 'inserts',
   ballad: 'pads',
+  blues: 'pads',
+  soul: 'pads',
 };
 
 /**

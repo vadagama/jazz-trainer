@@ -70,6 +70,8 @@ const STYLE_DEFAULT_PROFILE: Record<Style, CompingProfileId> = {
   funk: 'offbeat-push',
   latin: 'latin-montuno',
   ballad: 'beginner-safe',
+  blues: 'swing-sparse',
+  soul: 'offbeat-push',
 };
 
 export class PianoInstrument implements Instrument {

@@ -12,7 +12,7 @@
  *  - **upright** (swing/bossa/ballad): palette { regular, muted }
  *  - **electric** (funk/latin):        palette { regular, muted, rel, stac }
  *
- * @see docs/BASS.md
+ * @see docs/Instruments/BASS.md
  */
 import type { Style } from '@jazz/shared';
 import type {

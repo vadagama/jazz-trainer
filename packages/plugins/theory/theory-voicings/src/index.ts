@@ -9,7 +9,7 @@ export default definePlugin({
     description: 'Лекция: shell, rootless, drop-2 и другие аккордовые голосоведения.',
   },
   contributes: {
-    routes: [{ path: '/theory/voicings', element: () => import('./VoicingsPage') }],
+    routes: [{ path: '/theory/voicings', element: () => import('./VoicingsPage'), requires: 'theory:voicings' }],
     navItems: [
       {
         section: 'learn',

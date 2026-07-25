@@ -1,9 +1,9 @@
 import { eq, and } from 'drizzle-orm';
 import type { UserDTO, UserSettingsDTO, Style } from '@jazz/shared';
-import { users, userSettings, sessions } from '../db/schema.js';
+import { users, userSettings, defaultSettings, sessions } from '../db/schema.js';
 import type { DrizzleDb } from '../db/index.js';
-import type { UserRecord, UserSettingsRecord } from '../db/schema.js';
-import { getStyleProfile } from '@jazz/music-core';
+import type { UserRecord, UserSettingsRecord, DefaultSettingsRecord } from '../db/schema.js';
+import { applyStyleDefaults } from '@jazz/music-core';
 
 // ── DTO mapping ────────────────────────────────────────────────────────────
 
@@ -85,8 +85,8 @@ export function toSettingsDTO(s: UserSettingsRecord): UserSettingsDTO {
       s.bassHumanize ? JSON.parse(s.bassHumanize) : undefined,
     ) as UserSettingsDTO['bassHumanize'],
     bassUseMutedNotes: s.bassUseMutedNotes ?? true,
-    bassPattern: (so?.bassPattern as string | null) ?? null,
-    bassRange: (so?.bassRange as UserSettingsDTO['bassRange']) ?? 'medium',
+    bassPattern: null,
+    bassRange: 'medium',
     rhodesEnabled: s.rhodesEnabled,
     rhodesVolume: clampVolume(s.rhodesVolume),
     rhodesMode: s.rhodesMode as UserSettingsDTO['rhodesMode'],
@@ -101,14 +101,14 @@ export function toSettingsDTO(s: UserSettingsRecord): UserSettingsDTO {
     pianoHumanize: normalizeHumanize(
       s.pianoHumanize ? JSON.parse(s.pianoHumanize) : undefined,
     ) as UserSettingsDTO['pianoHumanize'],
-    pianoPattern: (so?.pianoPattern as string | null) ?? null,
+    pianoPattern: null,
 
     drumsEnabled: s.drumsEnabled,
     drumsVolume: clampVolume(s.drumsVolume),
     style: (s.style as UserSettingsDTO['style']) ?? 'swing',
 
     drumKit: (s.drumKit as UserSettingsDTO['drumKit']) ?? 'jazz-drum-kit',
-    drumsPattern: (so?.drumsPattern as string | null) ?? null,
+    drumsPattern: null,
 
     swingRatio: Math.max(0.5, Math.min(0.75, s.swingRatio)),
     audioFormat: s.audioFormat as UserSettingsDTO['audioFormat'],
@@ -131,7 +131,9 @@ export function toSettingsDTO(s: UserSettingsRecord): UserSettingsDTO {
     guitarVolume: undefined,
   };
 
-  // Overlay per-style overrides on top of scalar defaults
+  // Overlay per-style overrides on top of scalar defaults. Humanize fields need
+  // legacy-number normalization, which runs before delegating the rest to the
+  // shared resolver (see applyStyleDefaults in @jazz/music-core).
   if (so) {
     for (const [key, value] of Object.entries(so)) {
       if (value !== undefined) {
@@ -145,38 +147,9 @@ export function toSettingsDTO(s: UserSettingsRecord): UserSettingsDTO {
     }
   }
 
-  // Fix per-style isolation: for style-specific fields without a per-style override,
-  // use profile defaults instead of scalar column values (which leak across styles).
-  const profile = getStyleProfile(style as Style);
-  const pd = profile.instrumentDefaults;
-  const activeBass = (profile.defaultVariants.bass ?? 'upright-bass') as keyof typeof pd;
-  const activeDrums = (profile.defaultVariants.drums ?? 'drums') as keyof typeof pd;
-  const activeGuitar = (profile.defaultVariants.guitar ?? 'guitar') as keyof typeof pd;
-  // Helper: check if key exists in so (not just truthy — false is a valid override)
-  const has = (k: string) => so != null && k in so;
-
-  if (!has('bassEnabled')) dto.bassEnabled = pd[activeBass]?.enabled;
-  if (!has('bassVolume')) dto.bassVolume = pd[activeBass]?.volume ?? 0.7;
-  if (!has('bassVariant'))
-    dto.bassVariant = activeBass === 'electric-bass' ? 'electric' : 'upright';
-  if (!has('bassTension'))
-    dto.bassTension = (pd[activeBass]?.tension as UserSettingsDTO['bassTension']) ?? 'clean';
-  if (!has('pianoEnabled')) dto.pianoEnabled = pd.piano?.enabled;
-  if (!has('pianoVolume')) dto.pianoVolume = pd.piano?.volume ?? 0.7;
-  if (!has('rhodesEnabled')) dto.rhodesEnabled = pd.rhodes?.enabled;
-  if (!has('rhodesVolume')) dto.rhodesVolume = pd.rhodes?.volume ?? 0.5;
-  if (!has('drumKit'))
-    dto.drumKit = activeDrums === 'funk-drum-kit' ? 'funk-drum-kit' : 'jazz-drum-kit';
-  if (!has('drumsEnabled')) dto.drumsEnabled = pd[activeDrums]?.enabled;
-  if (!has('drumsVolume')) dto.drumsVolume = pd[activeDrums]?.volume ?? 0.7;
-  if (!has('percussionEnabled')) dto.percussionEnabled = pd.percussion?.enabled;
-  if (!has('percussionVolume')) dto.percussionVolume = pd.percussion?.volume ?? 0.7;
-  if (!has('guitarEnabled')) dto.guitarEnabled = pd[activeGuitar]?.enabled;
-  if (!has('guitarVolume')) dto.guitarVolume = pd[activeGuitar]?.volume ?? 0.6;
-  if (!has('swingRatio')) dto.swingRatio = profile.swingRatio;
-  if (!has('bpm')) dto.bpm = profile.defaultTempo;
-
-  return dto;
+  // Per-style isolation and profile defaults are resolved centrally in music-core
+  // so the client (useEffectiveSettings for guests) shares the exact same logic.
+  return applyStyleDefaults(dto, style as Style);
 }
 
 // ── User management ─────────────────────────────────────────────────────────
@@ -234,11 +207,25 @@ export function upsertUser(db: DrizzleDb, input: UpsertUserInput): UserRecord {
 /**
  * Ensure a `user_settings` row exists for the user.
  * Called on first login; idempotent.
+ *
+ * The row is initialised from the admin-managed `default_settings` singleton
+ * (ADMIN-DEFAULT-INSTRUMENT-SETTINGS §3.3) so new users inherit the current
+ * factory defaults instead of hardcoded values. When the singleton is absent
+ * (first run / failed migration) we fall back to schema-level `.default(...)`.
+ * Per-style overrides are copied verbatim so per-style admin tweaks propagate.
  */
 export function ensureUserSettings(db: DrizzleDb, userId: string): void {
   const existing = db.select().from(userSettings).where(eq(userSettings.userId, userId)).get();
   if (existing) return;
   const now = Date.now();
+  const defaults = db.select().from(defaultSettings).where(eq(defaultSettings.id, 1)).get();
+  if (defaults) {
+    db.insert(userSettings)
+      .values({ ...userSettingsValuesFromDefaults(defaults), userId, createdAt: now, updatedAt: now })
+      .run();
+    return;
+  }
+  // Fallback: hardcoded factory defaults (matches schema `.default(...)`).
   db.insert(userSettings)
     .values({
       userId,
@@ -254,6 +241,59 @@ export function ensureUserSettings(db: DrizzleDb, userId: string): void {
       updatedAt: now,
     })
     .run();
+}
+
+/** Copy the shared scalar fields of a default_settings row into a user_settings insert payload. */
+function userSettingsValuesFromDefaults(
+  d: DefaultSettingsRecord,
+): Omit<typeof userSettings.$inferInsert, 'userId' | 'createdAt' | 'updatedAt'> {
+  return {
+    bpm: d.bpm,
+    clickStrong: d.clickStrong,
+    clickStrong2: d.clickStrong2,
+    clickWeak: d.clickWeak,
+    volume: d.volume,
+    countIn: d.countIn,
+    metronomeEnabled: d.metronomeEnabled,
+    metronomeVolume: d.metronomeVolume,
+    metronomeMode: d.metronomeMode,
+    metronomeStrongEnabled: d.metronomeStrongEnabled,
+    metronomeStrongVolume: d.metronomeStrongVolume,
+    metronomeStrong2Enabled: d.metronomeStrong2Enabled,
+    metronomeStrong2Volume: d.metronomeStrong2Volume,
+    metronomeWeakEnabled: d.metronomeWeakEnabled,
+    metronomeWeakVolume: d.metronomeWeakVolume,
+    bassEnabled: d.bassEnabled,
+    bassVolume: d.bassVolume,
+    bassComplexity: d.bassComplexity,
+    bassVariant: d.bassVariant,
+    bassTension: d.bassTension,
+    bassHumanize: d.bassHumanize,
+    bassUseMutedNotes: d.bassUseMutedNotes,
+    rhodesEnabled: d.rhodesEnabled,
+    rhodesVolume: d.rhodesVolume,
+    rhodesMode: d.rhodesMode,
+    rhodesVoicingDensity: d.rhodesVoicingDensity,
+    rhodesLayerMode: d.rhodesLayerMode,
+    rhodesLayerVolume: d.rhodesLayerVolume,
+    pianoEnabled: d.pianoEnabled,
+    pianoVolume: d.pianoVolume,
+    pianoProfile: d.pianoProfile,
+    pianoVoicingDensity: d.pianoVoicingDensity,
+    pianoSampleLibrary: d.pianoSampleLibrary,
+    pianoTension: d.pianoTension,
+    pianoHumanize: d.pianoHumanize,
+    drumsEnabled: d.drumsEnabled,
+    drumsVolume: d.drumsVolume,
+    drumKit: d.drumKit,
+    style: d.style,
+    perStyleOverrides: d.perStyleOverrides,
+    swingRatio: d.swingRatio,
+    audioFormat: d.audioFormat,
+    soloToneId: d.soloToneId,
+    soloVolume: d.soloVolume,
+    duckingEnabled: d.duckingEnabled,
+  };
 }
 
 // ── Session management ──────────────────────────────────────────────────────

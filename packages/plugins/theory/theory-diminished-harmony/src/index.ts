@@ -10,7 +10,7 @@ export default definePlugin({
   },
   contributes: {
     routes: [
-      { path: '/theory/diminished-harmony', element: () => import('./DiminishedHarmonyPage') },
+      { path: '/theory/diminished-harmony', element: () => import('./DiminishedHarmonyPage'), requires: 'theory:diminishedHarmony' },
     ],
     navItems: [
       {

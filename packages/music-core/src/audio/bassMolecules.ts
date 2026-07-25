@@ -20,7 +20,7 @@
  *
  * Complexity scale is 1–3 (low / medium / high), matching drums & piano.
  *
- * @see docs/BASS.md
+ * @see docs/Instruments/BASS.md
  */
 import type { BassArticulation } from './instrument.js';
 import type { BassAtom, BassMolecule } from './bassPatternTypes.js';
@@ -678,8 +678,8 @@ const ELECTRIC_MOLECULE_DRAFTS: Omit<BassMolecule, 'style'>[] = [
 
 // ─── Style → variant mapping for authoring ───────────────────────────────────
 
-const UPRIGHT_STYLES: BassMolecule['style'][] = ['swing', 'bossa', 'ballad'];
-const ELECTRIC_STYLES: BassMolecule['style'][] = ['funk', 'latin'];
+const UPRIGHT_STYLES: BassMolecule['style'][] = ['swing', 'bossa', 'ballad', 'blues'];
+const ELECTRIC_STYLES: BassMolecule['style'][] = ['funk', 'latin', 'soul'];
 
 function withStyle(draft: Omit<BassMolecule, 'style'>, style: BassMolecule['style']): BassMolecule {
   return { ...draft, style };

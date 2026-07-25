@@ -9,7 +9,7 @@ export default definePlugin({
     description: 'Лекция: арпеджио — построение и применение в джазовой импровизации.',
   },
   contributes: {
-    routes: [{ path: '/theory/arpeggios', element: () => import('./ArpeggiosPage') }],
+    routes: [{ path: '/theory/arpeggios', element: () => import('./ArpeggiosPage'), requires: 'theory:arpeggios' }],
     navItems: [{ section: 'learn', label: 'Арпеджио', to: '/theory/arpeggios', icon: 'music' }],
   },
 });

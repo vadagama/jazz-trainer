@@ -2,7 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import type { DrizzleDb } from '../db/index.js';
-import { users, userRoles, roles } from '../db/schema.js';
+import { users, userRoles, userPermissions, roles } from '../db/schema.js';
 import { toUserDTO } from '../services/auth.service.js';
 import { withAuditSync } from '../services/audit.service.js';
 import { RBAC_ROLES } from '../services/rbac.service.js';
@@ -103,10 +103,12 @@ export async function adminUsersRoutes(
           for (const roleId of roleIds) {
             db.insert(userRoles).values({ userId: id, roleId }).run();
           }
+          return { roleIds };
         });
-      } catch {
+      } catch (err) {
+        console.error('[admin-users] roles update failed:', err);
         return reply.status(500).send({
-          error: { code: 'MIGRATION_REQUIRED', message: 'user_roles table not found. Restart the server to apply migrations.' },
+          error: { code: 'INTERNAL_ERROR', message: 'Failed to update user roles' },
         });
       }
 
@@ -123,6 +125,46 @@ export async function adminUsersRoutes(
         // user_roles table may not exist yet
       }
       return reply.send({ ...toUserDTO(updated), roles: roleIdsOut });
+    },
+  );
+
+  // ── DELETE /api/admin/users/:id ─────────────────────────────────────────
+  fastify.delete<{ Params: { id: string } }>(
+    '/admin/users/:id',
+    async (request, reply) => {
+      const { id } = request.params;
+
+      const user = db.select().from(users).where(eq(users.id, id)).get();
+      if (!user) {
+        return reply.status(404).send({
+          error: { code: 'NOT_FOUND', message: 'User not found' },
+        });
+      }
+
+      // Prevent self-deletion
+      const actorId = request.user?.id;
+      if (user.id === actorId) {
+        return reply.status(403).send({
+          error: { code: 'FORBIDDEN', message: 'Cannot delete yourself' },
+        });
+      }
+
+      // Prevent deletion of super_admin
+      if (user.role === 'super_admin') {
+        return reply.status(403).send({
+          error: { code: 'FORBIDDEN', message: 'Cannot delete super_admin' },
+        });
+      }
+
+      withAuditSync(db, request, 'user.delete', 'user', id, { before: { email: user.email, role: user.role } }, () => {
+        // Clean up dependent records without cascade
+        db.delete(userPermissions).where(eq(userPermissions.userId, id)).run();
+        // userRoles, sessions, userSettings, harmonyCompositions, compositionLikes,
+        // lectureLikes cascade via FK. Then delete the user.
+        db.delete(users).where(eq(users.id, id)).run();
+      });
+
+      return reply.status(204).send();
     },
   );
 

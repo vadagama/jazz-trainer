@@ -4,7 +4,7 @@
  * Single source of truth for the shell: instruments are resolved by `id` from
  * `contributions.instruments`, never imported plugin-by-plugin. Adding a new
  * instrument plugin therefore requires no shell changes (see
- * docs/INSTRUMENT-PLUGIN.md).
+ * docs/Instruments/INSTRUMENT-PLUGIN.md).
  */
 import type {
   InstrumentContribution,

@@ -58,6 +58,8 @@ const DEFAULT_SETTINGS: LocalSettings = {
   duckingEnabled: undefined,
 };
 
+export { DEFAULT_SETTINGS };
+
 export const useLocalSettingsStore = create<LocalSettingsStore>()(
   persist(
     (set) => ({

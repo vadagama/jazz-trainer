@@ -9,7 +9,7 @@ export default definePlugin({
     description: 'Лекция: Coltrane Changes — гармонический цикл больших терций.',
   },
   contributes: {
-    routes: [{ path: '/theory/coltrane-changes', element: () => import('./ColtraneChangesPage') }],
+    routes: [{ path: '/theory/coltrane-changes', element: () => import('./ColtraneChangesPage'), requires: 'theory:coltraneChanges' }],
     navItems: [
       {
         section: 'learn',

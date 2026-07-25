@@ -5,7 +5,7 @@
  * molecules are intentionally calm: low velocity (0.3–0.45), long durations,
  * sparse syncopation. They fill texture (pads), provide gentle motion
  * (arpeggios), or sit out of the piano's way (subtle inserts). See
- * docs/RHODES.md and docs/MELODIC-PLUGIN.md.
+ * docs/Instruments/RHODES.md and docs/Instruments/MELODIC-PLUGIN.md.
  *
  * Each atom's `sound` is a {@link RhodesVoicingRole} resolved at playback time
  * from the real chord + density via `buildVoicing()` + `selectRhodesVoicingRole()`.

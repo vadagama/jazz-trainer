@@ -9,7 +9,7 @@ export default definePlugin({
     description: 'Лекция: ii–V–I прогрессия — главная джазовая каденция.',
   },
   contributes: {
-    routes: [{ path: '/theory/ii-v-i', element: () => import('./IIvIPage') }],
+    routes: [{ path: '/theory/ii-v-i', element: () => import('./IIvIPage'), requires: 'theory:iiVI' }],
     navItems: [
       { section: 'learn', label: 'ii–V–I прогрессия', to: '/theory/ii-v-i', icon: 'music' },
     ],

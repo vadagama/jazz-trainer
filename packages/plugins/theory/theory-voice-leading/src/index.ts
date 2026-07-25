@@ -9,7 +9,7 @@ export default definePlugin({
     description: 'Лекция: плавное голосоведение, общие тоны и пошаговое движение в ii–V–I.',
   },
   contributes: {
-    routes: [{ path: '/theory/voice-leading', element: () => import('./VoiceLeadingPage') }],
+    routes: [{ path: '/theory/voice-leading', element: () => import('./VoiceLeadingPage'), requires: 'theory:voiceLeading' }],
     navItems: [
       {
         section: 'learn',

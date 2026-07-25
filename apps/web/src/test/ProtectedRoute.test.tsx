@@ -39,13 +39,13 @@ describe('ProtectedRoute', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('shows spinner while loading', () => {
-    mockUseAuth.mockReturnValue({ user: null, permissions: [], flags: {}, isLoading: true });
+    mockUseAuth.mockReturnValue({ user: null, permissions: [], inactivePermissions: [], flags: {}, isLoading: true });
     renderWithProviders(<TestApp />, { routerProps: { initialEntries: ['/protected'] } });
     expect(document.querySelector('.animate-spin')).toBeTruthy();
   });
 
   it('redirects guest to /login', async () => {
-    mockUseAuth.mockReturnValue({ user: null, permissions: [], flags: {}, isLoading: false });
+    mockUseAuth.mockReturnValue({ user: null, permissions: [], inactivePermissions: [], flags: {}, isLoading: false });
     renderWithProviders(<TestApp />, { routerProps: { initialEntries: ['/protected'] } });
     await waitFor(() => {
       expect(screen.getByText('Login Page')).toBeTruthy();
@@ -65,6 +65,7 @@ describe('ProtectedRoute', () => {
         createdAt: 0,
       },
       permissions: [],
+      inactivePermissions: [],
       flags: {},
       isLoading: false,
     });

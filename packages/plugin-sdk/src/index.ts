@@ -8,6 +8,7 @@ export { useLocalSettingsStore } from './stores/useLocalSettingsStore';
 
 export { useAuth, useLogout } from './queries/useAuth';
 export { useSettings, useUpdateSettings } from './queries/useSettings';
+export { useDefaultSettings } from './queries/useDefaultSettings';
 export { useEffectiveSettings } from './queries/useEffectiveSettings';
 
 export type { UseTransportOptions, TransportControls } from './transport';
@@ -60,6 +61,12 @@ export type { PluginDefinition } from './definePlugin';
 
 export { usePermission } from './hooks/usePermission';
 export { useFlag } from './hooks/useFlag';
+export {
+  useFeatureState,
+  useFeatureGroupVisibility,
+  type FeatureState,
+  type FeatureGroupVisibility,
+} from './hooks/useFeatureState';
 export { useStyleSettings } from './hooks/useStyleSettings';
 export type { UseStyleSettingsReturn } from './hooks/useStyleSettings';
 

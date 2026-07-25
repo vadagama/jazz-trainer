@@ -29,8 +29,8 @@ docs/                     Документация
 - [ARCHITECTURE_BASE.md](docs/ARCHITECTURE_BASE.md) — текущая архитектура + архитектурные решения (ADR)
 - [ARCHITECTURE_VISION.md](docs/ARCHITECTURE_VISION.md) — целевое видение архитектуры
 - [FUNCTIONS.md](docs/FUNCTIONS.md) — каталог возможностей
-- [STYLES.md](docs/STYLES.md) — стили и аранжировка (StyleProfile, ансамбли)
-- [ARANGEMENT_VISION.md](docs/ARANGEMENT_VISION.md) — видение системы аранжировки
+- [STYLES.md](docs/Genres/STYLES.md) — стили и аранжировка (StyleProfile, ансамбли)
+- [ARANGEMENT_VISION.md](docs/ARCHIVE/ARANGEMENT_VISION.md) — видение системы аранжировки
 
 ## Инструменты
 
@@ -38,23 +38,23 @@ docs/                     Документация
 
 | Инструмент       | Семплы                           | Документация                      |
 | ---------------- | -------------------------------- | --------------------------------- |
-| Bass             | SneakyBass (контрабас)           | [BASS.md](docs/BASS.md)           |
-| Drums            | Swirly Drums v2 (8 звуков)       | [DRUMS.md](docs/DRUMS.md)         |
-| Modern Kit       | Modern Kit (10 звуков + stir)    | [DRUMS.md](docs/DRUMS.md)         |
-| Grand Piano      | Upright KW / Salamander Grand    | [PIANO.md](docs/PIANO.md)         |
-| Rhodes           | jRhodes3c (комплементарный слой) | [RHODES.md](docs/RHODES.md)       |
-| Guitar           | Nylon / Steel                    | [GUITAR.md](docs/GUITAR.md)       |
-| Electric Guitar  | Electric (2 velocity-слоя)       | [GUITAR.md](docs/GUITAR.md)       |
-| Vibraphone       | Vibraphone (2 velocity-слоя)     | [VIBRAPHONE.md](docs/VIBRAPHONE.md) |
-| Organ            | Hammond-style (2 velocity-слоя)  | [ORGAN.md](docs/ORGAN.md)         |
-| Percussion       | Latin perc (16 звуков)           | [PERCUSSION.md](docs/PERCUSSION.md) |
-| Clarinet         | Clarinet (2 velocity-слоя)       | [CLARINET.md](docs/CLARINET.md)   |
+| Bass             | SneakyBass (контрабас)           | [BASS.md](docs/Instruments/BASS.md)           |
+| Drums            | Swirly Drums v2 (8 звуков)       | [DRUMS.md](docs/Instruments/DRUMS.md)         |
+| Modern Kit       | Modern Kit (10 звуков + stir)    | [DRUMS.md](docs/Instruments/DRUMS.md)         |
+| Grand Piano      | Upright KW / Salamander Grand    | [PIANO.md](docs/Instruments/PIANO.md)         |
+| Rhodes           | jRhodes3c (комплементарный слой) | [RHODES.md](docs/Instruments/RHODES.md)       |
+| Guitar           | Nylon / Steel                    | [GUITAR.md](docs/Instruments/GUITAR.md)       |
+| Electric Guitar  | Electric (2 velocity-слоя)       | [GUITAR.md](docs/Instruments/GUITAR.md)       |
+| Vibraphone       | Vibraphone (2 velocity-слоя)     | [VIBRAPHONE.md](docs/Instruments/VIBRAPHONE.md) |
+| Organ            | Hammond-style (2 velocity-слоя)  | [ORGAN.md](docs/Instruments/ORGAN.md)         |
+| Percussion       | Latin perc (16 звуков)           | [PERCUSSION.md](docs/Instruments/PERCUSSION.md) |
+| Clarinet         | Clarinet (2 velocity-слоя)       | [CLARINET.md](docs/Instruments/CLARINET.md)   |
 | Metronome        | 5 звуков                         | —                                 |
 
-**Сольные инструменты** — 7 MIDI-тембров для live-ввода: `synthDefault`, `pianoUprightSolo`, `pianoSalamanderSolo`, `rhodesJRhodes3cSolo`, `clarinetSolo`, `vibraphoneSolo`, `guitarNylonSolo`. Подробнее: [MIDI_INSTRUMENT_ARCHITECTURE.md](docs/MIDI_INSTRUMENT_ARCHITECTURE.md).
+**Сольные инструменты** — 7 MIDI-тембров для live-ввода: `synthDefault`, `pianoUprightSolo`, `pianoSalamanderSolo`, `rhodesJRhodes3cSolo`, `clarinetSolo`, `vibraphoneSolo`, `guitarNylonSolo`. Подробнее: [MIDI_INSTRUMENT_ARCHITECTURE.md](docs/ARCHIVE/MIDI_INSTRUMENT_ARCHITECTURE.md).
 
 Раздел «Упражнения» (плагин `practice-cards`) — интерактивные карточки
-для тренировки аккордов и гамм с аккомпанементом. См. [EXERSISE-VISION.md](docs/EXERSISE-VISION.md) и [EXERSISE-ARCHITECTURE.md](docs/EXERSISE-ARCHITECTURE.md).
+для тренировки аккордов и гамм с аккомпанементом. См. [EXERSISE-VISION.md](docs/ARCHIVE/EXERSISE-VISION.md) и [EXERSISE-ARCHITECTURE.md](docs/ARCHIVE/EXERSISE-ARCHITECTURE.md).
 
 ## Требования
 

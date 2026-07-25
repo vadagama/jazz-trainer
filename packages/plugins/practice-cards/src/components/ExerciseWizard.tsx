@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from 'react';
-import { useSettings, useUpdateSettings } from '@jazz/plugin-sdk';
+import { useSettings, useUpdateSettings, useAuth, type FeatureState } from '@jazz/plugin-sdk';
 
 import { cn, Checkbox, Card, CardContent, CardHeader, CardTitle } from '@jazz/ui';
 import { generateChordExercise } from '../generators/chordExercise.js';
@@ -296,6 +296,7 @@ function generateExerciseBars(config: ExerciseConfig, kind: ExerciseKind | null)
 export function ExerciseWizard({ onStart, initialConfig }: ExerciseWizardProps) {
   const { data: settings } = useSettings();
   const updateSettings = useUpdateSettings();
+  const { permissions, inactivePermissions } = useAuth();
   const [step, setStep] = useState<WizardStep>(initialConfig ? 2 : 1);
   const [kind, setKind] = useState<ExerciseKind | null>(initialConfig?.type ?? null);
   const [config, setConfig] = useState<Partial<ExerciseConfig>>(() =>
@@ -305,6 +306,24 @@ export function ExerciseWizard({ onStart, initialConfig }: ExerciseWizardProps) 
   const [error, setError] = useState<string | null>(null);
 
   const defaults = useMemo(() => buildDefaults(settings), [settings]);
+
+  // Resolve per-type feature state from RBAC: active/inactive/hidden.
+  // `embellishments` tile maps to `exercises:enclosures`.
+  const tileStates = useMemo(() => {
+    const activeSet = new Set(permissions);
+    const inactiveSet = new Set(inactivePermissions);
+    const resolve = (code: string): FeatureState => {
+      if (activeSet.has(code)) return 'active';
+      if (inactiveSet.has(code)) return 'inactive';
+      return 'hidden';
+    };
+    return {
+      chords: resolve('exercises:chords'),
+      scales: resolve('exercises:scales'),
+      sequences: resolve('exercises:sequences'),
+      embellishments: resolve('exercises:enclosures'),
+    } as const;
+  }, [permissions, inactivePermissions]);
 
   const handleTypeSelect = useCallback(
     (type: ExerciseKind) => {
@@ -476,7 +495,9 @@ export function ExerciseWizard({ onStart, initialConfig }: ExerciseWizardProps) 
       )}
 
       {/* Step content */}
-      {step === 1 && <StepTypeSelect onSelect={handleTypeSelect} />}
+      {step === 1 && (
+        <StepTypeSelect states={tileStates} onSelect={handleTypeSelect} />
+      )}
 
       {step === 2 && kind === 'chords' && (
         <Step2Shell

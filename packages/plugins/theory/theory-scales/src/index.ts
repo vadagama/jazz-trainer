@@ -9,7 +9,7 @@ export default definePlugin({
     description: 'Interactive scale reference with visualization.',
   },
   contributes: {
-    routes: [{ path: '/scales', element: () => import('./ScalesPage') }],
+    routes: [{ path: '/scales', element: () => import('./ScalesPage'), requires: 'theory:scales' }],
     navItems: [{ section: 'learn', label: 'Scales', to: '/scales', icon: 'music' }],
   },
 });

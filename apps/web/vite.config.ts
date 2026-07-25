@@ -18,30 +18,37 @@ export default defineConfig({
       '@jazz/plugin-core-editor': r('../../packages/plugins/core-editor/src/index.ts'),
       '@jazz/plugin-core-player': r('../../packages/plugins/core-player/src/index.ts'),
       '@jazz/plugin-catalog': r('../../packages/plugins/catalog/src/index.ts'),
-      '@jazz/plugin-admin-catalog': r('../../packages/plugins/admin-catalog/src/index.ts'),
-      '@jazz/plugin-admin-users': r('../../packages/plugins/admin-users/src/index.ts'),
-      '@jazz/plugin-admin-roles': r('../../packages/plugins/admin-roles/src/index.ts'),
-      '@jazz/plugin-admin-content': r('../../packages/plugins/admin-content/src/index.ts'),
-      '@jazz/plugin-admin-flags': r('../../packages/plugins/admin-flags/src/index.ts'),
-      '@jazz/plugin-admin-assets': r('../../packages/plugins/admin-assets/src/index.ts'),
-      '@jazz/plugin-admin-diagnostics': r('../../packages/plugins/admin-diagnostics/src/index.ts'),
+      '@jazz/plugin-admin-catalog': r('../../packages/plugins/admin/admin-catalog/src/index.ts'),
+      '@jazz/plugin-admin-users': r('../../packages/plugins/admin/admin-users/src/index.ts'),
+      '@jazz/plugin-admin-roles': r('../../packages/plugins/admin/admin-roles/src/index.ts'),
+      '@jazz/plugin-admin-content': r('../../packages/plugins/admin/admin-content/src/index.ts'),
+      '@jazz/plugin-admin-flags': r('../../packages/plugins/admin/admin-flags/src/index.ts'),
+      '@jazz/plugin-admin-assets': r('../../packages/plugins/admin/admin-assets/src/index.ts'),
+      '@jazz/plugin-admin-diagnostics': r('../../packages/plugins/admin/admin-diagnostics/src/index.ts'),
+      '@jazz/plugin-admin-defaults': r('../../packages/plugins/admin/admin-defaults/src/index.ts'),
       '@jazz/plugin-admin-drum-constructor': r(
-        '../../packages/plugins/admin-drum-constructor/src/index.ts',
+        '../../packages/plugins/admin/admin-drum-constructor/src/index.ts',
       ),
       '@jazz/plugin-admin-percussion-constructor': r(
-        '../../packages/plugins/admin-percussion-constructor/src/index.ts',
+        '../../packages/plugins/admin/admin-percussion-constructor/src/index.ts',
       ),
       '@jazz/plugin-admin-piano-constructor': r(
-        '../../packages/plugins/admin-piano-constructor/src/index.ts',
+        '../../packages/plugins/admin/admin-piano-constructor/src/index.ts',
       ),
       '@jazz/plugin-admin-bass-constructor': r(
-        '../../packages/plugins/admin-bass-constructor/src/index.ts',
+        '../../packages/plugins/admin/admin-bass-constructor/src/index.ts',
       ),
       '@jazz/plugin-admin-rhodes-constructor': r(
-        '../../packages/plugins/admin-rhodes-constructor/src/index.ts',
+        '../../packages/plugins/admin/admin-rhodes-constructor/src/index.ts',
+      ),
+      '@jazz/plugin-admin-exercises': r(
+        '../../packages/plugins/admin/admin-exercises/src/index.ts',
+      ),
+      '@jazz/plugin-admin-theory': r(
+        '../../packages/plugins/admin/admin-theory/src/index.ts',
       ),
       '@jazz/plugin-admin-constructor-shared': r(
-        '../../packages/plugins/admin-constructor-shared/src/index.ts',
+        '../../packages/plugins/admin/admin-constructor-shared/src/index.ts',
       ),
       '@jazz/plugin-jazz-drum-kit': r(
         '../../packages/plugins/instruments/jazz-drum-kit/src/index.ts',

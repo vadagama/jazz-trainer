@@ -7,7 +7,7 @@ import { suggestUpperStructure } from './pianoUpperStructures.js';
 import { PIANO_MOLECULE_LIST } from './pianoMolecules.js';
 import { PIANO_CELL_LIST } from './pianoCells.js';
 import { PIANO_ORGANISM_LIST } from './pianoOrganisms.js';
-import type { PianoEvent, ScheduleContext } from './instrument.js';
+import type { ScheduleContext } from './instrument.js';
 import type { ChordSymbol, Style } from '@jazz/shared';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

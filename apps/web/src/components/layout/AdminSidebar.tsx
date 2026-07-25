@@ -12,6 +12,7 @@ import {
   Music,
   Piano,
   Shield,
+  Sliders,
   ChevronDown,
   ChevronRight,
   type LucideIcon,
@@ -60,6 +61,7 @@ const SECTIONS: AdminSection[] = [
   },
   { label: 'Фичи', to: '/admin/flags', icon: Flag },
   { label: 'Аналитика', to: '/admin/analytics', icon: BarChart3 },
+  { label: 'Настройки', to: '/admin/defaults', icon: Sliders },
 ];
 
 function NavLink({

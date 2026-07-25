@@ -38,3 +38,4 @@ export type {
   EnsemblePreset,
   StyleProfile,
 } from './styleProfile.js';
+export { applyStyleDefaults } from './styleSettings.js';

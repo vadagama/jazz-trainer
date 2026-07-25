@@ -4,6 +4,8 @@ import { Logo } from './Logo';
 import { useAuth, useLogout } from '@/queries/useAuth';
 import { useTheme } from '@/hooks/useTheme';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { useFeatureGroupVisibility } from '@/hooks/useFeatureGroupVisibility';
+import { THEORY_FEATURES, EXERCISE_FEATURES } from '@jazz/shared';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -12,6 +14,8 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 
+const UMBRELLA_CODES = new Set(['exercises:read', 'theory:read']);
+
 export function Header() {
   const { user, permissions } = useAuth();
   const logout = useLogout();
@@ -19,6 +23,12 @@ export function Header() {
   const navigate = useNavigate();
   const { theme, toggle } = useTheme();
   const location = useLocation();
+  const { isVisible: theoryVisible } = useFeatureGroupVisibility(
+    THEORY_FEATURES.map((f) => f.code).filter((c) => !UMBRELLA_CODES.has(c)),
+  );
+  const { isVisible: exercisesVisible } = useFeatureGroupVisibility(
+    EXERCISE_FEATURES.map((f) => f.code).filter((c) => !UMBRELLA_CODES.has(c)),
+  );
 
   const initials = user?.name
     ? user.name
@@ -44,11 +54,16 @@ export function Header() {
       <div className="flex items-center gap-1">
         <nav className="flex items-center gap-1 mr-2">
           {[
-            { to: '/', label: 'Каталог', auth: false },
-            { to: '/practice-cards', label: 'Упражнения', auth: false },
-            { to: '/my', label: 'Мои композиции', auth: true },
+            { to: '/', label: 'Каталог', auth: false, visible: true },
+            { to: '/my', label: 'Мои композиции', auth: true, visible: true },
+            {
+              to: '/practice-cards',
+              label: 'Упражнения',
+              auth: false,
+              visible: exercisesVisible,
+            },
           ]
-            .filter(({ auth }) => !auth || !!user)
+            .filter(({ auth, visible }) => (!auth || !!user) && visible)
             .map(({ to, label }) => {
               const isActive = location.pathname === to;
               return (
@@ -66,16 +81,18 @@ export function Header() {
               );
             })}
 
-          <Link
-            to="/theory"
-            className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-              location.pathname === '/theory' || location.pathname.startsWith('/theory/')
-                ? 'bg-accent text-foreground'
-                : 'text-muted-foreground hover:bg-accent hover:text-foreground'
-            }`}
-          >
-            Теория
-          </Link>
+          {theoryVisible && (
+            <Link
+              to="/theory"
+              className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                location.pathname === '/theory' || location.pathname.startsWith('/theory/')
+                  ? 'bg-accent text-foreground'
+                  : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+              }`}
+            >
+              Теория
+            </Link>
+          )}
 
           {isAdmin && (
             <Link

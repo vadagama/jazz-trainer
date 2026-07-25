@@ -9,7 +9,7 @@ export type { TensionLevel } from './pianoUpperStructures.js';
  * Molecules describe rhythm + role; {@link buildPianoVoicing} + {@link selectVoicingRole}
  * resolve the actual pitches from the real chord + density + tension, so a
  * single rhythmic molecule works over any chord quality without baking in
- * intervals (see docs/PIANO-EXTENDED-ARRANGEMENT-2.md).
+ * intervals (see docs/Instruments/PIANO-EXTENDED-ARRANGEMENT.md).
  */
 export type VoiceRole = 'chord' | 'shell' | 'top' | 'bass' | 'upper';
 

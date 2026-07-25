@@ -4,7 +4,7 @@
  * Each organism maps section types (intro/verseA/verseB/verseC/chorus/bridge/
  * solo/ending) to cell pools. The `solo` section always points at the
  * step-back `rhodes-solo-sparse` cell so Rhodes yields the foreground to the
- * soloist. See docs/MELODIC-PLUGIN.md §2.2 (all 8 section types covered).
+ * soloist. See docs/Instruments/MELODIC-PLUGIN.md §2.2 (all 8 section types covered).
  */
 import type { RhodesOrganism, RhodesPatternStyle } from './rhodesPatternTypes.js';
 import { GENERATED_RHODES_ORGANISMS } from './rhodesOrganismsGenerated.js';

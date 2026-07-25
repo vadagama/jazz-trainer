@@ -9,7 +9,7 @@ export default definePlugin({
     description: 'Лекция: diminished, whole-tone, altered и другие джазовые гаммы.',
   },
   contributes: {
-    routes: [{ path: '/theory/scales-jazz', element: () => import('./ScalesJazzPage') }],
+    routes: [{ path: '/theory/scales-jazz', element: () => import('./ScalesJazzPage'), requires: 'theory:scalesJazz' }],
     navItems: [
       { section: 'learn', label: 'Джазовые гаммы', to: '/theory/scales-jazz', icon: 'music' },
     ],

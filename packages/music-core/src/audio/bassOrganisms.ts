@@ -6,7 +6,7 @@
  * a cell pool, plus a `defaultForm` fallback used when no grid sections are
  * available. Mirrors the piano/drum organism model.
  *
- * @see docs/BASS.md
+ * @see docs/Instruments/BASS.md
  */
 import type { BassOrganism, BassPatternStyle } from './bassPatternTypes.js';
 import type { SectionType } from '@jazz/shared';

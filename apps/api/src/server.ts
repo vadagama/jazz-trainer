@@ -13,6 +13,10 @@ import { adminCatalogRoutes } from './routes/admin-catalog.routes.js';
 import { patternsRoutes } from './routes/patterns.routes.js';
 import { adminUsersRoutes } from './routes/admin-users.routes.js';
 import { adminRolesRoutes } from './routes/admin-roles.routes.js';
+import { adminFlagsRoutes } from './routes/admin-flags.routes.js';
+import { adminFeatureAccessRoutes } from './routes/admin-feature-access.routes.js';
+import { adminFeatureRoleStateRoutes } from './routes/admin-feature-role-state.routes.js';
+import { defaultsRoutes } from './routes/defaults.routes.js';
 import { devRoutes } from './routes/dev.routes.js';
 
 export interface BuildServerOptions {
@@ -67,6 +71,10 @@ export async function buildServer(opts: BuildServerOptions = {}): Promise<Fastif
   await app.register(patternsRoutes, { prefix: '/api' });
   await app.register(adminUsersRoutes, { prefix: '/api', db });
   await app.register(adminRolesRoutes, { prefix: '/api', db });
+  await app.register(adminFlagsRoutes, { prefix: '/api', db });
+  await app.register(adminFeatureAccessRoutes, { prefix: '/api', db });
+  await app.register(adminFeatureRoleStateRoutes, { prefix: '/api', db });
+  await app.register(defaultsRoutes, { prefix: '/api', db });
   if (config.authDevMode) {
     await app.register(devRoutes, { prefix: '/api' });
   }

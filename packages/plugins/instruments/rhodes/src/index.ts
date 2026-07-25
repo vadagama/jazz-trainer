@@ -12,7 +12,7 @@ export {
 
 // The Rhodes pattern engine (molecules/cells/organisms) lives entirely in
 // @jazz/music-core — import RhodesPatternEngine, RHODES_MOLECULES, etc.
-// from there directly. See docs/RHODES.md.
+// from there directly. See docs/Instruments/RHODES.md.
 
 export default definePlugin({
   manifest: {

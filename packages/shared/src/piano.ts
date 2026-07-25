@@ -23,7 +23,7 @@ export type PianoPatternStyleDTO = z.infer<typeof PianoPatternStyleSchema>;
 /**
  * Voice role — which part of the resolved chord voicing an atom plays.
  * The engine resolves actual pitches from the real chord + density + tension
- * at playback time (see docs/PIANO-EXTENDED-ARRANGEMENT-2.md); atoms never
+ * at playback time (see docs/Instruments/PIANO-EXTENDED-ARRANGEMENT.md); atoms never
  * bake in an interval or MIDI note.
  */
 export const PianoSoundSchema = z.enum(['chord', 'shell', 'top', 'bass', 'upper']);

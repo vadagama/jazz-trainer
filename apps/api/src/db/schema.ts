@@ -103,6 +103,73 @@ export const userSettings = sqliteTable('user_settings', {
   updatedAt: integer('updated_at').notNull(),
 });
 
+/**
+ * Singleton table of factory default settings (id is always 1).
+ *
+ * The "global" starting point inherited by new users on account creation
+ * (`ensureUserSettings`) and by guest users (`useEffectiveSettings`). Mirrors
+ * {@link userSettings} minus the personal fields (`userId`, `practiceCards`,
+ * `midiDeviceId`, `midiChannel`). Per-style instrument values are NOT stored
+ * here — they resolve at runtime via `applyStyleDefaults` from `StyleProfile`,
+ * just like `user_settings`. Admin overrides go into `perStyleOverrides`.
+ */
+export const defaultSettings = sqliteTable('default_settings', {
+  id: integer('id').primaryKey(),
+  bpm: integer('bpm').notNull().default(120),
+  clickStrong: text('click_strong').default('drum-stick'),
+  clickStrong2: text('click_strong_2').default('drum-stick'),
+  clickWeak: text('click_weak').default('drum-stick'),
+  volume: real('volume').notNull().default(0.8),
+  countIn: integer('count_in').notNull().default(1),
+  metronomeEnabled: integer('metronome_enabled', { mode: 'boolean' }).notNull().default(true),
+  metronomeVolume: real('metronome_volume').notNull().default(0.8),
+  metronomeMode: text('metronome_mode').notNull().default('both'),
+  metronomeStrongEnabled: integer('metronome_strong_enabled', { mode: 'boolean' })
+    .notNull()
+    .default(true),
+  metronomeStrongVolume: real('metronome_strong_volume').notNull().default(0.8),
+  metronomeStrong2Enabled: integer('metronome_strong2_enabled', { mode: 'boolean' })
+    .notNull()
+    .default(true),
+  metronomeStrong2Volume: real('metronome_strong2_volume').notNull().default(0.8),
+  metronomeWeakEnabled: integer('metronome_weak_enabled', { mode: 'boolean' })
+    .notNull()
+    .default(true),
+  metronomeWeakVolume: real('metronome_weak_volume').notNull().default(0.8),
+  bassEnabled: integer('bass_enabled', { mode: 'boolean' }).notNull().default(true),
+  bassVolume: real('bass_volume').notNull().default(0.7),
+  bassComplexity: integer('bass_complexity').notNull().default(1),
+  bassVariant: text('bass_variant'),
+  bassTension: text('bass_tension').default('clean'),
+  bassHumanize: text('bass_humanize'),
+  bassUseMutedNotes: integer('bass_use_muted_notes', { mode: 'boolean' }).notNull().default(true),
+  rhodesEnabled: integer('rhodes_enabled', { mode: 'boolean' }).notNull().default(false),
+  rhodesVolume: real('rhodes_volume').notNull().default(0.6),
+  rhodesMode: text('rhodes_mode').notNull().default('halfNotes'),
+  rhodesVoicingDensity: text('rhodes_voicing_density').notNull().default('rootless3'),
+  rhodesLayerMode: text('rhodes_layer_mode').notNull().default('none'),
+  rhodesLayerVolume: real('rhodes_layer_volume').notNull().default(0.5),
+  pianoEnabled: integer('piano_enabled', { mode: 'boolean' }).notNull().default(false),
+  pianoVolume: real('piano_volume').notNull().default(0.7),
+  pianoProfile: text('piano_profile').notNull().default('swing-sparse'),
+  pianoVoicingDensity: text('piano_voicing_density').notNull().default('rootless3'),
+  pianoSampleLibrary: text('piano_sample_library').notNull().default('salamander'),
+  pianoTension: text('piano_tension').default('clean'),
+  pianoHumanize: text('piano_humanize'),
+  drumsEnabled: integer('drums_enabled', { mode: 'boolean' }).notNull().default(true),
+  drumsVolume: real('drums_volume').notNull().default(0.7),
+  drumKit: text('drum_kit').notNull().default('jazz-drum-kit'),
+  style: text('style').notNull().default('swing'),
+  perStyleOverrides: text('per_style_overrides'),
+  swingRatio: real('swing_ratio').notNull().default(0.5),
+  audioFormat: text('audio_format').notNull().default('aac'),
+  soloToneId: text('solo_tone_id').default('rhodes-jrhodes3c'),
+  soloVolume: real('solo_volume'),
+  duckingEnabled: integer('ducking_enabled', { mode: 'boolean' }),
+  createdAt: integer('created_at').notNull(),
+  updatedAt: integer('updated_at').notNull(),
+});
+
 export const sessions = sqliteTable(
   'sessions',
   {
@@ -225,6 +292,15 @@ export const rolePermissions = sqliteTable(
     permissionCode: text('permission_code')
       .references(() => permissions.code)
       .notNull(),
+    /**
+     * 3-state feature visibility (FEATURES-VISION.md §4): 'active' grants the
+     * permission, 'inactive' shows the feature as locked ("coming soon").
+     * Absence of a row means no grant ('hidden' for feature codes).
+     * Non-feature permissions always use the default 'active'.
+     */
+    state: text('state', { enum: ['active', 'inactive'] })
+      .notNull()
+      .default('active'),
   },
   (t) => ({ pk: primaryKey(t.roleId, t.permissionCode) }),
 );
@@ -302,6 +378,21 @@ export const featureFlags = sqliteTable('feature_flags', {
   createdAt: integer('created_at', { mode: 'timestamp' })
     .notNull()
     .default(sql`(unixepoch())`),
+  // ── Feature flag management (P0+P1, FEATURES-VISION.md §4.2) ─────────────
+  description: text('description'),
+  category: text('category'), // 'feature' | 'experiment' | 'maintenance' | 'killswitch'
+  rolloutPercent: integer('rollout_percent'), // 0–100, null = not used
+  expiresAt: integer('expires_at'), // unix timestamp (ms), null = never
+  createdBy: text('created_by'), // users.id
+  updatedAt: integer('updated_at'), // unix timestamp (ms)
+  updatedBy: text('updated_by'), // users.id
+});
+
+// ── Feature access (public column in admin) ──────────────────────────
+
+export const featureAccess = sqliteTable('feature_access', {
+  featureCode: text('feature_code').primaryKey(),
+  state: text('state', { enum: ['active', 'inactive'] }).notNull().default('active'),
 });
 
 // ── Type exports ──────────────────────────────────────────────────────────
@@ -309,6 +400,7 @@ export const featureFlags = sqliteTable('feature_flags', {
 export type UserRecord = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type UserSettingsRecord = typeof userSettings.$inferSelect;
+export type DefaultSettingsRecord = typeof defaultSettings.$inferSelect;
 export type SessionRecord = typeof sessions.$inferSelect;
 export type HarmonyCompositionRecord = typeof harmonyCompositions.$inferSelect;
 export type NewHarmonyComposition = typeof harmonyCompositions.$inferInsert;
@@ -320,3 +412,4 @@ export type PermissionRecord = typeof permissions.$inferSelect;
 export type AuditLogRecord = typeof auditLog.$inferSelect;
 export type LectureLikeRecord = typeof lectureLikes.$inferSelect;
 export type FeatureFlagRecord = typeof featureFlags.$inferSelect;
+export type FeatureAccessRecord = typeof featureAccess.$inferSelect;

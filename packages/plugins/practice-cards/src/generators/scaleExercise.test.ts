@@ -146,7 +146,8 @@ describe('generateScaleExercise — playRandomly', () => {
       scaleType: 'natural-minor',
       direction: 'both',
       octaves: 1,
-    } as ScaleExerciseConfig);
+      playRandomly: false,
+    });
     // both, 1 октава → 2 keys × (up+down) = 4 такта
     expect(bars).toHaveLength(4);
     expect(bars.every((b) => b.scaleLabel && b.scaleLabel.length > 0)).toBe(true);

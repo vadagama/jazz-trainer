@@ -64,6 +64,10 @@ echo "=== Bongo Low (bongol) ==="
 encode4 "bongo_lo" "$SRC/bongol/BongoL_Hit1_v2_rr{N}_Close.wav"
 
 echo ""
+echo "=== Bongo High (bongoh, v1 — v2 is used for conga_hi) ==="
+encode4 "bongo_hi" "$SRC/bongoh/BongoH_Hit1_v1_rr{N}_Close.wav"
+
+echo ""
 echo "=== Tumba (low conga) ==="
 encode4 "tumba" "$SRC/tumba/Tumba_24_HitN_71_100_rr{N}_Close.wav"
 

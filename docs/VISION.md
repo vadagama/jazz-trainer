@@ -163,10 +163,10 @@
 - `pianoSampleLibrary` — `salamander` | `upright-kw`
 - `pianoRandomizationLevel` — `off` | `subtle` | `moderate` | `high` (после 3.5)
 
-### 4.4. Обновление `docs/RHODES.md` и создание `docs/PIANO.md`
+### 4.4. Обновление `docs/Instruments/RHODES.md` и создание `docs/Instruments/PIANO.md`
 
-- `docs/RHODES.md` — обновляется: новая роль комплементарного слоя
-- `docs/PIANO.md` — новый документ: сэмплы, паттерны, voicings, взаимодействие с Rhodes
+- `docs/Instruments/RHODES.md` — обновляется: новая роль комплементарного слоя
+- `docs/Instruments/PIANO.md` — новый документ: сэмплы, паттерны, voicings, взаимодействие с Rhodes
 
 ### 4.5. Стиле-зависимый Bass
 

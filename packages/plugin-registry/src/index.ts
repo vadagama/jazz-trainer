@@ -14,6 +14,9 @@ import adminPercussionConstructor from '@jazz/plugin-admin-percussion-constructo
 import adminPianoConstructor from '@jazz/plugin-admin-piano-constructor';
 import adminBassConstructor from '@jazz/plugin-admin-bass-constructor';
 import adminRhodesConstructor from '@jazz/plugin-admin-rhodes-constructor';
+import adminExercises from '@jazz/plugin-admin-exercises';
+import adminTheory from '@jazz/plugin-admin-theory';
+import adminDefaults from '@jazz/plugin-admin-defaults';
 import jazzDrumKit from '@jazz/plugin-jazz-drum-kit';
 import funkDrumKit from '@jazz/plugin-funk-drum-kit';
 import percussion from '@jazz/plugin-percussion';
@@ -67,6 +70,9 @@ export const PLUGINS: PluginDefinition[] = [
   adminPianoConstructor,
   adminBassConstructor,
   adminRhodesConstructor,
+  adminExercises,
+  adminTheory,
+  adminDefaults,
   jazzDrumKit,
   funkDrumKit,
   percussion,

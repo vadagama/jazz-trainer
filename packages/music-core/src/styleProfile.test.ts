@@ -66,11 +66,11 @@ describe('getStyleProfile', () => {
 });
 
 describe('getAllStyleProfiles', () => {
-  it('returns all 5 profiles', () => {
+  it('returns all 7 profiles', () => {
     const profiles = getAllStyleProfiles();
-    expect(profiles).toHaveLength(5);
+    expect(profiles).toHaveLength(7);
     const ids = profiles.map((p) => p.id).sort();
-    expect(ids).toEqual(['ballad', 'bossa', 'funk', 'latin', 'swing']);
+    expect(ids).toEqual(['ballad', 'blues', 'bossa', 'funk', 'latin', 'soul', 'swing']);
   });
 });
 

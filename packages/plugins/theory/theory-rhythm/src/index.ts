@@ -9,7 +9,7 @@ export default definePlugin({
     description: 'Лекция: основы джазового ритма, свинг и синкопы.',
   },
   contributes: {
-    routes: [{ path: '/theory/rhythm', element: () => import('./RhythmPage') }],
+    routes: [{ path: '/theory/rhythm', element: () => import('./RhythmPage'), requires: 'theory:rhythm' }],
     navItems: [{ section: 'learn', label: 'Ритм', to: '/theory/rhythm', icon: 'music' }],
   },
 });

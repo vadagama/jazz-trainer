@@ -168,33 +168,33 @@ describe('pianoManifest per-style defaults', () => {
 // ─── Rhodes per-style defaults ────────────────────────────────────────────────
 
 describe('rhodesManifest per-style defaults', () => {
-  it('swing uses subtleOffbeats + rootless3', () => {
+  it('swing uses rhodes-swing-form + rootless3', () => {
     const result = resolveInstrumentDefaults(rhodesManifest, 'swing');
-    expect(result.mode).toBe('subtleOffbeats');
+    expect(result.pattern).toBe('rhodes-swing-form');
     expect(result.voicingDensity).toBe('rootless3');
   });
 
-  it('bossa uses ambientSwells + shell2', () => {
+  it('bossa uses rhodes-bossa-form + shell2', () => {
     const result = resolveInstrumentDefaults(rhodesManifest, 'bossa');
-    expect(result.mode).toBe('ambientSwells');
+    expect(result.pattern).toBe('rhodes-bossa-form');
     expect(result.voicingDensity).toBe('shell2');
   });
 
-  it('funk uses stabAccents + rootless4', () => {
+  it('funk uses rhodes-funk-form + rootless4', () => {
     const result = resolveInstrumentDefaults(rhodesManifest, 'funk');
-    expect(result.mode).toBe('stabAccents');
+    expect(result.pattern).toBe('rhodes-funk-form');
     expect(result.voicingDensity).toBe('rootless4');
   });
 
-  it('latin uses highComping + rootless3', () => {
+  it('latin uses rhodes-latin-form + rootless3', () => {
     const result = resolveInstrumentDefaults(rhodesManifest, 'latin');
-    expect(result.mode).toBe('highComping');
+    expect(result.pattern).toBe('rhodes-latin-form');
     expect(result.voicingDensity).toBe('rootless3');
   });
 
-  it('ballad uses pads + shell2', () => {
+  it('ballad uses rhodes-ballad-form + shell2', () => {
     const result = resolveInstrumentDefaults(rhodesManifest, 'ballad');
-    expect(result.mode).toBe('pads');
+    expect(result.pattern).toBe('rhodes-ballad-form');
     expect(result.voicingDensity).toBe('shell2');
   });
 });
