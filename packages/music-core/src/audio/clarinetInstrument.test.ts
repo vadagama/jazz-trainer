@@ -287,7 +287,6 @@ describe('ClarinetInstrument — reset / seek', () => {
 
     // First pass: schedule bar 1
     inst.schedule({ fromTicks: TPBAR, toTicks: 2 * TPBAR }, ctx);
-    const firstEvents = events.map((e) => ({ ...e }));
     events.length = 0;
 
     // Backward seek: schedule bar 0

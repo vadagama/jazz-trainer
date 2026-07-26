@@ -24,7 +24,6 @@ let latestMutationSeq = 0;
 // skipped by the seq guard above).
 let patchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 let patchPendingResolve: ((v: UserSettingsDTO) => void) | null = null;
-let patchPendingReject: ((err: unknown) => void) | null = null;
 
 export function useSettings() {
   const { user } = useAuth();
@@ -64,17 +63,14 @@ export function useUpdateSettings() {
             qc.getQueryData<UserSettingsDTO>(SETTINGS_KEY) ?? ({} as UserSettingsDTO);
           patchPendingResolve(cache);
           patchPendingResolve = null;
-          patchPendingReject = null;
         }
       }
 
       return new Promise<UserSettingsDTO>((resolve, reject) => {
         patchPendingResolve = resolve;
-        patchPendingReject = reject;
         patchDebounceTimer = setTimeout(async () => {
           patchDebounceTimer = null;
           patchPendingResolve = null;
-          patchPendingReject = null;
           try {
             const result = await apiClient.patch<UserSettingsDTO>(
               '/api/settings',

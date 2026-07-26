@@ -23,17 +23,6 @@ import { getStyleProfile, type StyleProfile } from '../styleProfile.js';
 
 const PPQ = 480;
 
-/** Style → default comping mode (@deprecated legacy path). */
-const STYLE_DEFAULT_MODE: Record<Style, RhodesCompingMode> = {
-  swing: 'halfNotes',
-  bossa: 'halfNotes',
-  funk: 'oneand-three',
-  latin: 'one-twoand-four',
-  ballad: 'wholeNotes',
-  blues: 'halfNotes',
-  soul: 'oneand-three',
-};
-
 export class RhodesInstrument implements Instrument {
   private timeline: ChordTimeline;
   private mode: RhodesCompingMode = 'halfNotes';
