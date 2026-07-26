@@ -146,7 +146,8 @@ export const INSTRUMENT_GROUPS: InstrumentGroupDef[] = [
  *
  * - `required` — groups essential to the style (auto-enabled, shown first).
  * - `recommended` — suggested additions (disabled by default, easy to toggle on).
- * - `optional` — available but hidden behind "advanced" / manual toggle.
+ * - `optional` — supported by the style; shown in the list (disabled by default)
+ *   so the user can enable and mix them.
  * - `hidden` — irrelevant to this style, not shown in UI.
  */
 export interface InstrumentRoster {
@@ -1066,6 +1067,14 @@ export function resolveGroupInstrumentId(
   return getDefaultVariant(groupId, style);
 }
 
+/**
+ * Instrument groups temporarily hidden from the arrangement UI (settings tab
+ * and player) across ALL styles, pending future configuration. They stay in the
+ * roster and audio model — this only suppresses their tiles. Hides: Guitar,
+ * Winds (Trumpet/Flute/Clarinet) and Synth (Organ). Remove entries to re-enable.
+ */
+const TEMPORARILY_HIDDEN_GROUPS = new Set<InstrumentGroupId>(['guitar', 'winds', 'synth']);
+
 /** Display-ready group info for UI rendering. */
 export interface DisplayGroup {
   groupId: InstrumentGroupId;
@@ -1079,23 +1088,29 @@ export interface DisplayGroup {
 
 /**
  * Compute the ordered list of instrument groups visible for a style.
- * Groups from required/recommended/optional (if enabled) are included.
+ *
+ * `required`, `recommended` AND `optional` groups are always shown so the user
+ * can enable/disable and mix any instrument the style supports — an optional
+ * instrument that is off simply renders as a disabled tile in the same list.
+ * `hidden` groups stay out of the UI unless explicitly surfaced via
+ * `userOverrides` (they are irrelevant to the style).
  */
 export function getVisibleInstrumentGroups(
   style: Style,
   userOverrides?: Partial<Record<InstrumentGroupId, boolean>>,
 ): DisplayGroup[] {
   const roster = getRoster(style);
-  const visibleIds = new Set<InstrumentGroupId>([...roster.required, ...roster.recommended]);
+  const visibleIds = new Set<InstrumentGroupId>([
+    ...roster.required,
+    ...roster.recommended,
+    ...roster.optional,
+  ]);
 
-  for (const id of roster.optional) {
-    if (userOverrides?.[id] === true) visibleIds.add(id);
-  }
   for (const id of roster.hidden) {
     if (userOverrides?.[id] === true) visibleIds.add(id);
   }
 
-  return INSTRUMENT_GROUPS.filter((g) => visibleIds.has(g.id))
+  return INSTRUMENT_GROUPS.filter((g) => visibleIds.has(g.id) && !TEMPORARILY_HIDDEN_GROUPS.has(g.id))
     .map((g) => {
       const activeId = getDefaultVariant(g.id, style);
       const variant = g.variants.find((v) => v.instrumentId === activeId) ?? g.variants[0]!;
@@ -1115,6 +1130,10 @@ export function getVisibleInstrumentGroups(
 /**
  * @deprecated Use getVisibleInstrumentGroups instead.
  * Compute the set of instruments visible in the UI for a given style.
+ *
+ * `required`, `recommended` AND `optional` groups are always included (the
+ * optional instrument shows as a disabled tile until the user enables it).
+ * `hidden` instruments only appear when explicitly enabled via `userOverrides`.
  */
 export function getVisibleInstruments(
   style: Style,
@@ -1122,11 +1141,13 @@ export function getVisibleInstruments(
 ): InstrumentId[] {
   const roster = STYLE_PROFILES[style].instrumentRoster;
 
-  // Build InstrumentId → group order lookup for sorting
+  // Build InstrumentId → group order / group id lookups for sorting + filtering.
   const idOrder = new Map<InstrumentId, number>();
+  const idGroup = new Map<InstrumentId, InstrumentGroupId>();
   for (const g of INSTRUMENT_GROUPS) {
     for (const v of g.variants) {
       idOrder.set(v.instrumentId, g.order);
+      idGroup.set(v.instrumentId, g.id);
     }
   }
 
@@ -1137,14 +1158,9 @@ export function getVisibleInstruments(
 
   const requiredIds = toIds(roster.required);
   const recommendedIds = toIds(roster.recommended);
-  const visible = new Set<InstrumentId>([...requiredIds, ...recommendedIds]);
+  const optionalIds = toIds(roster.optional);
+  const visible = new Set<InstrumentId>([...requiredIds, ...recommendedIds, ...optionalIds]);
 
-  for (const gid of roster.optional) {
-    const group = getInstrumentGroup(gid);
-    for (const v of group.variants) {
-      if (userOverrides?.[v.instrumentId] === true) visible.add(v.instrumentId);
-    }
-  }
   for (const gid of roster.hidden) {
     const group = getInstrumentGroup(gid);
     for (const v of group.variants) {
@@ -1152,7 +1168,12 @@ export function getVisibleInstruments(
     }
   }
 
-  return [...visible].sort((a, b) => (idOrder.get(a) ?? 99) - (idOrder.get(b) ?? 99));
+  return [...visible]
+    .filter((id) => {
+      const gid = idGroup.get(id);
+      return !gid || !TEMPORARILY_HIDDEN_GROUPS.has(gid);
+    })
+    .sort((a, b) => (idOrder.get(a) ?? 99) - (idOrder.get(b) ?? 99));
 }
 
 /**

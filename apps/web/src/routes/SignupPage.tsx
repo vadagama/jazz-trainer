@@ -1,11 +1,11 @@
 import { useState, useEffect, type FormEvent } from 'react';
 import { useNavigate, useLocation, useSearchParams, Link } from 'react-router-dom';
-import { Music4 } from 'lucide-react';
 import { SendMagicLinkSchema, type AuthMethodsDTO } from '@jazz/shared';
 import { apiClient } from '@/lib/apiClient';
 import { useAuth } from '@/queries/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Logo } from '@/components/layout/Logo';
 
 const OAUTH_ERROR_MAP: Record<string, string> = {
   oauth_denied: 'Registration was cancelled.',
@@ -93,13 +93,11 @@ export default function SignupPage() {
       <div className="w-full max-w-sm">
         <div className="rounded-xl border border-border bg-card p-8 shadow-sm">
           <div className="mb-8 flex flex-col items-center gap-3 text-center">
-            <div className="flex size-12 items-center justify-center rounded-xl bg-primary/10">
-              <Music4 className="size-6 text-primary" />
-            </div>
+            <Logo className="size-10" />
             <div>
-              <h1 className="text-xl font-semibold tracking-tight">Create your account</h1>
+              <h1 className="text-xl font-semibold tracking-tight">Amazilia</h1>
               <p className="mt-1 text-sm text-muted-foreground">
-                Start your improvisation journey with Amazilia
+                Start your improvisation journey
               </p>
             </div>
           </div>
@@ -152,7 +150,12 @@ export default function SignupPage() {
                 {emailError && <p className="text-xs text-destructive">{emailError}</p>}
               </div>
               {magicLinkError && <p className="text-sm text-destructive">{magicLinkError}</p>}
-              <Button type="submit" className="w-full" disabled={isSending}>
+              <Button
+                type="submit"
+                className="w-full border-0 text-white shadow-lg transition-transform hover:scale-[1.03] hover:opacity-100"
+                style={{ background: 'linear-gradient(135deg, #9333ea, #0891b2)' }}
+                disabled={isSending}
+              >
                 {isSending ? 'Sending…' : 'Create account'}
               </Button>
             </form>

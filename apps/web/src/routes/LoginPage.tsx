@@ -1,12 +1,12 @@
 import { useState, useEffect, type FormEvent } from 'react';
 import { useNavigate, useLocation, useSearchParams, Link } from 'react-router-dom';
-import { Music4 } from 'lucide-react';
 import { SendMagicLinkSchema, type MeResponse, type AuthMethodsDTO } from '@jazz/shared';
 import { apiClient } from '@/lib/apiClient';
 import { queryClient } from '@/lib/queryClient';
 import { useAuth } from '@/queries/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Logo } from '@/components/layout/Logo';
 
 const OAUTH_ERROR_MAP: Record<string, string> = {
   oauth_denied: 'Authentication was cancelled.',
@@ -109,7 +109,7 @@ export default function LoginPage() {
     setIsDevLoading(true);
     try {
       const res = await apiClient.post<MeResponse>('/api/auth/dev-login', {
-        email: 'dev@jazz-trainer.local',
+        email: 'dev@amazilia.local',
         name: 'Dev User',
       });
       queryClient.setQueryData(['auth', 'me'], res);
@@ -134,11 +134,9 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         <div className="rounded-xl border border-border bg-card p-8 shadow-sm">
           <div className="mb-8 flex flex-col items-center gap-3 text-center">
-            <div className="flex size-12 items-center justify-center rounded-xl bg-primary/10">
-              <Music4 className="size-6 text-primary" />
-            </div>
+            <Logo className="size-10" />
             <div>
-              <h1 className="text-xl font-semibold tracking-tight">Jazz Trainer</h1>
+              <h1 className="text-xl font-semibold tracking-tight">Amazilia</h1>
               <p className="mt-1 text-sm text-muted-foreground">
                 Save your compositions, settings, and progress
               </p>
@@ -193,7 +191,12 @@ export default function LoginPage() {
                 {emailError && <p className="text-xs text-destructive">{emailError}</p>}
               </div>
               {magicLinkError && <p className="text-sm text-destructive">{magicLinkError}</p>}
-              <Button type="submit" className="w-full" disabled={isSending}>
+              <Button
+                type="submit"
+                className="w-full border-0 text-white shadow-lg transition-transform hover:scale-[1.03] hover:opacity-100"
+                style={{ background: 'linear-gradient(135deg, #9333ea, #0891b2)' }}
+                disabled={isSending}
+              >
                 {isSending ? 'Sending…' : 'Send sign-in link'}
               </Button>
             </form>
@@ -239,7 +242,8 @@ export default function LoginPage() {
                 <Button
                   type="button"
                   variant="default"
-                  className="w-full"
+                  className="w-full border-0 text-white shadow-lg transition-transform hover:scale-[1.03] hover:opacity-100"
+                  style={{ background: 'linear-gradient(135deg, #9333ea, #0891b2)' }}
                   disabled={isDevLoading}
                   onClick={handleSuperAdminLogin}
                 >

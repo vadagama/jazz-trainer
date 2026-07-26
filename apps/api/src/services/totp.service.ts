@@ -94,7 +94,7 @@ export function setupTotp(db: DrizzleDb, userId: string): { secret: string; otpa
   const secret = generateTotpSecret();
   const user = db.select({ email: users.email }).from(users).where(eq(users.id, userId)).get();
   const email = user?.email ?? userId;
-  const otpauthUrl = generateTotpUri(secret, email, 'Jazz Trainer');
+  const otpauthUrl = generateTotpUri(secret, email, 'Amazilia');
 
   const existing = db.select().from(totpSecrets).where(eq(totpSecrets.userId, userId)).get();
   if (existing) {

@@ -23,7 +23,13 @@ import { publishComposition } from './compositions.service.js';
 // ── helpers ────────────────────────────────────────────────────────────────
 
 function parseContent(raw: string): CompositionContent {
-  return JSON.parse(raw) as CompositionContent;
+  try {
+    return JSON.parse(raw) as CompositionContent;
+  } catch (err) {
+    throw new Error(
+      `Corrupted composition content in DB: ${err instanceof Error ? err.message : 'invalid JSON'}`,
+    );
+  }
 }
 
 function parseTags(raw: string): string[] {

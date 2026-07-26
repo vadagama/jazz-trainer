@@ -6,6 +6,7 @@ import {
   getSubscriptionHistory,
   createSubscriptionRequest,
 } from '../services/billing.service.js';
+import { safeJsonParse } from '../lib/json.js';
 
 export interface SubscriptionRoutesOptions {
   db: DrizzleDb;
@@ -43,7 +44,7 @@ export async function subscriptionRoutes(
       actorId: h.actorId,
       oldTier: h.oldTier,
       newTier: h.newTier,
-      metadata: JSON.parse(h.metadata),
+      metadata: safeJsonParse(h.metadata, {} as Record<string, unknown>),
       createdAt: h.createdAt,
     }));
 
@@ -83,9 +84,9 @@ export async function subscriptionRoutes(
         message: 'Запрос на изменение подписки принят. Мы свяжемся с вами в ближайшее время.',
       });
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Internal error';
+      request.log.error({ err }, 'subscription request failed');
       return reply.status(500).send({
-        error: { code: 'INTERNAL_ERROR', message: msg },
+        error: { code: 'INTERNAL_ERROR', message: 'Internal error' },
       });
     }
   });

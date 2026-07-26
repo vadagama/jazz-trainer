@@ -21,8 +21,8 @@ function makeConfig(
     githubCallbackUrl: '',
     googleHd: null,
     resendApiKey: overrides.resendApiKey ?? null,
-    emailFrom: overrides.emailFrom ?? 'noreply@jazztrainer.app',
-    totpIssuer: 'Jazz Trainer',
+    emailFrom: overrides.emailFrom ?? 'noreply@amazilia.app',
+    totpIssuer: 'Amazilia',
     superAdminSessionMaxAbsoluteTtlMs: 900_000,
     adminIpAllowlist: null,
   };
@@ -65,10 +65,10 @@ describe('email — sendMagicLink', () => {
     });
     const body = JSON.parse(init.body as string) as Record<string, string>;
     expect(body.to).toBe('user@example.com');
-    expect(body.from).toBe('noreply@jazztrainer.app');
-    expect(body.subject).toContain('Sign in to Jazz Trainer');
+    expect(body.from).toBe('noreply@amazilia.app');
+    expect(body.subject).toContain('Sign in to Amazilia');
     expect(body.html).toContain('https://app.example.com/auth/magic?token=xyz');
-    expect(body.html).toContain('sign in to your Jazz Trainer account');
+    expect(body.html).toContain('sign in to your Amazilia account');
   });
 
   it('includes user name in greeting when provided', async () => {

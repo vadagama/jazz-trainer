@@ -1,13 +1,13 @@
 import { Link } from 'react-router-dom';
-import { Music4 } from 'lucide-react';
+import { Logo } from '@/components/layout/Logo';
 
 /** Public dashboard placeholder — real catalog/player lands in F6/F8. */
 export function DashboardPage() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-6 px-6 text-center">
       <div className="flex items-center gap-3">
-        <Music4 className="size-9 text-primary" />
-        <h1 className="text-3xl font-semibold tracking-tight">Jazz Trainer</h1>
+        <Logo className="size-9" />
+        <h1 className="text-3xl font-semibold tracking-tight">Amazilia</h1>
       </div>
       <p className="max-w-md text-muted-foreground">
         Гармонические композиции, точный метроном, DSL для гармонии и генераторы прогрессий. Каркас

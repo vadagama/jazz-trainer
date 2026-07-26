@@ -5,6 +5,7 @@ import type { DrizzleDb } from '../db/index.js';
 import { userSettings } from '../db/schema.js';
 import { requireAuth } from '../plugins/auth.plugin.js';
 import { toSettingsDTO } from '../services/auth.service.js';
+import { safeJsonParse } from '../lib/json.js';
 
 export interface SettingsRoutesOptions {
   db: DrizzleDb;
@@ -102,9 +103,10 @@ export async function settingsRoutes(
     if (data.rhodesLayerVolume !== undefined) patch.rhodesLayerVolume = data.rhodesLayerVolume;
     if (data.practiceCards !== undefined) patch.practiceCards = JSON.stringify(data.practiceCards);
     // Merge style-specific overrides from both perStyleOverrides AND scalar fields
-    const existingOverrides: Record<string, Record<string, unknown>> = existing.perStyleOverrides
-      ? (JSON.parse(existing.perStyleOverrides) as Record<string, Record<string, unknown>>)
-      : {};
+    const existingOverrides: Record<string, Record<string, unknown>> = safeJsonParse(
+      existing.perStyleOverrides,
+      {} as Record<string, Record<string, unknown>>,
+    );
 
     if (data.perStyleOverrides !== undefined) {
       for (const [style, overrides] of Object.entries(data.perStyleOverrides)) {
@@ -248,9 +250,10 @@ export async function settingsRoutes(
         .send({ error: { code: 'NOT_FOUND', message: 'Settings not found' } });
     }
 
-    const overrides: Record<string, unknown> = existing.perStyleOverrides
-      ? JSON.parse(existing.perStyleOverrides)
-      : {};
+    const overrides: Record<string, unknown> = safeJsonParse(
+      existing.perStyleOverrides,
+      {} as Record<string, unknown>,
+    );
     delete overrides[style];
 
     const now = Date.now();

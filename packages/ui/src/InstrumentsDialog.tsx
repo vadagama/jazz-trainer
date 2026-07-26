@@ -8,7 +8,7 @@ import {
   applyStyleDefaults,
   type DisplayGroup,
 } from '@jazz/music-core';
-import { useEffectiveSettings, useUpdateSettings, useLocalSettingsStore } from '@jazz/plugin-sdk';
+import { useEffectiveSettings, useUpdateSettings } from '@jazz/plugin-sdk';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './dialog';
 import { Slider } from './slider';
 import { cn } from './utils';
@@ -101,9 +101,14 @@ function GroupRow({ group, style, rosterBadge }: GroupRowProps) {
 
     // Merge with existing per-style overrides so other instrument
     // settings for this style are preserved (e.g. toggling piano doesn't
-    // lose a previously-set bass override).
+    // lose a previously-set bass override). Source from the server-backed
+    // settings (useEffectiveSettings), NOT the local store — for logged-in
+    // users the local store's perStyleOverrides is never populated from the
+    // server, so it collapses to {} and the truncated payload would wipe
+    // every previously-saved instrument override via the shallow optimistic
+    // merge in useUpdateSettings.
     const existingPerStyle = {
-      ...(useLocalSettingsStore.getState().settings.perStyleOverrides ?? {}),
+      ...((settings.perStyleOverrides ?? {}) as Record<string, Record<string, unknown>>),
     } as Record<string, Record<string, unknown>>;
     const styleOverrides = { ...(existingPerStyle[style] ?? {}) };
     styleOverrides[key] = newValue;
@@ -118,7 +123,7 @@ function GroupRow({ group, style, rosterBadge }: GroupRowProps) {
       [key]: newValue,
       perStyleOverrides: existingPerStyle,
     } as Parameters<typeof updateSettings.mutate>[0]);
-  }, [prefix, enabled, updateSettings, style]);
+  }, [prefix, enabled, updateSettings, style, settings]);
 
   const handleVolumeChange = useCallback(
     (value: number[]) => {
@@ -126,8 +131,11 @@ function GroupRow({ group, style, rosterBadge }: GroupRowProps) {
       const key = `${prefix}Volume`;
       const newValue = value[0];
 
+      // Source per-style overrides from the server-backed settings, not the
+      // local store (see handleToggle above) — otherwise moving a slider wipes
+      // previously-saved instrument overrides for logged-in users.
       const existingPerStyle = {
-        ...(useLocalSettingsStore.getState().settings.perStyleOverrides ?? {}),
+        ...((settings.perStyleOverrides ?? {}) as Record<string, Record<string, unknown>>),
       } as Record<string, Record<string, unknown>>;
       const styleOverrides = { ...(existingPerStyle[style] ?? {}) };
       styleOverrides[key] = newValue;
@@ -138,7 +146,7 @@ function GroupRow({ group, style, rosterBadge }: GroupRowProps) {
         perStyleOverrides: existingPerStyle,
       } as Parameters<typeof updateSettings.mutate>[0]);
     },
-    [prefix, updateSettings, style],
+    [prefix, updateSettings, style, settings],
   );
 
   const Icon = INSTRUMENT_ICONS[group.activeInstrumentId] ?? DrumsIcon;

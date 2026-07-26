@@ -134,12 +134,12 @@ describe('system user', () => {
   it('dev-login with system user email returns 409 (email already taken)', async () => {
     const app = await makeApp();
     await app.ready();
-    // The system user owns 'system@jazz-trainer.internal'. A dev-login attempt with
+    // The system user owns 'system@amazilia.internal'. A dev-login attempt with
     // that email would create a new provider='dev' user, but the UNIQUE email
     // constraint prevents it — so it returns 409 CONFLICT.
     const res = await supertest(app.server)
       .post('/api/auth/dev-login')
-      .send({ email: 'system@jazz-trainer.internal' });
+      .send({ email: 'system@amazilia.internal' });
     expect(res.status).toBe(409);
     expect(res.body.error.code).toBe('CONFLICT');
     await app.close();

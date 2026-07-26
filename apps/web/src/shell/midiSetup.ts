@@ -1,5 +1,5 @@
 /**
- * MIDI + computer keyboard singleton setup for Jazz Trainer.
+ * MIDI + computer keyboard singleton setup for Amazilia.
  *
  * Exposes a multiplexed input port via `window.__midiInputPort`
  * that combines Web MIDI and laptop keyboard input.

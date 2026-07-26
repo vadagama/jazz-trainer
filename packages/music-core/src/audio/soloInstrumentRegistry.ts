@@ -4,7 +4,6 @@ import { synthDefaultManifest } from './manifests/synthDefaultManifest.js';
 import { pianoUprightSoloManifest } from './manifests/pianoUprightSoloManifest.js';
 import { pianoSalamanderSoloManifest } from './manifests/pianoSalamanderSoloManifest.js';
 import { rhodesJRhodes3cSoloManifest } from './manifests/rhodesJRhodes3cSoloManifest.js';
-import { clarinetManifest } from './manifests/clarinetManifest.js';
 import { vibraphoneManifest } from './manifests/vibraphoneManifest.js';
 import { guitarNylonSoloManifest } from './manifests/guitarNylonSoloManifest.js';
 
@@ -24,7 +23,7 @@ export const SOLO_INSTRUMENT_MANIFESTS: SoloInstrumentManifest[] = [
   rhodesJRhodes3cSoloManifest,
 
   // ── Normal priority: load on first use ──
-  clarinetManifest,
+  // clarinetManifest — temporarily unlisted (configure later)
   vibraphoneManifest,
   guitarNylonSoloManifest,
 ];

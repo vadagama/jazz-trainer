@@ -1,9 +1,9 @@
 {
-  "name": "jazz-trainer",
+  "name": "amazilia",
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Browser-based jazz harmony trainer: harmony grids, precise metronome, DSL, progression generators.",
+  "description": "Amazilia — Music Improvisation Trainer. Learn to improvise with a virtual band that adapts to your harmony, tempo, and style.",
   "workspaces": [
     "packages/*",
     "packages/adapters/*",

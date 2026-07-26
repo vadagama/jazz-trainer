@@ -1,4 +1,4 @@
-import Fastify, { type FastifyInstance } from 'fastify';
+import Fastify, { type FastifyInstance, type FastifyError } from 'fastify';
 import cors from '@fastify/cors';
 import cookie from '@fastify/cookie';
 import helmet from '@fastify/helmet';
@@ -53,8 +53,8 @@ const CONFIG_DEFAULTS: ApiConfig = {
   githubCallbackUrl: 'http://localhost:3999/api/auth/github/callback',
   googleHd: null,
   resendApiKey: null,
-  emailFrom: 'noreply@jazztrainer.app',
-  totpIssuer: 'Jazz Trainer',
+  emailFrom: 'noreply@amazilia.app',
+  totpIssuer: 'Amazilia',
   superAdminSessionMaxAbsoluteTtlMs: 15 * 60 * 1000,
   adminIpAllowlist: null,
 };
@@ -67,7 +67,10 @@ export async function buildServer(opts: BuildServerOptions = {}): Promise<Fastif
   const config: ApiConfig = { ...CONFIG_DEFAULTS, ...loadConfig(), ...opts.config };
   const db = opts.db ?? createDb(config.databaseUrl).db;
 
-  const app = Fastify({ logger: false });
+  const app = Fastify({
+    // Тесты гоняются с NODE_ENV=test и остаются тихими; в dev/prod пишем через pino.
+    logger: process.env.NODE_ENV === 'test' ? false : { level: process.env.LOG_LEVEL ?? 'info' },
+  });
 
   await app.register(helmet, {
     contentSecurityPolicy: false,
@@ -132,6 +135,23 @@ export async function buildServer(opts: BuildServerOptions = {}): Promise<Fastif
   if (config.authDevMode) {
     await app.register(devRoutes, { prefix: '/api' });
   }
+
+  // Единый обработчик ошибок: гарантирует контракт `{ error: { code, message } }`
+  // на непойманных путях, логирует 5xx и не раскрывает внутренние детали клиенту.
+  app.setErrorHandler((error: FastifyError, request, reply) => {
+    const status =
+      typeof error.statusCode === 'number' && error.statusCode >= 400 ? error.statusCode : 500;
+    if (status >= 500) {
+      request.log.error({ err: error }, 'unhandled route error');
+      return reply.status(status).send({
+        error: { code: 'INTERNAL_ERROR', message: 'Internal error' },
+      });
+    }
+    request.log.warn({ err: error }, 'request error');
+    return reply.status(status).send({
+      error: { code: error.code ?? 'BAD_REQUEST', message: error.message },
+    });
+  });
 
   return app;
 }

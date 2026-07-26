@@ -1,5 +1,6 @@
 import type { InputPort, MidiInputEvent, MidiDeviceInfo } from '@jazz/music-core';
 import type { ComputerKeyMap } from '@jazz/music-core/audio';
+import { debugLog } from './debugLog';
 
 // ---------------------------------------------------------------------------
 // ComputerKeyboardAdapter — InputPort backed by laptop keyboard events
@@ -85,7 +86,7 @@ export class ComputerKeyboardAdapter implements InputPort {
   setEnabled(enabled: boolean): void {
     if (this._enabled === enabled) return;
     this._enabled = enabled;
-    console.debug(
+    debugLog(
       '[ComputerKeyboardAdapter]',
       enabled ? 'ENABLED' : 'DISABLED',
       'keyMap entries:',
@@ -109,7 +110,7 @@ export class ComputerKeyboardAdapter implements InputPort {
   updateKeyMap(map: ComputerKeyMap): void {
     this.releaseAll();
     this.keyMap = map;
-    console.debug('[ComputerKeyboardAdapter] keyMap updated:', Object.keys(map).length, 'keys');
+    debugLog('[ComputerKeyboardAdapter] keyMap updated:', Object.keys(map).length, 'keys');
   }
 
   // ── Internals ─────────────────────────────────────────────────────────────
@@ -136,7 +137,7 @@ export class ComputerKeyboardAdapter implements InputPort {
 
   private handleKeyDown = (e: KeyboardEvent): void => {
     if (isInputTarget(e)) {
-      console.debug('[ComputerKeyboardAdapter] keydown ignored: input target');
+      debugLog('[ComputerKeyboardAdapter] keydown ignored: input target');
       return;
     }
     if (e.repeat) return;
@@ -149,7 +150,7 @@ export class ComputerKeyboardAdapter implements InputPort {
     this.pressedKeys.add(key);
 
     const noteName = midiToNote(midiNote);
-    console.debug(
+    debugLog(
       '[ComputerKeyboardAdapter] keydown:',
       key,
       '→',

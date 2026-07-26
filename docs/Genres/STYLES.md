@@ -1,4 +1,4 @@
-# Стили и инструменты Jazz Trainer
+# Стили и инструменты Amazilia
 
 > Полный каталог музыкальных стилей, инструментов, паттернов, voicing'ов и ансамблей.
 > Связанные документы: [ARCHITECTURE_BASE.md](ARCHITECTURE_BASE.md#4-звук-и-midi-порты-и-адаптеры), [FUNCTIONS.md](FUNCTIONS.md#6-аудио-и-midi).
