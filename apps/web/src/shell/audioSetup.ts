@@ -1,5 +1,5 @@
 /**
- * Audio singleton setup for Jazz Trainer.
+ * Audio singleton setup for Amazilia.
  *
  * Creates ToneAudioAdapter + SoloInstrumentFactories + SoloInstrumentHost
  * on first call, independently of the full transport. This enables the

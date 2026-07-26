@@ -64,9 +64,9 @@ describe('TOTP — generateTotpSecret', () => {
 
 describe('TOTP — generateTotpUri', () => {
   it('produces a valid otpauth URI', () => {
-    const uri = generateTotpUri(RFC_SECRET, 'user@example.com', 'Jazz Trainer');
+    const uri = generateTotpUri(RFC_SECRET, 'user@example.com', 'Amazilia');
     expect(uri).toMatch(/^otpauth:\/\/totp\//);
-    expect(uri).toContain('issuer=Jazz+Trainer');
+    expect(uri).toContain('issuer=Amazilia');
     expect(uri).toContain('secret=GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ');
     expect(uri).toContain('algorithm=SHA1');
     expect(uri).toContain('digits=6');

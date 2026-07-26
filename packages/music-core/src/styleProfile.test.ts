@@ -132,50 +132,49 @@ describe('getRoster', () => {
 // ─── getVisibleInstruments ────────────────────────────────────────────────────
 
 describe('getVisibleInstruments', () => {
-  it('returns required + recommended for swing in group order', () => {
+  it('returns required + recommended + optional for swing (temporarily-hidden groups excluded)', () => {
     const visible = getVisibleInstruments('swing');
-    // Order: drums(1), bass(2), piano(3), rhodes(4)
-    expect(visible).toEqual(['jazz-drum-kit', 'upright-bass', 'piano', 'rhodes']);
+    // required drums/bass/piano + recommended rhodes + optional percussion.
+    // Winds is a temporarily-hidden group, so trumpet-muted is not shown.
+    // Order: drums(1), bass(2), piano(3), rhodes(4), percussion(7)
+    expect(visible).toEqual(['jazz-drum-kit', 'upright-bass', 'piano', 'rhodes', 'percussion']);
   });
 
-  it('includes optional when explicitly enabled', () => {
-    const visible = getVisibleInstruments('swing', { 'trumpet-muted': true });
-    expect(visible).toContain('trumpet-muted');
-  });
-
-  it('excludes optional when not enabled', () => {
+  it('always includes optional percussion so it can be enabled', () => {
     const visible = getVisibleInstruments('swing');
-    expect(visible).not.toContain('trumpet-muted');
-    expect(visible).not.toContain('percussion');
+    expect(visible).toContain('percussion');
   });
 
-  it('includes hidden instrument when explicitly enabled', () => {
-    const visible = getVisibleInstruments('swing', { 'electric-guitar': true });
-    expect(visible).toContain('electric-guitar');
+  it('temporarily hides Guitar / Winds / Synth groups across styles', () => {
+    // Swing: winds (trumpet-muted) optional, guitar/synth hidden — all suppressed.
+    const swing = getVisibleInstruments('swing');
+    expect(swing).not.toContain('trumpet-muted');
+    expect(swing).not.toContain('guitar');
+    expect(swing).not.toContain('organ');
+    // Soul: guitar/winds optional + synth recommended — all suppressed even though not "hidden".
+    const soul = getVisibleInstruments('soul');
+    expect(soul).not.toContain('guitar');
+    expect(soul).not.toContain('trumpet-muted');
+    expect(soul).not.toContain('organ');
+  });
+
+  it('includes a hidden non-blocklisted instrument when explicitly enabled', () => {
+    // Blues hides the percussion group; it is not in the temporary blocklist.
+    const visible = getVisibleInstruments('blues', { percussion: true });
+    expect(visible).toContain('percussion');
   });
 
   it('excludes hidden instruments by default', () => {
-    const visible = getVisibleInstruments('swing');
-    expect(visible).not.toContain('electric-guitar');
+    const visible = getVisibleInstruments('blues');
+    expect(visible).not.toContain('percussion');
     expect(visible).not.toContain('funk-drum-kit');
   });
 
-  it('excludes optional that is explicitly disabled', () => {
-    const visible = getVisibleInstruments('swing', { 'trumpet-muted': false });
-    expect(visible).not.toContain('trumpet-muted');
-  });
-
-  it('latin returns instruments in group order (percussion at end)', () => {
+  it('latin returns required + recommended + optional in group order', () => {
     const visible = getVisibleInstruments('latin');
-    // Groups: drums(1), bass(2), piano(3), winds(6), percussion(7)
-    // Latin uses electric-bass (montuno); order: drums, electric-bass, piano, trumpet-muted, percussion
-    expect(visible).toEqual([
-      'funk-drum-kit',
-      'electric-bass',
-      'piano',
-      'trumpet-muted',
-      'percussion',
-    ]);
+    // Groups: drums(1), bass(2), piano(3), rhodes(4, optional), percussion(7, required).
+    // Winds (recommended) is temporarily hidden. Latin uses funk-drum-kit + electric-bass.
+    expect(visible).toEqual(['funk-drum-kit', 'electric-bass', 'piano', 'rhodes', 'percussion']);
   });
 });
 

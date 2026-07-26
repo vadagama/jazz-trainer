@@ -106,7 +106,6 @@ export { ChordPlayer, type ChordPlayerProps } from './ChordPlayer';
 export { MermaidDiagram, type MermaidDiagramProps } from './MermaidDiagram';
 export { AudioPlayer, type AudioPlayerProps } from './AudioPlayer';
 export { VideoPlayer, type VideoPlayerProps } from './VideoPlayer';
-export { InstrumentTile, type InstrumentTileProps } from './InstrumentTile';
 export {
   INSTRUMENT_ICONS,
   DrumsIcon,

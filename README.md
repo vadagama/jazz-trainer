@@ -1,4 +1,4 @@
-# Jazz Trainer
+# Amazilia
 
 Браузерный тренажёр джазовой гармонии: гармонические сетки, точный метроном,
 DSL для ввода гармонии, генераторы прогрессий, аккомпанемент (12 инструментов + 7 сольных MIDI-тембров).
@@ -17,8 +17,8 @@ packages/
   shared/                 DTO (Zod), константы, общие типы
   plugin-sdk/             Контракты плагинов (extension points, хуки, apiClient)
   plugin-host/            Загрузка плагинов, агрегация вкладов
-  plugin-registry/        Build-time реестр (54 плагина)
-  plugins/                54 плагина (вся фичевая логика)
+  plugin-registry/        Build-time реестр (55 плагинов)
+  plugins/                55 плагинов (вся фичевая логика)
   adapters/               Платформенные адаптеры (Tone.js → AudioPort, Web MIDI)
   ui/                     Общие UI-компоненты
 docs/                     Документация
@@ -111,8 +111,8 @@ npm run dev:web
 | ------------------- | ------ | --------------------------------------------------------------------- |
 | Ф0 — Границы        | ✅     | ESLint boundaries + strict, 0 нарушений                               |
 | Ф1 — SDK + Host     | ✅     | `plugin-sdk`, `plugin-host`, `plugin-registry`, shell bootstrap       |
-| ФR — RBAC + аудит   | ✅     | 4 роли, 23 permissions, audit log                                     |
+| ФR — RBAC + аудит   | ✅     | 7 ролей, 27 permissions, audit log                                    |
 | Ф2 — AudioPort      | 🟢     | Адаптеры готовы, 12 инструментов, манифесты, EventSink, StyleProfile  |
 | Ф3 — Фичи → плагины | ✅     | `core-editor`, `core-player`, `catalog` вынесены                      |
-| Ф4 — Новые домены   | 🟡     | 37 domain-плагинов + `core-settings`, наполнение контентом в процессе |
+| Ф4 — Новые домены   | 🟡     | theory/practice/assess-плагины + `core-settings`, наполнение контентом в процессе |
 | Ф5 — MIDI           | 🟡     | MIDI-плагины и `midiEval` готовы, Desktop исключён из скоупа          |

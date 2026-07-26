@@ -30,8 +30,8 @@ export function seedSystemUser(db: DrizzleDb): void {
     db.insert(users)
       .values({
         id: SYSTEM_USER_ID,
-        email: 'system@jazz-trainer.internal',
-        name: 'Jazz Trainer',
+        email: 'system@amazilia.internal',
+        name: 'Amazilia',
         avatarUrl: null,
         provider: 'system',
         providerId: 'system',
@@ -51,7 +51,7 @@ export function seedSystemUser(db: DrizzleDb): void {
  */
 export function seedDevUser(db: DrizzleDb): void {
   const now = Date.now();
-  const email = 'dev@jazz-trainer.local';
+  const email = 'dev@amazilia.local';
   const existing = db.select().from(users).where(eq(users.email, email)).get();
   if (existing) return;
 
@@ -354,7 +354,7 @@ const DEMO_COMPOSITIONS: DemoGrid[] = [
   {
     id: 'demo-ii-v-i-major',
     name: 'ii-V-I in C major',
-    author: 'Jazz Trainer',
+    author: 'Amazilia',
     description: 'Классическая каденция ii-V-I в мажоре — основа джазовой гармонии.',
     difficulty: 'beginner',
     recommendedStyle: 'swing',
@@ -375,7 +375,7 @@ const DEMO_COMPOSITIONS: DemoGrid[] = [
   {
     id: 'demo-ii-v-i-minor',
     name: 'ii-V-i in A minor',
-    author: 'Jazz Trainer',
+    author: 'Amazilia',
     description: 'Минорная каденция ii-V-i с уменьшённым аккордом ii (m7b5).',
     difficulty: 'beginner',
     recommendedStyle: 'swing',
@@ -450,7 +450,7 @@ const DEMO_COMPOSITIONS: DemoGrid[] = [
   {
     id: 'demo-turnaround',
     name: 'Jazz Turnaround',
-    author: 'Jazz Trainer',
+    author: 'Amazilia',
     description: 'Классический джазовый оборот I-vi-ii-V (turnaround).',
     difficulty: 'beginner',
     recommendedStyle: 'swing',

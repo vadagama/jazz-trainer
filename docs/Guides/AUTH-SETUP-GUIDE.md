@@ -103,7 +103,7 @@ GOOGLE_CLIENT_SECRET=GOCSPX-xxxxxxxxxxxx
 1. Открой [GitHub Developer Settings](https://github.com/settings/developers)
 2. **OAuth Apps** → **New OAuth App**
 3. Заполни:
-   - **Application name**: Jazz Trainer (dev) / Jazz Trainer
+   - **Application name**: Amazilia (dev) / Amazilia
    - **Homepage URL**: `http://localhost:5173`
    - **Authorization callback URL**: `http://localhost:3999/api/auth/github/callback`
 4. **Register application** → сгенерируй **Client Secret**
@@ -132,7 +132,7 @@ GITHUB_CLIENT_SECRET=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 ```env
 RESEND_API_KEY=re_xxxxxxxxxxxx
-EMAIL_FROM=noreply@jazztrainer.app
+EMAIL_FROM=noreply@amazilia.app
 # Для dev-тестов без подтверждённого домена:
 # EMAIL_FROM=onboarding@resend.dev
 ```
@@ -168,13 +168,13 @@ NODE_ENV=production
 SESSION_SECRET=<random-64-char-string>
 GOOGLE_CLIENT_ID=...
 GOOGLE_CLIENT_SECRET=...
-GOOGLE_CALLBACK_URL=https://jazz-trainer.com/api/auth/google/callback
+GOOGLE_CALLBACK_URL=https://api.amazilia.app/api/auth/google/callback
 GITHUB_CLIENT_ID=...
 GITHUB_CLIENT_SECRET=...
-GITHUB_CALLBACK_URL=https://jazz-trainer.com/api/auth/github/callback
+GITHUB_CALLBACK_URL=https://api.amazilia.app/api/auth/github/callback
 RESEND_API_KEY=...
-EMAIL_FROM=noreply@jazz-trainer.com
-WEB_ORIGIN=https://jazz-trainer.com
+EMAIL_FROM=noreply@amazilia.app
+WEB_ORIGIN=https://amazilia.app
 ```
 
 > ⚠️ Сервер откажется запускаться, если `SESSION_SECRET` отсутствует или равен дефолтному `'dev-insecure-change-me'`.

@@ -16,10 +16,8 @@ import {
   type SubscriptionTier,
 } from '../services/billing.service.js';
 import { requirePermission } from '../plugins/rbac.plugin.js';
-import {
-  AdminSubscriptionUpdateSchema,
-  SubscriptionRequestActionSchema,
-} from '@jazz/shared';
+import { AdminSubscriptionUpdateSchema, SubscriptionRequestActionSchema } from '@jazz/shared';
+import { safeJsonParse } from '../lib/json.js';
 
 export interface AdminSubscriptionsRoutesOptions {
   db: DrizzleDb;
@@ -68,7 +66,7 @@ export async function adminSubscriptionsRoutes(
         actorId: h.actorId,
         oldTier: h.oldTier,
         newTier: h.newTier,
-        metadata: JSON.parse(h.metadata),
+        metadata: safeJsonParse(h.metadata, {} as Record<string, unknown>),
         createdAt: h.createdAt,
       }));
 
@@ -157,11 +155,15 @@ export async function adminSubscriptionsRoutes(
   );
 
   // ── GET /api/admin/subscription-requests ───────────────────────────────────
-  fastify.get('/admin/subscription-requests', { preHandler: [billingRead] }, async (request, reply) => {
-    const { status } = request.query as { status?: string };
-    const result = listSubscriptionRequests(db, status);
-    return reply.send(result);
-  });
+  fastify.get(
+    '/admin/subscription-requests',
+    { preHandler: [billingRead] },
+    async (request, reply) => {
+      const { status } = request.query as { status?: string };
+      const result = listSubscriptionRequests(db, status);
+      return reply.send(result);
+    },
+  );
 
   // ── POST /api/admin/subscription-requests/:id/approve ──────────────────────
   fastify.post<{ Params: { id: string } }>(

@@ -64,13 +64,13 @@ describe('admin-flags routes', () => {
   });
 
   it('GET /api/admin/flags returns 403 for a plain user (no admin permission)', async () => {
-    await loginAs(db, agent, 'plain@jazz-trainer.local', 'user');
+    await loginAs(db, agent, 'plain@amazilia.local', 'user');
     const res = await agent.get('/api/admin/flags');
     expect(res.status).toBe(403);
   });
 
   it('GET /api/admin/flags returns 200 for super_admin', async () => {
-    await loginAs(db, agent, 'super@jazz-trainer.local', 'super_admin');
+    await loginAs(db, agent, 'super@amazilia.local', 'super_admin');
     const res = await agent.get('/api/admin/flags');
     expect(res.status).toBe(200);
     expect(Array.isArray(res.body)).toBe(true);
@@ -79,7 +79,7 @@ describe('admin-flags routes', () => {
   // ── CRUD lifecycle ────────────────────────────────────────────────────────
 
   it('full CRUD lifecycle: create → read → update → delete', async () => {
-    await loginAs(db, agent, 'super@jazz-trainer.local', 'super_admin');
+    await loginAs(db, agent, 'super@amazilia.local', 'super_admin');
 
     // Create
     const created = await agent.post('/api/admin/flags').send({
@@ -148,20 +148,20 @@ describe('admin-flags routes', () => {
   // ── Validation ─────────────────────────────────────────────────────────────
 
   it('rejects empty key with 400', async () => {
-    await loginAs(db, agent, 'super@jazz-trainer.local', 'super_admin');
+    await loginAs(db, agent, 'super@amazilia.local', 'super_admin');
     const res = await agent.post('/api/admin/flags').send({ key: '' });
     expect(res.status).toBe(400);
     expect(res.body.error.code).toBe('VALIDATION_ERROR');
   });
 
   it('rejects invalid characters in key with 400', async () => {
-    await loginAs(db, agent, 'super@jazz-trainer.local', 'super_admin');
+    await loginAs(db, agent, 'super@amazilia.local', 'super_admin');
     const res = await agent.post('/api/admin/flags').send({ key: 'New Feature!' });
     expect(res.status).toBe(400);
   });
 
   it('rejects out-of-range rolloutPercent with 400', async () => {
-    await loginAs(db, agent, 'super@jazz-trainer.local', 'super_admin');
+    await loginAs(db, agent, 'super@amazilia.local', 'super_admin');
     const res = await agent
       .post('/api/admin/flags')
       .send({ key: 'bad-rollout', rolloutPercent: 150 });
@@ -169,7 +169,7 @@ describe('admin-flags routes', () => {
   });
 
   it('PATCH 404 for unknown key', async () => {
-    await loginAs(db, agent, 'super@jazz-trainer.local', 'super_admin');
+    await loginAs(db, agent, 'super@amazilia.local', 'super_admin');
     const res = await agent.patch('/api/admin/flags/nope').send({ enabled: true });
     expect(res.status).toBe(404);
   });
@@ -177,7 +177,7 @@ describe('admin-flags routes', () => {
   // ── Audit trail ─────────────────────────────────────────────────────────────
 
   it('records each mutation in audit_log', async () => {
-    await loginAs(db, agent, 'super@jazz-trainer.local', 'super_admin');
+    await loginAs(db, agent, 'super@amazilia.local', 'super_admin');
 
     await agent.post('/api/admin/flags').send({ key: 'audited-flag', enabled: true });
     await agent.patch('/api/admin/flags/audited-flag').send({ enabled: false });
@@ -202,7 +202,7 @@ describe('admin-flags routes', () => {
       })
       .run();
 
-    await loginAs(db, agent, 'me@jazz-trainer.local', 'user');
+    await loginAs(db, agent, 'me@amazilia.local', 'user');
     const me = await agent.get('/api/auth/me');
     expect(me.status).toBe(200);
     expect(me.body.flags['expired-flag']).toBe(false);
@@ -213,7 +213,7 @@ describe('admin-flags routes', () => {
       .values({ key: 'full-rollout', enabled: true, rolloutPercent: 100 })
       .run();
 
-    await loginAs(db, agent, 'me2@jazz-trainer.local', 'user');
+    await loginAs(db, agent, 'me2@amazilia.local', 'user');
     const me = await agent.get('/api/auth/me');
     expect(me.body.flags['full-rollout']).toBe(true);
   });

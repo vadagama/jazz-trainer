@@ -1,4 +1,4 @@
-# THEORY ARCHITECTURE — Архитектура раздела теории Jazz Trainer
+# THEORY ARCHITECTURE — Архитектура раздела теории Amazilia
 
 > **Назначение:** Архитектурная проработка подсистемы Theory на основе `docs/ARCHIVE/THEORY_VISION.md`.
 > **Аудитория:** Разработчики (`software-engineer`), архитекторы (`software-architect`).

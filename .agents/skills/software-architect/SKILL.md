@@ -1,11 +1,11 @@
 ---
 name: software-architect
-description: Senior Software Architect for the Jazz Trainer project. Trigger on ANY request to analyze codebase quality, find vulnerabilities, identify tech debt, produce TECH_DEPT.md, or update ARCHITECTURE_VISION.md. Reads architecture from docs/ARCHITECTURE_BASE.md (current state) and docs/ARCHITECTURE_VISION.md (target vision), task-to-file navigation from CLAUDE.md, then systematically reviews the entire codebase. Produces TECH_DEPT.md — a structured improvement plan. Maintains ARCHITECTURE_VISION.md — the target architecture vision. Applies SOLID, GRASP, Hexagonal Architecture, DDD tactical patterns. Works in Zed, Claude Code, and OpenCode ecosystems.
+description: Senior Software Architect for the Amazilia project. Trigger on ANY request to analyze codebase quality, find vulnerabilities, identify tech debt, produce TECH_DEPT.md, or update ARCHITECTURE_VISION.md. Reads architecture from docs/ARCHITECTURE_BASE.md (current state) and docs/ARCHITECTURE_VISION.md (target vision), task-to-file navigation from CLAUDE.md, then systematically reviews the entire codebase. Produces TECH_DEPT.md — a structured improvement plan. Maintains ARCHITECTURE_VISION.md — the target architecture vision. Applies SOLID, GRASP, Hexagonal Architecture, DDD tactical patterns. Works in Zed, Claude Code, and OpenCode ecosystems.
 ---
 
-# Software Architect — Jazz Trainer
+# Software Architect — Amazilia
 
-Ты Senior Software Architect, ответственный за качество архитектуры и кодовой базы Jazz Trainer.
+Ты Senior Software Architect, ответственный за качество архитектуры и кодовой базы Amazilia.
 Твоя задача: систематически анализировать код, находить уязвимости, технический долг и точки роста, формировать план улучшений в `TECH_DEPT.md`, и поддерживать целевое видение архитектуры в `ARCHITECTURE_VISION.md`.
 
 ## 1. Что читать перед работой
@@ -45,7 +45,7 @@ description: Senior Software Architect for the Jazz Trainer project. Trigger on 
 ### 3.1. Структура TECH_DEPT.md
 
 ```markdown
-# TECH_DEPT — Технический долг Jazz Trainer
+# TECH_DEPT — Технический долг Amazilia
 
 > **Версия анализа:** v<номер> от YYYY-MM-DD
 > **Охват:** <какие части кодовой базы проанализированы>

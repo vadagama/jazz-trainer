@@ -8,6 +8,7 @@ import {
 import { useLocalSettingsStore, useComputerKeyboardStore } from '@jazz/plugin-sdk';
 import { buildKeyMap } from '@jazz/music-core/audio';
 import type { ComputerKeyboardAdapter } from './ComputerKeyboardAdapter';
+import { debugLog } from './debugLog';
 
 /** Fallback: extract MIDI note number from note name string (regex). */
 function midiNoteFromEvent(event: MidiInputEvent): number | undefined {
@@ -167,7 +168,7 @@ export function MidiSoloProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const inputPort = getInputPort();
     const host = hostRef.current;
-    console.debug('[MidiSoloProvider] wiring: inputPort=', !!inputPort, 'host=', !!host);
+    debugLog('[MidiSoloProvider] wiring: inputPort=', !!inputPort, 'host=', !!host);
     if (!inputPort || !host) return;
 
     const toneAdapter = getToneAdapter();
@@ -176,7 +177,7 @@ export function MidiSoloProvider({ children }: { children: React.ReactNode }) {
       const midiNote = event.midiNote ?? midiNoteFromEvent(event);
       if (midiNote === undefined) return;
       if (import.meta.env.DEV) {
-        console.debug('[MidiSoloProvider] noteOn:', event.note, 'vel=', event.velocity);
+        debugLog('[MidiSoloProvider] noteOn:', event.note, 'vel=', event.velocity);
       }
       host.handleNoteOn(midiNote, event.velocity);
       if (toneAdapter) {
@@ -246,7 +247,7 @@ export function MidiSoloProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const adapter = getKeyboardAdapter();
-    console.debug(
+    debugLog(
       '[MidiSoloProvider] kb sync: adapter=',
       !!adapter,
       'enabled=',

@@ -1,4 +1,4 @@
-# AI.md — Jazz Trainer
+# AI.md — Amazilia
 
 > Минимизация контекста для AI-агентов. Читай этот файл первым — он скажет, что читать дальше, а что можно пропустить.
 
@@ -287,7 +287,7 @@ ESLint-границы                   → eslint.config.js (секция bound
 - **Как добавить permission?** В `RBAC_PERMISSIONS` в `rbac.service.ts`, затем в `permissions` таблицу через seed.
 - **Как добавить роль?** В `RBAC_ROLES` в `rbac.service.ts`, затем seed прав в `role_permissions`.
 - **Как работает feature flag?** Таблица `feature_flags`, резолюция через `resolveFlags()`, фронт через `useFlag()`.
-- **Фазы миграции:** Ф0–Ф1–ФR–Ф3 готовы ✅, Ф2 (AudioPort wiring) 🟡, Ф4 (контент плагинов) 🟡, Ф5 (MIDI/Desktop) 🔴.
+- **Фазы миграции:** Ф0–Ф1–ФR–Ф3 готовы ✅, Ф2 (AudioPort wiring) 🟢, Ф4 (контент плагинов) 🟡, Ф5 (MIDI/Desktop) 🟡.
 
 ---
 

@@ -60,7 +60,7 @@ GET  /api/auth/github/callback  → обработка callback
 ```env
 GITHUB_CLIENT_ID=...
 GITHUB_CLIENT_SECRET=...
-GITHUB_CALLBACK_URL=https://jazz-trainer.com/api/auth/github/callback
+GITHUB_CALLBACK_URL=https://api.amazilia.app/api/auth/github/callback
 ```
 
 ### 2.4. Magic Link (🔴 новый)
@@ -95,11 +95,11 @@ GET  /api/auth/magic-link/verify  ← query: ?token=<jwt>
 #### 2.4.3. Почтовый шаблон
 
 ```
-Subject: Your Jazz Trainer login link
+Subject: Your Amazilia login link
 
 Hi {{name}},
 
-Click the link below to sign in to Jazz Trainer:
+Click the link below to sign in to Amazilia:
 
 {{magicLinkUrl}}
 
@@ -107,7 +107,7 @@ This link expires in 15 minutes and can only be used once.
 
 If you didn't request this, you can safely ignore it.
 
-— Jazz Trainer
+— Amazilia
 ```
 
 #### 2.4.4. Безопасность Magic Link
@@ -1219,7 +1219,7 @@ erDiagram
 Конфигурация:
 
 ```env
-EMAIL_FROM="Jazz Trainer <noreply@jazz-trainer.com>"
+EMAIL_FROM="Amazilia <noreply@amazilia.app>"
 EMAIL_PROVIDER=resend
 RESEND_API_KEY=re_...
 ```
@@ -1292,21 +1292,21 @@ SESSION_MAX_ABSOLUTE_TTL_MS=604800000         # 7 дней в мс
 # Google (уже существует)
 GOOGLE_CLIENT_ID=...
 GOOGLE_CLIENT_SECRET=...
-GOOGLE_CALLBACK_URL=https://jazz-trainer.com/api/auth/google/callback
+GOOGLE_CALLBACK_URL=https://api.amazilia.app/api/auth/google/callback
 
 # GitHub (новое)
 GITHUB_CLIENT_ID=...
 GITHUB_CLIENT_SECRET=...
-GITHUB_CALLBACK_URL=https://jazz-trainer.com/api/auth/github/callback
+GITHUB_CALLBACK_URL=https://api.amazilia.app/api/auth/github/callback
 
 # ── Email ──────────────────────────────────────────────────
-EMAIL_FROM="Jazz Trainer <noreply@jazz-trainer.com>"
+EMAIL_FROM="Amazilia <noreply@amazilia.app>"
 EMAIL_PROVIDER=resend
 RESEND_API_KEY=...
 
 # ── Admin Notifications ────────────────────────────────────
 ADMIN_TELEGRAM_CHAT_ID=...                    # ID чата для уведомлений о подписках
-ADMIN_EMAIL=admin@jazz-trainer.com            # Email для уведомлений
+ADMIN_EMAIL=admin@amazilia.app            # Email для уведомлений
 
 # ── Stripe (будущее, P3 — не обязательно для запуска) ─────
 # STRIPE_SECRET_KEY=sk_live_...

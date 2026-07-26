@@ -1,4 +1,4 @@
-# MOBILE — Мобильное представление Jazz Trainer
+# MOBILE — Мобильное представление Amazilia
 
 > **Статус:** Требования (спецификация)
 > **Цель:** Адаптивный веб для планшета и смартфона. Подготовка к React Native.
@@ -77,7 +77,7 @@
   - Ear Training, Rhythm Drills, Chord Quiz, Progression Recognition
   - Администрирование (только если есть роль admin)
   - Настройки, Профиль
-- **Header** — уменьшенный: высота 48px (вместо 96px). Логотип-иконка без текста «Jazz Trainer». Аватар справа. Без горизонтального меню.
+- **Header** — уменьшенный: высота 48px (вместо 96px). Логотип-иконка без текста «Amazilia». Аватар справа. Без горизонтального меню.
 - **Жест:** свайп от левого края → Drawer. Свайп вправо по контенту → назад (стек навигации).
 
 **Типы Shell для Phone:**
@@ -428,7 +428,7 @@ const hasWebMidi = typeof navigator.requestMIDIAccess === 'function';
 const hasOfflineAudio = typeof OfflineAudioContext !== 'undefined';
 
 if (!hasWebAudio || !hasOfflineAudio) {
-  // Показать экран-заглушку: «Jazz Trainer требует браузер с поддержкой Web Audio API (Chrome, Edge, Opera)»
+  // Показать экран-заглушку: «Amazilia требует браузер с поддержкой Web Audio API (Chrome, Edge, Opera)»
 }
 ```
 

@@ -10,7 +10,7 @@ import {
 } from 'drizzle-orm/sqlite-core';
 
 /**
- * Database schema for Jazz Trainer.
+ * Database schema for Amazilia.
  * See docs/03-data-model.md for entity descriptions and access rules.
  */
 

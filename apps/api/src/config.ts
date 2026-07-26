@@ -123,8 +123,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ApiConfig {
     githubCallbackUrl: env.GITHUB_CALLBACK_URL ?? 'http://localhost:3999/api/auth/github/callback',
     googleHd: env.GOOGLE_HD ?? null,
     resendApiKey: env.RESEND_API_KEY ?? null,
-    emailFrom: env.EMAIL_FROM ?? 'noreply@jazztrainer.app',
-    totpIssuer: env.TOTP_ISSUER ?? 'Jazz Trainer',
+    emailFrom: env.EMAIL_FROM ?? 'noreply@amazilia.app',
+    totpIssuer: env.TOTP_ISSUER ?? 'Amazilia',
     superAdminSessionMaxAbsoluteTtlMs: Number(env.SUPER_ADMIN_SESSION_MAX_TTL_MS ?? 15 * 60 * 1000),
     adminIpAllowlist: env.ADMIN_IP_ALLOWLIST ?? null,
   };
