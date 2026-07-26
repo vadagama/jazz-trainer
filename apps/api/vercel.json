@@ -2,12 +2,6 @@
   "name": "amazilia-api",
   "framework": null,
   "buildCommand": "cd ../.. && npm ci && npm rebuild && npm run build -w @jazz/api",
-  "functions": {
-    "api/[...path].ts": {
-      "memory": 512,
-      "maxDuration": 30
-    }
-  },
   "git": {
     "deploymentEnabled": {
       "main": true
