@@ -20,14 +20,13 @@
       "@jazz/plugin-core-editor": ["../../packages/plugins/core-editor/src/index.ts"],
       "@jazz/plugin-core-player": ["../../packages/plugins/core-player/src/index.ts"],
       "@jazz/plugin-catalog": ["../../packages/plugins/catalog/src/index.ts"],
-      "@jazz/plugin-admin-users": ["../../packages/plugins/admin/admin-users/src/index.tsdex.ts"],
-      "@jazz/plugin-admin-content": ["../../packages/plugins/admin/admin-content/src/index.tsdex.ts"],
-      "@jazz/plugin-admin-flags": ["../../packages/plugins/admin/admin-flags/src/index.tsdex.ts"],
-      "@jazz/plugin-admin-assets": ["../../packages/plugins/admin/admin-assets/src/index.tsdex.ts"],
-      "@jazz/plugin-admin-diagnostics": ["../../packages/plugins/admin/admin-diagnostics/src/index.tsdex.ts"],
-            "@jazz/plugin-admin-subscriptions": [
-              "../../packages/plugins/admin/admin-subscriptions/src/index.ts",
-            ],
+      "@jazz/plugin-admin-users": ["../../packages/plugins/admin/admin-users/src/index.ts"],
+      "@jazz/plugin-admin-content": ["../../packages/plugins/admin/admin-content/src/index.ts"],
+      "@jazz/plugin-admin-flags": ["../../packages/plugins/admin/admin-flags/src/index.ts"],
+      "@jazz/plugin-admin-assets": ["../../packages/plugins/admin/admin-assets/src/index.ts"],
+      "@jazz/plugin-admin-diagnostics": ["../../packages/plugins/admin/admin-diagnostics/src/index.ts"],
+      "@jazz/plugin-admin-defaults": ["../../packages/plugins/admin/admin-defaults/src/index.ts"],
+      "@jazz/plugin-admin-subscriptions": ["../../packages/plugins/admin/admin-subscriptions/src/index.ts"],
       "@jazz/plugin-jazz-drum-kit": [
         "../../packages/plugins/instruments/jazz-drum-kit/src/index.ts",
       ],
@@ -99,22 +98,22 @@
       "@jazz/plugin-theory-catalog": ["../../packages/plugins/theory/theory-catalog/src/index.ts"],
       "@jazz/plugin-core-settings": ["../../packages/plugins/core-settings/src/index.ts"],
       "@jazz/plugin-admin-drum-constructor": [
-        "../../packages/plugins/admin/admin-drum-constructor/src/index.tsdex.ts",
+        "../../packages/plugins/admin/admin-drum-constructor/src/index.ts",
       ],
       "@jazz/plugin-admin-percussion-constructor": [
-        "../../packages/plugins/admin/admin-percussion-constructor/src/index.tsdex.ts",
+        "../../packages/plugins/admin/admin-percussion-constructor/src/index.ts",
       ],
       "@jazz/plugin-admin-piano-constructor": [
         "../../packages/plugins/admin/admin-piano-constructor/src/index.ts",
       ],
       "@jazz/plugin-admin-bass-constructor": [
-        "../../packages/plugins/admin/admin-bass-constructor/src/index.tsdex.ts",
+        "../../packages/plugins/admin/admin-bass-constructor/src/index.ts",
       ],
       "@jazz/plugin-admin-rhodes-constructor": [
-        "../../packages/plugins/admin/admin-rhodes-constructor/src/index.tsdex.ts",
+        "../../packages/plugins/admin/admin-rhodes-constructor/src/index.ts",
       ],
       "@jazz/plugin-admin-constructor-shared": [
-        "../../packages/plugins/admin/admin-constructor-shared/src/index.tsdex.ts",
+        "../../packages/plugins/admin/admin-constructor-shared/src/index.ts",
       ],
     },
     "noEmit": true,
