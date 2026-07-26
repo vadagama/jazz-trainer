@@ -1,0 +1,26 @@
+{
+  "name": "amazilia-studio",
+  "framework": null,
+  "buildCommand": "cd ../.. && npm ci && npm run build -w @jazz/web",
+  "outputDirectory": "dist",
+  "devCommand": "cd ../.. && npm run dev -w @jazz/web",
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://<api-project>.vercel.app/api/:path*"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    }
+  ],
+  "git": {
+    "deploymentEnabled": {
+      "main": true
+    }
+  }
+}

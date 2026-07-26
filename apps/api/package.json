@@ -10,6 +10,7 @@
     "build": "tsup",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx src/db/migrate.ts",
     "db:seed": "tsx src/db/seed.ts"
@@ -30,6 +31,9 @@
     "@types/better-sqlite3": "^7.6.12",
     "@types/supertest": "^6.0.2",
     "drizzle-kit": "^0.31.10",
-    "supertest": "^7.0.0"
+    "supertest": "^7.0.0",
+    "tsup": "^8.3.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
   }
 }
