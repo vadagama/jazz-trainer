@@ -21,12 +21,17 @@ export const users = sqliteTable(
     email: text('email').notNull().unique(),
     name: text('name').notNull(),
     avatarUrl: text('avatar_url'),
-    provider: text('provider', { enum: ['google', 'dev', 'system'] }).notNull(),
+    provider: text('provider', {
+      enum: ['google', 'dev', 'system', 'github', 'magic_link'],
+    }).notNull(),
     providerId: text('provider_id').notNull(),
     role: text('role').notNull().default('user'),
     status: text('status', { enum: ['active', 'disabled'] })
       .notNull()
       .default('active'),
+    emailVerified: integer('email_verified').notNull().default(0),
+    deletedAt: integer('deleted_at'),
+    providers: text('providers').notNull().default('[]'),
     createdAt: integer('created_at').notNull(),
     updatedAt: integer('updated_at').notNull(),
   },
@@ -99,6 +104,7 @@ export const userSettings = sqliteTable('user_settings', {
   soloToneId: text('solo_tone_id').default('rhodes-jrhodes3c'),
   soloVolume: real('solo_volume'),
   duckingEnabled: integer('ducking_enabled', { mode: 'boolean' }),
+  theme: text('theme').notNull().default('dark'),
   createdAt: integer('created_at').notNull(),
   updatedAt: integer('updated_at').notNull(),
 });
@@ -166,6 +172,7 @@ export const defaultSettings = sqliteTable('default_settings', {
   soloToneId: text('solo_tone_id').default('rhodes-jrhodes3c'),
   soloVolume: real('solo_volume'),
   duckingEnabled: integer('ducking_enabled', { mode: 'boolean' }),
+  theme: text('theme').notNull().default('dark'),
   createdAt: integer('created_at').notNull(),
   updatedAt: integer('updated_at').notNull(),
 });
@@ -178,12 +185,241 @@ export const sessions = sqliteTable(
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
     expiresAt: integer('expires_at').notNull(),
+    deviceName: text('device_name'),
+    ip: text('ip'),
+    fingerprint: text('fingerprint'),
+    lastUsedAt: integer('last_used_at'),
+    /** 0 = pending TOTP verification, 1 = fully authenticated. Default 1 for backward compat. */
+    totpVerified: integer('totp_verified').notNull().default(1),
+    /** Timestamp of last TOTP verification (for step-up re-auth window). */
+    totpVerifiedAt: integer('totp_verified_at'),
     createdAt: integer('created_at').notNull(),
   },
   (t) => [
     index('sessions_user_id_idx').on(t.userId),
     index('sessions_expires_at_idx').on(t.expiresAt),
   ],
+);
+
+// ── Magic Link ────────────────────────────────────────────────────────────
+
+export const magicLinks = sqliteTable(
+  'magic_links',
+  {
+    id: text('id').primaryKey(),
+    email: text('email').notNull(),
+    tokenHash: text('token_hash').notNull(),
+    used: integer('used', { mode: 'boolean' }).notNull().default(false),
+    expiresAt: integer('expires_at').notNull(),
+    createdAt: integer('created_at').notNull(),
+  },
+  (t) => [
+    index('magic_links_email_idx').on(t.email),
+    index('magic_links_token_hash_idx').on(t.tokenHash),
+  ],
+);
+
+// ── Subscription Tiers ───────────────────────────────────────────────────
+
+export const subscriptionTiers = sqliteTable('subscription_tiers', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  stripePriceId: text('stripe_price_id'),
+  roleName: text('role_name').notNull(),
+  permissions: text('permissions').notNull().default('[]'),
+  monthlyPriceCents: integer('monthly_price_cents'),
+  features: text('features').notNull().default('[]'),
+  createdAt: integer('created_at').notNull(),
+});
+
+// ── Subscriptions ────────────────────────────────────────────────────────
+
+export const subscriptions = sqliteTable(
+  'subscriptions',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    stripeSubscriptionId: text('stripe_subscription_id'),
+    stripeCustomerId: text('stripe_customer_id'),
+    tierId: text('tier_id')
+      .notNull()
+      .references(() => subscriptionTiers.id),
+    status: text('status', {
+      enum: ['active', 'past_due', 'canceled', 'expired', 'trialing'],
+    }).notNull(),
+    currentPeriodStart: integer('current_period_start'),
+    currentPeriodEnd: integer('current_period_end'),
+    gracePeriodEnds: integer('grace_period_ends'),
+    canceledAt: integer('canceled_at'),
+    createdAt: integer('created_at').notNull(),
+    updatedAt: integer('updated_at').notNull(),
+  },
+  (t) => [
+    index('subscriptions_user_id_idx').on(t.userId),
+    index('subscriptions_stripe_sub_id_idx').on(t.stripeSubscriptionId),
+  ],
+);
+
+// ── Payment History ──────────────────────────────────────────────────────
+
+export const paymentHistory = sqliteTable(
+  'payment_history',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    stripeEventId: text('stripe_event_id').notNull(),
+    eventType: text('event_type').notNull(),
+    amountCents: integer('amount_cents'),
+    currency: text('currency'),
+    status: text('status'),
+    metadata: text('metadata').notNull().default('{}'),
+    createdAt: integer('created_at').notNull(),
+  },
+  (t) => [index('payment_history_user_id_idx').on(t.userId)],
+);
+
+// ── Subscription Requests (manual billing, landing form) ─────────────────
+
+export const subscriptionRequests = sqliteTable(
+  'subscription_requests',
+  {
+    id: text('id').primaryKey(),
+    email: text('email').notNull(),
+    name: text('name'),
+    desiredTier: text('desired_tier').notNull(),
+    message: text('message'),
+    status: text('status', {
+      enum: ['pending', 'approved', 'rejected', 'needs_info'],
+    })
+      .notNull()
+      .default('pending'),
+    userId: text('user_id'),
+    processedBy: text('processed_by'),
+    processedComment: text('processed_comment'),
+    processedAt: integer('processed_at'),
+    createdAt: integer('created_at').notNull(),
+  },
+  (t) => [
+    index('sub_req_status_idx').on(t.status),
+    index('sub_req_email_idx').on(t.email),
+  ],
+);
+
+// ── Subscription History (manual billing audit) ──────────────────────────
+
+export const subscriptionHistory = sqliteTable(
+  'subscription_history',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    eventType: text('event_type').notNull(),
+    actorId: text('actor_id').notNull(),
+    oldTier: text('old_tier'),
+    newTier: text('new_tier'),
+    metadata: text('metadata').notNull().default('{}'),
+    createdAt: integer('created_at').notNull(),
+  },
+  (t) => [index('sub_hist_user_id_idx').on(t.userId)],
+);
+
+// ── Exercise Progress ────────────────────────────────────────────────────
+
+export const exerciseProgress = sqliteTable(
+  'exercise_progress',
+  {
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    exerciseType: text('exercise_type').notNull(),
+    subType: text('sub_type'),
+    attempts: integer('attempts').notNull().default(0),
+    bestScore: real('best_score'),
+    lastScore: real('last_score'),
+    lastPracticedAt: integer('last_practiced_at'),
+  },
+  (t) => [
+    primaryKey({ columns: [t.userId, t.exerciseType, t.subType] }),
+    index('exercise_progress_user_idx').on(t.userId),
+  ],
+);
+
+// ── Exercise Results ─────────────────────────────────────────────────────
+
+export const exerciseResults = sqliteTable(
+  'exercise_results',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    exerciseType: text('exercise_type').notNull(),
+    subType: text('sub_type'),
+    config: text('config').notNull().default('{}'),
+    score: real('score'),
+    completed: integer('completed', { mode: 'boolean' }).notNull().default(false),
+    durationMs: integer('duration_ms'),
+    createdAt: integer('created_at').notNull(),
+  },
+  (t) => [index('exercise_results_user_idx').on(t.userId)],
+);
+
+// ── Theory Progress ──────────────────────────────────────────────────────
+
+export const theoryProgress = sqliteTable(
+  'theory_progress',
+  {
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    lectureId: text('lecture_id').notNull(),
+    status: text('status', { enum: ['not_started', 'in_progress', 'completed'] })
+      .notNull()
+      .default('not_started'),
+    progressPercent: integer('progress_percent').notNull().default(0),
+    completedAt: integer('completed_at'),
+  },
+  (t) => [
+    primaryKey({ columns: [t.userId, t.lectureId] }),
+    index('theory_progress_user_idx').on(t.userId),
+  ],
+);
+
+// ── User Stats ───────────────────────────────────────────────────────────
+
+export const userStats = sqliteTable('user_stats', {
+  userId: text('user_id')
+    .primaryKey()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  currentStreak: integer('current_streak').notNull().default(0),
+  longestStreak: integer('longest_streak').notNull().default(0),
+  lastPracticeDate: text('last_practice_date'),
+  totalPracticeTimeMs: integer('total_practice_time_ms').notNull().default(0),
+  totalExercisesCompleted: integer('total_exercises_completed').notNull().default(0),
+  totalTheoryCompleted: integer('total_theory_completed').notNull().default(0),
+});
+
+// ── Consent Records (GDPR) ────────────────────────────────────────────────
+
+export const consentRecords = sqliteTable(
+  'consent_records',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    consentType: text('consent_type').notNull(),
+    granted: integer('granted', { mode: 'boolean' }).notNull().default(false),
+    ip: text('ip'),
+    userAgent: text('user_agent'),
+    createdAt: integer('created_at').notNull(),
+  },
+  (t) => [index('consent_records_user_idx').on(t.userId)],
 );
 
 export const harmonyCompositions = sqliteTable(
@@ -388,11 +624,25 @@ export const featureFlags = sqliteTable('feature_flags', {
   updatedBy: text('updated_by'), // users.id
 });
 
+// ── TOTP secrets (2FA for super_admin) ───────────────────────────────────
+
+export const totpSecrets = sqliteTable('totp_secrets', {
+  userId: text('user_id')
+    .primaryKey()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  secret: text('secret').notNull(),
+  enabled: integer('enabled', { mode: 'boolean' }).notNull().default(false),
+  createdAt: integer('created_at').notNull(),
+  updatedAt: integer('updated_at').notNull(),
+});
+
 // ── Feature access (public column in admin) ──────────────────────────
 
 export const featureAccess = sqliteTable('feature_access', {
   featureCode: text('feature_code').primaryKey(),
-  state: text('state', { enum: ['active', 'inactive'] }).notNull().default('active'),
+  state: text('state', { enum: ['active', 'inactive'] })
+    .notNull()
+    .default('active'),
 });
 
 // ── Type exports ──────────────────────────────────────────────────────────
@@ -413,3 +663,21 @@ export type AuditLogRecord = typeof auditLog.$inferSelect;
 export type LectureLikeRecord = typeof lectureLikes.$inferSelect;
 export type FeatureFlagRecord = typeof featureFlags.$inferSelect;
 export type FeatureAccessRecord = typeof featureAccess.$inferSelect;
+export type MagicLinkRecord = typeof magicLinks.$inferSelect;
+export type NewMagicLink = typeof magicLinks.$inferInsert;
+export type SubscriptionTierRecord = typeof subscriptionTiers.$inferSelect;
+export type SubscriptionRecord = typeof subscriptions.$inferSelect;
+export type NewSubscription = typeof subscriptions.$inferInsert;
+export type PaymentHistoryRecord = typeof paymentHistory.$inferSelect;
+export type ExerciseProgressRecord = typeof exerciseProgress.$inferSelect;
+export type ExerciseResultRecord = typeof exerciseResults.$inferSelect;
+export type NewExerciseResult = typeof exerciseResults.$inferInsert;
+export type TheoryProgressRecord = typeof theoryProgress.$inferSelect;
+export type UserStatsRecord = typeof userStats.$inferSelect;
+export type ConsentRecordRecord = typeof consentRecords.$inferSelect;
+export type NewConsentRecord = typeof consentRecords.$inferInsert;
+export type SubscriptionRequestRecord = typeof subscriptionRequests.$inferSelect;
+export type NewSubscriptionRequest = typeof subscriptionRequests.$inferInsert;
+export type TotpSecretRecord = typeof totpSecrets.$inferSelect;
+export type SubscriptionHistoryRecord = typeof subscriptionHistory.$inferSelect;
+export type NewSubscriptionHistory = typeof subscriptionHistory.$inferInsert;

@@ -1,12 +1,6 @@
 import { eq, and, inArray } from 'drizzle-orm';
 import { ALL_FEATURE_CODES } from '@jazz/shared';
-import {
-  roles,
-  rolePermissions,
-  userRoles,
-  userPermissions,
-  featureAccess,
-} from '../db/schema.js';
+import { roles, rolePermissions, userRoles, userPermissions, featureAccess } from '../db/schema.js';
 import type { DrizzleDb } from '../db/index.js';
 
 /**

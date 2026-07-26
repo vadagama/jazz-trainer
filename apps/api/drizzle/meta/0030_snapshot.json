@@ -167,9 +167,7 @@
       "indexes": {
         "grid_likes_user_id_idx": {
           "name": "grid_likes_user_id_idx",
-          "columns": [
-            "user_id"
-          ],
+          "columns": ["user_id"],
           "isUnique": false
         }
       },
@@ -178,12 +176,8 @@
           "name": "grid_likes_grid_id_harmony_grids_id_fk",
           "tableFrom": "grid_likes",
           "tableTo": "harmony_grids",
-          "columnsFrom": [
-            "grid_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["grid_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -191,22 +185,15 @@
           "name": "grid_likes_user_id_users_id_fk",
           "tableFrom": "grid_likes",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
         "grid_likes_grid_id_user_id_pk": {
-          "columns": [
-            "grid_id",
-            "user_id"
-          ],
+          "columns": ["grid_id", "user_id"],
           "name": "grid_likes_grid_id_user_id_pk"
         }
       },
@@ -301,23 +288,17 @@
       "indexes": {
         "grids_user_id_idx": {
           "name": "grids_user_id_idx",
-          "columns": [
-            "user_id"
-          ],
+          "columns": ["user_id"],
           "isUnique": false
         },
         "grids_visibility_idx": {
           "name": "grids_visibility_idx",
-          "columns": [
-            "visibility"
-          ],
+          "columns": ["visibility"],
           "isUnique": false
         },
         "grids_updated_at_idx": {
           "name": "grids_updated_at_idx",
-          "columns": [
-            "updated_at"
-          ],
+          "columns": ["updated_at"],
           "isUnique": false
         }
       },
@@ -326,12 +307,8 @@
           "name": "harmony_grids_user_id_users_id_fk",
           "tableFrom": "harmony_grids",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -368,9 +345,7 @@
       "indexes": {
         "lecture_likes_user_id_idx": {
           "name": "lecture_likes_user_id_idx",
-          "columns": [
-            "user_id"
-          ],
+          "columns": ["user_id"],
           "isUnique": false
         }
       },
@@ -379,22 +354,15 @@
           "name": "lecture_likes_user_id_users_id_fk",
           "tableFrom": "lecture_likes",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
         "lecture_likes_lecture_id_user_id_pk": {
-          "columns": [
-            "lecture_id",
-            "user_id"
-          ],
+          "columns": ["lecture_id", "user_id"],
           "name": "lecture_likes_lecture_id_user_id_pk"
         }
       },
@@ -422,9 +390,7 @@
       "indexes": {
         "permissions_code_unique": {
           "name": "permissions_code_unique",
-          "columns": [
-            "code"
-          ],
+          "columns": ["code"],
           "isUnique": true
         }
       },
@@ -457,12 +423,8 @@
           "name": "role_permissions_role_id_roles_id_fk",
           "tableFrom": "role_permissions",
           "tableTo": "roles",
-          "columnsFrom": [
-            "role_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["role_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -470,22 +432,15 @@
           "name": "role_permissions_permission_code_permissions_code_fk",
           "tableFrom": "role_permissions",
           "tableTo": "permissions",
-          "columnsFrom": [
-            "permission_code"
-          ],
-          "columnsTo": [
-            "code"
-          ],
+          "columnsFrom": ["permission_code"],
+          "columnsTo": ["code"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
         "role_permissions_role_id_permission_code_pk": {
-          "columns": [
-            "role_id",
-            "permission_code"
-          ],
+          "columns": ["role_id", "permission_code"],
           "name": "role_permissions_role_id_permission_code_pk"
         }
       },
@@ -521,9 +476,7 @@
       "indexes": {
         "roles_name_unique": {
           "name": "roles_name_unique",
-          "columns": [
-            "name"
-          ],
+          "columns": ["name"],
           "isUnique": true
         }
       },
@@ -567,16 +520,12 @@
       "indexes": {
         "sessions_user_id_idx": {
           "name": "sessions_user_id_idx",
-          "columns": [
-            "user_id"
-          ],
+          "columns": ["user_id"],
           "isUnique": false
         },
         "sessions_expires_at_idx": {
           "name": "sessions_expires_at_idx",
-          "columns": [
-            "expires_at"
-          ],
+          "columns": ["expires_at"],
           "isUnique": false
         }
       },
@@ -585,12 +534,8 @@
           "name": "sessions_user_id_users_id_fk",
           "tableFrom": "sessions",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -630,12 +575,8 @@
           "name": "user_permissions_user_id_users_id_fk",
           "tableFrom": "user_permissions",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -643,22 +584,15 @@
           "name": "user_permissions_permission_code_permissions_code_fk",
           "tableFrom": "user_permissions",
           "tableTo": "permissions",
-          "columnsFrom": [
-            "permission_code"
-          ],
-          "columnsTo": [
-            "code"
-          ],
+          "columnsFrom": ["permission_code"],
+          "columnsTo": ["code"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
         "user_permissions_user_id_permission_code_pk": {
-          "columns": [
-            "user_id",
-            "permission_code"
-          ],
+          "columns": ["user_id", "permission_code"],
           "name": "user_permissions_user_id_permission_code_pk"
         }
       },
@@ -1071,12 +1005,8 @@
           "name": "user_settings_user_id_users_id_fk",
           "tableFrom": "user_settings",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1164,17 +1094,12 @@
       "indexes": {
         "users_email_unique": {
           "name": "users_email_unique",
-          "columns": [
-            "email"
-          ],
+          "columns": ["email"],
           "isUnique": true
         },
         "users_provider_provider_id": {
           "name": "users_provider_provider_id",
-          "columns": [
-            "provider",
-            "provider_id"
-          ],
+          "columns": ["provider", "provider_id"],
           "isUnique": true
         }
       },

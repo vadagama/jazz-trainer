@@ -2,10 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { createTestDb } from '../db/testUtils.js';
 import { seedRbac } from '../db/seed.js';
 import { users, userPermissions } from '../db/schema.js';
-import {
-  resolvePublicFeatureAccess,
-  resolveUserFeatureAccess,
-} from './featureAccess.service.js';
+import { resolvePublicFeatureAccess, resolveUserFeatureAccess } from './featureAccess.service.js';
 import { ALL_FEATURE_CODES } from '@jazz/shared';
 import type { DrizzleDb } from '../db/index.js';
 

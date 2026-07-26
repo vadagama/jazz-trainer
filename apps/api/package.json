@@ -5,7 +5,7 @@
   "type": "module",
   "main": "./dist/index.js",
   "scripts": {
-    "dev": "tsx watch --env-file=.env --ignore=./data --ignore=./dist --ignore=./node_modules --ignore=./drizzle src/index.ts",
+    "dev": "tsx watch --ignore=./data --ignore=./dist --ignore=./node_modules --ignore=./drizzle src/index.ts",
     "predev": "node -e \"const{existsSync,mkdirSync}=require('fs');const d='./data';if(!existsSync(d))mkdirSync(d,{recursive:true})\"",
     "build": "tsup",
     "start": "node dist/index.js",
@@ -17,6 +17,8 @@
   "dependencies": {
     "@fastify/cookie": "^11.0.2",
     "@fastify/cors": "^10.0.2",
+    "@fastify/helmet": "^13.1.0",
+    "@fastify/rate-limit": "^11.1.0",
     "@jazz/music-core": "*",
     "@jazz/shared": "*",
     "better-sqlite3": "^11.9.1",

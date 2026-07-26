@@ -1,6 +1,7 @@
-import { eq, and } from 'drizzle-orm';
+import crypto from 'node:crypto';
+import { eq, and, not } from 'drizzle-orm';
 import type { UserDTO, UserSettingsDTO, Style } from '@jazz/shared';
-import { users, userSettings, defaultSettings, sessions } from '../db/schema.js';
+import { users, userSettings, defaultSettings, sessions, magicLinks, auditLog } from '../db/schema.js';
 import type { DrizzleDb } from '../db/index.js';
 import type { UserRecord, UserSettingsRecord, DefaultSettingsRecord } from '../db/schema.js';
 import { applyStyleDefaults } from '@jazz/music-core';
@@ -13,7 +14,7 @@ export function toUserDTO(u: UserRecord): UserDTO {
     email: u.email,
     name: u.name,
     avatarUrl: u.avatarUrl ?? null,
-    provider: u.provider as 'google' | 'dev' | 'system',
+    provider: u.provider as 'google' | 'dev' | 'system' | 'github' | 'magic_link',
     role: u.role,
     status: u.status as 'active' | 'disabled',
     createdAt: u.createdAt,
@@ -120,6 +121,7 @@ export function toSettingsDTO(s: UserSettingsRecord): UserSettingsDTO {
     soloToneId: (s.soloToneId ?? undefined) as string | undefined,
     soloVolume: s.soloVolume ?? undefined,
     duckingEnabled: s.duckingEnabled ?? undefined,
+    theme: (s.theme as UserSettingsDTO['theme']) ?? 'dark',
     perStyleOverrides: s.perStyleOverrides
       ? (JSON.parse(s.perStyleOverrides) as UserSettingsDTO['perStyleOverrides'])
       : undefined,
@@ -155,7 +157,7 @@ export function toSettingsDTO(s: UserSettingsRecord): UserSettingsDTO {
 // ── User management ─────────────────────────────────────────────────────────
 
 interface UpsertUserInput {
-  provider: 'google' | 'dev';
+  provider: 'google' | 'dev' | 'github';
   providerId: string;
   email: string;
   name: string;
@@ -175,20 +177,38 @@ export function upsertUser(db: DrizzleDb, input: UpsertUserInput): UserRecord {
     .get();
 
   if (existing) {
+    // Append provider to providers array if not already present
+    let currentProviders: string[] = [];
+    try {
+      currentProviders = JSON.parse(existing.providers ?? '[]') as string[];
+    } catch {
+      /* keep empty */
+    }
+    const providerList = currentProviders.includes(input.provider)
+      ? currentProviders
+      : [...currentProviders, input.provider];
+
     db.update(users)
       .set({
         email: input.email,
         name: input.name,
         avatarUrl: input.avatarUrl ?? null,
+        providers: JSON.stringify(providerList),
         updatedAt: now,
       })
       .where(eq(users.id, existing.id))
       .run();
-    return { ...existing, email: input.email, name: input.name, updatedAt: now };
+    return {
+      ...existing,
+      email: input.email,
+      name: input.name,
+      providers: JSON.stringify(providerList),
+      updatedAt: now,
+    };
   }
 
   const id = crypto.randomUUID();
-  const newUser: UserRecord = {
+  const row: Record<string, unknown> = {
     id,
     email: input.email,
     name: input.name,
@@ -197,11 +217,16 @@ export function upsertUser(db: DrizzleDb, input: UpsertUserInput): UserRecord {
     providerId: input.providerId,
     role: 'user',
     status: 'active',
+    emailVerified: 0,
+    deletedAt: null,
+    providers: JSON.stringify([input.provider]),
     createdAt: now,
     updatedAt: now,
   };
-  db.insert(users).values(newUser).run();
-  return newUser;
+  db.insert(users)
+    .values(row as typeof users.$inferInsert)
+    .run();
+  return row as unknown as UserRecord;
 }
 
 /**
@@ -221,7 +246,12 @@ export function ensureUserSettings(db: DrizzleDb, userId: string): void {
   const defaults = db.select().from(defaultSettings).where(eq(defaultSettings.id, 1)).get();
   if (defaults) {
     db.insert(userSettings)
-      .values({ ...userSettingsValuesFromDefaults(defaults), userId, createdAt: now, updatedAt: now })
+      .values({
+        ...userSettingsValuesFromDefaults(defaults),
+        userId,
+        createdAt: now,
+        updatedAt: now,
+      })
       .run();
     return;
   }
@@ -237,6 +267,7 @@ export function ensureUserSettings(db: DrizzleDb, userId: string): void {
       countIn: 1,
       metronomeVolume: 0.8,
       bassComplexity: 1,
+      theme: 'dark',
       createdAt: now,
       updatedAt: now,
     })
@@ -293,16 +324,42 @@ function userSettingsValuesFromDefaults(
     soloToneId: d.soloToneId,
     soloVolume: d.soloVolume,
     duckingEnabled: d.duckingEnabled,
+    theme: d.theme,
   };
+}
+
+// ── Fingerprint ────────────────────────────────────────────────────────────
+
+/**
+ * Compute a device fingerprint from IP and User-Agent.
+ * Uses /24 IP prefix to be robust against DHCP changes within the same subnet.
+ */
+export function computeFingerprint(ip: string, userAgent: string): string {
+  const ipPrefix = ip.split('.').slice(0, 3).join('.');
+  return crypto.createHash('sha256').update(`${userAgent}|${ipPrefix}`).digest('hex');
 }
 
 // ── Session management ──────────────────────────────────────────────────────
 
 /** Create a new session and return the session ID (stored in the cookie). */
-export function createSession(db: DrizzleDb, userId: string, ttlMs: number): string {
+export function createSession(
+  db: DrizzleDb,
+  userId: string,
+  ttlMs: number,
+  meta?: { deviceName?: string; ip?: string; fingerprint?: string; totpVerified?: number },
+): string {
   const id = crypto.randomUUID();
   db.insert(sessions)
-    .values({ id, userId, expiresAt: Date.now() + ttlMs, createdAt: Date.now() })
+    .values({
+      id,
+      userId,
+      expiresAt: Date.now() + ttlMs,
+      deviceName: meta?.deviceName ?? null,
+      ip: meta?.ip ?? null,
+      fingerprint: meta?.fingerprint ?? null,
+      totpVerified: meta?.totpVerified ?? 1,
+      createdAt: Date.now(),
+    })
     .run();
   return id;
 }
@@ -310,14 +367,217 @@ export function createSession(db: DrizzleDb, userId: string, ttlMs: number): str
 /**
  * Look up a session by its ID. Returns the owning user if the session is
  * valid and not expired, or null otherwise.
+ *
+ * Checks:
+ * 1. Session exists and is not expired
+ * 2. Absolute TTL not exceeded (if maxAbsoluteTtlMs provided)
+ * 3. Fingerprint matches (if stored on session and requestFingerprint provided)
+ * 4. On success: sliding expiration within the absolute TTL window
  */
-export function getSessionUser(db: DrizzleDb, sessionId: string): UserRecord | null {
+export function getSessionUser(
+  db: DrizzleDb,
+  sessionId: string,
+  opts?: {
+    sessionTtlMs?: number;
+    maxAbsoluteTtlMs?: number | ((user: UserRecord) => number);
+    requestFingerprint?: string;
+  },
+): UserRecord | null {
+  const now = Date.now();
   const session = db.select().from(sessions).where(eq(sessions.id, sessionId)).get();
-  if (!session || session.expiresAt < Date.now()) {
+  if (!session || session.expiresAt < now) {
     if (session) db.delete(sessions).where(eq(sessions.id, sessionId)).run();
     return null;
   }
-  return db.select().from(users).where(eq(users.id, session.userId)).get() ?? null;
+
+  // TOTP pending: session exists but requires 2FA completion
+  if (session.totpVerified === 0) {
+    return null;
+  }
+
+  // Fetch user before TTL check for role-based maxAbsoluteTtlMs
+  const user = db.select().from(users).where(eq(users.id, session.userId)).get();
+  if (!user) {
+    db.delete(sessions).where(eq(sessions.id, sessionId)).run();
+    return null;
+  }
+
+  // Absolute TTL: force re-login after maxAbsoluteTtlMs since creation
+  if (opts?.maxAbsoluteTtlMs) {
+    const maxTtl = typeof opts.maxAbsoluteTtlMs === 'function'
+      ? opts.maxAbsoluteTtlMs(user)
+      : opts.maxAbsoluteTtlMs;
+    if (maxTtl && now - session.createdAt > maxTtl) {
+      db.delete(sessions).where(eq(sessions.id, sessionId)).run();
+      return null;
+    }
+  }
+
+  // Fingerprint check: if the session was created with a fingerprint,
+  // subsequent requests must match it.
+  if (session.fingerprint && opts?.requestFingerprint && session.fingerprint !== opts.requestFingerprint) {
+    db.delete(sessions).where(eq(sessions.id, sessionId)).run();
+    return null;
+  }
+
+  // Sliding expiration: extend expires_at and bump last_used_at on each access
+  if (opts?.sessionTtlMs) {
+    db.update(sessions)
+      .set({ expiresAt: now + opts.sessionTtlMs, lastUsedAt: now })
+      .where(eq(sessions.id, sessionId))
+      .run();
+  }
+
+  return user;
+}
+
+/** List non-expired sessions for a user. */
+export function getUserSessions(
+  db: DrizzleDb,
+  userId: string,
+): (typeof sessions.$inferSelect)[] {
+  const now = Date.now();
+  return db
+    .select()
+    .from(sessions)
+    .where(eq(sessions.userId, userId))
+    .all()
+    .filter((s) => s.expiresAt >= now);
+}
+
+/** Delete all sessions for a user except the one with the given ID. */
+export function deleteSessionsExcept(
+  db: DrizzleDb,
+  userId: string,
+  exceptSessionId: string,
+): void {
+  db.delete(sessions)
+    .where(and(eq(sessions.userId, userId), not(eq(sessions.id, exceptSessionId))))
+    .run();
+}
+
+/**
+ * Find or create a user by email for passwordless (magic_link) authentication.
+ * Returns the existing user if found, or creates a new one with provider='magic_link'.
+ */
+export function upsertUserByEmail(
+  db: DrizzleDb,
+  email: string,
+  requestIp?: string,
+  userAgent?: string,
+): UserRecord {
+  const existing = db.select().from(users).where(eq(users.email, email)).get();
+  if (existing) {
+    // Append magic_link to providers array if not already present
+    let currentProviders: string[] = [];
+    try {
+      currentProviders = JSON.parse(existing.providers ?? '[]') as string[];
+    } catch {
+      /* keep empty */
+    }
+    const isNewLink = !currentProviders.includes('magic_link');
+    const providerList = isNewLink
+      ? [...currentProviders, 'magic_link']
+      : currentProviders;
+
+    db.update(users)
+      .set({
+        providers: JSON.stringify(providerList),
+        emailVerified: 1,
+        updatedAt: Date.now(),
+      })
+      .where(eq(users.id, existing.id))
+      .run();
+
+    if (isNewLink) {
+      const auditId = crypto.randomUUID();
+      db.insert(auditLog)
+        .values({
+          id: auditId,
+          actorUserId: existing.id,
+          action: 'auth:oauth:linked',
+          targetType: 'user',
+          targetId: existing.id,
+          before: JSON.stringify({ providers: currentProviders }),
+          after: JSON.stringify({ providers: providerList, linkedProvider: 'magic_link' }),
+          timestamp: new Date(),
+          ip: requestIp ?? null,
+          userAgent: userAgent ?? null,
+          reason: null,
+        })
+        .run();
+    }
+
+    return {
+      ...existing,
+      providers: JSON.stringify(providerList),
+      emailVerified: 1,
+      updatedAt: Date.now(),
+    };
+  }
+
+  const id = crypto.randomUUID();
+  const now = Date.now();
+  const row: Record<string, unknown> = {
+    id,
+    email,
+    name: email.split('@')[0]!,
+    avatarUrl: null,
+    provider: 'magic_link',
+    providerId: email,
+    role: 'user',
+    status: 'active',
+    emailVerified: 1,
+    deletedAt: null,
+    providers: JSON.stringify(['magic_link']),
+    createdAt: now,
+    updatedAt: now,
+  };
+  db.insert(users)
+    .values(row as typeof users.$inferInsert)
+    .run();
+  return row as unknown as UserRecord;
+}
+
+/**
+ * Store a magic link token hash for later verification.
+ */
+export function storeMagicLink(
+  db: DrizzleDb,
+  email: string,
+  tokenHash: string,
+  ttlMs: number,
+): void {
+  const now = Date.now();
+  db.insert(magicLinks)
+    .values({
+      id: crypto.randomUUID(),
+      email,
+      tokenHash,
+      used: false,
+      expiresAt: now + ttlMs,
+      createdAt: now,
+    })
+    .run();
+}
+
+/**
+ * Verify and consume a magic link token.
+ * Returns the email if valid, or null if expired/used/not found.
+ */
+export function consumeMagicLink(db: DrizzleDb, tokenHash: string): string | null {
+  const link = db
+    .select()
+    .from(magicLinks)
+    .where(and(eq(magicLinks.tokenHash, tokenHash), eq(magicLinks.used, false)))
+    .get();
+
+  if (!link) return null;
+  if (link.expiresAt < Date.now()) return null;
+
+  db.update(magicLinks).set({ used: true }).where(eq(magicLinks.id, link.id)).run();
+
+  return link.email;
 }
 
 /** Remove a session (logout). */

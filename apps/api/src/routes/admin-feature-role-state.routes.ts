@@ -54,7 +54,11 @@ export async function adminFeatureRoleStateRoutes(
       const parsed = UpsertFeatureRoleStateSchema.safeParse(request.body);
       if (!parsed.success) {
         return reply.status(400).send({
-          error: { code: 'VALIDATION_ERROR', message: 'Invalid data', details: parsed.error.issues },
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Invalid data',
+            details: parsed.error.issues,
+          },
         });
       }
 

@@ -1,11 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { eq, desc, and } from 'drizzle-orm';
 import type { DrizzleDb } from '../db/index.js';
-import {
-  featureFlags,
-  auditLog,
-  type FeatureFlagRecord,
-} from '../db/schema.js';
+import { featureFlags, auditLog, type FeatureFlagRecord } from '../db/schema.js';
 import { withAuditSync } from '../services/audit.service.js';
 import { requirePermission } from '../plugins/rbac.plugin.js';
 import {
@@ -45,8 +41,7 @@ function toFlagDTO(record: FeatureFlagRecord): FeatureFlagDTO {
     createdBy: record.createdBy ?? null,
     updatedAt: record.updatedAt ?? null,
     updatedBy: record.updatedBy ?? null,
-    createdAt:
-      record.createdAt instanceof Date ? record.createdAt.getTime() : record.createdAt,
+    createdAt: record.createdAt instanceof Date ? record.createdAt.getTime() : record.createdAt,
   };
 }
 
@@ -72,9 +67,7 @@ export async function adminFlagsRoutes(
       const q = query.q?.trim().toLowerCase();
       if (q) {
         rows = rows.filter(
-          (r) =>
-            r.key.toLowerCase().includes(q) ||
-            (r.description ?? '').toLowerCase().includes(q),
+          (r) => r.key.toLowerCase().includes(q) || (r.description ?? '').toLowerCase().includes(q),
         );
       }
       if (query.category) {
@@ -129,8 +122,7 @@ export async function adminFlagsRoutes(
         actorUserId: h.actorUserId,
         before: h.before ? JSON.parse(h.before) : null,
         after: h.after ? JSON.parse(h.after) : null,
-        timestamp:
-          h.timestamp instanceof Date ? h.timestamp.getTime() : (h.timestamp as number),
+        timestamp: h.timestamp instanceof Date ? h.timestamp.getTime() : (h.timestamp as number),
         reason: h.reason,
       }));
 
@@ -183,23 +175,11 @@ export async function adminFlagsRoutes(
         createdAt: new Date(now),
       };
 
-      const created = withAuditSync(
-        db,
-        request,
-        'flag.create',
-        'flag',
-        input.key,
-        {},
-        () => {
-          db.insert(featureFlags).values(record).run();
-          const row = db
-            .select()
-            .from(featureFlags)
-            .where(eq(featureFlags.key, input.key))
-            .get()!;
-          return toFlagDTO(row);
-        },
-      );
+      const created = withAuditSync(db, request, 'flag.create', 'flag', input.key, {}, () => {
+        db.insert(featureFlags).values(record).run();
+        const row = db.select().from(featureFlags).where(eq(featureFlags.key, input.key)).get()!;
+        return toFlagDTO(row);
+      });
 
       return reply.status(201).send(created);
     },
@@ -233,7 +213,10 @@ export async function adminFlagsRoutes(
       const actorId = request.user?.id ?? null;
       const now = Date.now();
 
-      const patch: Partial<typeof featureFlags.$inferInsert> = { updatedAt: now, updatedBy: actorId };
+      const patch: Partial<typeof featureFlags.$inferInsert> = {
+        updatedAt: now,
+        updatedBy: actorId,
+      };
       if (input.description !== undefined) patch.description = input.description ?? null;
       if (input.category !== undefined) patch.category = input.category ?? null;
       if (input.enabled !== undefined) patch.enabled = input.enabled;

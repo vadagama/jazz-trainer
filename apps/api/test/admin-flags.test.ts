@@ -162,7 +162,9 @@ describe('admin-flags routes', () => {
 
   it('rejects out-of-range rolloutPercent with 400', async () => {
     await loginAs(db, agent, 'super@jazz-trainer.local', 'super_admin');
-    const res = await agent.post('/api/admin/flags').send({ key: 'bad-rollout', rolloutPercent: 150 });
+    const res = await agent
+      .post('/api/admin/flags')
+      .send({ key: 'bad-rollout', rolloutPercent: 150 });
     expect(res.status).toBe(400);
   });
 
@@ -181,11 +183,7 @@ describe('admin-flags routes', () => {
     await agent.patch('/api/admin/flags/audited-flag').send({ enabled: false });
     await agent.delete('/api/admin/flags/audited-flag');
 
-    const entries = db
-      .select()
-      .from(auditLog)
-      .where(eq(auditLog.targetId, 'audited-flag'))
-      .all();
+    const entries = db.select().from(auditLog).where(eq(auditLog.targetId, 'audited-flag')).all();
     const actions = entries.map((e) => e.action);
     expect(actions).toContain('flag.create');
     expect(actions).toContain('flag.update');

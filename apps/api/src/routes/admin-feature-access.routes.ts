@@ -7,10 +7,12 @@ import { requirePermission } from '../plugins/rbac.plugin.js';
 import { z } from 'zod';
 
 const UpdateFeatureAccessSchema = z.object({
-  features: z.array(z.object({
-    code: z.string(),
-    state: z.enum(['active', 'inactive']),
-  })),
+  features: z.array(
+    z.object({
+      code: z.string(),
+      state: z.enum(['active', 'inactive']),
+    }),
+  ),
 });
 
 export interface AdminFeatureAccessRoutesOptions {
@@ -43,7 +45,11 @@ export async function adminFeatureAccessRoutes(
       const parsed = UpdateFeatureAccessSchema.safeParse(request.body);
       if (!parsed.success) {
         return reply.status(400).send({
-          error: { code: 'VALIDATION_ERROR', message: 'Invalid data', details: parsed.error.issues },
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Invalid data',
+            details: parsed.error.issues,
+          },
         });
       }
 
@@ -51,7 +57,12 @@ export async function adminFeatureAccessRoutes(
       const existing = getPublicFeatures(db);
 
       const updated = withAuditSync(
-        db, request, 'feature_access.update', 'feature_access', 'public', {},
+        db,
+        request,
+        'feature_access.update',
+        'feature_access',
+        'public',
+        {},
         () => {
           const existingRows = db.select().from(featureAccess).all();
           const codes = new Set(existingRows.map((r) => r.featureCode));
@@ -63,7 +74,9 @@ export async function adminFeatureAccessRoutes(
                 .where(eq(featureAccess.featureCode, code))
                 .run();
             } else {
-              db.insert(featureAccess).values({ featureCode: code, state: state as 'active' | 'inactive' }).run();
+              db.insert(featureAccess)
+                .values({ featureCode: code, state: state as 'active' | 'inactive' })
+                .run();
             }
           }
 

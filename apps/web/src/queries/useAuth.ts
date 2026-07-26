@@ -16,6 +16,7 @@ export function useAuth() {
     permissions: data?.permissions ?? [],
     inactivePermissions: data?.inactivePermissions ?? [],
     flags: data?.flags ?? {},
+    theme: data?.theme ?? null,
     isLoading,
   };
 }
@@ -26,7 +27,13 @@ export function useLogout() {
   return useMutation({
     mutationFn: () => apiClient.post('/api/auth/logout'),
     onSuccess: () => {
-      qc.setQueryData(AUTH_KEY, { user: null, permissions: [], inactivePermissions: [], flags: {} });
+      qc.setQueryData(AUTH_KEY, {
+        user: null,
+        permissions: [],
+        inactivePermissions: [],
+        flags: {},
+        theme: null,
+      });
       qc.invalidateQueries({ queryKey: AUTH_KEY });
     },
   });

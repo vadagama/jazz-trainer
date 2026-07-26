@@ -1,4 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { useAuth } from '@/queries/useAuth';
+import { apiClient } from '@/lib/apiClient';
 
 export type Theme = 'dark' | 'light';
 
@@ -21,22 +23,38 @@ function getInitialTheme(): Theme {
 
 export function useThemeState(): ThemeContextValue {
   const [theme, setTheme] = useState<Theme>(getInitialTheme);
+  const { theme: serverTheme, user } = useAuth();
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark');
   }, [theme]);
 
-  const toggle = useCallback(() => {
-    setTheme((prev) => {
-      const next: Theme = prev === 'dark' ? 'light' : 'dark';
+  // Sync from server when auth resolves (server is source of truth for logged-in users)
+  useEffect(() => {
+    if (serverTheme && serverTheme !== theme) {
+      setTheme(serverTheme as Theme);
       try {
-        localStorage.setItem('jazz-theme', next);
+        localStorage.setItem('jazz-theme', serverTheme);
       } catch {
         /* storage unavailable */
       }
-      return next;
-    });
-  }, []);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [serverTheme]);
+
+  const toggle = useCallback(() => {
+    const next: Theme = theme === 'dark' ? 'light' : 'dark';
+    try {
+      localStorage.setItem('jazz-theme', next);
+    } catch {
+      /* storage unavailable */
+    }
+    setTheme(next);
+    // Background sync to server (fire-and-forget)
+    if (user) {
+      apiClient.patch('/api/settings', { theme: next }).catch(() => {});
+    }
+  }, [theme, user]);
 
   return { theme, toggle };
 }

@@ -48,7 +48,7 @@ export const VISIBILITY = ['public', 'private'] as const;
 export type Visibility = (typeof VISIBILITY)[number];
 
 /** Auth providers. */
-export const AUTH_PROVIDERS = ['google', 'dev', 'system'] as const;
+export const AUTH_PROVIDERS = ['google', 'dev', 'system', 'github', 'magic_link'] as const;
 export type AuthProvider = (typeof AUTH_PROVIDERS)[number];
 
 /** Global playback styles — affects all instruments (drums, piano, bass, rhodes). */
@@ -107,17 +107,22 @@ export const ALL_FEATURE_CODES: readonly string[] = [
 ];
 
 /** Feature codes that are active by default (seeded); the rest seed as inactive. */
-export const DEFAULT_ACTIVE_FEATURE_CODES: readonly string[] = [
-  'exercises:read',
-  'theory:read',
-];
+export const DEFAULT_ACTIVE_FEATURE_CODES: readonly string[] = ['exercises:read', 'theory:read'];
 
 /**
  * Canonical list of system roles. The API layer maps these onto the
  * UPPER_SNAKE `RBAC_ROLES` constant; the shared package cannot import from
  * apps/api, so this list is the cross-layer source of truth.
  */
-export const SYSTEM_ROLES = ['super_admin', 'admin', 'catalog_editor', 'user'] as const;
+export const SYSTEM_ROLES = [
+  'super_admin',
+  'admin',
+  'catalog_editor',
+  'user',
+  'subscriber_free',
+  'subscriber_pro',
+  'subscriber_premium',
+] as const;
 export type SystemRole = (typeof SYSTEM_ROLES)[number];
 
 // ── Catalog (§2.2, §2.3 CATALOG-VISION.md) ─────────────────────────────────
