@@ -1,7 +1,7 @@
 {
   "name": "amazilia-landing",
   "framework": null,
-  "buildCommand": "cd ../.. && npm ci && npm run build -w @jazz/landing",
+  "buildCommand": "cd ../.. && npm ci && npm rebuild && npm run build -w @jazz/landing",
   "outputDirectory": "dist",
   "devCommand": "cd ../.. && npm run dev -w @jazz/landing",
   "git": {
