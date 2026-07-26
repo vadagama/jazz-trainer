@@ -1,0 +1,6 @@
+-- Turso Database Schema for Amazilia
+-- Экспортировано из drizzle-orm миграций.
+-- Для восстановления: turso db shell jazz-trainer-prod < infra/turso/schema.sql
+--
+-- Текущая схема управляется через drizzle-kit (apps/api/drizzle/).
+-- Этот файл — дамп для аварийного восстановления.

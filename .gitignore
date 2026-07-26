@@ -20,6 +20,9 @@ test-results/
 .env.local
 .env.*.local
 
+# Vercel
+.vercel/
+
 # Database (SQLite)
 *.sqlite
 *.sqlite3
