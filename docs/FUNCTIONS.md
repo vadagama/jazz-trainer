@@ -188,21 +188,22 @@ Jazz Trainer — браузерный тренажёр джазовой гарм
 
 Все административные функции доступны только пользователям с ролью `admin` или `super_admin`.
 
-### 5.1. Управление пользователями 🟢
+### 5.1. Управление пользователями и ролями 🟢
 
-**Плагин:** `admin-users` | **Маршрут:** `/admin/users`
+**Плагины:** `admin-users`, `admin-roles` | **Маршруты:** `/admin/users`, `/admin/roles`
 
 - Просмотр списка пользователей
-- Назначение ролей (`user`, `admin`, `super_admin`)
+- Назначение ролей (`user`, `admin`, `catalog_editor`, `super_admin`)
 - Блокировка / разблокировка аккаунтов
+- Управление ролями и назначение permissions
 
-### 5.2. Управление контентом 🟢
+### 5.2. Управление контентом и каталогом 🟢
 
-**Плагин:** `admin-content` | **Маршрут:** `/admin/content`
+**Плагины:** `admin-content`, `admin-catalog` | **Маршруты:** `/admin/content`, `/admin/catalog`
 
 - Модерация публичных гармонических сеток
 - Просмотр, удаление, скрытие сеток
-- Управление фиче-контентом
+- Управление фиче-контентом и каталогом
 
 ### 5.3. Feature flags 🟢
 
@@ -247,7 +248,29 @@ Jazz Trainer — браузерный тренажёр джазовой гарм
 - Валидация клеток (lane count, velocity, clip overlap, moleculeId)
 - Сохранение в localStorage (autosave) + публикация в код (dev-режим)
 
-### 5.8. Настройки по умолчанию 🟢
+### 5.8. Конструктор перкуссии 🟢
+
+**Плагин:** `admin-percussion-constructor` | **Маршрут:** `/admin/percussion-constructor`
+
+- Изучение и редактирование паттернов латиноамериканской перкуссии
+- Редактор молекул для 16 перкуссионных звуков
+
+### 5.9. Конструктор баса 🟢
+
+**Плагин:** `admin-bass-constructor` | **Маршрут:** `/admin/bass-constructor`
+
+- Изучение молекул, клеток и организмов басовых линий
+- Визуальный редактор степов (step engine): выбор ступеней, артикуляций
+- Предпрослушивание через сэмплер (Upright / Electric Bass)
+
+### 5.10. Конструктор Rhodes 🟢
+
+**Плагин:** `admin-rhodes-constructor` | **Маршрут:** `/admin/rhodes-constructor`
+
+- Изучение и редактирование Rhodes-паттернов (pads, offbeats, swells, stabs)
+- Редактор молекул комплементарного слоя
+
+### 5.11. Настройки по умолчанию 🟢
 
 **Плагин:** `admin-defaults` | **Маршрут:** `/admin/defaults` | **Permission:** `system:settings:write`
 
@@ -265,6 +288,20 @@ Jazz Trainer — браузерный тренажёр джазовой гарм
 - **API:** `GET/PATCH/PUT /api/admin/default-settings` (RBAC), `POST /api/admin/default-settings/reset`, публичный `GET /api/default-settings` (для гостей, кеш 60с)
 - **RBAC:** просмотр — `system:settings:read` (есть у `admin` и `super_admin`), редактирование — `system:settings:write` (только `super_admin`)
 - **Аудит:** все мутации пишутся в `audit_log` (`default_settings.update`, `default_settings.reset`)
+
+### 5.12. Управление упражнениями 🟢
+
+**Плагин:** `admin-exercises` | **Маршрут:** `/admin/exercises`
+
+- Управление каталогом упражнений (`practice-cards`)
+- Редактирование конфигураций упражнений
+
+### 5.13. Управление теорией 🟢
+
+**Плагин:** `admin-theory` | **Маршрут:** `/admin/theory`
+
+- Управление каталогом теории (`theory-catalog`)
+- Редактирование учебных материалов
 
 ---
 
@@ -447,11 +484,38 @@ Jazz Trainer — браузерный тренажёр джазовой гарм
 
 ### 8.1. Аутентификация
 
-- Google OAuth 2.0
-- Dev-login fallback (`AUTH_DEV_MODE=true`) — вход без реальных OAuth credentials
-- Управление сессиями (cookies)
+- **Google OAuth 2.0** (PKCE, nonce, hd-фильтр)
+- **GitHub OAuth 2.0** (PKCE)
+- **Magic Link** — вход по email-ссылке (Resend, 15-минутный TTL)
+- **TOTP 2FA** — для super_admin (настройка через QR, проверка при входе)
+- **Dev-login** (`AUTH_DEV_MODE=true`) — вход без реальных OAuth credentials
+- Управление сессиями (cookies, sliding expiration, device fingerprint)
+- Удалённый выход из отдельных сессий
+- Account linking — связывание аккаунтов по email
 
-### 8.2. Гармонические сетки (CRUD)
+### 8.2. Подписки и биллинг
+
+- **Три тарифных уровня:** free, pro, premium (ручной биллинг, админ-панель)
+- Форма заявки на подписку (лэндинг, rate limit 1/24h)
+- Админ-панель: список подписок, approve/reject/request-info заявок
+- Автоматическая деградация подписок (grace period 7 дней, cron)
+- Привязка подписки к ролям (`subscriber_free`, `subscriber_pro`, `subscriber_premium`)
+- История изменений подписки (audit trail)
+
+### 8.3. Прогресс и статистика
+
+- Прогресс упражнений (`exercise_progress`, `exercise_results`)
+- Прогресс теории (`theory_progress`)
+- Статистика пользователя (`user_stats`): streaks, total practice time
+
+### 8.4. GDPR Compliance
+
+- Data export — экспорт всех данных пользователя (JSON)
+- Account deletion — двухфазное удаление аккаунта
+- Consent tracking — запись согласий (`consent_records`)
+- Data retention — cron-задача очистки старых данных
+
+### 8.5. Гармонические сетки (CRUD)
 
 - `GET /api/grids` — список публичных сеток (поиск, пагинация)
 - `GET /api/grids/:id` — детали сетки
@@ -461,15 +525,17 @@ Jazz Trainer — браузерный тренажёр джазовой гарм
 - `POST /api/grids/:id/like` — лайкнуть
 - `POST /api/grids/:id/copy` — скопировать в свой каталог
 
-### 8.3. Настройки пользователя
+### 8.6. Настройки пользователя
 
 - `GET /api/settings` — получить настройки
 - `PATCH /api/settings` — обновить настройки (темп, громкость, предпочтения)
+- Миграция темы из `localStorage` → сервер
 
-### 8.4. Аудит и диагностика
+### 8.7. Аудит и диагностика
 
 - `GET /api/admin/audit` — просмотр audit log (admin)
 - `GET /api/health` — health-check: `{ "status": "ok" }`
+- Расширенные audit actions: billing, subscription, gdpr, totp, sessions
 
 ---
 
@@ -487,4 +553,4 @@ Jazz Trainer — браузерный тренажёр джазовой гарм
 
 ---
 
-_Документ обновлён 2026-07-02. Отражает фактические возможности сервиса на текущий момент. Плагинов: 37._
+_Документ обновлён 2026-07-26. Отражает фактические возможности сервиса на текущий момент. Плагинов: 54. Ролей: 7. Permissions: 29._

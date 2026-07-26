@@ -1,10 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import type {
-  CatalogEntry,
-  CatalogQuery,
-  CatalogTag,
-  PublicCompositionDTO,
-} from '@jazz/shared';
+import type { CatalogEntry, CatalogQuery, CatalogTag, PublicCompositionDTO } from '@jazz/shared';
 import { apiClient } from '@jazz/plugin-sdk';
 
 /**

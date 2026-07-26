@@ -9,7 +9,9 @@ export default definePlugin({
     description: 'Лекция: блюзовая форма, блюзовый лад и блюзовые ноты.',
   },
   contributes: {
-    routes: [{ path: '/theory/blues', element: () => import('./BluesPage'), requires: 'theory:blues' }],
+    routes: [
+      { path: '/theory/blues', element: () => import('./BluesPage'), requires: 'theory:blues' },
+    ],
     navItems: [{ section: 'learn', label: 'Блюз', to: '/theory/blues', icon: 'music' }],
   },
 });

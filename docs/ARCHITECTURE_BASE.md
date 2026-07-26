@@ -56,7 +56,7 @@ graph TD
     shell --> host
     host --> sdk
     sdk --> core
-    plugins["16 плагинов"] --> sdk
+    plugins["54 плагина"] --> sdk
     plugins --> core
 ```
 
@@ -98,25 +98,26 @@ export default definePlugin({
 
 ### 3.2. Точки расширения
 
-| Точка                                            | Назначение                                         | Статус                        |
-| ------------------------------------------------ | -------------------------------------------------- | ----------------------------- |
-| `routes`                                         | Страницы плагина (lazy import)                     | 🟢 16 плагинов                |
-| `navItems`                                       | Пункты меню (main, create, learn, practice, admin) | 🟢                            |
-| `commands`                                       | Именованные действия (палитра, хоткеи)             | 🔴 Типы есть, не используется |
-| `lessons` / `exercises` / `assessments`          | Учебные активности                                 | 🔴 Типы есть, не используется |
+| Точка                                            | Назначение                                         | Статус                                                                                                                |
+| ------------------------------------------------ | -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `routes`                                         | Страницы плагина (lazy import)                     | 🟢 54 плагина                                                                                                         |
+| `navItems`                                       | Пункты меню (main, create, learn, practice, admin) | 🟢                                                                                                                    |
+| `commands`                                       | Именованные действия (палитра, хоткеи)             | 🔴 Типы есть, не используется                                                                                         |
+| `lessons` / `exercises` / `assessments`          | Учебные активности                                 | 🔴 Типы есть, не используется                                                                                         |
 | `instruments` / `generators` / `theoryProviders` | Звуковые движки, генераторы, теория                | 🟡 `instruments` типизирован (`InstrumentContribution`), 2 кита-плагина; `generators`/`theoryProviders` — `unknown[]` |
-| `settingsSchema`                                 | Декларация настроек плагина                        | 🟡 Тип есть, не используется  |
+| `settingsSchema`                                 | Декларация настроек плагина                        | 🟡 Тип есть, не используется                                                                                          |
 
-### 3.3. Категории и плагины (44 шт.)
+### 3.3. Категории и плагины (54 шт.)
 
-| Категория     | Кол-во | Плагины |
-| ------------- | ------ | ------- |
-| `core`        | 9      | `core-editor` (грид-редактор), `core-player` (плеер), `catalog` (каталог), `core-settings` (настройки аранжировки), `instrument.upright-piano` (Upright Piano, pitched), `instrument.jazz-drum-kit` (Jazz Kit, drums), `instrument.funk-drum-kit` (Funk Kit, drums), `instrument.percussion` (Latin Perc, percussion), `instrument.metronome` (метроном) |
+| Категория     | Кол-во | Плагины                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| ------------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `core`        | 4      | `core-editor` (грид-редактор), `core-player` (плеер), `catalog` (каталог), `core-settings` (настройки аранжировки)                                                                                                                                                                                                                                                                                                                                                                                             |
+| `instruments` | 7      | `instrument.upright-piano` (Upright Piano), `instrument.jazz-drum-kit` (Jazz Kit), `instrument.funk-drum-kit` (Funk Kit), `instrument.percussion` (Latin Perc), `instrument.metronome` (метроном), `instrument.bass` (Upright + Electric Bass), `instrument.rhodes` (Rhodes)                                                                                                                                                                                                                                   |
 | `theory`      | 22     | `theory-catalog` (каталог лекций), `theory-scales`, `theory-chords`, `theory-intervals`, `theory-chord-tones`, `theory-approach-notes`, `theory-arpeggios`, `theory-rhythm`, `theory-groove`, `theory-blues`, `theory-ii-v-i`, `theory-scales-jazz`, `theory-voicings`, `theory-voice-leading`, `theory-diminished-harmony`, `theory-coltrane-changes`, `theory-blues-advanced`, `theory-rhythm-changes`, `theory-turnarounds`, `theory-tritone-sub`, `theory-modal-interchange`, `theory-secondary-dominants` |
-| `practice`    | 3      | `ear-training` (MIDI, слух), `rhythm-drills` (MIDI, ритм), `practice-cards` (карточки) |
-| `assess`      | 2      | `chord-quiz`, `progression-recognition` |
-| `play`        | 1      | `visual-midi-keyboard` (виртуальная MIDI-клавиатура) |
-| `admin`       | 7      | `admin-users`, `admin-content`, `admin-flags`, `admin-assets`, `admin-diagnostics`, `admin-piano-constructor` (конструктор фортепиано), `admin-drum-constructor` (конструктор барабанов) |
+| `practice`    | 3      | `ear-training` (MIDI, слух), `rhythm-drills` (MIDI, ритм), `practice-cards` (карточки)                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `assess`      | 2      | `chord-quiz`, `progression-recognition`                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `play`        | 1      | `visual-midi-keyboard` (виртуальная MIDI-клавиатура)                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `admin`       | 15     | `admin-catalog` (каталог админки), `admin-users`, `admin-roles`, `admin-content`, `admin-flags`, `admin-assets`, `admin-diagnostics`, `admin-defaults` (настройки по умолчанию), `admin-exercises` (упражнения), `admin-theory` (теория), `admin-piano-constructor`, `admin-drum-constructor`, `admin-percussion-constructor`, `admin-bass-constructor`, `admin-rhodes-constructor`                                                                                                                            |
 
 ### 3.4. Реестр и загрузка
 
@@ -125,7 +126,7 @@ export default definePlugin({
 import coreEditor from '@jazz/plugin-core-editor';
 // ... 43 импорта
 
-export const PLUGINS = [coreEditor, corePlayer, catalog, ...]; // 44 плагина
+export const PLUGINS = [coreEditor, corePlayer, catalog, ...]; // 54 плагина
 
 // apps/web/src/shell/bootstrap.ts — загрузка в shell
 const { loaded, errors } = loadPlugins(allPlugins, createPluginContext());
@@ -141,6 +142,7 @@ interface PluginContext {
   settings: SettingsService; // 🟡 заглушка
   navigation: NavigationService; // 🟡 заглушка
   events: EventBus; // 🟡 заглушка
+  instruments: InstrumentRegistryService; // 🟢 типизирован
   music: unknown; // 🔴 не типизирован
   query: unknown; // 🔴 не типизирован
 }
@@ -199,21 +201,21 @@ graph LR
 
 Все инструменты реализуют интерфейс `Instrument` из `instrument.ts` и регистрируются через `InstrumentManifest`:
 
-| Инструмент       | Класс                   | Манифест                                  | Семплы                                            | Стилей | Рандомайзер       |
-| ---------------- | ----------------------- | ----------------------------------------- | ------------------------------------------------- | ------ | ----------------- |
-| Upright Bass     | `BassInstrument`        | `@jazz/plugin-bass` → `uprightBassManifest` (плагин)  | SneakyBass, pluck/mute ×4 RR           | 5      | `BassRandomizer`  |
-| Electric Bass    | `BassInstrument`        | `@jazz/plugin-bass` → `electricBassManifest` (плагин) | darkblack, reg/stac/rel/ghost ×4 RR   | 5      | `BassRandomizer`  |
-| Jazz Drum Kit    | `DrumInstrument`        | `@jazz/plugin-jazz-drum-kit` (плагин)     | Swirly Drums 1104, 4 velocity-слоя ×4 RR          | 5      | —                 |
-| Funk Drum Kit    | `DrumInstrument`        | `@jazz/plugin-funk-drum-kit` (плагин)     | Virtuosity Drums, 2–5 layers ×4 RR                | 5      | —                 |
-| Grand Piano      | `PianoInstrument`       | `uprightPianoManifest` (плагин) / `salamanderManifest` | Upright KW (VSUpright1, 3 vel. слоя) / Salamander Grand | 5      | `PianoRandomizer` |
-| Rhodes           | `RhodesInstrument`      | `rhodesManifest`                          | jRhodes3c, 4 velocity-слоя                        | 5      | —                 |
-| Guitar           | `GuitarInstrument`      | `guitarManifest`                          | Nylon/Steel, E2–E5, 9 анкерных нот                | 5      | —                 |
-| Electric Guitar  | `GuitarInstrument`      | `electricGuitarManifest`                  | Electric, 2 velocity-слоя (normal/soft), E2–C#6    | 5      | —                 |
-| Vibraphone       | `VibraphoneInstrument`  | `vibraphoneManifest`                      | Vibraphone, 2 velocity-слоя, C3–C6                | 5      | —                 |
-| Organ            | `OrganInstrument`       | `organManifest`                           | Hammond-style, 2 velocity-слоя, C2–C7              | 5      | —                 |
-| Percussion       | `PercussionInstrument`  | `percussionManifest`                      | Latin perc, 16 звуков (conga, clave, shaker, …)   | 5      | —                 |
-| Clarinet         | `ClarinetInstrument`    | `clarinetManifest`                        | Clarinet, 2 velocity-слоя, D3–C6                  | 5      | —                 |
-| Metronome        | `MetronomeInstrument`   | `@jazz/plugin-metronome` (плагин)        | 8 звуков (analog/button/stick/retro/switch/cross-stick/hh-chick/hh-closed) | —      | —                 |
+| Инструмент      | Класс                  | Манифест                                                  | Семплы                                                                     | Стилей | Рандомайзер       |
+| --------------- | ---------------------- | --------------------------------------------------------- | -------------------------------------------------------------------------- | ------ | ----------------- |
+| Upright Bass    | `BassInstrument`       | `@jazz/plugin-bass` → `uprightBassManifest` (плагин)      | SneakyBass, pluck/mute ×4 RR                                               | 5      | `BassRandomizer`  |
+| Electric Bass   | `BassInstrument`       | `@jazz/plugin-bass` → `electricBassManifest` (плагин)     | darkblack, reg/stac/rel/ghost ×4 RR                                        | 5      | `BassRandomizer`  |
+| Jazz Drum Kit   | `DrumInstrument`       | `@jazz/plugin-jazz-drum-kit` (плагин)                     | Swirly Drums 1104, 4 velocity-слоя ×4 RR                                   | 5      | —                 |
+| Funk Drum Kit   | `DrumInstrument`       | `@jazz/plugin-funk-drum-kit` (плагин)                     | Virtuosity Drums, 2–5 layers ×4 RR                                         | 5      | —                 |
+| Grand Piano     | `PianoInstrument`      | `uprightPianoManifest` (плагин) / `salamanderManifest`    | Upright KW (VSUpright1, 3 vel. слоя) / Salamander Grand                    | 5      | `PianoRandomizer` |
+| Rhodes          | `RhodesInstrument`     | `@jazz/plugin-rhodes` → `rhodesManifest` (плагин)         | jRhodes3c, 4 velocity-слоя                                                 | 5      | —                 |
+| Guitar          | `GuitarInstrument`     | `guitarManifest`                                          | Nylon/Steel, E2–E5, 9 анкерных нот                                         | 5      | —                 |
+| Electric Guitar | `GuitarInstrument`     | `electricGuitarManifest`                                  | Electric, 2 velocity-слоя (normal/soft), E2–C#6                            | 5      | —                 |
+| Vibraphone      | `VibraphoneInstrument` | `vibraphoneManifest`                                      | Vibraphone, 2 velocity-слоя, C3–C6                                         | 5      | —                 |
+| Organ           | `OrganInstrument`      | `organManifest`                                           | Hammond-style, 2 velocity-слоя, C2–C7                                      | 5      | —                 |
+| Percussion      | `PercussionInstrument` | `@jazz/plugin-percussion` → `percussionManifest` (плагин) | Latin perc, 16 звуков (conga, clave, shaker, …)                            | 5      | —                 |
+| Clarinet        | `ClarinetInstrument`   | `clarinetManifest`                                        | Clarinet, 2 velocity-слоя, D3–C6                                           | 5      | —                 |
+| Metronome       | `MetronomeInstrument`  | `@jazz/plugin-metronome` (плагин)                         | 8 звуков (analog/button/stick/retro/switch/cross-stick/hh-chick/hh-closed) | —      | —                 |
 
 **Сольные инструменты (SoloInstrument):** отдельная подсистема для live MIDI-ввода (см. §4.5). 7 манифестов: `synthDefault`, `pianoUprightSolo`, `pianoSalamanderSolo`, `rhodesJRhodes3cSolo`, `clarinetSolo`, `vibraphoneSolo`, `guitarNylonSolo`.
 
@@ -261,6 +263,7 @@ interface InstrumentManifest {
 Отдельная подсистема для live MIDI-ввода. В отличие от `Instrument` (планирование нот в будущее через `TransportEngine`), `SoloInstrument` реагирует на события `noteOn`/`noteOff` в реальном времени.
 
 **Интерфейс `SoloInstrument`** (`soloInstrument.ts`):
+
 ```ts
 interface SoloInstrument {
   readonly id: string;
@@ -275,21 +278,22 @@ interface SoloInstrument {
 ```
 
 **Три категории:**
+
 - `synth` — синтезаторные тембры (SynthSoloInstrument, Tone.js PolySynth)
 - `sampled` — сэмплированные инструменты (SamplerSoloInstrument, Tone.js Sampler)
 - `reuse` — переиспользование сэмплера аккомпанирующего инструмента (ReuseSoloInstrument)
 
 **7 манифестов** в `manifests/`:
 
-| Категория | ID                        | Название           |
-| --------- | ------------------------- | ------------------ |
-| synth     | `synth-default`           | Default Synth      |
-| sampled   | `piano-upright`           | Upright Piano      |
-| sampled   | `piano-salamander`        | Grand Piano (Salamander) |
-| sampled   | `rhodes-jrhodes3c`        | Rhodes             |
-| sampled   | `clarinet`                | Clarinet           |
-| sampled   | `vibraphone`              | Vibraphone         |
-| sampled   | `guitar-nylon`            | Nylon Guitar       |
+| Категория | ID                 | Название                 |
+| --------- | ------------------ | ------------------------ |
+| synth     | `synth-default`    | Default Synth            |
+| sampled   | `piano-upright`    | Upright Piano            |
+| sampled   | `piano-salamander` | Grand Piano (Salamander) |
+| sampled   | `rhodes-jrhodes3c` | Rhodes                   |
+| sampled   | `clarinet`         | Clarinet                 |
+| sampled   | `vibraphone`       | Vibraphone               |
+| sampled   | `guitar-nylon`     | Nylon Guitar             |
 
 **Жизненный цикл:** `SoloInstrumentHost` управляет созданием, переключением тембров и dispose. Каждый тембр — один экземпляр; смена тембра = dispose старого + create нового.
 
@@ -330,14 +334,14 @@ sequenceDiagram
 Роль → permissions (n:n)
 ```
 
-| Роль              | Краткое описание                             |
-| ----------------- | -------------------------------------------- |
-| `super_admin`     | Все 27 permissions                           |
-| `admin`           | 24 permissions (всё, кроме `users:write`, `roles:write`, `system:settings:write`) |
-| `catalog_editor`  | 13 permissions (база `user` + управление каталогом + `admin`) |
-| `user`            | 7 permissions (каталог, упражнения, композиции, теория, профиль) |
+| Роль             | Краткое описание                                                                  |
+| ---------------- | --------------------------------------------------------------------------------- |
+| `super_admin`    | Все 23 permissions                                                                |
+| `admin`          | 20 permissions (всё, кроме `users:write`, `roles:write`, `system:settings:write`) |
+| `catalog_editor` | 13 permissions (база `user` + управление каталогом + `admin`)                     |
+| `user`           | 7 permissions (каталог, упражнения, композиции, теория, профиль)                  |
 
-**Permissions (27 шт.):** Подробный каталог всех разрешений и полная матрица ролей — в [`ROLES.md`](ROLES.md).
+**Permissions (23 шт.):** Подробный каталог всех разрешений и полная матрица ролей — в [`ROLES.md`](ROLES.md).
 
 **Механизм:** Middleware `rbac.plugin.ts` → `RbacGuard` проверяет permission на каждом защищённом маршруте.
 
@@ -383,24 +387,66 @@ jazz-trainer/
 │   ├── plugin-sdk/             # Контракты: extension points, хуки, apiClient
 │   ├── plugin-host/            # Загрузка плагинов, агрегация вкладов
 │   ├── plugin-registry/        # Build-time реестр всех плагинов
-│   ├── plugins/                # 17 плагинов (вся фичевая логика)
+│   ├── plugins/                # 54 плагина (вся фичевая логика)
 │   │   ├── _template/          # Эталон для копирования
 │   │   ├── core-editor/
 │   │   ├── core-player/
 │   │   ├── catalog/
-│   │   ├── theory-scales/
-│   │   ├── theory-chords/
-│   │   ├── theory-intervals/
+│   │   ├── core-settings/
+│   │   ├── visual-midi-keyboard/
+│   │   ├── practice-cards/
 │   │   ├── ear-training/
 │   │   ├── rhythm-drills/
 │   │   ├── chord-quiz/
 │   │   ├── progression-recognition/
-│   │   ├── admin-users/
-│   │   ├── admin-content/
-│   │   ├── admin-flags/
-│   │   ├── admin-assets/
-│   │   ├── practice-cards/
-│   │   └── admin-diagnostics/
+│   │   ├── instruments/        # 7 плагинов-инструментов
+│   │   │   ├── upright-piano/
+│   │   │   ├── jazz-drum-kit/
+│   │   │   ├── funk-drum-kit/
+│   │   │   ├── percussion/
+│   │   │   ├── metronome/
+│   │   │   ├── bass/
+│   │   │   └── rhodes/
+│   │   ├── theory/             # 22 плагина теории
+│   │   │   ├── theory-catalog/
+│   │   │   ├── theory-scales/
+│   │   │   ├── theory-chords/
+│   │   │   ├── theory-intervals/
+│   │   │   ├── theory-chord-tones/
+│   │   │   ├── theory-approach-notes/
+│   │   │   ├── theory-arpeggios/
+│   │   │   ├── theory-rhythm/
+│   │   │   ├── theory-groove/
+│   │   │   ├── theory-blues/
+│   │   │   ├── theory-ii-v-i/
+│   │   │   ├── theory-scales-jazz/
+│   │   │   ├── theory-voicings/
+│   │   │   ├── theory-voice-leading/
+│   │   │   ├── theory-diminished-harmony/
+│   │   │   ├── theory-coltrane-changes/
+│   │   │   ├── theory-blues-advanced/
+│   │   │   ├── theory-rhythm-changes/
+│   │   │   ├── theory-turnarounds/
+│   │   │   ├── theory-tritone-sub/
+│   │   │   ├── theory-modal-interchange/
+│   │   │   └── theory-secondary-dominants/
+│   │   └── admin/              # 15 плагинов администрирования
+│   │       ├── admin-catalog/
+│   │       ├── admin-users/
+│   │       ├── admin-roles/
+│   │       ├── admin-content/
+│   │       ├── admin-flags/
+│   │       ├── admin-assets/
+│   │       ├── admin-diagnostics/
+│   │       ├── admin-defaults/
+│   │       ├── admin-exercises/
+│   │       ├── admin-theory/
+│   │       ├── admin-piano-constructor/
+│   │       ├── admin-drum-constructor/
+│   │       ├── admin-percussion-constructor/
+│   │       ├── admin-bass-constructor/
+│   │       ├── admin-rhodes-constructor/
+│   │       └── admin-constructor-shared/
 │   ├── adapters/               # Платформенные адаптеры
 │   │   ├── tone-audio-adapter/
 │   │   └── webmidi-adapter/
@@ -409,23 +455,35 @@ jazz-trainer/
 │   ├── ARCHITECTURE_BASE.md    # Этот документ (текущая архитектура + ADR)
 │   ├── ARCHITECTURE_VISION.md  # Целевое видение (агент architect)
 │   ├── FUNCTIONS.md            # Каталог возможностей
-│   ├── TECH_DEPT.md            # План улучшения кодовой базы (агент architect)
+│   ├── ROLES.md                # Каталог ролей и матрица разрешений
+│   ├── AUTH.md                 # Целевое решение: OAuth, Magic Link, Stripe
 │   ├── CHORDS.md               # Multi-chord бары и ChordTimeline
-│   ├── ALL_CHORDS.md            # Полный каталог аккордов
-│   ├── BASS.md                 # Спецификация баса (walking bass, стили, рандомайзер)
-│   ├── PIANO.md                # Спецификация фортепиано (профили, voicing, голосоведение)
-│   ├── RHODES.md               # Спецификация Rhodes (комплементарный слой)
-│   ├── DRUMS.md                # Спецификация барабанов (Jazz Kit, Funk Kit, organism→cell→molecule)
-│   ├── GUITAR.md               # Спецификация гитары (nylon/steel/electric, паттерны)
-│   ├── VIBRAPHONE.md           # Спецификация вибрафона (pads/inserts)
-│   ├── ORGAN.md                # Спецификация органа (pads/stabs/pads-stabs)
-│   ├── PERCUSSION.md           # Спецификация перкуссии (16 звуков, 3 паттерна)
-│   ├── CLARINET.md             # Спецификация кларнета (counterpoint/melodicPhrases)
-│   ├── SCALES-VISION.md         # Видение модуля гамм
-│   ├── EXERSISE-VISION.md       # Видение модуля упражнений
-│   ├── EXERSISE-ARCHITECTURE.md # Архитектура модуля упражнений
-│   ├── EXERSISE-PLAN.md         # План реализации упражнений
-│   └── EXERSISE-TODO.md          ← Список задач по упражнениям
+│   ├── VISION.md               # Продуктовое видение
+│   ├── Instruments/            # Спецификации инструментов
+│   │   ├── BASS.md
+│   │   ├── PIANO.md
+│   │   ├── RHODES.md
+│   │   ├── DRUMS.md
+│   │   ├── GUITAR.md
+│   │   ├── VIBRAPHONE.md
+│   │   ├── ORGAN.md
+│   │   ├── PERCUSSION.md
+│   │   ├── CLARINET.md
+│   │   ├── ALL_CHORDS.md
+│   │   ├── MELODIC-PLUGIN.md
+│   │   └── RHYTHMIC-PLUGIN.md
+│   ├── Genres/                 # Стили и аранжировка
+│   │   └── STYLES.md
+│   └── ARCHIVE/                # Архивные документы
+│       ├── TECH_DEPT.md
+│       ├── EXERSISE-VISION.md
+│       ├── EXERSISE-ARCHITECTURE.md
+│       ├── EXERSISE-PLAN.md
+│       ├── EXERSISE-TODO.md
+│       ├── MIDI_INSTRUMENT_ARCHITECTURE.md
+│       ├── MIDI_ARCHITECTURE.md
+│       ├── ARANGEMENT_VISION.md
+│       └── SCALES-VISION.md
 ├── CLAUDE.md                   # Навигатор для AI-агентов
 └── README.md                   # Первое знакомство с проектом
 ```
@@ -484,9 +542,9 @@ jazz-trainer/
 **Дата:** 2026-06
 **Статус:** 🟢 Принято
 **Контекст:** Нужна модель доступа для админки.
-**Решение:** RBAC: пользователь имеет одну роль, роль содержит набор permissions (n:n связь). Сервер — источник истины, enforce на middleware. Фронт — UX (скрытие/показ UI через `usePermission`).
+**Решение:** RBAC: пользователь может иметь несколько ролей (n:n связь user↔role), роль содержит набор permissions (n:n связь role↔permission). Сервер — источник истины, enforce на middleware. Фронт — UX (скрытие/показ UI через `usePermission`).
 **Альтернативы:** ACL (на пользователя), ABAC (на атрибуты), только серверный enforce. Отклонено — RBAC проще для нашего масштаба.
-**Последствия:** 3 роли, 11 permissions. Легко расширять (добавить permission → добавить роли → seed).
+**Последствия:** 4 роли, 23 permissions. Легко расширять (добавить permission → добавить роли → seed).
 
 ### ADR-007: Audit log (append-only)
 
@@ -529,7 +587,7 @@ jazz-trainer/
 **Дата:** 2026-06
 **Статус:** 🟢 Принято
 **Контекст:** Где разместить админку?
-**Решение:** Административные функции — как плагины в том же `apps/web`. 5 плагинов: `admin-users`, `admin-content`, `admin-flags`, `admin-assets`, `admin-diagnostics`.
+**Решение:** Административные функции — как плагины в том же `apps/web`. 15 плагинов: `admin-catalog`, `admin-users`, `admin-roles`, `admin-content`, `admin-flags`, `admin-assets`, `admin-diagnostics`, `admin-defaults`, `admin-exercises`, `admin-theory`, `admin-piano-constructor`, `admin-drum-constructor`, `admin-percussion-constructor`, `admin-bass-constructor`, `admin-rhodes-constructor`.
 **Альтернативы:** Отдельное приложение (admin panel SPA), отдельный пакет. Отклонено — переиспользование shell, навигации, SDK.
 **Последствия:** Админка разделяет ту же оболочку и навигацию. Доступ контролируется через `requires: 'permission'` в маршрутах и `usePermission` в UI.
 
@@ -587,18 +645,117 @@ jazz-trainer/
 **Альтернативы:** Оставить киты в `music-core`. Отклонено — раздувает ядро фичевым кодом. Полностью через contributions runtime (без прямого импорта). Отклонено — избыточная индирекция для build-time реестра.
 **Последствия:** Добавление кита = новый плагин + регистрация + алиасы (3 файла), без правки ядра. Папка `packages/plugins/instruments/` — эталонная структура для будущей миграции остальных инструментов (bass, piano, guitar, …). Аудио-ресурсы (Tone.js-каналы) пока остаются в `useTransport` — инкрементальная миграция.
 
+### ADR-018: OAuth 2.0 + PKCE (Google OAuth enhancement)
+
+**Дата:** 2026-07
+**Статус:** 🟢 Принято
+**Контекст:** Базовая Google OAuth-авторизация работала, но без PKCE и nonce-верификации была уязвима к CSRF и code interception.
+**Решение:** Добавлен PKCE (code verifier/challenge), nonce в id_token для предотвращения replay-атак, опциональный hd-фильтр для ограничения доменом. OAuth state хранится в httpOnly lax cookie.
+**Альтернативы:** Оставить без PKCE (отклонено — стандарт безопасности OAuth 2.1). Внешний identity-провайдер (отклонено — избыточно для MVP).
+**Последствия:** Повышенная безопасность OAuth-потока. Дополнительный round-trip для code_verifier. hd-фильтр позволяет ограничить доступ корпоративным доменом.
+
+### ADR-019: GitHub OAuth
+
+**Дата:** 2026-07
+**Статус:** 🟢 Принято
+**Контекст:** Нужен второй OAuth-провайдер для разработчиков и технической аудитории.
+**Решение:** GitHub OAuth 2.0 с PKCE. Профиль пользователя (id, login, email, name, avatar_url) получается через GitHub API. Email при необходимости запрашивается отдельно.
+**Альтернативы:** Только Google (отклонено — ограничивает аудиторию). GitLab, Bitbucket (отклонено — меньшая популярность).
+**Последствия:** Два OAuth-провайдера. Общая инфраструктура (PKCE, state-cookie) переиспользуется.
+
+### ADR-020: Magic Link authentication
+
+**Дата:** 2026-07
+**Статус:** 🟢 Принято
+**Контекст:** Нужен способ входа без OAuth-провайдера и без паролей.
+**Решение:** Magic Link: пользователь вводит email → получает ссылку с HS256 JWT-токеном (15-минутный TTL). Токен содержит email, jti, iat, exp. При переходе по ссылке токен проверяется (подпись + срок), затем ищется в БД по хешу (SHA-256) для one-time use.
+**Альтернативы:** Парольная аутентификация (отклонено — неудобно, требует хранения хешей). OTP по SMS (отклонено — дорого).
+**Последствия:** Простой и безопасный вход без паролей. Зависимость от email-сервиса (Resend). JWT не хранится в БД — только хеш.
+
+### ADR-021: TOTP 2FA для super_admin
+
+**Дата:** 2026-07
+**Статус:** 🟢 Принято
+**Контекст:** super_admin имеет полный доступ к системе. Нужна дополнительная защита от компрометации.
+**Решение:** TOTP (RFC 6238, SHA1, 6 цифр, 30-секундный период, ±1 окно). Секрет генерируется сервером (20 байт, base32). Настройка через QR (otpauth:// URL). Проверка при входе и перед критическими операциями.
+**Альтернативы:** FIDO2/WebAuthn (отклонено — требует hardware-ключа, избыточно для MVP). SMS OTP (отклонено — небезопасно, дорого).
+**Последствия:** Повышенная безопасность super_admin. Укороченный TTL сессии для super_admin (15 минут). Инвалидация при смене роли.
+
+### ADR-022: Email-сервис (Resend)
+
+**Дата:** 2026-07
+**Статус:** 🟢 Принято
+**Контекст:** Magic Link требует отправки email. Нужен надёжный email-провайдер.
+**Решение:** Resend API для отправки транзакционных писем. В development-режиме (без API-ключа) ссылка печатается в консоль. HTML-шаблон встроен в код (без внешних шаблонизаторов).
+**Альтернативы:** SendGrid, Mailgun, AWS SES (отклонено — Resend проще и дешевле для малых объёмов). SMTP напрямую (отклонено — проблемы с deliverability).
+**Последствия:** Простая интеграция. Fallback на консоль для разработки. 403 от Resend (free tier / unverified domain) обрабатывается как dev-режим.
+
+### ADR-023: Ручной биллинг + subscription tiers
+
+**Дата:** 2026-07
+**Статус:** 🟢 Принято
+**Контекст:** Нужна монетизация, но Stripe-интеграция отложена на будущее.
+**Решение:** Три тарифных уровня (free, pro, premium) управляются вручную через админ-панель. Заявки с лэндинга → админ approve/reject → активация подписки. Cron-задача деградации просроченных подписок (grace period 7 дней).
+**Альтернативы:** Stripe с первого дня (отклонено — P3, требует KYC, банковского аккаунта). Только бесплатный режим (отклонено — нужна монетизация).
+**Последствия:** Ручной процессинг заявок (нагрузка на админа). Готовность к Stripe-миграции (схема БД поддерживает stripe-поля).
+
+### ADR-024: Subscription → RBAC (ролевая модель тарифов)
+
+**Дата:** 2026-07
+**Статус:** 🟢 Принято
+**Контекст:** Как разграничить доступ по тарифам?
+**Решение:** Каждому тарифу соответствует роль (`subscriber_free`, `subscriber_pro`, `subscriber_premium`). При активации подписки пользователю назначается роль. Feature-gating через RBAC permissions + feature flags.
+**Альтернативы:** Отдельная система per-tier gating (отклонено — дублирование с RBAC). Feature flags без ролей (отклонено — нет гранулярности).
+**Последствия:** Единая модель доступа. Легко добавлять новые тарифы (роль + permissions).
+
+### ADR-025: GDPR compliance (consent, export, deletion)
+
+**Дата:** 2026-07
+**Статус:** 🟢 Принято
+**Контекст:** EU-пользователи требуют GDPR-соответствия: consent, data export, right to deletion.
+**Решение:** Три механизма: (1) consent tracking — таблица `consent_records`, запись при каждом изменении согласия; (2) data export — JSON со всеми данными пользователя; (3) account deletion — двухфазное (soft delete с 30-дневным grace period).
+**Альтернативы:** Игнорировать GDPR (отклонено — юридический риск). Внешний compliance-сервис (отклонено — избыточно).
+**Последствия:** Базовая GDPR-готовность. Data retention cron для очистки старых soft-deleted аккаунтов.
+
+### ADR-026: Device tracking и управление сессиями
+
+**Дата:** 2026-07
+**Статус:** 🟢 Принято
+**Контекст:** Пользователь должен видеть и управлять своими активными сессиями.
+**Решение:** Каждая сессия хранит fingerprint (user-agent + IP-хвост). Список сессий доступен через API. Можно удалить конкретную сессию или все кроме текущей. Sliding expiration продлевает сессию при активности.
+**Альтернативы:** Только одна сессия (отклонено — неудобно). JWT без серверного tracking (отклонено — невозможность инвалидации).
+**Последствия:** Пользователь контролирует свои сессии. Sliding expiration улучшает UX.
+
+### ADR-027: Account linking по email
+
+**Дата:** 2026-07
+**Статус:** 🟢 Принято
+**Контекст:** Пользователь может зайти через Google, GitHub, или Magic Link — каждый создаёт отдельный аккаунт. Нужно объединять.
+**Решение:** При OAuth-входе проверяется: если email уже существует (от другого провайдера) — связываем аккаунты через `providers` JSON-поле (массив provider:providerId пар).
+**Альтернативы:** Запрет нескольких провайдеров (отклонено — плохой UX). Полное объединение аккаунтов (отклонено — сложно и рискованно).
+**Последствия:** Бесшовный вход через любой провайдер. `providers` поле позволяет отследить историю связывания.
+
+### ADR-028: Auth security hardening (helmet, rate-limit, CORS, IP-allowlist)
+
+**Дата:** 2026-07
+**Статус:** 🟢 Принято
+**Контекст:** Auth-эндпоинты — критическая поверхность атаки. Нужны стандартные меры защиты.
+**Решение:** (1) Helmet — security headers (CSP, HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy). (2) Rate limiting — per-endpoint на auth-маршруты (login, magic-link, OAuth). (3) CORS — строгий origin. (4) IP-allowlist для admin-эндпоинтов (super_admin). (5) Secure cookies — httpOnly, secure (production), sameSite strict/lax.
+**Альтернативы:** Без helmet (отклонено — OWASP top-10). Rate-limit через внешний сервис (отклонено — проще встроить в Fastify).
+**Последствия:** Соответствие OWASP рекомендациям. Rate-limit защищает от брутфорса. Admin IP-фильтр добавляет слой защиты.
+
 ## 10. Фазы миграции — статус
 
-| Фаза                | Статус | Ключевой результат                                                                    |
-| ------------------- | ------ | ------------------------------------------------------------------------------------- |
-Ф0 — Границы        | ✅     | ESLint boundaries + strict, 0 нарушений                                               |
-| Ф1 — SDK + Host     | ✅     | `plugin-sdk`, `plugin-host`, `plugin-registry`, shell bootstrap                       |
-| ФR — RBAC + аудит   | ✅     | 4 роли, 27 permissions, audit log, `usePermission`/`useFlag` ([ROLES.md](ROLES.md))   |
-| Ф2 — AudioPort      | 🟢     | `tone-audio-adapter` + `webmidi-adapter` готовы, 12 инструментов, манифесты, EventSink |
-| Ф3 — Фичи → плагины | ✅     | `core-editor`, `core-player`, `catalog` вынесены                                      |
+| Фаза                | Статус | Ключевой результат                                                                            |
+| ------------------- | ------ | --------------------------------------------------------------------------------------------- |
+| Ф0 — Границы        | ✅     | ESLint boundaries + strict, 0 нарушений                                                       |
+| Ф1 — SDK + Host     | ✅     | `plugin-sdk`, `plugin-host`, `plugin-registry`, shell bootstrap                               |
+| ФR — RBAC + аудит   | ✅     | 7 ролей, 29 permissions, audit log, `usePermission`/`useFlag`, billing roles ([ROLES.md](ROLES.md)) |
+| Ф2 — AudioPort      | 🟢     | `tone-audio-adapter` + `webmidi-adapter` готовы, 12 инструментов, манифесты, EventSink        |
+| Ф3 — Фичи → плагины | ✅     | `core-editor`, `core-player`, `catalog` вынесены                                              |
 | Ф4 — Новые домены   | 🟡     | 22 theory-плагина, 3 practice, 2 assess, 1 play созданы. StyleProfile, per-style overrides 🟢 |
-| Ф5 — MIDI           | 🟡     | `webmidi-adapter`, `midiEval`, MIDI-плагины. Desktop исключён                         |
+| Ф5 — MIDI           | 🟡     | `webmidi-adapter`, `midiEval`, MIDI-плагины. Desktop исключён                                 |
 
 ---
 
-_Документ описывает текущую архитектуру. Обновлён 2026-07-06. Фазы 0, 1, R, 2, 3 готовы ✅, Фазы 4, 5 частично 🟡. 17 ADR принято (ADR-001–017). Плагинов: 39 (включая 2 инструментальных). Инструментов: 12 аккомпанемента + 7 сольных. Целевое видение — в `ARCHITECTURE_VISION.md`._
+_Документ описывает текущую архитектуру. Обновлён 2026-07-26. Фазы 0, 1, R, 2, 3 готовы ✅, Фазы 4, 5 частично 🟡. 28 ADR принято (ADR-001–028). Плагинов: 54. Инструментов: 12 аккомпанемента + 7 сольных. Целевое видение — в `ARCHITECTURE_VISION.md`._

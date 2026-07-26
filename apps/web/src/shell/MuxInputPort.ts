@@ -11,9 +11,7 @@ import type { InputPort, MidiInputEvent, MidiDeviceInfo } from '@jazz/music-core
 export class MuxInputPort implements InputPort {
   private noteOnHandlers: Array<(e: MidiInputEvent) => void> = [];
   private noteOffHandlers: Array<(e: MidiInputEvent) => void> = [];
-  private connectionHandlers: Array<
-    (s: 'disconnected' | 'available' | 'connected') => void
-  > = [];
+  private connectionHandlers: Array<(s: 'disconnected' | 'available' | 'connected') => void> = [];
   private cleanupFns: Array<() => void> = [];
 
   constructor(
@@ -91,9 +89,7 @@ export class MuxInputPort implements InputPort {
     return 'disconnected';
   }
 
-  onConnectionChange(
-    handler: (s: 'disconnected' | 'available' | 'connected') => void,
-  ): () => void {
+  onConnectionChange(handler: (s: 'disconnected' | 'available' | 'connected') => void): () => void {
     this.connectionHandlers.push(handler);
     return () => {
       const i = this.connectionHandlers.indexOf(handler);

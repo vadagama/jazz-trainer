@@ -154,9 +154,7 @@ export default function TheoryPage() {
     const q = search.trim().toLowerCase();
     const list = THEORY_FEATURES.filter((f) => !UMBRELLA_CODES.has(f.code));
     return q
-      ? list.filter(
-          (f) => f.label.toLowerCase().includes(q) || f.code.toLowerCase().includes(q),
-        )
+      ? list.filter((f) => f.label.toLowerCase().includes(q) || f.code.toLowerCase().includes(q))
       : list;
   }, [search]);
 
@@ -180,31 +178,34 @@ export default function TheoryPage() {
     },
   });
 
-  const toggleRole = useCallback((roleName: string, code: string) => {
-    const key = `role:${code}:${roleName}`;
-    const current = frsMap.get(`${code}:${roleName}`) ?? 'hidden';
-    const next = nextState(current);
-    setMutatingKey(key);
-    frsMutation.mutate({ featureCode: code, roleName, state: next });
-  }, [frsMap, frsMutation]);
+  const toggleRole = useCallback(
+    (roleName: string, code: string) => {
+      const key = `role:${code}:${roleName}`;
+      const current = frsMap.get(`${code}:${roleName}`) ?? 'hidden';
+      const next = nextState(current);
+      setMutatingKey(key);
+      frsMutation.mutate({ featureCode: code, roleName, state: next });
+    },
+    [frsMap, frsMutation],
+  );
 
-  const togglePublic = useCallback((code: string) => {
-    const key = `public:${code}`;
-    const current = publicStateMap.get(code) ?? 'hidden';
-    const next = nextState(current);
-    const features = new Map(publicStateMap);
-    if (next === 'hidden') features.delete(code);
-    else features.set(code, next);
-    setMutatingKey(key);
-    publicMutation.mutate([...features].map(([c, s]) => ({ code: c, state: s })));
-  }, [publicStateMap, publicMutation]);
+  const togglePublic = useCallback(
+    (code: string) => {
+      const key = `public:${code}`;
+      const current = publicStateMap.get(code) ?? 'hidden';
+      const next = nextState(current);
+      const features = new Map(publicStateMap);
+      if (next === 'hidden') features.delete(code);
+      else features.set(code, next);
+      setMutatingKey(key);
+      publicMutation.mutate([...features].map(([c, s]) => ({ code: c, state: s })));
+    },
+    [publicStateMap, publicMutation],
+  );
 
   // Full list (without umbrella) for bulk operations — must always toggle
   // every feature, even when search is active.
-  const allFeatures = useMemo(
-    () => THEORY_FEATURES.filter((f) => !UMBRELLA_CODES.has(f.code)),
-    [],
-  );
+  const allFeatures = useMemo(() => THEORY_FEATURES.filter((f) => !UMBRELLA_CODES.has(f.code)), []);
 
   // ── Bulk toggles ──
   const bulkPublicAgg = useMemo(() => {
@@ -296,10 +297,15 @@ export default function TheoryPage() {
                 {roleList.map((role) => {
                   const isSystem = SYSTEM_ROLE_NAMES.includes(role.name);
                   return (
-                    <th key={role.id} className="px-2 py-2 text-center text-[10px] font-normal text-muted-foreground border-x border-border/20">
+                    <th
+                      key={role.id}
+                      className="px-2 py-2 text-center text-[10px] font-normal text-muted-foreground border-x border-border/20"
+                    >
                       <div className="flex flex-col items-center gap-0.5">
                         <span>{role.name}</span>
-                        {isSystem && <span className="text-[10px] text-muted-foreground/60">system</span>}
+                        {isSystem && (
+                          <span className="text-[10px] text-muted-foreground/60">system</span>
+                        )}
                       </div>
                     </th>
                   );
@@ -328,8 +334,13 @@ export default function TheoryPage() {
             </thead>
             <tbody>
               {filteredFeatures.map((feat) => (
-                <tr key={feat.code} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
-                  <td className="px-3 py-2 text-sm" title={feat.code}>{feat.label}</td>
+                <tr
+                  key={feat.code}
+                  className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors"
+                >
+                  <td className="px-3 py-2 text-sm" title={feat.code}>
+                    {feat.label}
+                  </td>
                   <td className="px-1 py-2 text-center border-x border-border/10">
                     <TriStateToggle
                       state={publicStateMap.get(feat.code) ?? 'hidden'}

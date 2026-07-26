@@ -46,7 +46,11 @@ function MetaFlow({ entry }: { entry: CatalogEntry }) {
   return (
     <div className="flex flex-wrap items-center gap-1.5">
       {parts.map((p) => (
-        <Badge key={p} variant="secondary" className="rounded-sm px-1.5 py-0 text-[10px] font-medium normal-case">
+        <Badge
+          key={p}
+          variant="secondary"
+          className="rounded-sm px-1.5 py-0 text-[10px] font-medium normal-case"
+        >
           {p}
         </Badge>
       ))}
@@ -80,10 +84,7 @@ function ActionBar({ entry }: { entry: CatalogEntry }) {
       />
       <div className="flex items-center gap-2">
         <EditButton compositionId={entry.id} />
-        <CopyToMineButton
-          compositionId={entry.id}
-          compositionName={entry.name}
-        />
+        <CopyToMineButton compositionId={entry.id} compositionName={entry.name} />
       </div>
     </div>
   );
@@ -129,9 +130,7 @@ function ListActionButtons({ entry }: { entry: CatalogEntry }) {
         className="flex size-7 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-accent hover:text-red-500"
         aria-label={liked ? 'Убрать лайк' : 'Поставить лайк'}
       >
-        <Heart
-          className={`size-3.5 ${liked ? 'fill-red-500 text-red-500' : ''}`}
-        />
+        <Heart className={`size-3.5 ${liked ? 'fill-red-500 text-red-500' : ''}`} />
         <span className="ml-0.5 text-[11px]">{likeCount}</span>
       </button>
       {canEdit && (
@@ -173,9 +172,7 @@ export function PublicCompositionCard({ entry, variant }: Props) {
             <DifficultyBadge difficulty={entry.difficulty} />
           </div>
           {entry.description && (
-            <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
-              {entry.description}
-            </p>
+            <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">{entry.description}</p>
           )}
           <div className="mt-1">
             <MetaFlow entry={entry} />
@@ -189,7 +186,6 @@ export function PublicCompositionCard({ entry, variant }: Props) {
   // ── Big tiles variant (default: full card) ──
   return (
     <div className="group flex flex-col rounded-lg border border-border bg-card transition-colors hover:border-primary/40">
-
       <div className="flex-1 p-5">
         <div className="flex items-start justify-between gap-2">
           <Link to={`/play/${entry.id}`} className="block min-w-0">

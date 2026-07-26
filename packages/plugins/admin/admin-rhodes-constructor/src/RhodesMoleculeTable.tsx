@@ -20,7 +20,10 @@ import {
 } from '@jazz/plugin-admin-constructor-shared';
 import { roleLabel, roleDescription, RHODES_ROLES } from './rhodesSampler.js';
 
-type Props = MoleculeEditorProps<'swing' | 'bossa' | 'funk' | 'latin' | 'ballad', RhodesVoicingRole>;
+type Props = MoleculeEditorProps<
+  'swing' | 'bossa' | 'funk' | 'latin' | 'ballad',
+  RhodesVoicingRole
+>;
 
 const CELL_H = 22;
 const HEADER_H = 22;

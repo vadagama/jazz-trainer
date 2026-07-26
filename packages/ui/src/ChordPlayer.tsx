@@ -94,7 +94,11 @@ export function ChordPlayer({
     () =>
       notes
         .map((n) => {
-          try { return noteNameToMidi(n); } catch { return -1; }
+          try {
+            return noteNameToMidi(n);
+          } catch {
+            return -1;
+          }
         })
         .filter((m) => m >= 0)
         .sort((a, b) => a - b),
@@ -151,8 +155,7 @@ export function ChordPlayer({
         );
       } else {
         // Arpeggio — notes appear one by one, each staying for noteDuration
-        const totalDuration =
-          noteDuration + (midiNotes.length - 1) * arpeggioDelay;
+        const totalDuration = noteDuration + (midiNotes.length - 1) * arpeggioDelay;
 
         midiNotes.forEach((midi, i) => {
           const startDelay = i * arpeggioDelay * 1000;
@@ -176,34 +179,36 @@ export function ChordPlayer({
 
           // Remove individual note after noteDuration from its start
           timeoutsRef.current.push(
-            setTimeout(() => {
-              setActiveKeys((prev) => {
-                const next = new Map(prev);
-                next.delete(midi);
-                return next;
-              });
-            }, startDelay + noteDuration * 1000),
+            setTimeout(
+              () => {
+                setActiveKeys((prev) => {
+                  const next = new Map(prev);
+                  next.delete(midi);
+                  return next;
+                });
+              },
+              startDelay + noteDuration * 1000,
+            ),
           );
         });
 
         // Clear all after total duration
         timeoutsRef.current.push(
-          setTimeout(() => {
-            setActiveKeys(new Map());
-            setHighlightedNotes([]);
-            setPlaying(false);
-          }, totalDuration * 1000 + 100),
+          setTimeout(
+            () => {
+              setActiveKeys(new Map());
+              setHighlightedNotes([]);
+              setPlaying(false);
+            },
+            totalDuration * 1000 + 100,
+          ),
         );
       }
     } else {
       // No visual — just audio with timeout
       const totalDuration =
-        mode === 'arpeggio'
-          ? noteDuration + (midiNotes.length - 1) * arpeggioDelay
-          : noteDuration;
-      timeoutsRef.current.push(
-        setTimeout(() => setPlaying(false), totalDuration * 1000 + 100),
-      );
+        mode === 'arpeggio' ? noteDuration + (midiNotes.length - 1) * arpeggioDelay : noteDuration;
+      timeoutsRef.current.push(setTimeout(() => setPlaying(false), totalDuration * 1000 + 100));
     }
   }, [
     playing,
@@ -234,9 +239,7 @@ export function ChordPlayer({
           {playing ? '⏸' : '▶'}
         </button>
         <span className="text-sm font-medium text-foreground">{chordLabel}</span>
-        {mode === 'arpeggio' && (
-          <span className="text-[10px] text-muted-foreground">арп.</span>
-        )}
+        {mode === 'arpeggio' && <span className="text-[10px] text-muted-foreground">арп.</span>}
       </div>
 
       {showVisuals && (
@@ -250,10 +253,7 @@ export function ChordPlayer({
             />
           )}
           {showStaff && (
-            <NotationStaff
-              highlightedNotes={playing ? highlightedNotes : midiNotes}
-              compact
-            />
+            <NotationStaff highlightedNotes={playing ? highlightedNotes : midiNotes} compact />
           )}
         </div>
       )}

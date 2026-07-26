@@ -30,40 +30,41 @@ InstrumentManifest      ← drumsManifest / modernKitManifest
 ```
 
 **Ограничения:**
+
 - `SampleManifest.oneshots` — `Record<string, string[]>` — не поддерживает velocity-слои. Звук выбирается по имени, velocity игнорируется.
 - `DrumInstrumentSettings` — per-sound enable/volume, но нет выбора артикуляции.
 - Тип `DrumSound` — 10 фиксированных имён, без артикуляций.
 
 ### 2.2. Swirly Drums v2 (deployed)
 
-| Параметр | Значение |
-|----------|----------|
-| Звуков | 8 (bassDrum, snare, hihat, hihatHalf, hihatOpen, ride, crash, rim) |
-| Velocity-слоёв | 1 (один файл на звук, например `bd_vl5` — взят 5-й слой из ~20) |
-| Round-robin | 4 |
-| Томы | нет (пустые массивы) |
-| Формат | AAC `.m4a` (с MP3-фолбэком) |
-| Путь | `apps/web/public/samples/aac/drums/swirly/` |
+| Параметр       | Значение                                                           |
+| -------------- | ------------------------------------------------------------------ |
+| Звуков         | 8 (bassDrum, snare, hihat, hihatHalf, hihatOpen, ride, crash, rim) |
+| Velocity-слоёв | 1 (один файл на звук, например `bd_vl5` — взят 5-й слой из ~20)    |
+| Round-robin    | 4                                                                  |
+| Томы           | нет (пустые массивы)                                               |
+| Формат         | AAC `.m4a` (с MP3-фолбэком)                                        |
+| Путь           | `apps/web/public/samples/aac/drums/swirly/`                        |
 
 **Важно:** В именах файлов Swirly v2 видны следы исходной многослойности: `bd_vl5_rr1.m4a`, `ride_vl6_rr1.m4a`. Это означает, что полная библиотека Swirly Drums (версия 1104) содержит **до 20 velocity-слоёв** на звук (`vl1`–`vl20`). Для деплоя был выбран один срез. Новый Jazz Kit должен использовать 5 слоёв из 20.
 
 ### 2.3. Modern Kit (deployed)
 
-| Параметр | Значение |
-|----------|----------|
-| Звуков | 10 (+highTom, +lowTom) |
-| Velocity-слоёв | 1 |
-| Round-robin | 4 |
-| Формат | AAC `.m4a` |
-| Путь | `apps/web/public/samples/aac/drums/modern-kit/` |
+| Параметр       | Значение                                        |
+| -------------- | ----------------------------------------------- |
+| Звуков         | 10 (+highTom, +lowTom)                          |
+| Velocity-слоёв | 1                                               |
+| Round-robin    | 4                                               |
+| Формат         | AAC `.m4a`                                      |
+| Путь           | `apps/web/public/samples/aac/drums/modern-kit/` |
 
 ### 2.4. Файлы `_source`
 
-| Набор | Путь | Состояние |
-|-------|------|-----------|
+| Набор             | Путь                               | Состояние                                                                                                                 |
+| ----------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
 | Swirly.Drums_1104 | `_source/drums/Swirly.Drums_1104/` | **Только структура папок** (12 папок-артикуляций). Исходные WAV/FLAC — вне репозитория. Полная библиотека имеет vl1–vl20. |
-| virtuosity-drums | `_source/drums/virtuosity-drums/` | **FLAC/WAV-файлы**, много velocity-слоёв и артикуляций |
-| unruly-drums | `_source/drums/unruly-drums/` | Пусто |
+| virtuosity-drums  | `_source/drums/virtuosity-drums/`  | **FLAC/WAV-файлы**, много velocity-слоёв и артикуляций                                                                    |
+| unruly-drums      | `_source/drums/unruly-drums/`      | Пусто                                                                                                                     |
 
 ## 3. Анализ исходных материалов
 
@@ -91,60 +92,67 @@ Swirly.Drums_1104/     (12 артикуляций — папки как рефе
 ### 3.2. virtuosity-drums — анализ файлов
 
 #### kick/ (24 WAV-файла)
-| Параметр | Значение |
-|----------|----------|
-| Velocity-слоёв | 6 (`vl1`–`vl6`) |
-| Round-robin | 4 (`rr1`–`rr4`) |
-| Формат | WAV |
-| Именование | `ks_vl{1-6}_rr{1-4}.wav` |
+
+| Параметр       | Значение                 |
+| -------------- | ------------------------ |
+| Velocity-слоёв | 6 (`vl1`–`vl6`)          |
+| Round-robin    | 4 (`rr1`–`rr4`)          |
+| Формат         | WAV                      |
+| Именование     | `ks_vl{1-6}_rr{1-4}.wav` |
 
 #### snare/ (6 артикуляций, 108+ FLAC-файлов)
-| Артикуляция | Velocity-слоёв | Файлов | Назначение |
-|-------------|---------------|--------|------------|
-| `mid_snare_center` | 36 (`vl1`–`vl36`) | 36 | Основной удар по центру |
-| `mid_snare_buzz` | 12 (`vl1`–`vl12`) | 12 | ⭐ Buzz-roll (press roll) — фанк |
-| `mid_snare_crossstick` | 16 (`vl1`–`vl16`) | 16 | Cross-stick / rim-click |
-| `mid_snare_flam` | 12 (`vl1`–`vl12`) | 12 | ⭐ Flam (форшлаг) — фанк |
-| `mid_snare_muted` | 16 (`vl1`–`vl16`) | 16 | Muted snare (глухой) |
-| `mid_snare_rimshot` | 12 (`vl1`–`vl12`) | 12 | Rimshot (обод+центр) — фанк |
+
+| Артикуляция            | Velocity-слоёв    | Файлов | Назначение                       |
+| ---------------------- | ----------------- | ------ | -------------------------------- |
+| `mid_snare_center`     | 36 (`vl1`–`vl36`) | 36     | Основной удар по центру          |
+| `mid_snare_buzz`       | 12 (`vl1`–`vl12`) | 12     | ⭐ Buzz-roll (press roll) — фанк |
+| `mid_snare_crossstick` | 16 (`vl1`–`vl16`) | 16     | Cross-stick / rim-click          |
+| `mid_snare_flam`       | 12 (`vl1`–`vl12`) | 12     | ⭐ Flam (форшлаг) — фанк         |
+| `mid_snare_muted`      | 16 (`vl1`–`vl16`) | 16     | Muted snare (глухой)             |
+| `mid_snare_rimshot`    | 12 (`vl1`–`vl12`) | 12     | Rimshot (обод+центр) — фанк      |
 
 #### hh/ (4 артикуляции, 72 FLAC-файла)
-| Артикуляция | Vel-слоёв | RR | Файлов | Назначение |
-|-------------|----------|-----|--------|------------|
-| `mid_hh_closed` | 4 | 4 | 16 | Закрытый хай-хэт |
-| `mid_hh_open` | 4 | ~3 | 11 | Открытый хай-хэт |
-| `mid_hh_pedal` | 3 | 4 | 12 | Педаль (foot chick) |
-| `mid_hh_34` | 4 | 4 | 16 | 3/4-открытый — ❌ удалён (не нужен) |
+
+| Артикуляция     | Vel-слоёв | RR  | Файлов | Назначение                          |
+| --------------- | --------- | --- | ------ | ----------------------------------- |
+| `mid_hh_closed` | 4         | 4   | 16     | Закрытый хай-хэт                    |
+| `mid_hh_open`   | 4         | ~3  | 11     | Открытый хай-хэт                    |
+| `mid_hh_pedal`  | 3         | 4   | 12     | Педаль (foot chick)                 |
+| `mid_hh_34`     | 4         | 4   | 16     | 3/4-открытый — ❌ удалён (не нужен) |
 
 #### ride/ (2 артикуляции, 21 FLAC-файл)
-| Артикуляция | Vel-слоёв | RR | Файлов | Назначение |
-|-------------|----------|-----|--------|------------|
-| `mid_ride_ride` | 4 | 4 | 16 | Ride bow (основной) |
-| `mid_ride_bell` | 3 | 3 | 9 | ⭐ Ride bell (купольный) — фанк |
+
+| Артикуляция     | Vel-слоёв | RR  | Файлов | Назначение                      |
+| --------------- | --------- | --- | ------ | ------------------------------- |
+| `mid_ride_ride` | 4         | 4   | 16     | Ride bow (основной)             |
+| `mid_ride_bell` | 3         | 3   | 9      | ⭐ Ride bell (купольный) — фанк |
 
 #### crash/ (2 артикуляции, 24 FLAC-файла)
-| Артикуляция | Vel-слоёв | RR | Файлов | Назначение |
-|-------------|----------|-----|--------|------------|
-| `mid_crash_crash` | 3 | 4 | 12 | Основной crash |
-| `mid_crash_sizzle` | 3 | 4 | 12 | ⭐ Sizzle crash (с цепочкой) — фанк |
+
+| Артикуляция        | Vel-слоёв | RR  | Файлов | Назначение                          |
+| ------------------ | --------- | --- | ------ | ----------------------------------- |
+| `mid_crash_crash`  | 3         | 4   | 12     | Основной crash                      |
+| `mid_crash_sizzle` | 3         | 4   | 12     | ⭐ Sizzle crash (с цепочкой) — фанк |
 
 #### htom/ (высокий том)
+
 16 velocity-слоёв (`vl1`–`vl16`), 16 FLAC-файлов, без RR.
 
 #### ltom/ (низкий том)
+
 11 из 16 velocity-слоёв: vl2–vl9, vl14–vl16. Отсутствуют vl1, vl10–vl13. Без RR.
 
 ### 3.3. Сводная таблица — virtuosity-drums
 
-| Звук | Артикуляций | Всего файлов | Слоёв | RR | Формат |
-|------|------------|-------------|-------|-----|--------|
-| Kick | 1 | 24 | 6 vel | 4 | WAV |
-| Snare | 6 | 108+ | 12–36 vel | 1 (эмулируем) | FLAC |
-| Hi-hat | 3 (без 3/4) | ~56 | 3–4 vel | 3–4 | FLAC |
-| Ride | 2 | 25 | 3–4 vel | 3–4 | FLAC |
-| Crash | 2 | 24 | 3 vel | 4 | FLAC |
-| High tom | 1 | 16 | 16 vel | 1 | FLAC |
-| Low tom | 1 | 11 | 11/16 | 1 | FLAC |
+| Звук     | Артикуляций | Всего файлов | Слоёв     | RR            | Формат |
+| -------- | ----------- | ------------ | --------- | ------------- | ------ |
+| Kick     | 1           | 24           | 6 vel     | 4             | WAV    |
+| Snare    | 6           | 108+         | 12–36 vel | 1 (эмулируем) | FLAC   |
+| Hi-hat   | 3 (без 3/4) | ~56          | 3–4 vel   | 3–4           | FLAC   |
+| Ride     | 2           | 25           | 3–4 vel   | 3–4           | FLAC   |
+| Crash    | 2           | 24           | 3 vel     | 4             | FLAC   |
+| High tom | 1           | 16           | 16 vel    | 1             | FLAC   |
+| Low tom  | 1           | 11           | 11/16     | 1             | FLAC   |
 
 **Ключевой инсайт:** virtuosity-drums — это **фанковый кит**: 6 (!) snare-артикуляций включая buzz и flam, 2 crash-артикуляции (crash + sizzle), 2 ride-вариации (bow + bell), но без джазового stir. Идеально для фанка/R&B.
 
@@ -568,40 +576,40 @@ samples/aac/drums/funk-drum-kit/
 
 ### 5.1. Общая карта — Jazz & Funk
 
-| MIDI № | Нота | Звук | Jazz Kit | Funk Kit | Примечание |
-|--------|------|------|----------|----------|------------|
-| **27** | **D#1** | **Stir (brush)** | ✅ hihat_stir | — | ⭐ Джазовая текстура щёткой |
-| 28 | E1 | Snare Buzz | — | ✅ snare_buzz | ⭐ Buzz-roll |
-| 29 | F1 | Snare Flam | — | ✅ snare_flam | ⭐ Flam-триггер |
-| 30 | F#1 | Snare Rimshot | — | ✅ snare_rimshot | ⭐ Акцентный rimshot |
-| 31 | G1 | Snare Dig | ✅ snare_dig | — | Press roll |
-| 32 | G#1 | Snare Edge | ✅ snare_edge | — | Crossstick / edge |
-| 33 | A1 | Snare Crossstick | — | ✅ snare_crossstick | Cross-stick |
-| 34 | A#1 | Snare Muted | — | ✅ snare_muted | Глухой snare |
-| 35 | B1 | (резерв) | — | — | |
-| **36** | **C2** | **Kick** | ✅ kick | ✅ kick | Основной bass drum |
-| 37 | C#2 | Side Stick / Rim | (через edge) | (через crossstick) | Дубль через артикуляцию |
-| **38** | **D2** | **Snare (center)** | ✅ snare_center | ✅ snare_center | Основной малый |
-| 39 | D#2 | Hand Clap | — | — | (future) |
-| 40 | E2 | Electric Snare | — | — | (не используем) |
-| **41** | **F2** | **Low Floor Tom** | ✅ tom_mlow | ✅ tom_lo | Низкий том |
-| **42** | **F#2** | **Closed Hi-hat** | ✅ hihat_closed | ✅ hihat_closed | Закрытый хай-хэт |
-| **43** | **G2** | **High Floor Tom** | ✅ tom_mhi | ✅ tom_hi | Высокий том |
-| 44 | G#2 | Pedal Hi-hat | ✅ hihat_foot | ✅ hihat_pedal | Педаль хай-хэта |
-| 45 | A2 | Low Tom | — | — | (не используем) |
-| **46** | **A#2** | **Open Hi-hat** | ✅ hihat_open | ✅ hihat_open | Открытый хай-хэт |
-| 47 | B2 | Low-Mid Tom | — | — | (не используем) |
-| 48 | C3 | Hi-Mid Tom | — | — | (не используем) |
-| **49** | **C#3** | **Crash Cymbal 1** | ✅ crash | ✅ crash | Основной crash |
-| 50 | D3 | High Tom | — | — | (не используем) |
-| **51** | **D#3** | **Ride Cymbal 1** | ✅ ride_bow | ✅ ride_bow | Ride bow |
-| 52 | E3 | Chinese Cymbal | — | — | (не используем) |
-| 53 | F3 | Ride Bell | — | ✅ ride_bell | ⭐ Ride bell |
-| 54 | F#3 | Tambourine | — | — | (не используем) |
-| **55** | **G3** | **Splash Cymbal** | ✅ splash | — | Splash |
-| 56 | G#3 | Cowbell | — | — | (не используем) |
-| 57 | A3 | Crash Cymbal 2 | — | — | (не используем) |
-| 82 | A#4 | Sizzle Crash | — | ✅ crash_sizzle | ⭐ Sizzle crash (фанк) |
+| MIDI № | Нота    | Звук               | Jazz Kit        | Funk Kit            | Примечание                  |
+| ------ | ------- | ------------------ | --------------- | ------------------- | --------------------------- |
+| **27** | **D#1** | **Stir (brush)**   | ✅ hihat_stir   | —                   | ⭐ Джазовая текстура щёткой |
+| 28     | E1      | Snare Buzz         | —               | ✅ snare_buzz       | ⭐ Buzz-roll                |
+| 29     | F1      | Snare Flam         | —               | ✅ snare_flam       | ⭐ Flam-триггер             |
+| 30     | F#1     | Snare Rimshot      | —               | ✅ snare_rimshot    | ⭐ Акцентный rimshot        |
+| 31     | G1      | Snare Dig          | ✅ snare_dig    | —                   | Press roll                  |
+| 32     | G#1     | Snare Edge         | ✅ snare_edge   | —                   | Crossstick / edge           |
+| 33     | A1      | Snare Crossstick   | —               | ✅ snare_crossstick | Cross-stick                 |
+| 34     | A#1     | Snare Muted        | —               | ✅ snare_muted      | Глухой snare                |
+| 35     | B1      | (резерв)           | —               | —                   |                             |
+| **36** | **C2**  | **Kick**           | ✅ kick         | ✅ kick             | Основной bass drum          |
+| 37     | C#2     | Side Stick / Rim   | (через edge)    | (через crossstick)  | Дубль через артикуляцию     |
+| **38** | **D2**  | **Snare (center)** | ✅ snare_center | ✅ snare_center     | Основной малый              |
+| 39     | D#2     | Hand Clap          | —               | —                   | (future)                    |
+| 40     | E2      | Electric Snare     | —               | —                   | (не используем)             |
+| **41** | **F2**  | **Low Floor Tom**  | ✅ tom_mlow     | ✅ tom_lo           | Низкий том                  |
+| **42** | **F#2** | **Closed Hi-hat**  | ✅ hihat_closed | ✅ hihat_closed     | Закрытый хай-хэт            |
+| **43** | **G2**  | **High Floor Tom** | ✅ tom_mhi      | ✅ tom_hi           | Высокий том                 |
+| 44     | G#2     | Pedal Hi-hat       | ✅ hihat_foot   | ✅ hihat_pedal      | Педаль хай-хэта             |
+| 45     | A2      | Low Tom            | —               | —                   | (не используем)             |
+| **46** | **A#2** | **Open Hi-hat**    | ✅ hihat_open   | ✅ hihat_open       | Открытый хай-хэт            |
+| 47     | B2      | Low-Mid Tom        | —               | —                   | (не используем)             |
+| 48     | C3      | Hi-Mid Tom         | —               | —                   | (не используем)             |
+| **49** | **C#3** | **Crash Cymbal 1** | ✅ crash        | ✅ crash            | Основной crash              |
+| 50     | D3      | High Tom           | —               | —                   | (не используем)             |
+| **51** | **D#3** | **Ride Cymbal 1**  | ✅ ride_bow     | ✅ ride_bow         | Ride bow                    |
+| 52     | E3      | Chinese Cymbal     | —               | —                   | (не используем)             |
+| 53     | F3      | Ride Bell          | —               | ✅ ride_bell        | ⭐ Ride bell                |
+| 54     | F#3     | Tambourine         | —               | —                   | (не используем)             |
+| **55** | **G3**  | **Splash Cymbal**  | ✅ splash       | —                   | Splash                      |
+| 56     | G#3     | Cowbell            | —               | —                   | (не используем)             |
+| 57     | A3      | Crash Cymbal 2     | —               | —                   | (не используем)             |
+| 82     | A#4     | Sizzle Crash       | —               | ✅ crash_sizzle     | ⭐ Sizzle crash (фанк)      |
 
 ### 5.2. Логика выбора артикуляции по velocity и стилю
 
@@ -660,16 +668,31 @@ export type DrumSound =
   // Core
   | 'kick'
   // Snare articulations
-  | 'snare_center' | 'snare_edge' | 'snare_dig'
-  | 'snare_buzz' | 'snare_flam' | 'snare_crossstick' | 'snare_muted' | 'snare_rimshot'
+  | 'snare_center'
+  | 'snare_edge'
+  | 'snare_dig'
+  | 'snare_buzz'
+  | 'snare_flam'
+  | 'snare_crossstick'
+  | 'snare_muted'
+  | 'snare_rimshot'
   // Hi-hat articulations
-  | 'hihat_closed' | 'hihat_open' | 'hihat_foot' | 'hihat_stir'
+  | 'hihat_closed'
+  | 'hihat_open'
+  | 'hihat_foot'
+  | 'hihat_stir'
   // Ride articulations
-  | 'ride_bow' | 'ride_bell'
+  | 'ride_bow'
+  | 'ride_bell'
   // Cymbals
-  | 'crash' | 'crash_sizzle' | 'splash'
+  | 'crash'
+  | 'crash_sizzle'
+  | 'splash'
   // Toms
-  | 'tom_hi' | 'tom_lo' | 'tom_mhi' | 'tom_mlow';
+  | 'tom_hi'
+  | 'tom_lo'
+  | 'tom_mhi'
+  | 'tom_mlow';
 ```
 
 ### 6.3. Расширение `DrumInstrumentSettings`
@@ -703,8 +726,8 @@ interface DrumInstrumentSettings {
   splashVolume: number;
 
   // Funk-specific probabilities
-  funkFlamProbability: number;   // 0–1
-  funkBuzzProbability: number;   // 0–1
+  funkFlamProbability: number; // 0–1
+  funkBuzzProbability: number; // 0–1
 }
 ```
 
@@ -712,56 +735,56 @@ interface DrumInstrumentSettings {
 
 ### 7.1. Принципы
 
-| Роль звука | Слоёв (Jazz) | Слоёв (Funk) | Какие |
-|------------|-------------|-------------|-------|
-| **Основные** (kick, snare_center, hihat_closed, ride_bow) | **5** (из vl1–vl20) | 3–5 (из имеющихся) | Равномерно по диапазону: vl1, vl5, vl10, vl15, vl20 |
-| **Акцентные** (snare_rimshot, ride_bell, hihat_open) | 3 | 2–3 | Только громкие слои |
-| **Текстурные** (snare_buzz, snare_flam, snare_dig, snare_muted) | 3 | 2–3 | Преимущественно тихие/средние |
-| **Специальные** (stir) | 1 | — | Один слой (текстура без динамики) |
-| **Тарелки** (crash, splash, sizzle) | 2–3 | 3 | Средние-громкие |
-| **Томы** (tom_hi/lo/mhi/mlow) | 3 | 3 | Равномерно по диапазону |
-| **Crossstick/edge** | 3 | 2 | Тихие-средние |
+| Роль звука                                                      | Слоёв (Jazz)        | Слоёв (Funk)       | Какие                                               |
+| --------------------------------------------------------------- | ------------------- | ------------------ | --------------------------------------------------- |
+| **Основные** (kick, snare_center, hihat_closed, ride_bow)       | **5** (из vl1–vl20) | 3–5 (из имеющихся) | Равномерно по диапазону: vl1, vl5, vl10, vl15, vl20 |
+| **Акцентные** (snare_rimshot, ride_bell, hihat_open)            | 3                   | 2–3                | Только громкие слои                                 |
+| **Текстурные** (snare_buzz, snare_flam, snare_dig, snare_muted) | 3                   | 2–3                | Преимущественно тихие/средние                       |
+| **Специальные** (stir)                                          | 1                   | —                  | Один слой (текстура без динамики)                   |
+| **Тарелки** (crash, splash, sizzle)                             | 2–3                 | 3                  | Средние-громкие                                     |
+| **Томы** (tom_hi/lo/mhi/mlow)                                   | 3                   | 3                  | Равномерно по диапазону                             |
+| **Crossstick/edge**                                             | 3                   | 2                  | Тихие-средние                                       |
 
 ### 7.2. Конкретные слои — Swirly.Drums_1104 → Jazz Kit
 
 Исходная библиотека содержит vl1–vl20. Выбираем с шагом ~5:
 
-| Звук | Слоёв | Какие именно | RR |
-|------|-------|-------------|-----|
-| Kick | 5 | vl1, vl5, vl10, vl15, vl20 | 4 |
-| Snare center | 5 | vl1, vl5, vl10, vl15, vl20 | 4 |
-| Snare edge | 3 | vl1, vl10, vl20 | 4 |
-| Snare dig | 3 | vl1, vl10, vl20 | 4 |
-| HH closed | 5 | vl1, vl5, vl10, vl15, vl20 | 4 |
-| HH open | 3 | vl1, vl10, vl20 | 4 |
-| HH foot | 3 | vl1, vl10, vl20 | 4 |
-| Stir | 1 | single (текстура) | 4 |
-| Ride bow | 5 | vl1, vl5, vl10, vl15, vl20 | 4 |
-| Crash | 3 | vl1, vl10, vl20 | 4 |
-| Splash | 2 | vl1, vl10 | 4 |
-| Tom mlow | 3 | vl1, vl10, vl20 | 4 |
-| Tom mhi | 3 | vl1, vl10, vl20 | 4 |
+| Звук         | Слоёв | Какие именно               | RR  |
+| ------------ | ----- | -------------------------- | --- |
+| Kick         | 5     | vl1, vl5, vl10, vl15, vl20 | 4   |
+| Snare center | 5     | vl1, vl5, vl10, vl15, vl20 | 4   |
+| Snare edge   | 3     | vl1, vl10, vl20            | 4   |
+| Snare dig    | 3     | vl1, vl10, vl20            | 4   |
+| HH closed    | 5     | vl1, vl5, vl10, vl15, vl20 | 4   |
+| HH open      | 3     | vl1, vl10, vl20            | 4   |
+| HH foot      | 3     | vl1, vl10, vl20            | 4   |
+| Stir         | 1     | single (текстура)          | 4   |
+| Ride bow     | 5     | vl1, vl5, vl10, vl15, vl20 | 4   |
+| Crash        | 3     | vl1, vl10, vl20            | 4   |
+| Splash       | 2     | vl1, vl10                  | 4   |
+| Tom mlow     | 3     | vl1, vl10, vl20            | 4   |
+| Tom mhi      | 3     | vl1, vl10, vl20            | 4   |
 
 ### 7.3. Конкретные слои — virtuosity-drums → Funk Kit
 
-| Звук | Исходных слоёв | Оставляем | Какие именно | RR-эмуляция |
-|------|---------------|-----------|-------------|-------------|
-| Kick | 6 (vl1–6) | 3 | vl1, vl3, vl5 | Родные 4 RR |
-| Snare center | 36 | 5 | vl1, vl8, vl18, vl28, vl36 | Соседние vl как RR (vl1→rr1, vl2→rr2, vl3→rr3, vl4→rr4) |
-| Snare buzz | 12 | 3 | vl1, vl6, vl12 | Соседние vl как RR |
-| Snare flam | 12 | 3 | vl1, vl6, vl12 | Соседние vl как RR |
-| Snare crossstick | 16 | 2 | vl1, vl16 | Соседние vl как RR |
-| Snare muted | 16 | 2 | vl1, vl16 | Соседние vl как RR |
-| Snare rimshot | 12 | 3 | vl1, vl8, vl12 | Соседние vl как RR |
-| HH closed | 4 vel × 4 RR | 3 | vl1, vl2, vl4 | Родные 4 RR |
-| HH open | 4 vel × ~3 RR | 2 | vl1, vl3 | Родные RR где есть |
-| HH pedal | 3 vel × 4 RR | 2 | vl1, vl2 | Родные 4 RR |
-| Ride bow | 4 vel × 4 RR | 3 | vl1, vl2, vl4 | Родные 4 RR |
-| Ride bell | 3 vel × 3 RR | 3 | vl1, vl2, vl3 | Родные 3 RR |
-| Crash | 3 vel × 4 RR | 3 | vl1, vl2, vl3 | Родные 4 RR |
-| Crash sizzle | 3 vel × 4 RR | 3 | vl1, vl2, vl3 | Родные 4 RR |
-| High tom | 16 | 3 | vl1, vl8, vl16 | Без RR (1 файл/слой) |
-| Low tom | 11 из 16 | 3 | vl2, vl8, vl16 | Без RR (1 файл/слой) |
+| Звук             | Исходных слоёв | Оставляем | Какие именно               | RR-эмуляция                                             |
+| ---------------- | -------------- | --------- | -------------------------- | ------------------------------------------------------- |
+| Kick             | 6 (vl1–6)      | 3         | vl1, vl3, vl5              | Родные 4 RR                                             |
+| Snare center     | 36             | 5         | vl1, vl8, vl18, vl28, vl36 | Соседние vl как RR (vl1→rr1, vl2→rr2, vl3→rr3, vl4→rr4) |
+| Snare buzz       | 12             | 3         | vl1, vl6, vl12             | Соседние vl как RR                                      |
+| Snare flam       | 12             | 3         | vl1, vl6, vl12             | Соседние vl как RR                                      |
+| Snare crossstick | 16             | 2         | vl1, vl16                  | Соседние vl как RR                                      |
+| Snare muted      | 16             | 2         | vl1, vl16                  | Соседние vl как RR                                      |
+| Snare rimshot    | 12             | 3         | vl1, vl8, vl12             | Соседние vl как RR                                      |
+| HH closed        | 4 vel × 4 RR   | 3         | vl1, vl2, vl4              | Родные 4 RR                                             |
+| HH open          | 4 vel × ~3 RR  | 2         | vl1, vl3                   | Родные RR где есть                                      |
+| HH pedal         | 3 vel × 4 RR   | 2         | vl1, vl2                   | Родные 4 RR                                             |
+| Ride bow         | 4 vel × 4 RR   | 3         | vl1, vl2, vl4              | Родные 4 RR                                             |
+| Ride bell        | 3 vel × 3 RR   | 3         | vl1, vl2, vl3              | Родные 3 RR                                             |
+| Crash            | 3 vel × 4 RR   | 3         | vl1, vl2, vl3              | Родные 4 RR                                             |
+| Crash sizzle     | 3 vel × 4 RR   | 3         | vl1, vl2, vl3              | Родные 4 RR                                             |
+| High tom         | 16             | 3         | vl1, vl8, vl16             | Без RR (1 файл/слой)                                    |
+| Low tom          | 11 из 16       | 3         | vl2, vl8, vl16             | Без RR (1 файл/слой)                                    |
 
 ## 8. План реализации
 
@@ -808,13 +831,13 @@ interface DrumInstrumentSettings {
 
 ## 10. Риски и допущения
 
-| Риск | Вероятность | Влияние | Митигация |
-|------|------------|---------|-----------|
-| Swirly.Drums_1104 полные исходники (vl1–vl20) недоступны | Средняя | Jazz Kit не сможем собрать в 5 слоёв | Использовать текущий Swirly v2 (vl5) + дополнительные слои из virtuosity или уменьшить до 3 слоёв |
-| «Соседние velocity как RR» звучит неестественно для snare | Средняя | Machine-gun effect на snare | Протестировать; если плохо — оставить 1 слой без RR (как у toms) или уменьшить RR до 2 |
-| Размер бандла слишком большой | Средняя | Медленная загрузка | Ленивая загрузка per-kit; загрузка только выбранного кита; AAC-сжатие |
-| Неполные ltom-слои (11/16, нет vl1) | Низкая | Нет самого тихого слоя pp | Используем vl2 как ближайший к pp |
-| Усложнение SampleManifest ломает обратную совместимость | Низкая | Старые киты не грузятся | `velocityOneshots` — опциональное поле, `oneshots` продолжает работать |
+| Риск                                                      | Вероятность | Влияние                              | Митигация                                                                                         |
+| --------------------------------------------------------- | ----------- | ------------------------------------ | ------------------------------------------------------------------------------------------------- |
+| Swirly.Drums_1104 полные исходники (vl1–vl20) недоступны  | Средняя     | Jazz Kit не сможем собрать в 5 слоёв | Использовать текущий Swirly v2 (vl5) + дополнительные слои из virtuosity или уменьшить до 3 слоёв |
+| «Соседние velocity как RR» звучит неестественно для snare | Средняя     | Machine-gun effect на snare          | Протестировать; если плохо — оставить 1 слой без RR (как у toms) или уменьшить RR до 2            |
+| Размер бандла слишком большой                             | Средняя     | Медленная загрузка                   | Ленивая загрузка per-kit; загрузка только выбранного кита; AAC-сжатие                             |
+| Неполные ltom-слои (11/16, нет vl1)                       | Низкая      | Нет самого тихого слоя pp            | Используем vl2 как ближайший к pp                                                                 |
+| Усложнение SampleManifest ломает обратную совместимость   | Низкая      | Старые киты не грузятся              | `velocityOneshots` — опциональное поле, `oneshots` продолжает работать                            |
 
 ## 11. Метрики успеха
 
@@ -831,4 +854,4 @@ interface DrumInstrumentSettings {
 
 ---
 
-*Следующий шаг: подтверждение структуры → поиск/конвертация исходников Swirly.Drums_1104 → конвертация сэмплов → реализация в коде.*
+_Следующий шаг: подтверждение структуры → поиск/конвертация исходников Swirly.Drums_1104 → конвертация сэмплов → реализация в коде._

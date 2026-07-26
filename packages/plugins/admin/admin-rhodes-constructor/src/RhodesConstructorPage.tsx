@@ -25,7 +25,8 @@ export default function RhodesConstructorPage() {
   const strategy = useMemo(() => createRhodesStrategy(), []);
 
   const store = useMemo(
-    () => createConstructorStore<RhodesPatternStyle, RhodesVoicingRole>(strategy.storageKey, strategy),
+    () =>
+      createConstructorStore<RhodesPatternStyle, RhodesVoicingRole>(strategy.storageKey, strategy),
     [strategy],
   );
 

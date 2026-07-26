@@ -140,9 +140,7 @@ describe('buildFlatSequence', () => {
   });
 
   it('finite form-repeat on last bar — single section plays form N times', () => {
-    const sections = [
-      makeSection([makeBar(['A']), makeBar(['B'], { repeatEnd: { count: 2 } })]),
-    ];
+    const sections = [makeSection([makeBar(['A']), makeBar(['B'], { repeatEnd: { count: 2 } })])];
     const seq = buildFlatSequence(sections);
     expect(seq.bars).toEqual([0, 1, 0, 1]);
     expect(seq.infiniteLoopStart).toBeNull();
@@ -173,11 +171,7 @@ describe('buildFlatSequence', () => {
     const sections = [
       makeSection([makeBar(['A']), makeBar(['B'])], 's1', 'Verse'),
       makeSection(
-        [
-          makeBar(['C']),
-          makeBar(['D'], { repeatEnd: { count: 2 } }),
-          makeBar(['E']),
-        ],
+        [makeBar(['C']), makeBar(['D'], { repeatEnd: { count: 2 } }), makeBar(['E'])],
         's2',
         'Chorus',
       ),

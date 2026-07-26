@@ -10,7 +10,11 @@ export default definePlugin({
   },
   contributes: {
     routes: [
-      { path: '/theory/modal-interchange', element: () => import('./ModalInterchangePage'), requires: 'theory:modalInterchange' },
+      {
+        path: '/theory/modal-interchange',
+        element: () => import('./ModalInterchangePage'),
+        requires: 'theory:modalInterchange',
+      },
     ],
     navItems: [
       { section: 'learn', label: 'Ладовый обмен', to: '/theory/modal-interchange', icon: 'music' },

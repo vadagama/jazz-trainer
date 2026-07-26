@@ -41,9 +41,7 @@ export function ComputerKeyboardSettings() {
               onChange={(e) => setEnabled(e.target.checked)}
               className="h-4 w-4 cursor-pointer accent-primary"
             />
-            <span className="text-xs text-muted-foreground">
-              {enabled ? 'Вкл' : 'Выкл'}
-            </span>
+            <span className="text-xs text-muted-foreground">{enabled ? 'Вкл' : 'Выкл'}</span>
           </label>
         </div>
       </CardHeader>
@@ -68,7 +66,10 @@ export function ComputerKeyboardSettings() {
         {/* Key map visual */}
         <div className="space-y-1">
           {/* Black keys row */}
-          <div className="flex h-8 items-end" style={{ paddingLeft: '1.05rem', paddingRight: '0.75rem' }}>
+          <div
+            className="flex h-8 items-end"
+            style={{ paddingLeft: '1.05rem', paddingRight: '0.75rem' }}
+          >
             {blackKeys.map((e) => (
               <div
                 key={e.key}
@@ -96,8 +97,8 @@ export function ComputerKeyboardSettings() {
         </div>
 
         <p className="text-xs text-muted-foreground">
-          Используйте клавиши на клавиатуре ноутбука для игры нот.
-          Не работает, когда фокус в поле ввода.
+          Используйте клавиши на клавиатуре ноутбука для игры нот. Не работает, когда фокус в поле
+          ввода.
         </p>
       </CardContent>
     </Card>

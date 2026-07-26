@@ -61,8 +61,9 @@ export function ConstructorPage<TStyle extends string, TSound extends string = s
   );
   const [bpm, setBpm] = useState(120);
   const bpmInput = useClampedNumberInput({ value: bpm, onCommit: setBpm, min: 40, max: 300 });
-  const [swing, setSwing] = useState(() =>
-    getStyleProfile(((strategy.styles?.[0]?.value as string) ?? 'swing') as JazzStyle).swingRatio,
+  const [swing, setSwing] = useState(
+    () =>
+      getStyleProfile(((strategy.styles?.[0]?.value as string) ?? 'swing') as JazzStyle).swingRatio,
   );
   const [playingKey, setPlayingKey] = useState<string | null>(null);
 
@@ -169,18 +170,18 @@ export function ConstructorPage<TStyle extends string, TSound extends string = s
       {/* ── Панель управления ── */}
       <div className="flex flex-wrap items-center gap-4 rounded-lg border border-border bg-card p-3">
         <div className="flex flex-wrap gap-1">
-          {(strategy.styles ?? STYLES.map((s) => ({ value: s as TStyle, label: STYLE_LABELS[s] }))).map(
-            (s) => (
-              <Button
-                key={s.value}
-                size="sm"
-                variant={s.value === style ? 'default' : 'outline'}
-                onClick={() => selectStyle(s.value)}
-              >
-                {s.label}
-              </Button>
-            ),
-          )}
+          {(
+            strategy.styles ?? STYLES.map((s) => ({ value: s as TStyle, label: STYLE_LABELS[s] }))
+          ).map((s) => (
+            <Button
+              key={s.value}
+              size="sm"
+              variant={s.value === style ? 'default' : 'outline'}
+              onClick={() => selectStyle(s.value)}
+            >
+              {s.label}
+            </Button>
+          ))}
         </div>
 
         {ToolbarExtras && <ToolbarExtras />}

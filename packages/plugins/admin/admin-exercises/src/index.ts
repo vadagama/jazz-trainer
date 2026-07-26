@@ -10,7 +10,11 @@ export default definePlugin({
   },
   contributes: {
     routes: [
-      { path: '/admin/exercises', element: () => import('./ExercisesPage'), requires: 'roles:read' },
+      {
+        path: '/admin/exercises',
+        element: () => import('./ExercisesPage'),
+        requires: 'roles:read',
+      },
     ],
     navItems: [
       {

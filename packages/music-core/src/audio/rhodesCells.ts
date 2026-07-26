@@ -101,7 +101,11 @@ const SEED_CELLS: CellSeed[] = [
         probability: 0.35,
         clips: [
           { startBar: 0, lengthBars: 4, pool: ['rhodes-insert-offbeats-funk'] },
-          { startBar: 4, lengthBars: 4, pool: ['rhodes-stab-2-4-funk', 'rhodes-insert-offbeats-funk'] },
+          {
+            startBar: 4,
+            lengthBars: 4,
+            pool: ['rhodes-stab-2-4-funk', 'rhodes-insert-offbeats-funk'],
+          },
         ],
       },
       {
@@ -128,7 +132,11 @@ const SEED_CELLS: CellSeed[] = [
         name: 'arpeggio',
         probability: 0.25,
         clips: [
-          { startBar: 2, lengthBars: 2, pool: ['rhodes-arp-roll-ballad', 'rhodes-arp-up-quarter-ballad'] },
+          {
+            startBar: 2,
+            lengthBars: 2,
+            pool: ['rhodes-arp-roll-ballad', 'rhodes-arp-up-quarter-ballad'],
+          },
         ],
       },
       {

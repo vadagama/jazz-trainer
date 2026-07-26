@@ -33,9 +33,9 @@ function BarChip({ bar }: { bar: PracticeBar }) {
   }
   if (bar.sequence) {
     const root = bar.sequence.notes.find((n) => n.role === 'root');
-    const title = `${bar.sequence.type} · ст.${bar.sequence.startDegree} · ${
-      bar.sequence.notes.map((n) => n.name).join(' ')
-    }`;
+    const title = `${bar.sequence.type} · ст.${bar.sequence.startDegree} · ${bar.sequence.notes
+      .map((n) => n.name)
+      .join(' ')}`;
     return (
       <div
         title={title}

@@ -70,7 +70,10 @@ function loadMolecules(): Record<string, BassMolecule> {
 
 function loadCells(): Record<string, BassCell> {
   const c: Record<string, BassCell> = {};
-  for (const cell of [...Object.values(UPRIGHT_BASS_CELLS), ...Object.values(ELECTRIC_BASS_CELLS)]) {
+  for (const cell of [
+    ...Object.values(UPRIGHT_BASS_CELLS),
+    ...Object.values(ELECTRIC_BASS_CELLS),
+  ]) {
     c[cell.id] = cloneCell(cell);
   }
   return c;

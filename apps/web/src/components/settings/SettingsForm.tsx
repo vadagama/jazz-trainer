@@ -457,8 +457,6 @@ export function SettingsForm({ defaultValues, onSave, themeControl }: Props) {
                   )}
                 />
               </div>
-
-
             </CardContent>
           </Card>
 

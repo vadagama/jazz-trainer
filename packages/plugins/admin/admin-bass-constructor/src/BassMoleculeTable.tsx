@@ -11,7 +11,11 @@ import {
   ticksPerCol,
   type MoleculeEditorProps,
 } from '@jazz/plugin-admin-constructor-shared';
-import { articulationLabel, articulationDescription, ALL_BASS_ARTICULATIONS } from './bassSampler.js';
+import {
+  articulationLabel,
+  articulationDescription,
+  ALL_BASS_ARTICULATIONS,
+} from './bassSampler.js';
 
 type Props = MoleculeEditorProps<BassPatternStyle, BassArticulation>;
 
@@ -432,7 +436,8 @@ export function BassMoleculeTable({
         {selected && (
           <div className="flex flex-wrap items-center gap-4 rounded-md border border-border bg-muted/30 p-3 mx-6 text-sm">
             <span className="font-medium">
-              {articulationLabel(selected.sound)} · {colLabel(selected.col % perBar, style, BASS_SUBDIVISIONS)}
+              {articulationLabel(selected.sound)} ·{' '}
+              {colLabel(selected.col % perBar, style, BASS_SUBDIVISIONS)}
               {bars > 1 ? ` · такт ${Math.floor(selected.col / perBar) + 1}` : ''}
             </span>
             <label className="flex items-center gap-2">

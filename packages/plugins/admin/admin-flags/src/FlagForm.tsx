@@ -1,9 +1,19 @@
 import { useState, type FormEvent } from 'react';
-import { Button, Checkbox, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Slider, Textarea } from '@jazz/ui';
-import { Loader2 } from 'lucide-react';
 import {
-  ApiError,
-} from '@jazz/plugin-sdk';
+  Button,
+  Checkbox,
+  Input,
+  Label,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Slider,
+  Textarea,
+} from '@jazz/ui';
+import { Loader2 } from 'lucide-react';
+import { ApiError } from '@jazz/plugin-sdk';
 import {
   FLAG_CATEGORIES,
   FLAG_TARGET_ROLES,
@@ -139,9 +149,7 @@ export function FlagForm({
           autoComplete="off"
           required
         />
-        {fieldErrors.key && (
-          <p className="text-xs text-destructive">{fieldErrors.key}</p>
-        )}
+        {fieldErrors.key && <p className="text-xs text-destructive">{fieldErrors.key}</p>}
       </div>
 
       {/* Description */}
@@ -167,7 +175,6 @@ export function FlagForm({
           onValueChange={(v) => update('category', v === NONE ? '' : (v as FlagCategory))}
           disabled={isSubmitting}
         >
-
           <SelectTrigger>
             <SelectValue placeholder="Без категории" />
           </SelectTrigger>
@@ -302,9 +309,7 @@ export function FlagForm({
 }
 
 /** Convert form values → CreateFlagInput / UpdateFlagInput payloads. */
-export function formToPayload(
-  values: FlagFormValues,
-): CreateFlagInput | UpdateFlagInput {
+export function formToPayload(values: FlagFormValues): CreateFlagInput | UpdateFlagInput {
   const payload: Record<string, unknown> = {
     description: values.description.trim() || undefined,
     category: values.category || undefined,

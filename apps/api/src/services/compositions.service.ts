@@ -24,15 +24,12 @@ function parseContent(raw: string): CompositionContent {
   return JSON.parse(raw) as CompositionContent;
 }
 
-function toSummaryDTO(
-  g: HarmonyCompositionRecord,
-): HarmonyCompositionSummaryDTO {
+function toSummaryDTO(g: HarmonyCompositionRecord): HarmonyCompositionSummaryDTO {
   const content = parseContent(g.content);
   return {
     id: g.id,
     name: g.name,
-    timeSignature:
-      g.timeSignature as HarmonyCompositionSummaryDTO['timeSignature'],
+    timeSignature: g.timeSignature as HarmonyCompositionSummaryDTO['timeSignature'],
     key: g.key as HarmonyCompositionSummaryDTO['key'],
     barsCount: barsCount(content),
     visibility: g.visibility as HarmonyCompositionSummaryDTO['visibility'],
@@ -91,18 +88,12 @@ function emptyContent(): CompositionContent {
 
 // ── User's own compositions (CRUD) ────────────────────────────────────────
 
-export function getUserCompositions(
-  db: DrizzleDb,
-  userId: string,
-): HarmonyCompositionSummaryDTO[] {
+export function getUserCompositions(db: DrizzleDb, userId: string): HarmonyCompositionSummaryDTO[] {
   const rows = db
     .select()
     .from(harmonyCompositions)
     .where(
-      and(
-        eq(harmonyCompositions.userId, userId),
-        eq(harmonyCompositions.visibility, 'private'),
-      ),
+      and(eq(harmonyCompositions.userId, userId), eq(harmonyCompositions.visibility, 'private')),
     )
     .orderBy(desc(harmonyCompositions.updatedAt))
     .all();
@@ -117,12 +108,7 @@ export function getOwnComposition(
   const row = db
     .select()
     .from(harmonyCompositions)
-    .where(
-      and(
-        eq(harmonyCompositions.id, compositionId),
-        eq(harmonyCompositions.userId, userId),
-      ),
-    )
+    .where(and(eq(harmonyCompositions.id, compositionId), eq(harmonyCompositions.userId, userId)))
     .get();
   return row ? toDTO(row) : null;
 }
@@ -172,12 +158,7 @@ export function updateComposition(
   const existing = db
     .select()
     .from(harmonyCompositions)
-    .where(
-      and(
-        eq(harmonyCompositions.id, compositionId),
-        eq(harmonyCompositions.userId, userId),
-      ),
-    )
+    .where(and(eq(harmonyCompositions.id, compositionId), eq(harmonyCompositions.userId, userId)))
     .get();
   if (!existing) return null;
   return applyCompositionPatch(db, existing, input);
@@ -199,17 +180,11 @@ function applyCompositionPatch(
   if (input.recommendedTempo !== undefined) patch.recommendedTempo = input.recommendedTempo;
 
   // When editing a published catalog composition, mark as modified
-  if (
-    record.visibility === 'public' &&
-    record.moderationStatus === 'approved'
-  ) {
+  if (record.visibility === 'public' && record.moderationStatus === 'approved') {
     patch.moderationStatus = 'modified';
   }
 
-  db.update(harmonyCompositions)
-    .set(patch)
-    .where(eq(harmonyCompositions.id, record.id))
-    .run();
+  db.update(harmonyCompositions).set(patch).where(eq(harmonyCompositions.id, record.id)).run();
   return toDTO({ ...record, ...patch } as HarmonyCompositionRecord);
 }
 
@@ -228,25 +203,14 @@ export function updateCompositionAsModerator(
   return applyCompositionPatch(db, existing, input);
 }
 
-export function deleteComposition(
-  db: DrizzleDb,
-  userId: string,
-  compositionId: string,
-): boolean {
+export function deleteComposition(db: DrizzleDb, userId: string, compositionId: string): boolean {
   const existing = db
     .select()
     .from(harmonyCompositions)
-    .where(
-      and(
-        eq(harmonyCompositions.id, compositionId),
-        eq(harmonyCompositions.userId, userId),
-      ),
-    )
+    .where(and(eq(harmonyCompositions.id, compositionId), eq(harmonyCompositions.userId, userId)))
     .get();
   if (!existing) return false;
-  db.delete(harmonyCompositions)
-    .where(eq(harmonyCompositions.id, compositionId))
-    .run();
+  db.delete(harmonyCompositions).where(eq(harmonyCompositions.id, compositionId)).run();
   return true;
 }
 
@@ -316,12 +280,7 @@ export function publishComposition(
   const source = db
     .select()
     .from(harmonyCompositions)
-    .where(
-      and(
-        eq(harmonyCompositions.id, sourceId),
-        eq(harmonyCompositions.userId, userId),
-      ),
-    )
+    .where(and(eq(harmonyCompositions.id, sourceId), eq(harmonyCompositions.userId, userId)))
     .get();
   if (!source) return null;
 
@@ -393,9 +352,7 @@ export function importComposition(
   }
   const composition = createComposition(db, userId, {
     name: input.name,
-    timeSignature:
-      (input.timeSignature as HarmonyCompositionSummaryDTO['timeSignature']) ??
-      '4/4',
+    timeSignature: (input.timeSignature as HarmonyCompositionSummaryDTO['timeSignature']) ?? '4/4',
     key: (input.key as HarmonyCompositionSummaryDTO['key']) ?? 'C',
     content: result.value,
   });
@@ -410,12 +367,7 @@ export function exportCompositionDsl(
   const row = db
     .select()
     .from(harmonyCompositions)
-    .where(
-      and(
-        eq(harmonyCompositions.id, compositionId),
-        eq(harmonyCompositions.userId, userId),
-      ),
-    )
+    .where(and(eq(harmonyCompositions.id, compositionId), eq(harmonyCompositions.userId, userId)))
     .get();
   if (!row) return null;
   const content = parseContent(row.content);
@@ -478,19 +430,12 @@ export function getPublicCompositionById(
     .select()
     .from(harmonyCompositions)
     .where(
-      and(
-        eq(harmonyCompositions.id, compositionId),
-        eq(harmonyCompositions.visibility, 'public'),
-      ),
+      and(eq(harmonyCompositions.id, compositionId), eq(harmonyCompositions.visibility, 'public')),
     )
     .get();
   if (!row) return null;
 
-  const owner = db
-    .select({ name: users.name })
-    .from(users)
-    .where(eq(users.id, row.userId))
-    .get();
+  const owner = db.select({ name: users.name }).from(users).where(eq(users.id, row.userId)).get();
   const ownerName = owner?.name ?? 'Unknown';
 
   let likedByMe = false;
@@ -527,10 +472,7 @@ export function likeComposition(
     .select()
     .from(harmonyCompositions)
     .where(
-      and(
-        eq(harmonyCompositions.id, compositionId),
-        eq(harmonyCompositions.visibility, 'public'),
-      ),
+      and(eq(harmonyCompositions.id, compositionId), eq(harmonyCompositions.visibility, 'public')),
     )
     .get();
   if (!composition) return null;
@@ -539,17 +481,12 @@ export function likeComposition(
     .select()
     .from(compositionLikes)
     .where(
-      and(
-        eq(compositionLikes.compositionId, compositionId),
-        eq(compositionLikes.userId, userId),
-      ),
+      and(eq(compositionLikes.compositionId, compositionId), eq(compositionLikes.userId, userId)),
     )
     .get();
 
   if (!existing) {
-    db.insert(compositionLikes)
-      .values({ compositionId, userId, createdAt: Date.now() })
-      .run();
+    db.insert(compositionLikes).values({ compositionId, userId, createdAt: Date.now() }).run();
     const newCount = composition.likeCount + 1;
     db.update(harmonyCompositions)
       .set({ likeCount: newCount })
@@ -570,10 +507,7 @@ export function unlikeComposition(
     .select()
     .from(harmonyCompositions)
     .where(
-      and(
-        eq(harmonyCompositions.id, compositionId),
-        eq(harmonyCompositions.visibility, 'public'),
-      ),
+      and(eq(harmonyCompositions.id, compositionId), eq(harmonyCompositions.visibility, 'public')),
     )
     .get();
   if (!composition) return null;
@@ -582,20 +516,14 @@ export function unlikeComposition(
     .select()
     .from(compositionLikes)
     .where(
-      and(
-        eq(compositionLikes.compositionId, compositionId),
-        eq(compositionLikes.userId, userId),
-      ),
+      and(eq(compositionLikes.compositionId, compositionId), eq(compositionLikes.userId, userId)),
     )
     .get();
 
   if (existing) {
     db.delete(compositionLikes)
       .where(
-        and(
-          eq(compositionLikes.compositionId, compositionId),
-          eq(compositionLikes.userId, userId),
-        ),
+        and(eq(compositionLikes.compositionId, compositionId), eq(compositionLikes.userId, userId)),
       )
       .run();
     const newCount = Math.max(0, composition.likeCount - 1);

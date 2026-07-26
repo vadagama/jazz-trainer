@@ -137,7 +137,11 @@ function chromaticNeighborName(targetName: string, direction: 'upper' | 'lower')
 }
 
 function targetNote(targetPc: number, key: Key): EnclosureNote {
-  return { name: spellPitchClass(normalizePc(targetPc), key), pc: normalizePc(targetPc), role: 'target' };
+  return {
+    name: spellPitchClass(normalizePc(targetPc), key),
+    pc: normalizePc(targetPc),
+    role: 'target',
+  };
 }
 
 /** Запись хроматической ноты бемольным написанием (C# → Db и т.д.). */
@@ -169,9 +173,21 @@ export function resolveEnclosure(
 
   switch (type) {
     case 'diatonic-upper':
-      return [namedNote(spellPitchClass(diatonicUpper(target, scalePcs), key), diatonicUpper(target, scalePcs)), targetNote(target, key)];
+      return [
+        namedNote(
+          spellPitchClass(diatonicUpper(target, scalePcs), key),
+          diatonicUpper(target, scalePcs),
+        ),
+        targetNote(target, key),
+      ];
     case 'diatonic-lower':
-      return [namedNote(spellPitchClass(diatonicLower(target, scalePcs), key), diatonicLower(target, scalePcs)), targetNote(target, key)];
+      return [
+        namedNote(
+          spellPitchClass(diatonicLower(target, scalePcs), key),
+          diatonicLower(target, scalePcs),
+        ),
+        targetNote(target, key),
+      ];
     case 'chromatic-upper': {
       const name = chromaticNeighborName(targetName, 'upper');
       return [namedNote(name, target + 1), targetNote(target, key)];
@@ -182,18 +198,31 @@ export function resolveEnclosure(
     }
     case 'full-diatonic':
       return [
-        namedNote(spellPitchClass(diatonicUpper(target, scalePcs), key), diatonicUpper(target, scalePcs)),
-        namedNote(spellPitchClass(diatonicLower(target, scalePcs), key), diatonicLower(target, scalePcs)),
+        namedNote(
+          spellPitchClass(diatonicUpper(target, scalePcs), key),
+          diatonicUpper(target, scalePcs),
+        ),
+        namedNote(
+          spellPitchClass(diatonicLower(target, scalePcs), key),
+          diatonicLower(target, scalePcs),
+        ),
         targetNote(target, key),
       ];
     case 'full-chromatic': {
       const upperName = chromaticNeighborName(targetName, 'upper');
       const lowerName = chromaticNeighborName(targetName, 'lower');
-      return [namedNote(upperName, target + 1), namedNote(lowerName, target - 1), targetNote(target, key)];
+      return [
+        namedNote(upperName, target + 1),
+        namedNote(lowerName, target - 1),
+        targetNote(target, key),
+      ];
     }
     case 'diatonic-upper-chromatic-lower':
       return [
-        namedNote(spellPitchClass(diatonicUpper(target, scalePcs), key), diatonicUpper(target, scalePcs)),
+        namedNote(
+          spellPitchClass(diatonicUpper(target, scalePcs), key),
+          diatonicUpper(target, scalePcs),
+        ),
         namedNote(chromaticNeighborName(targetName, 'lower'), target - 1),
         targetNote(target, key),
       ];
@@ -203,7 +232,10 @@ export function resolveEnclosure(
       if (upperInterval === 1) {
         return [
           namedNote(spellPitchClass(upper, key), upper),
-          namedNote(spellPitchClass(diatonicLower(target, scalePcs), key), diatonicLower(target, scalePcs)),
+          namedNote(
+            spellPitchClass(diatonicLower(target, scalePcs), key),
+            diatonicLower(target, scalePcs),
+          ),
           namedNote(flatName(target - 1), target - 1),
           targetNote(target, key),
         ];
@@ -278,10 +310,7 @@ export function resolveChordTonePitchClass(
   const offsets: Record<TargetDegree, number> = {
     1: 0,
     2: scaleOffset(1),
-    3:
-      quality === 'minor' || quality === 'diminished' || quality === 'halfDiminished'
-        ? 3
-        : 4,
+    3: quality === 'minor' || quality === 'diminished' || quality === 'halfDiminished' ? 3 : 4,
     4: scaleOffset(3),
     5:
       quality === 'diminished' || quality === 'halfDiminished'
@@ -290,13 +319,7 @@ export function resolveChordTonePitchClass(
           ? 8
           : 7,
     6: scaleOffset(5),
-    7: has6
-      ? 9
-      : quality === 'major' && has7
-        ? 11
-        : quality === 'diminished' && has7
-          ? 9
-          : 10,
+    7: has6 ? 9 : quality === 'major' && has7 ? 11 : quality === 'diminished' && has7 ? 9 : 10,
     8: scaleOffset(0),
     9: alterations.includes('b9') ? 1 : alterations.includes('#9') ? 3 : scaleOffset(1),
     10: scaleOffset(2),

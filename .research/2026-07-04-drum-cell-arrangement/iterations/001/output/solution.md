@@ -171,8 +171,9 @@ apply swing → resolve articulations → drop vel≤0
 Грид: X = такты `1..length`, Y = лейны. Клип — горизонтальный блок на диапазоне тактов
 (drag = сдвиг `startBar`, resize = `lengthBars`). Инспектор справа: **Velocity (общий)**,
 dynamics, length/TS, «+ добавить клип». MVP редактора — числовые поля `startBar`/`lengthBars`
-+ выбор лейна/mode; drag-and-drop отложить. Клик по клипу открывает `MoleculeTable`.
-См. `output/files/cell-timeline-editor.excalidraw`.
+
+- выбор лейна/mode; drag-and-drop отложить. Клик по клипу открывает `MoleculeTable`.
+  См. `output/files/cell-timeline-editor.excalidraw`.
 
 ### Migration Path
 
@@ -220,11 +221,11 @@ dynamics, length/TS, «+ добавить клип». MVP редактора —
 
 ## Visual Artifacts
 
-| Artifact                    | Type       | Path                                              | Preview       | Purpose                                                        |
-| --------------------------- | ---------- | ------------------------------------------------- | ------------- | -------------------------------------------------------------- |
-| Модель данных (клетка/клип) | Mermaid    | `output/files/data-model.mmd`                     | not generated | Новый тип `DrumCell` + `DrumClip` и связи с молекулой          |
-| Сборка такта (таймлайн)     | Mermaid    | `output/files/assemble-bar-flow.mmd`              | not generated | Детерминированный `assembleBar` с активными клипами и replace  |
-| Редактор-таймлайн (эскиз)   | Excalidraw | `output/files/cell-timeline-editor.excalidraw`    | not generated | UX: грид «такты × лейны», клипы-спаны, инспектор с velocity     |
+| Artifact                    | Type       | Path                                           | Preview       | Purpose                                                       |
+| --------------------------- | ---------- | ---------------------------------------------- | ------------- | ------------------------------------------------------------- |
+| Модель данных (клетка/клип) | Mermaid    | `output/files/data-model.mmd`                  | not generated | Новый тип `DrumCell` + `DrumClip` и связи с молекулой         |
+| Сборка такта (таймлайн)     | Mermaid    | `output/files/assemble-bar-flow.mmd`           | not generated | Детерминированный `assembleBar` с активными клипами и replace |
+| Редактор-таймлайн (эскиз)   | Excalidraw | `output/files/cell-timeline-editor.excalidraw` | not generated | UX: грид «такты × лейны», клипы-спаны, инспектор с velocity   |
 
 ## Changes From Previous Iteration
 

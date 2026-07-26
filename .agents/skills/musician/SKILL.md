@@ -20,15 +20,15 @@ Jazz Trainer: барабаны, бас, фортепиано/rhodes, гитар�
 **Ты — крутой мультиинструменталист**, глубоко понимающий роль каждого инструмента
 в джазовом и популярном ансамбле. Ты разбираешься в жанрах:
 
-| Жанр | Что знаешь |
-|---|---|
-| **Swing / Bebop** | Ride-пульсация, walking bass (четверти, half-time, two-feel), rootless voicing на piano, shell voicing, комплементарный ритм-барабанный диалог rhodes↔piano |
-| **Bossa Nova / Samba** | Clave (2-3 / 3-2) на drums, partido-alto kick, bossa bass (root-5th, синкопированные фигуры), piano montuno-подобные фигурации, гитарные ritmo-паттерны |
-| **Funk** | Linear-грувы, 16-е hi-hat, жёсткий backbeat; бас — синкопированный, «в кармане», ghost/mute; piano/clav — stabs и comping в паузах; гитара — wah/читка |
-| **Afro-Cuban / Latin** | Cascara, son/rumba clave, tumbao (бас), montuno (piano), timbal-fills; piano montuno — октавные паттерны с хроматическими подходами |
-| **Ballad** | Щётки/stir, two-feel bass, открытые voicing с широкими интервалами на piano, деликатная динамика ансамбля |
-| **Blues** | Shuffle-пульсация (триольный грув, swing-восьмые), walking bass с блюзовыми ходами (I–IV–V), доминантовые voicing (b9, #9, b13, 7#9), call-and-response между инструментами, «dirty» тон (overdrive на трубе/гитаре) |
-| **Soul / Neo Soul** | Медленный, качающий грув (16-е ghost-ноты на snare), бас «в кармане» с mute/ghost — мелодичный, синкопированный; Rhodes — тёплые pads и комплементарные фигурации (не путать с развитым ритмом), труба — мелодические hook'и и fills, расширенные гармонии (9, 11, 13, sus, slash-chords) |
+| Жанр                   | Что знаешь                                                                                                                                                                                                                                                                                |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Swing / Bebop**      | Ride-пульсация, walking bass (четверти, half-time, two-feel), rootless voicing на piano, shell voicing, комплементарный ритм-барабанный диалог rhodes↔piano                                                                                                                               |
+| **Bossa Nova / Samba** | Clave (2-3 / 3-2) на drums, partido-alto kick, bossa bass (root-5th, синкопированные фигуры), piano montuno-подобные фигурации, гитарные ritmo-паттерны                                                                                                                                   |
+| **Funk**               | Linear-грувы, 16-е hi-hat, жёсткий backbeat; бас — синкопированный, «в кармане», ghost/mute; piano/clav — stabs и comping в паузах; гитара — wah/читка                                                                                                                                    |
+| **Afro-Cuban / Latin** | Cascara, son/rumba clave, tumbao (бас), montuno (piano), timbal-fills; piano montuno — октавные паттерны с хроматическими подходами                                                                                                                                                       |
+| **Ballad**             | Щётки/stir, two-feel bass, открытые voicing с широкими интервалами на piano, деликатная динамика ансамбля                                                                                                                                                                                 |
+| **Blues**              | Shuffle-пульсация (триольный грув, swing-восьмые), walking bass с блюзовыми ходами (I–IV–V), доминантовые voicing (b9, #9, b13, 7#9), call-and-response между инструментами, «dirty» тон (overdrive на трубе/гитаре)                                                                      |
+| **Soul / Neo Soul**    | Медленный, качающий грув (16-е ghost-ноты на snare), бас «в кармане» с mute/ghost — мелодичный, синкопированный; Rhodes — тёплые pads и комплементарные фигурации (не путать с развитым ритмом), труба — мелодические hook'и и fills, расширенные гармонии (9, 11, 13, sus, slash-chords) |
 
 Ты **не просто знаешь ноты** — ты **слышишь партию** в голове и понимаешь, как инструмент
 реально звучит в руках музыканта: какие фигурации естественны для piano (а какие — нет),
@@ -71,59 +71,65 @@ Jazz Trainer: барабаны, бас, фортепиано/rhodes, гитар�
 Выбери подзадачу и читай соответствующий минимум. Не читай всё подряд.
 
 ### Барабаны
-| Порядок | Файл | Зачем |
-|---|---|---|
-| 1 | `packages/music-core/src/audio/drumPatternTypes.ts` | Все типы 4 уровней (v2). Каноническая форма. |
-| 2 | `packages/music-core/src/audio/drumMolecules.ts` | Примеры молекул + tick-хелперы. Реестр `BASE_DRUM_MOLECULES`. |
-| 3 | `packages/music-core/src/audio/drumPatternEngine.ts` | `assembleBar`, `validateCell`, dynamics, swing. |
-| 4 | `packages/music-core/src/audio/drumCells.ts` | Реестр клеток (v2). |
-| 5 | `packages/music-core/src/audio/drumOrganisms.ts` | Реестр организмов. |
-| 6 | `packages/music-core/src/audio/drumSampleRegistry.ts` | `DrumSound` — допустимые звуки. |
-| Тест | `drumPatternEngine.test.ts`, `drumInstrument.test.ts` | Лучшая документация поведения. |
+
+| Порядок | Файл                                                  | Зачем                                                         |
+| ------- | ----------------------------------------------------- | ------------------------------------------------------------- |
+| 1       | `packages/music-core/src/audio/drumPatternTypes.ts`   | Все типы 4 уровней (v2). Каноническая форма.                  |
+| 2       | `packages/music-core/src/audio/drumMolecules.ts`      | Примеры молекул + tick-хелперы. Реестр `BASE_DRUM_MOLECULES`. |
+| 3       | `packages/music-core/src/audio/drumPatternEngine.ts`  | `assembleBar`, `validateCell`, dynamics, swing.               |
+| 4       | `packages/music-core/src/audio/drumCells.ts`          | Реестр клеток (v2).                                           |
+| 5       | `packages/music-core/src/audio/drumOrganisms.ts`      | Реестр организмов.                                            |
+| 6       | `packages/music-core/src/audio/drumSampleRegistry.ts` | `DrumSound` — допустимые звуки.                               |
+| Тест    | `drumPatternEngine.test.ts`, `drumInstrument.test.ts` | Лучшая документация поведения.                                |
 
 ### Бас
-| Порядок | Файл | Зачем |
-|---|---|---|
-| 1 | `packages/music-core/src/audio/bassStepEngine.ts` | `BassStep`, `resolveBassStep` — движок выбора ступеней по гармонии/стилю/tension. |
-| 2 | `packages/music-core/src/audio/BassInstrument.ts` | Инструмент: звук, артикуляция, mute/legato. |
-| Спека | `docs/Instruments/BASS.md` | Спецификация басового движка, артикуляции, стили. |
-| Плагин | `packages/plugins/instruments/bass/` | Плагинная обёртка (upright + electric). |
+
+| Порядок | Файл                                              | Зачем                                                                             |
+| ------- | ------------------------------------------------- | --------------------------------------------------------------------------------- |
+| 1       | `packages/music-core/src/audio/bassStepEngine.ts` | `BassStep`, `resolveBassStep` — движок выбора ступеней по гармонии/стилю/tension. |
+| 2       | `packages/music-core/src/audio/BassInstrument.ts` | Инструмент: звук, артикуляция, mute/legato.                                       |
+| Спека   | `docs/Instruments/BASS.md`                        | Спецификация басового движка, артикуляции, стили.                                 |
+| Плагин  | `packages/plugins/instruments/bass/`              | Плагинная обёртка (upright + electric).                                           |
 
 ### Фортепиано / Rhodes
-| Порядок | Файл | Зачем |
-|---|---|---|
-| 1 | `packages/music-core/src/audio/pianoVoicing.ts` | Voicing-стратегии: rootless, shell, quartal, drop-2. |
-| 2 | `packages/music-core/src/audio/pianoComping.ts` | Ритмические фигурации comping, уровни плотности. |
-| 3 | `packages/music-core/src/audio/pianoInstrument.ts` | Основной piano-инструмент, manifest. |
-| 4 | `packages/music-core/src/audio/rhodesInstrument.ts`, `rhodesVoicing.ts` | Rhodes — комплементарный слой к piano. |
-| 5 | `packages/music-core/src/audio/pianoRhodesInteraction.ts` | Координация piano и rhodes в ансамбле. |
-| Спеки | `docs/Instruments/PIANO.md`, `docs/Instruments/RHODES.md` | Спецификации инструментов. |
+
+| Порядок | Файл                                                                    | Зачем                                                |
+| ------- | ----------------------------------------------------------------------- | ---------------------------------------------------- |
+| 1       | `packages/music-core/src/audio/pianoVoicing.ts`                         | Voicing-стратегии: rootless, shell, quartal, drop-2. |
+| 2       | `packages/music-core/src/audio/pianoComping.ts`                         | Ритмические фигурации comping, уровни плотности.     |
+| 3       | `packages/music-core/src/audio/pianoInstrument.ts`                      | Основной piano-инструмент, manifest.                 |
+| 4       | `packages/music-core/src/audio/rhodesInstrument.ts`, `rhodesVoicing.ts` | Rhodes — комплементарный слой к piano.               |
+| 5       | `packages/music-core/src/audio/pianoRhodesInteraction.ts`               | Координация piano и rhodes в ансамбле.               |
+| Спеки   | `docs/Instruments/PIANO.md`, `docs/Instruments/RHODES.md`               | Спецификации инструментов.                           |
 
 ### Гармония
-| Порядок | Файл | Зачем |
-|---|---|---|
-| 1 | `packages/music-core/src/chords/` | `parseChord`, структуры аккордов, tensions, extensions. |
-| 2 | `packages/music-core/src/chords/modes.ts` | Лады и гаммы для импровизации. |
-| 3 | `packages/music-core/src/audio/chordTimeline.ts` | Multi-chord бары, гармоническая сетка во времени. |
-| Спека | `docs/CHORDS.md`, `docs/Instruments/ALL_CHORDS.md` | Структуры аккордов. |
+
+| Порядок | Файл                                               | Зачем                                                   |
+| ------- | -------------------------------------------------- | ------------------------------------------------------- |
+| 1       | `packages/music-core/src/chords/`                  | `parseChord`, структуры аккордов, tensions, extensions. |
+| 2       | `packages/music-core/src/chords/modes.ts`          | Лады и гаммы для импровизации.                          |
+| 3       | `packages/music-core/src/audio/chordTimeline.ts`   | Multi-chord бары, гармоническая сетка во времени.       |
+| Спека   | `docs/CHORDS.md`, `docs/Instruments/ALL_CHORDS.md` | Структуры аккордов.                                     |
 
 ### Прочие инструменты
-| Инструмент | Файл / Спека |
-|---|---|
-| Гитара | `packages/music-core/src/audio/guitarInstrument.ts`, `guitarManifest.ts`, `docs/Instruments/GUITAR.md` |
-| Вибрафон | `packages/music-core/src/audio/vibraphoneInstrument.ts`, `docs/Instruments/VIBRAPHONE.md` |
-| Орган | `packages/music-core/src/audio/organInstrument.ts`, `docs/Instruments/ORGAN.md` |
-| Кларнет | `packages/music-core/src/audio/clarinetInstrument.ts`, `docs/Instruments/CLARINET.md` |
-| Труба | `packages/music-core/src/audio/soloInstrument.ts`, `soloInstrumentHost.ts`, `docs/Instruments/MELODIC-PLUGIN.md` |
-| Перкуссия | `docs/Instruments/PERCUSSION.md` |
+
+| Инструмент  | Файл / Спека                                                                                                     |
+| ----------- | ---------------------------------------------------------------------------------------------------------------- |
+| Гитара      | `packages/music-core/src/audio/guitarInstrument.ts`, `guitarManifest.ts`, `docs/Instruments/GUITAR.md`           |
+| Вибрафон    | `packages/music-core/src/audio/vibraphoneInstrument.ts`, `docs/Instruments/VIBRAPHONE.md`                        |
+| Орган       | `packages/music-core/src/audio/organInstrument.ts`, `docs/Instruments/ORGAN.md`                                  |
+| Кларнет     | `packages/music-core/src/audio/clarinetInstrument.ts`, `docs/Instruments/CLARINET.md`                            |
+| Труба       | `packages/music-core/src/audio/soloInstrument.ts`, `soloInstrumentHost.ts`, `docs/Instruments/MELODIC-PLUGIN.md` |
+| Перкуссия   | `docs/Instruments/PERCUSSION.md`                                                                                 |
 | Соло (MIDI) | `packages/music-core/src/audio/soloInstrument.ts`, `soloInstrumentHost.ts`, `docs/Instruments/MELODIC-PLUGIN.md` |
 
 ### Стиль и форма
-| Порядок | Файл | Зачем |
-|---|---|---|
-| 1 | `packages/music-core/src/styleProfile.ts` | `StyleProfile`, `InstrumentId`, `INSTRUMENT_GROUPS` — стиле-ростеры. |
-| 2 | `packages/music-core/src/generator/` | Генераторы прогрессий. |
-| 3 | `packages/music-core/src/dsl/` | `parseGrid` — парсинг гармонических сеток. |
+
+| Порядок | Файл                                      | Зачем                                                                |
+| ------- | ----------------------------------------- | -------------------------------------------------------------------- |
+| 1       | `packages/music-core/src/styleProfile.ts` | `StyleProfile`, `InstrumentId`, `INSTRUMENT_GROUPS` — стиле-ростеры. |
+| 2       | `packages/music-core/src/generator/`      | Генераторы прогрессий.                                               |
+| 3       | `packages/music-core/src/dsl/`            | `parseGrid` — парсинг гармонических сеток.                           |
 
 ### 1.1. Информация о композициях — `jazzleadsheet.com`
 
@@ -134,17 +140,18 @@ Jazz Trainer: барабаны, бас, фортепиано/rhodes, гитар�
 
 **Что искать на jazzleadsheet.com перед созданием материала:**
 
-| Параметр | Где брать | Зачем |
-|---|---|---|
-| **Форма** (AABA, ABAC, …) | Карточка композиции → раздел «Form» | Определяет `sections[]` организма и маппинг `label → type` (см. §4.3) |
-| **Стиль** (swing, bossa, ballad, …) | Карточка → «Style» / описание | Выбор `style` в клетке и идиомы исполнения (см. профиль во вступлении) |
-| **Темп** (slow/medium/fast) | Карточка → «Tempo» | Влияет на выбор ритмической плотности и complexity (slow → больше заполнения, fast → проще) |
-| **Размер** (4/4, 3/4, …) | Карточка → «Time Signature» | `timeSignature` в клетке: 3/4 — вальсовая идиома (ride 1-2-3, без backbeat), 4/4 — стандарт |
-| **Аудио-референс** | Карточка → ссылки на записи | Прослушай **весь ансамбль** в признанных записях — роли, баланс, взаимодействие |
-| **Особые указания** | Карточка → примечания | Например, «Latin feel on A, swing on B» — две клетки/стиля в одном организме |
-| **Гармония** | Карточка → chords / lead sheet | Аккордовая сетка — основа для bass walking, piano voicing, соло-фразировки |
+| Параметр                            | Где брать                           | Зачем                                                                                       |
+| ----------------------------------- | ----------------------------------- | ------------------------------------------------------------------------------------------- |
+| **Форма** (AABA, ABAC, …)           | Карточка композиции → раздел «Form» | Определяет `sections[]` организма и маппинг `label → type` (см. §4.3)                       |
+| **Стиль** (swing, bossa, ballad, …) | Карточка → «Style» / описание       | Выбор `style` в клетке и идиомы исполнения (см. профиль во вступлении)                      |
+| **Темп** (slow/medium/fast)         | Карточка → «Tempo»                  | Влияет на выбор ритмической плотности и complexity (slow → больше заполнения, fast → проще) |
+| **Размер** (4/4, 3/4, …)            | Карточка → «Time Signature»         | `timeSignature` в клетке: 3/4 — вальсовая идиома (ride 1-2-3, без backbeat), 4/4 — стандарт |
+| **Аудио-референс**                  | Карточка → ссылки на записи         | Прослушай **весь ансамбль** в признанных записях — роли, баланс, взаимодействие             |
+| **Особые указания**                 | Карточка → примечания               | Например, «Latin feel on A, swing on B» — две клетки/стиля в одном организме                |
+| **Гармония**                        | Карточка → chords / lead sheet      | Аккордовая сетка — основа для bass walking, piano voicing, соло-фразировки                  |
 
 **Порядок действий при работе с композицией:**
+
 1. Найди композицию на https://jazzleadsheet.com/ (поиск по названию).
 2. Запиши: форму, стиль, темп, размер, гармоническую сетку — это входные данные для всего ансамбля.
 3. Прослушай 1–2 канонические записи — пойми идиому **каждого** инструмента: что делает бас,
@@ -157,21 +164,22 @@ Jazz Trainer: барабаны, бас, фортепиано/rhodes, гитар�
 
 ## 2. Инструменты ансамбля (обзор)
 
-| Инструмент | Роль в ансамбле | Где код | Когда задействовать |
-|---|---|---|---|
-| **Барабаны** | Ритмический фундамент: грув, тайминг, динамическая арка, акценты, fills | `drumPatternTypes.ts`, `drumPatternEngine.ts` | Всегда, основа ритм-секции |
-| **Бас** (Upright + Electric) | Гармонический фундамент: walking bass, root-5th, синкопы; связывает гармонию и ритм. Upright — swing/ballad/bossa (тёплый, акустический тон). Electric — funk/soul/blues (mute/ghost, октавные скачки, «в кармане» groove) | `bassStepEngine.ts`, `BassInstrument.ts`, плагин `instruments/bass/` | Почти всегда, с барабанами образует ритм-секцию |
-| **Piano** | Гармонический comping: voicing (rootless/shell/quartal), ритмические фигурации | `pianoVoicing.ts`, `pianoComping.ts`, `pianoInstrument.ts` | Основной гармонический инструмент в combo |
-| **Rhodes** | Комплементарный слой к piano: заполняет паузы, текстурные pads, контраст тембра | `rhodesInstrument.ts`, `rhodesVoicing.ts`, `pianoRhodesInteraction.ts` | При наличии piano — для контраста и плотности |
-| **Гитара** | Ритм-гармония: Freddie Green (swing), bossa ritmo, funk comping | `guitarInstrument.ts`, `guitarManifest.ts` | В combo с piano — мягче/легче, без piano — основной гармонический |
-| **Вибрафон** | Мелодико-гармонический: тёплый тембр, 2–4 голоса, shimmer-текстуры | `vibraphoneInstrument.ts` | Баллады, cool jazz, контрастный тембр |
-| **Орган** | Пады/swell, басовые линии (pedal), soul-jazz грув | `organInstrument.ts` | Soul-jazz, hard bop, gospel |
-| **Кларнет** | Мелодическая линия, контрапункт | `clarinetInstrument.ts` | Контрастный тембр к трубе/саксофону |
-| **Труба** | Мелодический голос: лидирующая мелодия, контрапункт, яркий тембр; brass-секция в Soul/Funk | `soloInstrument.ts`, `docs/Instruments/MELODIC-PLUGIN.md` | Мелодические секции, соло, brass-линии в Soul/Blues |
-| **Перкуссия** | Ритмический окрас и текстура: конги, бонго, шейкер, треугольник — не дублирует барабаны, добавляет латинский/фанковый/соуловый оттенок | `docs/Instruments/PERCUSSION.md` | Bossa/Latin/Funk/Soul для текстурного groove |
-| **Соло (MIDI)** | Универсальный pitched-инструмент: саксофон, флейта и др. | `soloInstrument.ts`, `soloInstrumentHost.ts` | Для любого солирующего тембра |
+| Инструмент                   | Роль в ансамбле                                                                                                                                                                                                            | Где код                                                                | Когда задействовать                                               |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| **Барабаны**                 | Ритмический фундамент: грув, тайминг, динамическая арка, акценты, fills                                                                                                                                                    | `drumPatternTypes.ts`, `drumPatternEngine.ts`                          | Всегда, основа ритм-секции                                        |
+| **Бас** (Upright + Electric) | Гармонический фундамент: walking bass, root-5th, синкопы; связывает гармонию и ритм. Upright — swing/ballad/bossa (тёплый, акустический тон). Electric — funk/soul/blues (mute/ghost, октавные скачки, «в кармане» groove) | `bassStepEngine.ts`, `BassInstrument.ts`, плагин `instruments/bass/`   | Почти всегда, с барабанами образует ритм-секцию                   |
+| **Piano**                    | Гармонический comping: voicing (rootless/shell/quartal), ритмические фигурации                                                                                                                                             | `pianoVoicing.ts`, `pianoComping.ts`, `pianoInstrument.ts`             | Основной гармонический инструмент в combo                         |
+| **Rhodes**                   | Комплементарный слой к piano: заполняет паузы, текстурные pads, контраст тембра                                                                                                                                            | `rhodesInstrument.ts`, `rhodesVoicing.ts`, `pianoRhodesInteraction.ts` | При наличии piano — для контраста и плотности                     |
+| **Гитара**                   | Ритм-гармония: Freddie Green (swing), bossa ritmo, funk comping                                                                                                                                                            | `guitarInstrument.ts`, `guitarManifest.ts`                             | В combo с piano — мягче/легче, без piano — основной гармонический |
+| **Вибрафон**                 | Мелодико-гармонический: тёплый тембр, 2–4 голоса, shimmer-текстуры                                                                                                                                                         | `vibraphoneInstrument.ts`                                              | Баллады, cool jazz, контрастный тембр                             |
+| **Орган**                    | Пады/swell, басовые линии (pedal), soul-jazz грув                                                                                                                                                                          | `organInstrument.ts`                                                   | Soul-jazz, hard bop, gospel                                       |
+| **Кларнет**                  | Мелодическая линия, контрапункт                                                                                                                                                                                            | `clarinetInstrument.ts`                                                | Контрастный тембр к трубе/саксофону                               |
+| **Труба**                    | Мелодический голос: лидирующая мелодия, контрапункт, яркий тембр; brass-секция в Soul/Funk                                                                                                                                 | `soloInstrument.ts`, `docs/Instruments/MELODIC-PLUGIN.md`              | Мелодические секции, соло, brass-линии в Soul/Blues               |
+| **Перкуссия**                | Ритмический окрас и текстура: конги, бонго, шейкер, треугольник — не дублирует барабаны, добавляет латинский/фанковый/соуловый оттенок                                                                                     | `docs/Instruments/PERCUSSION.md`                                       | Bossa/Latin/Funk/Soul для текстурного groove                      |
+| **Соло (MIDI)**              | Универсальный pitched-инструмент: саксофон, флейта и др.                                                                                                                                                                   | `soloInstrument.ts`, `soloInstrumentHost.ts`                           | Для любого солирующего тембра                                     |
 
 **Принцип ансамбля.** Каждый инструмент занимает свою нишу:
+
 - **Ритм-секция** (барабаны + бас) — неизменный фундамент любого стиля;
 - **Гармоническая секция** (piano/rhodes/guitar) — 1–2 инструмента, избегай перегруза;
 - **Мелодическая секция** (труба/кларнет/вибрафон/соло) — 1 ведущий голос.
@@ -253,33 +261,59 @@ cell.velocity × dynMul`. Пустой такт лейна = тишина (гл�
 
 ```ts
 const myCell: DrumCell = {
-  id: 'swing-16-verse-b',      // <style>-<length>-<section>
+  id: 'swing-16-verse-b', // <style>-<length>-<section>
   style: 'swing',
-  length: 16,                  // 8 | 16 | 32
+  length: 16, // 8 | 16 | 32
   timeSignature: [4, 4],
-  velocity: 0.9,               // мастер 0..1 (масштабирует velocity молекул)
+  velocity: 0.9, // мастер 0..1 (масштабирует velocity молекул)
   dynamics: { type: 'steady', amount: 0 }, // steady|crescendo|decrescendo|arch|valley|wave|pulse
-  weight: 1.0,                 // > 0, вес выбора клетки организмом
+  weight: 1.0, // > 0, вес выбора клетки организмом
   lanes: [
-    { name: 'ride', probability: 1, clips: [
-      { startBar: 0, lengthBars: 16, pool: [
-        { moleculeId: 'swing-ride-basic', weight: 10 },
-        { moleculeId: 'swing-ride-skip', weight: 4 },
-      ]},
-    ]},
-    { name: 'kick', probability: 1, clips: [
-      { startBar: 0, lengthBars: 16, pool: [{ moleculeId: 'swing-feathering-1', weight: 10 }] },
-    ]},
-    { name: 'snare', probability: 1, clips: [
-      { startBar: 0, lengthBars: 16, pool: [{ moleculeId: 'swing-snare-backbeat', weight: 10 }] },
-    ]},
-    { name: 'fill', probability: 0.6, clips: [   // «иногда» сбивка в конце фраз
-      { startBar: 7, lengthBars: 1, pool: [{ moleculeId: 'swing-fill-triplet-1', weight: 1 }] },
-      { startBar: 15, lengthBars: 1, pool: [{ moleculeId: 'swing-fill-tom-run', weight: 1 }] },
-    ]},
-    { name: 'accent', probability: 1, clips: [   // crash на границах фраз
-      { startBar: 0, lengthBars: 1, pool: [{ moleculeId: 'accent-crash', weight: 1 }] },
-    ]},
+    {
+      name: 'ride',
+      probability: 1,
+      clips: [
+        {
+          startBar: 0,
+          lengthBars: 16,
+          pool: [
+            { moleculeId: 'swing-ride-basic', weight: 10 },
+            { moleculeId: 'swing-ride-skip', weight: 4 },
+          ],
+        },
+      ],
+    },
+    {
+      name: 'kick',
+      probability: 1,
+      clips: [
+        { startBar: 0, lengthBars: 16, pool: [{ moleculeId: 'swing-feathering-1', weight: 10 }] },
+      ],
+    },
+    {
+      name: 'snare',
+      probability: 1,
+      clips: [
+        { startBar: 0, lengthBars: 16, pool: [{ moleculeId: 'swing-snare-backbeat', weight: 10 }] },
+      ],
+    },
+    {
+      name: 'fill',
+      probability: 0.6,
+      clips: [
+        // «иногда» сбивка в конце фраз
+        { startBar: 7, lengthBars: 1, pool: [{ moleculeId: 'swing-fill-triplet-1', weight: 1 }] },
+        { startBar: 15, lengthBars: 1, pool: [{ moleculeId: 'swing-fill-tom-run', weight: 1 }] },
+      ],
+    },
+    {
+      name: 'accent',
+      probability: 1,
+      clips: [
+        // crash на границах фраз
+        { startBar: 0, lengthBars: 1, pool: [{ moleculeId: 'accent-crash', weight: 1 }] },
+      ],
+    },
   ],
 };
 ```
@@ -298,22 +332,30 @@ const myCell: DrumCell = {
 а **правила выбора ступеней** в зависимости от аккорда, стиля и tension.
 
 **Модель `BassStep`:**
+
 ```ts
 interface BassStep {
-  id: string;                      // <style>-<variant>
+  id: string; // <style>-<variant>
   style: string;
   weight: number;
-  steps: BassStepAtom[];           // последовательность на 1 такт
+  steps: BassStepAtom[]; // последовательность на 1 такт
 }
 
 interface BassStepAtom {
-  tick: number;                    // позиция в тиках (PPQ=480)
-  target: 'root' | 'third' | 'fifth' | 'seventh'
-        | 'chromatic-approach' | 'diatonic-approach'
-        | 'chromatic-below' | 'diatonic-above'
-        | 'octave' | 'rest';
+  tick: number; // позиция в тиках (PPQ=480)
+  target:
+    | 'root'
+    | 'third'
+    | 'fifth'
+    | 'seventh'
+    | 'chromatic-approach'
+    | 'diatonic-approach'
+    | 'chromatic-below'
+    | 'diatonic-above'
+    | 'octave'
+    | 'rest';
   articulation?: 'pluck' | 'mute' | 'legato' | 'ghost';
-  velocity?: number;               // 0..1
+  velocity?: number; // 0..1
 }
 ```
 
@@ -341,6 +383,7 @@ interface BassStepAtom {
    расширенные гармонии (9, 11, 13). Часто ostinato-фигуры на 2–4 такта с вариациями.
 
 **Артикуляции:**
+
 - `pluck` — основная атака, ясный тон.
 - `mute` — приглушённый, перкуссивный (palm mute / левая рука).
 - `legato` — связный переход между нотами (slide/hammer).
@@ -361,34 +404,36 @@ Piano — часть ядра ансамбля (с барабанами и ба�
 
 #### Voicing-стратегии (pianoVoicing.ts)
 
-| Тип | Описание | Когда применять |
-|---|---|---|
-| **Rootless A** | 3-5-7-9 (снизу вверх) | Основной Bill Evans-voicing для мажорных/минорных |
-| **Rootless B** | 7-9-3-5 (снизу вверх) | Альтернативный rootless, когда A-форма уходит слишком низко/высоко |
-| **Shell (1-3-7)** | Root + 3 + 7 (или 1-7-3) | Экономичный comping, оставляет пространство для соло |
-| **Shell (1-7-3)** | Root + 7 + 3 | Вариант shell для избежания конфликта регистров |
-| **Quartal** | Стопки кварт (e.g., C-F-Bb) | Модальный джаз (So What, Impressions), современное звучание |
-| **Drop-2** | Второй сверху голос опускается на октаву | Густое, оркестровое звучание |
+| Тип               | Описание                                 | Когда применять                                                    |
+| ----------------- | ---------------------------------------- | ------------------------------------------------------------------ |
+| **Rootless A**    | 3-5-7-9 (снизу вверх)                    | Основной Bill Evans-voicing для мажорных/минорных                  |
+| **Rootless B**    | 7-9-3-5 (снизу вверх)                    | Альтернативный rootless, когда A-форма уходит слишком низко/высоко |
+| **Shell (1-3-7)** | Root + 3 + 7 (или 1-7-3)                 | Экономичный comping, оставляет пространство для соло               |
+| **Shell (1-7-3)** | Root + 7 + 3                             | Вариант shell для избежания конфликта регистров                    |
+| **Quartal**       | Стопки кварт (e.g., C-F-Bb)              | Модальный джаз (So What, Impressions), современное звучание        |
+| **Drop-2**        | Второй сверху голос опускается на октаву | Густое, оркестровое звучание                                       |
 
 **Правила голосоведения:**
+
 - Минимум движения: общие тоны остаются на месте, остальные движутся по полутону/тону.
 - Регистр: piano — средний (C3–C5), rhodes — чуть выше (C4–C6), не конфликтуй с басом (ниже C3).
 - Количество голосов: 3–4 ноты в voicing. Больше — перегружает, меньше — жидко.
 
 #### Comping-фигурации (pianoComping.ts)
 
-| Стиль | Ритмический рисунок | Плотность |
-|---|---|---|
-| **Swing** | Charleston (1 и 2+), and-of-2 / and-of-4, push на слабую долю | Низкая-средняя, оставляет пространство ride |
-| **Bossa** | Синкопированные фигурации, диалог с bass drum, montuno-подобные паттерны | Средняя |
-| **Ballad** | Длинные ноты, арпеджио, заполнения в паузах мелодии | Низкая, деликатная |
-| **Funk** | Stabs (короткие аккорды в паузах), percussive, ритмический диалог с гитарой | Низкая-средняя, точный тайминг |
-| **Blues** | Shuffle-акценты (триольное ощущение), доминантовые voicing (7#9, 7b9, 13), call-and-response fills, блюзовые фразы в правой руке | Средняя, грувовая |
-| **Soul / Neo Soul** | Тёплые, обволакивающие voicing (9, 11, 13), мягкие арпеджио, ритмические «подклады» под вокал/соло, плавные переходы между аккордами | Низкая-средняя, «дышащая» |
+| Стиль               | Ритмический рисунок                                                                                                                  | Плотность                                   |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------- |
+| **Swing**           | Charleston (1 и 2+), and-of-2 / and-of-4, push на слабую долю                                                                        | Низкая-средняя, оставляет пространство ride |
+| **Bossa**           | Синкопированные фигурации, диалог с bass drum, montuno-подобные паттерны                                                             | Средняя                                     |
+| **Ballad**          | Длинные ноты, арпеджио, заполнения в паузах мелодии                                                                                  | Низкая, деликатная                          |
+| **Funk**            | Stabs (короткие аккорды в паузах), percussive, ритмический диалог с гитарой                                                          | Низкая-средняя, точный тайминг              |
+| **Blues**           | Shuffle-акценты (триольное ощущение), доминантовые voicing (7#9, 7b9, 13), call-and-response fills, блюзовые фразы в правой руке     | Средняя, грувовая                           |
+| **Soul / Neo Soul** | Тёплые, обволакивающие voicing (9, 11, 13), мягкие арпеджио, ритмические «подклады» под вокал/соло, плавные переходы между аккордами | Низкая-средняя, «дышащая»                   |
 
 ### 3.3.1. Rhodes (электрическое пианино)
 
 Rhodes — **поддерживающий слой**, не основа. Его роль — комплементарная к piano:
+
 - **Тембральный контраст:** тёплый, «колокольный» тембр на фоне акустического piano.
 - **Текстура, а не ритм:** Rhodes держит **pads** (длинные ноты/аккорды), мягкие
   заполнения (fills) в паузах piano, или аккордовые «подклады» в высоком регистре.
@@ -396,6 +441,7 @@ Rhodes — **поддерживающий слой**, не основа. Его 
   stabs или ритмические паттерны — это зона piano и гитары.
 
 **Координация piano ↔ rhodes (pianoRhodesInteraction.ts):**
+
 - Когда оба активны — **piano ведёт** (comping), rhodes **поддерживает** (pads/fills).
 - Rhodes НЕ дублирует piano-voicing
 - При соло: piano comping'ует разреженно, rhodes держит лёгкий pad.
@@ -414,14 +460,14 @@ Rhodes — **поддерживающий слой**, не основа. Его 
 
 **Динамическая арка формы — универсальные правила:**
 
-| Секция | Характер | Плотность | Барабаны | Бас | Piano | Остальные |
-|---|---|---|---|---|---|---|
-| **Intro** | Разреженно, загадка | 20–40% | Щётки/ride bell, минимум kick; либо только ride | Two-feel или pedal-point | Shell voicing, длинные ноты | Соло-инструмент — тема фрагментарно |
-| **Verse / A** | Уверенно, но не форсируя | 40–60% | Основной грув стиля (ride+kick+snare) | Walking bass (swing) / root-5th (bossa) | Rootless или shell comping | Гитара — Freddie Green (swing); Rhodes — pads |
-| **Chorus / B** | Энергично, пик | 70–90% | Полный грув + crash на входе, fills на границах фраз | Более активный: октавные скачки, fills | Более плотный comping, верхние extensions | Труба — counter-melody; Rhodes — ярче pads |
-| **Bridge / C** | Контраст, неожиданность | 50–70% | Смена идиомы: cross-stick вместо snare, щётки, или смена грува | Two-feel или pedal-point, паузы | Quartal voicing, меньше нот, больше пространства | Соло — новая мелодическая идея; вибрафон — shimmer |
-| **Solo Section** | Простор для импровизации | 30–50% | Мягче: щётки/cross-stick, меньше kick, ride — тише | Проще: half-time, меньше хроматики | Разреженный comping (shell), паузы 2–4 такта | Соло-инструмент — ведущий; остальные молчат |
-| **Ending / Outro** | Затухание, разрешение | 20–30% | Ride bell fade, last fill → crash; или stop-time | Pedal-point, ritardando | Длинные voicing с задержкой, арпеджио вверх | Все затихают; возможно один инструмент держит последнюю ноту |
+| Секция             | Характер                 | Плотность | Барабаны                                                       | Бас                                     | Piano                                            | Остальные                                                    |
+| ------------------ | ------------------------ | --------- | -------------------------------------------------------------- | --------------------------------------- | ------------------------------------------------ | ------------------------------------------------------------ |
+| **Intro**          | Разреженно, загадка      | 20–40%    | Щётки/ride bell, минимум kick; либо только ride                | Two-feel или pedal-point                | Shell voicing, длинные ноты                      | Соло-инструмент — тема фрагментарно                          |
+| **Verse / A**      | Уверенно, но не форсируя | 40–60%    | Основной грув стиля (ride+kick+snare)                          | Walking bass (swing) / root-5th (bossa) | Rootless или shell comping                       | Гитара — Freddie Green (swing); Rhodes — pads                |
+| **Chorus / B**     | Энергично, пик           | 70–90%    | Полный грув + crash на входе, fills на границах фраз           | Более активный: октавные скачки, fills  | Более плотный comping, верхние extensions        | Труба — counter-melody; Rhodes — ярче pads                   |
+| **Bridge / C**     | Контраст, неожиданность  | 50–70%    | Смена идиомы: cross-stick вместо snare, щётки, или смена грува | Two-feel или pedal-point, паузы         | Quartal voicing, меньше нот, больше пространства | Соло — новая мелодическая идея; вибрафон — shimmer           |
+| **Solo Section**   | Простор для импровизации | 30–50%    | Мягче: щётки/cross-stick, меньше kick, ride — тише             | Проще: half-time, меньше хроматики      | Разреженный comping (shell), паузы 2–4 такта     | Соло-инструмент — ведущий; остальные молчат                  |
+| **Ending / Outro** | Затухание, разрешение    | 20–30%    | Ride bell fade, last fill → crash; или stop-time               | Pedal-point, ritardando                 | Длинные voicing с задержкой, арпеджио вверх      | Все затихают; возможно один инструмент держит последнюю ноту |
 
 **Правила контраста между секциями:**
 
@@ -470,21 +516,22 @@ sections: [
 
 **Маппинг секций: форма (A/B/C/D) → роль (`type`).**
 Секции в `sections[]` имеют два измерения:
+
 - **label** (A/B/C/D) — уникальный музыкальный материал и порядок повторов;
 - **type** (Куплет/Припев/Бридж) — функциональная роль в форме.
 
 Ниже — канонический маппинг для автоматических пресетов. Одна и та же буква
 (label) сохраняет одну и ту же роль (`type`) на всём протяжении организма.
 
-| Форма  | Последовательность                                                |
-|--------|-------------------------------------------------------------------|
-| AAAA   | Куплет A → Куплет A → Куплет A → Куплет A                        |
-| AABA   | Куплет A → Куплет A → Бридж → Куплет A                            |
-| ABAB   | Куплет A → Припев → Куплет A → Припев                             |
-| ABAC   | Куплет A → Куплет B → Куплет A → Куплет C                         |
-| AABC   | Куплет A → Куплет A → Бридж → Припев                              |
-| ABCA   | Куплет A → Куплет B → Бридж → Куплет A                            |
-| ABCD   | Куплет A → Куплет B → Бридж → Припев                              |
+| Форма | Последовательность                        |
+| ----- | ----------------------------------------- |
+| AAAA  | Куплет A → Куплет A → Куплет A → Куплет A |
+| AABA  | Куплет A → Куплет A → Бридж → Куплет A    |
+| ABAB  | Куплет A → Припев → Куплет A → Припев     |
+| ABAC  | Куплет A → Куплет B → Куплет A → Куплет C |
+| AABC  | Куплет A → Куплет A → Бридж → Припев      |
+| ABCA  | Куплет A → Куплет B → Бридж → Куплет A    |
+| ABCD  | Куплет A → Куплет B → Бридж → Припев      |
 
 **Пояснения к формам:**
 
@@ -510,21 +557,24 @@ sections: [
 ## 4. Инварианты (соблюдай при написании)
 
 ### Барабаны (`validateCell`)
+
 - Лейнов в клетке **1..15** (`MAX_LANES`).
 - В лейне клипы **не пересекаются** по тактам; `startBar ≥ 0`, `lengthBars ≥ 1`,
   `startBar + lengthBars ≤ cell.length`.
 - Пул клипа непуст; каждый `weight > 0`; `moleculeId` **существует** в `DRUM_MOLECULES`.
 - `moleculeId` уникален **в пределах пула** одного клипа.
 - Диапазоны: `velocity ∈ [0,1]`, `dynamics.amount ∈ [0,1]`, `probability ∈ [0,1]`, `weight > 0`.
-Прогоняй мысленно (или в тесте) `validateCell(cell)` — должен вернуть пустой массив ошибок.
+  Прогоняй мысленно (или в тесте) `validateCell(cell)` — должен вернуть пустой массив ошибок.
 
 ### Бас
+
 - Каждый `BassStep` ссылается на существующий аккорд через `target`.
 - `tick` не выходит за границы такта (`< PPQ * 4` для 4/4).
 - `velocity ∈ [0,1]`, `articulation` из допустимых: `pluck | mute | legato | ghost`.
 - Не смешивай walking bass (четверти) и bossa (синкопы) в одном `BassStep`.
 
 ### Фортепиано / Ансамбль
+
 - Voicing не пересекается с басовым регистром (piano ≥ C3).
 - Не более 2 гармонических инструментов одновременно (piano + rhodes или piano + guitar).
 - Партии комплементарны: один играет — другой молчит или поддерживает.

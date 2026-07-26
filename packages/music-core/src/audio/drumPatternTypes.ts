@@ -43,14 +43,7 @@ export type DrumOrganism = Organism<DrumPatternStyle>;
 
 // ─── Re-exported building blocks (consumers import from here) ─────────────────
 
-export type {
-  MoleculeCategory,
-  MoleculeConditions,
-  DynamicsType,
-  Dynamics,
-  Lane,
-  OrganismSection,
-};
+export type { MoleculeCategory, MoleculeConditions, DynamicsType, Dynamics, Lane, OrganismSection };
 export type { Clip } from './pattern/types.js';
 
 // ─── Drum-specific dynamics aliases (backward-compat) ────────────────────────

@@ -11,7 +11,11 @@ import {
 } from './rhodesVoicing.js';
 import { noteToMidi, midiToNote, RANGE_MIN_HIGH } from './rhodesVoicing.js';
 import { selectRhodesVoicingRole } from './rhodesVoicingRoles.js';
-import type { RhodesVoicingRole, RhodesOrganism, RhodesPatternStyle } from './rhodesPatternTypes.js';
+import type {
+  RhodesVoicingRole,
+  RhodesOrganism,
+  RhodesPatternStyle,
+} from './rhodesPatternTypes.js';
 import { RhodesPatternEngine } from './rhodesPatternEngine.js';
 import { flattenSections, type FlatSection } from './drumInstrument.js';
 import type { Style, Section } from '@jazz/shared';

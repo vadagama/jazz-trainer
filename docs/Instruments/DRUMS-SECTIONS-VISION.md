@@ -44,17 +44,18 @@ GridContent                   DrumOrganism
 ### 2.3. Примеры текущих организмов
 
 > ⚠️ **Важно про источники организмов.** В репозитории есть **два** реестра:
+>
 > - `BASE_DRUM_ORGANISMS` (`drumOrganisms.ts:119-126`) — 6 организмов, включая `swing-brushes-form`.
 > - `GENERATED_DRUM_ORGANISMS` (`drumOrganismsGenerated.ts`) — **5** организмов, **без `swing-brushes-form`**.
 >
 > При этом итоговый экспорт `DRUM_ORGANISMS = GENERATED.length > 0 ? GENERATED : BASE` (`drumOrganisms.ts:128-135`) — **generated полностью замещает базу**. Поэтому в текущем рантайме `getOrganismsForStyle('swing')` возвращает **только** `swing-flat-16`. Чтобы `swing-brushes-form` стал доступен, его нужно явно внести в `drumOrganismsGenerated.ts` как часть миграции (см. план T-003).
 
-| Организм | Секции | Комментарий |
-|---|---|---|
-| `swing-flat-16` | A: `['swing-16-verse']` ×4 | Плоский луп, игнорирует форму сетки. **В рантайме единственный swing-организм** |
-| `swing-brushes-form` | A → Bridge → B | AABA форма, жёстко прописана. **Есть только в `BASE_DRUM_ORGANISMS`, в generated отсутствует → недоступен в рантайме** |
-| `bossa-flat-16` | A: `['bossa-16-verse']` ×4 | Плоский луп |
-| `funk-flat-16` | A: `['funk-16-verse']` ×4 | Плоский луп |
+| Организм             | Секции                     | Комментарий                                                                                                            |
+| -------------------- | -------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `swing-flat-16`      | A: `['swing-16-verse']` ×4 | Плоский луп, игнорирует форму сетки. **В рантайме единственный swing-организм**                                        |
+| `swing-brushes-form` | A → Bridge → B             | AABA форма, жёстко прописана. **Есть только в `BASE_DRUM_ORGANISMS`, в generated отсутствует → недоступен в рантайме** |
+| `bossa-flat-16`      | A: `['bossa-16-verse']` ×4 | Плоский луп                                                                                                            |
+| `funk-flat-16`       | A: `['funk-16-verse']` ×4  | Плоский луп                                                                                                            |
 
 ## 3. Целевая архитектура
 
@@ -206,19 +207,19 @@ const swingStandard: DrumOrganism = {
   style: 'swing',
   label: 'Swing Standard',
   sectionMap: {
-    verseA:  ['swing-16-verse', 'swing-16-comp'],
-    verseB:  ['swing-16-verse2'],
-    bridge:  ['swing-16-bridge'],
-    chorus:  ['swing-16-chorus'],
-    solo:    ['swing-16-solo'],
-    intro:   ['swing-16-intro'],
-    ending:  ['swing-16-ending'],
+    verseA: ['swing-16-verse', 'swing-16-comp'],
+    verseB: ['swing-16-verse2'],
+    bridge: ['swing-16-bridge'],
+    chorus: ['swing-16-chorus'],
+    solo: ['swing-16-solo'],
+    intro: ['swing-16-intro'],
+    ending: ['swing-16-ending'],
   },
   timeSignatureOverrides: {
     '3/4': {
-      verseA:  ['swing-waltz-12-verse'],
-      bridge:  ['swing-waltz-12-bridge'],
-      chorus:  ['swing-waltz-12-chorus'],
+      verseA: ['swing-waltz-12-verse'],
+      bridge: ['swing-waltz-12-bridge'],
+      chorus: ['swing-waltz-12-chorus'],
     },
   },
   weight: 10,
@@ -457,13 +458,13 @@ interface ScheduleContext {
 
 ## 8. Риски и допущения
 
-| Риск | Вероятность | Влияние | Митигация |
-|---|---|---|---|
-| Не все SectionType имеют клетки | Средняя | Среднее | Fallback на `verseA`; логирование предупреждения |
-| Существующие пользовательские сетки без sections | Высокая | Низкое | Flat-режим через `defaultForm` — обратная совместимость |
-| Увеличение сложности TransportEngine | Низкая | Среднее | `sectionType` вычисляется один раз при построении окна |
-| Конструктор барабанов нужно обновить под новый формат | Высокая | Среднее | `migrateOrganism()` на входе; UI правится отдельно |
-| Пользователи ожидают «ручного» назначения клеток на секции | Средняя | Низкое | Чёткое объяснение в UI: выбор организма = выбор набора связок |
+| Риск                                                       | Вероятность | Влияние | Митигация                                                     |
+| ---------------------------------------------------------- | ----------- | ------- | ------------------------------------------------------------- |
+| Не все SectionType имеют клетки                            | Средняя     | Среднее | Fallback на `verseA`; логирование предупреждения              |
+| Существующие пользовательские сетки без sections           | Высокая     | Низкое  | Flat-режим через `defaultForm` — обратная совместимость       |
+| Увеличение сложности TransportEngine                       | Низкая      | Среднее | `sectionType` вычисляется один раз при построении окна        |
+| Конструктор барабанов нужно обновить под новый формат      | Высокая     | Среднее | `migrateOrganism()` на входе; UI правится отдельно            |
+| Пользователи ожидают «ручного» назначения клеток на секции | Средняя     | Низкое  | Чёткое объяснение в UI: выбор организма = выбор набора связок |
 
 ## 9. Метрики успеха
 
@@ -475,4 +476,4 @@ interface ScheduleContext {
 
 ---
 
-*Документ описывает целевую архитектуру связки «секции сетки → клетки барабанов». После принятия — декомпозиция на задачи в `PLAN.md` (или отдельный `DRUMS-SECTIONS-PLAN.md`).*
+_Документ описывает целевую архитектуру связки «секции сетки → клетки барабанов». После принятия — декомпозиция на задачи в `PLAN.md` (или отдельный `DRUMS-SECTIONS-PLAN.md`)._

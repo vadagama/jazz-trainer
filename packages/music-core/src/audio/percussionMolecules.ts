@@ -174,11 +174,7 @@ const bossaClaveLight: PercussionMolecule = {
   category: 'groove',
   tags: ['clave'],
   complexity: { min: 1, max: 2 },
-  atoms: [
-    atom('clave', 0, 0.48),
-    atom('clave', 10, 0.42),
-    atom('clave', 24, 0.44),
-  ],
+  atoms: [atom('clave', 0, 0.48), atom('clave', 10, 0.42), atom('clave', 24, 0.44)],
 };
 
 /** Partido-alto clave — 12 hits over 2 bars (from partido-alto-hint). */
@@ -273,11 +269,7 @@ const latinClaveIntro: PercussionMolecule = {
   category: 'intro',
   tags: ['clave'],
   complexity: { min: 1, max: 1 },
-  atoms: [
-    atom('clave', 0, 0.48),
-    atom('clave', 12, 0.44),
-    atom('clave', 20, 0.46),
-  ],
+  atoms: [atom('clave', 0, 0.48), atom('clave', 12, 0.44), atom('clave', 20, 0.46)],
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -365,10 +357,7 @@ const bossaCongaSparse: PercussionMolecule = {
   category: 'texture',
   tags: ['conga'],
   complexity: { min: 1, max: 2 },
-  atoms: [
-    atom('congaLow', 15, 0.36),
-    atom('congaLow', 31, 0.34),
-  ],
+  atoms: [atom('congaLow', 15, 0.36), atom('congaLow', 31, 0.34)],
 };
 
 /** Funk conga tumbao — funky tumbao with congaHigh/congaLow syncopation. */
@@ -800,10 +789,7 @@ const bossaTriangleDownbeats: PercussionMolecule = {
   category: 'texture',
   tags: ['triangle'],
   complexity: { min: 1, max: 1 },
-  atoms: [
-    atom('triangle', 0, 0.38),
-    atom('triangle', 16, 0.34),
-  ],
+  atoms: [atom('triangle', 0, 0.38), atom('triangle', 16, 0.34)],
 };
 
 /** Bossa triangle offbeats — all 16 offbeat 8th notes. */
@@ -815,8 +801,8 @@ const bossaTriangleOffbeats: PercussionMolecule = {
   category: 'texture',
   tags: ['triangle'],
   complexity: { min: 1, max: 2 },
-  atoms: [1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31].map(
-    (s) => atom('triangle', s, 0.3),
+  atoms: [1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31].map((s) =>
+    atom('triangle', s, 0.3),
   ),
 };
 
@@ -829,13 +815,8 @@ const bossaTriangleMixed: PercussionMolecule = {
   category: 'texture',
   tags: ['triangle'],
   complexity: { min: 1, max: 2 },
-  atoms: [
-    atom('triangle', 0, 0.3),
-    atom('triangle', 18, 0.26),
-  ],
+  atoms: [atom('triangle', 0, 0.3), atom('triangle', 18, 0.26)],
 };
-
-
 
 /** Funk triangle offbeat 8ths — all 16 offbeats. */
 const funkTriangleOffbeats: PercussionMolecule = {
@@ -847,14 +828,22 @@ const funkTriangleOffbeats: PercussionMolecule = {
   tags: ['triangle'],
   complexity: { min: 1, max: 2 },
   atoms: [
-    atom('triangle', 1, 0.38), atom('triangle', 3, 0.34),
-    atom('triangle', 5, 0.36), atom('triangle', 7, 0.4),
-    atom('triangle', 9, 0.34), atom('triangle', 11, 0.32),
-    atom('triangle', 13, 0.36), atom('triangle', 15, 0.42),
-    atom('triangle', 17, 0.38), atom('triangle', 19, 0.34),
-    atom('triangle', 21, 0.36), atom('triangle', 23, 0.4),
-    atom('triangle', 25, 0.34), atom('triangle', 27, 0.32),
-    atom('triangle', 29, 0.36), atom('triangle', 31, 0.44),
+    atom('triangle', 1, 0.38),
+    atom('triangle', 3, 0.34),
+    atom('triangle', 5, 0.36),
+    atom('triangle', 7, 0.4),
+    atom('triangle', 9, 0.34),
+    atom('triangle', 11, 0.32),
+    atom('triangle', 13, 0.36),
+    atom('triangle', 15, 0.42),
+    atom('triangle', 17, 0.38),
+    atom('triangle', 19, 0.34),
+    atom('triangle', 21, 0.36),
+    atom('triangle', 23, 0.4),
+    atom('triangle', 25, 0.34),
+    atom('triangle', 27, 0.32),
+    atom('triangle', 29, 0.36),
+    atom('triangle', 31, 0.44),
   ],
 };
 
@@ -873,8 +862,10 @@ const funkTriangleBackbeat: PercussionMolecule = {
     atom('triangle', 21, 0.44),
     atom('triangle', 29, 0.46),
     // occasional fills
-    atom('triangle', 1, 0.3), atom('triangle', 9, 0.28),
-    atom('triangle', 17, 0.3), atom('triangle', 25, 0.28),
+    atom('triangle', 1, 0.3),
+    atom('triangle', 9, 0.28),
+    atom('triangle', 17, 0.3),
+    atom('triangle', 25, 0.28),
   ],
 };
 
@@ -899,10 +890,7 @@ const latinTriangleSparse: PercussionMolecule = {
   category: 'texture',
   tags: ['triangle'],
   complexity: { min: 1, max: 1 },
-  atoms: [
-    atom('triangle', 14, 0.22),
-    atom('triangle', 30, 0.24),
-  ],
+  atoms: [atom('triangle', 14, 0.22), atom('triangle', 30, 0.24)],
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1031,14 +1019,22 @@ const funkBongoHiMartillo: PercussionMolecule = {
   tags: ['bongo'],
   complexity: { min: 2, max: 3 },
   atoms: [
-    atom('bongoHigh', 1, 0.36), atom('bongoHigh', 3, 0.42),
-    atom('bongoHigh', 5, 0.34), atom('bongoHigh', 7, 0.44),
-    atom('bongoHigh', 9, 0.36), atom('bongoHigh', 11, 0.42),
-    atom('bongoHigh', 13, 0.34), atom('bongoHigh', 15, 0.46),
-    atom('bongoHigh', 17, 0.36), atom('bongoHigh', 19, 0.42),
-    atom('bongoHigh', 21, 0.34), atom('bongoHigh', 23, 0.44),
-    atom('bongoHigh', 25, 0.36), atom('bongoHigh', 27, 0.42),
-    atom('bongoHigh', 29, 0.34), atom('bongoHigh', 31, 0.46),
+    atom('bongoHigh', 1, 0.36),
+    atom('bongoHigh', 3, 0.42),
+    atom('bongoHigh', 5, 0.34),
+    atom('bongoHigh', 7, 0.44),
+    atom('bongoHigh', 9, 0.36),
+    atom('bongoHigh', 11, 0.42),
+    atom('bongoHigh', 13, 0.34),
+    atom('bongoHigh', 15, 0.46),
+    atom('bongoHigh', 17, 0.36),
+    atom('bongoHigh', 19, 0.42),
+    atom('bongoHigh', 21, 0.34),
+    atom('bongoHigh', 23, 0.44),
+    atom('bongoHigh', 25, 0.36),
+    atom('bongoHigh', 27, 0.42),
+    atom('bongoHigh', 29, 0.34),
+    atom('bongoHigh', 31, 0.46),
   ],
 };
 
@@ -1052,11 +1048,15 @@ const funkBongoHiCall: PercussionMolecule = {
   tags: ['bongo'],
   complexity: { min: 2, max: 3 },
   atoms: [
-    atom('bongoHigh', 1, 0.34), atom('bongoHigh', 2, 0.38),
-    atom('bongoHigh', 4, 0.36), atom('bongoHigh', 7, 0.44),
+    atom('bongoHigh', 1, 0.34),
+    atom('bongoHigh', 2, 0.38),
+    atom('bongoHigh', 4, 0.36),
+    atom('bongoHigh', 7, 0.44),
     atom('bongoHigh', 15, 0.44),
-    atom('bongoHigh', 25, 0.34), atom('bongoHigh', 26, 0.38),
-    atom('bongoHigh', 28, 0.36), atom('bongoHigh', 31, 0.46),
+    atom('bongoHigh', 25, 0.34),
+    atom('bongoHigh', 26, 0.38),
+    atom('bongoHigh', 28, 0.36),
+    atom('bongoHigh', 31, 0.46),
   ],
 };
 
@@ -1090,10 +1090,7 @@ const bossaBelltreeSwell: PercussionMolecule = {
   category: 'texture',
   tags: ['belltree'],
   complexity: { min: 1, max: 1 },
-  atoms: [
-    atom('belltree', 0, 0.22, 6),
-    atom('belltree', 16, 0.2, 6),
-  ],
+  atoms: [atom('belltree', 0, 0.22, 6), atom('belltree', 16, 0.2, 6)],
 };
 
 /** Latin belltree swell — for intro/ending sections. */
@@ -1105,10 +1102,7 @@ const latinBelltreeSwell: PercussionMolecule = {
   category: 'intro',
   tags: ['belltree'],
   complexity: { min: 1, max: 1 },
-  atoms: [
-    atom('belltree', 0, 0.22, 4),
-    atom('belltree', 16, 0.2, 4),
-  ],
+  atoms: [atom('belltree', 0, 0.22, 4), atom('belltree', 16, 0.2, 4)],
 };
 
 /** Latin belltree ending — longer swell for ending. */
@@ -1120,10 +1114,7 @@ const latinBelltreeEnding: PercussionMolecule = {
   category: 'ending',
   tags: ['belltree'],
   complexity: { min: 1, max: 1 },
-  atoms: [
-    atom('belltree', 0, 0.28, 6),
-    atom('belltree', 16, 0.32, 6),
-  ],
+  atoms: [atom('belltree', 0, 0.28, 6), atom('belltree', 16, 0.32, 6)],
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════

@@ -9,7 +9,12 @@
 import { useRef, useState } from 'react';
 import { Play, Square, Trash2 } from 'lucide-react';
 import { Button, Card, CardContent, CardHeader, CardTitle, Input, cn } from '@jazz/ui';
-import type { PercussionHit, PercussionMolecule, PercussionSound, PercussionPatternStyle } from '@jazz/music-core';
+import type {
+  PercussionHit,
+  PercussionMolecule,
+  PercussionSound,
+  PercussionPatternStyle,
+} from '@jazz/music-core';
 import {
   clamp01,
   colLabel,
@@ -35,7 +40,12 @@ interface VelDrag {
   startVel: number;
 }
 
-function atomsAt(molecule: PercussionMolecule, sound: PercussionSound, col: number, style: string): number[] {
+function atomsAt(
+  molecule: PercussionMolecule,
+  sound: PercussionSound,
+  col: number,
+  style: string,
+): number[] {
   const idx: number[] = [];
   molecule.atoms.forEach((a, i) => {
     if (a.sound === sound && tickToCol(a.atTick, style) === col) idx.push(i);

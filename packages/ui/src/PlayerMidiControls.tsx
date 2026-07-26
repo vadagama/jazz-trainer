@@ -43,7 +43,9 @@ export function PlayerMidiControls({
         disabled={!midiInitAttempted ? midiConnecting : undefined}
         className="flex items-center gap-1.5 rounded-md bg-secondary px-2 py-1 transition-colors cursor-pointer hover:bg-secondary/80"
         title={
-          midiInitAttempted ? 'Настройки соло-инструмента' : MIDI_STATUS_TITLES[midiConnectionStatus]
+          midiInitAttempted
+            ? 'Настройки соло-инструмента'
+            : MIDI_STATUS_TITLES[midiConnectionStatus]
         }
       >
         <span

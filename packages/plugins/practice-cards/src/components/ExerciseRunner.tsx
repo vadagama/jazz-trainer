@@ -306,16 +306,11 @@ export function ExerciseRunner({ bars, config, onComplete, onReconfigure }: Exer
             role="status"
             aria-label="Готов к старту"
           >
-            Для старта упражнения нажмите на{' '}
-            <Play className="inline size-5 align-[-3px]" />
-            {' '}или Space на клавиатуре
+            Для старта упражнения нажмите на <Play className="inline size-5 align-[-3px]" /> или
+            Space на клавиатуре
           </p>
         ) : countInActive ? (
-          <div
-            className="flex items-center gap-5"
-            role="status"
-            aria-label="Затакт"
-          >
+          <div className="flex items-center gap-5" role="status" aria-label="Затакт">
             {Array.from({ length: beatsPerBar }, (_, i) => (
               <span
                 key={i}

@@ -184,7 +184,9 @@ export function buildFunctionPreview(config: ExerciseConfig): FunctionPreview {
     } else if (source.type === 'dsl') {
       const result = parseDegreeGrid(source.dsl);
       if (result.ok && result.value) {
-        chordLabels = result.value.bars.flatMap((bar) => bar.slots.map((s) => prettyDegree(s.symbol)));
+        chordLabels = result.value.bars.flatMap((bar) =>
+          bar.slots.map((s) => prettyDegree(s.symbol)),
+        );
       }
     } else if (source.type === 'random') {
       return { kind: 'enclosures', labels: ['произв.'] };

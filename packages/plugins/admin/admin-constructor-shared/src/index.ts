@@ -41,7 +41,12 @@ export type {
 } from './types.js';
 
 // store
-export { createConstructorStore, isStoreDirty, type ConstructorState, type ConstructorSnapshot } from './useConstructorStore.js';
+export {
+  createConstructorStore,
+  isStoreDirty,
+  type ConstructorState,
+  type ConstructorSnapshot,
+} from './useConstructorStore.js';
 
 // generic components
 export { ConstructorPage } from './ConstructorPage.js';

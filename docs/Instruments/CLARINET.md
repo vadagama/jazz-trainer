@@ -13,10 +13,10 @@
 
 ## 2. Паттерны
 
-| Паттерн           | Описание                                                   | Стиль по умолчанию      |
-| ----------------- | ---------------------------------------------------------- | ----------------------- |
-| `counterpoint`    | 3 ноты на такт (beats 1, 2.5, 4), cycling через voicing    | swing, funk, ballad     |
-| `melodicPhrases`  | Мелодические фразы из chord tones с passing tones          | bossa, latin            |
+| Паттерн          | Описание                                                | Стиль по умолчанию  |
+| ---------------- | ------------------------------------------------------- | ------------------- |
+| `counterpoint`   | 3 ноты на такт (beats 1, 2.5, 4), cycling через voicing | swing, funk, ballad |
+| `melodicPhrases` | Мелодические фразы из chord tones с passing tones       | bossa, latin        |
 
 ### 2.1. Counterpoint
 
@@ -71,25 +71,25 @@ export const clarinetManifest: InstrumentManifest = {
 ```ts
 class ClarinetInstrument implements Instrument {
   setTimeline(timeline: ChordTimeline): void;
-  setPattern(pattern: ClarinetPattern): void;          // 'counterpoint' | 'melodicPhrases'
+  setPattern(pattern: ClarinetPattern): void; // 'counterpoint' | 'melodicPhrases'
   setVoicingDensity(density: PianoVoicingDensity): void;
-  setBaseVelocity(velocity: number): void;              // [0, 2]
+  setBaseVelocity(velocity: number): void; // [0, 2]
   setHumanize(enabled: boolean): void;
-  setStyleProfile(profile: StyleProfile): void;         // стиле-зависимый паттерн
-  setStyle(style: Style): void;                         // @deprecated
-  reset(): void;                                        // сброс состояния
+  setStyleProfile(profile: StyleProfile): void; // стиле-зависимый паттерн
+  setStyle(style: Style): void; // @deprecated
+  reset(): void; // сброс состояния
   schedule(window: ScheduleWindow, ctx: ScheduleContext): void;
 }
 ```
 
 ## 8. Взаимодействие с другими инструментами
 
-| Инструмент    | Правило                                                              |
-| ------------- | -------------------------------------------------------------------- |
-| **Piano**     | Кларнет монофонический (одна нота), Piano полифонический — дополняют |
-| **Organ**     | Разные EventSink'и. Кларнет — мелодия, Organ — гармонический фон     |
-| **Vibraphone**| Разные EventSink'и, не конфликтуют                                    |
-| **Guitar**    | Разные EventSink'и, не конфликтуют                                    |
+| Инструмент     | Правило                                                              |
+| -------------- | -------------------------------------------------------------------- |
+| **Piano**      | Кларнет монофонический (одна нота), Piano полифонический — дополняют |
+| **Organ**      | Разные EventSink'и. Кларнет — мелодия, Organ — гармонический фон     |
+| **Vibraphone** | Разные EventSink'и, не конфликтуют                                   |
+| **Guitar**     | Разные EventSink'и, не конфликтуют                                   |
 
 ## 9. Тесты
 

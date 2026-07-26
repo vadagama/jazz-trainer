@@ -124,9 +124,7 @@ export default function FlagsPage() {
     const q = search.trim().toLowerCase();
     if (q) {
       list = list.filter(
-        (f) =>
-          f.key.toLowerCase().includes(q) ||
-          (f.description ?? '').toLowerCase().includes(q),
+        (f) => f.key.toLowerCase().includes(q) || (f.description ?? '').toLowerCase().includes(q),
       );
     }
     if (categoryFilter !== STATUS_ALL) {
@@ -350,9 +348,7 @@ export default function FlagsPage() {
 
         {filtered.length === 0 && (
           <div className="px-4 py-8 text-center text-sm text-muted-foreground">
-            {flags && flags.length > 0
-              ? 'Нет флагов, соответствующих фильтрам'
-              : 'Флагов пока нет'}
+            {flags && flags.length > 0 ? 'Нет флагов, соответствующих фильтрам' : 'Флагов пока нет'}
           </div>
         )}
       </div>

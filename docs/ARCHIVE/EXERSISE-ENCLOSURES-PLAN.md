@@ -30,8 +30,8 @@
      export type TargetDegree = 1 | 3 | 5 | 7;
      export type EnclosureNoteRole = 'approach' | 'target';
      export interface EnclosureNote {
-       name: string;      // например "Eb"
-       pc: number;        // pitch class 0–11
+       name: string; // например "Eb"
+       pc: number; // pitch class 0–11
        role: EnclosureNoteRole;
      }
      ```
@@ -163,7 +163,9 @@
              {bar.enclosureNotes.map((n, i) => (
                <span
                  key={i}
-                 className={n.role === 'target' ? 'text-primary font-bold' : 'text-muted-foreground'}
+                 className={
+                   n.role === 'target' ? 'text-primary font-bold' : 'text-muted-foreground'
+                 }
                >
                  {n.name}
                  {i < bar.enclosureNotes!.length - 1 && <span className="mx-1">·</span>}
@@ -369,13 +371,13 @@ T-012 (typecheck + lint + test + ручные проверки)
 
 ## 3. Оценка суммарной трудоёмкости
 
-| Сложность | Количество | Задачи |
-| --- | --- | --- |
-| XS (<1d) | 0 | — |
-| S (1–2d) | 5 | T-002, T-005, T-006, T-007, T-008, T-009, T-011 |
-| M (3–5d) | 3 | T-001, T-003, T-010 |
-| L (1–2w) | 0 | — |
-| XL (>2w) | 0 | — |
+| Сложность | Количество | Задачи                                          |
+| --------- | ---------- | ----------------------------------------------- |
+| XS (<1d)  | 0          | —                                               |
+| S (1–2d)  | 5          | T-002, T-005, T-006, T-007, T-008, T-009, T-011 |
+| M (3–5d)  | 3          | T-001, T-003, T-010                             |
+| L (1–2w)  | 0          | —                                               |
+| XL (>2w)  | 0          | —                                               |
 
 **Суммарно (соло):**
 

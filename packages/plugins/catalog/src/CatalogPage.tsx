@@ -96,16 +96,17 @@ export function CatalogPage() {
         {entries && (
           <span className="shrink-0 text-sm text-muted-foreground">
             {entries.length}{' '}
-            {entries.length === 1
-              ? 'композиция'
-              : entries.length < 5
-                ? 'композиции'
-                : 'композиций'}
+            {entries.length === 1 ? 'композиция' : entries.length < 5 ? 'композиции' : 'композиций'}
           </span>
         )}
       </div>
 
-      <SearchBar value={query} onChange={handleQueryChange} sort={sort} onSortChange={handleSortChange} />
+      <SearchBar
+        value={query}
+        onChange={handleQueryChange}
+        sort={sort}
+        onSortChange={handleSortChange}
+      />
 
       <div className="flex items-center justify-between gap-4">
         <CatalogFilters value={filters} onChange={setFilters} />

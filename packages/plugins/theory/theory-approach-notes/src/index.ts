@@ -9,7 +9,13 @@ export default definePlugin({
     description: 'Лекция: хроматические подходные ноты в джазовой импровизации.',
   },
   contributes: {
-    routes: [{ path: '/theory/approach-notes', element: () => import('./ApproachNotesPage'), requires: 'theory:approachNotes' }],
+    routes: [
+      {
+        path: '/theory/approach-notes',
+        element: () => import('./ApproachNotesPage'),
+        requires: 'theory:approachNotes',
+      },
+    ],
     navItems: [
       { section: 'learn', label: 'Подходные ноты', to: '/theory/approach-notes', icon: 'music' },
     ],

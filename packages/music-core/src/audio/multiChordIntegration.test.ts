@@ -43,7 +43,11 @@ function makeCtx(sig = parseTimeSignature('4/4')): {
     swingRatio: 0.5,
     scheduleClick: () => {},
     scheduleEvent: (_instrumentId, payload, at, velocity, durationTicks) => {
-      if (_instrumentId === 'bass' || _instrumentId === 'upright-bass' || _instrumentId === 'electric-bass') {
+      if (
+        _instrumentId === 'bass' ||
+        _instrumentId === 'upright-bass' ||
+        _instrumentId === 'electric-bass'
+      ) {
         const p = payload as { note: string; articulation: string };
         events.bass.push({ at, note: p.note, velocity, durationTicks });
       } else if (_instrumentId === 'piano') {

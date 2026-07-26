@@ -103,9 +103,7 @@ describe('ClarinetInstrument — counterpoint', () => {
 
     expect(events).toHaveLength(6); // 2 bars × 3 notes
     // Bar 2 events should start at 2 * TPBAR
-    const bar2Events = events.filter(
-      (e) => e.at >= 2 * TPBAR && e.at < 3 * TPBAR,
-    );
+    const bar2Events = events.filter((e) => e.at >= 2 * TPBAR && e.at < 3 * TPBAR);
     expect(bar2Events).toHaveLength(3);
   });
 

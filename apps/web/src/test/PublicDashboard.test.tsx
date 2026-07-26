@@ -8,7 +8,7 @@ vi.mock('@/queries/usePublicCompositions', () => ({
 }));
 
 vi.mock('@/queries/useAuth', () => ({
-  useAuth: vi.fn(() => ({ user: null, isLoading: false })),
+  useAuth: vi.fn(() => ({ user: null, theme: null, isLoading: false })),
   useLogout: vi.fn(() => ({ mutate: vi.fn() })),
 }));
 

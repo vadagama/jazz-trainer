@@ -51,33 +51,48 @@
 
 ```ts
 export type DrumDynamicsType =
-  | 'steady' | 'crescendo' | 'decrescendo' | 'arch' | 'valley' | 'wave' | 'pulse';
+  | 'steady'
+  | 'crescendo'
+  | 'decrescendo'
+  | 'arch'
+  | 'valley'
+  | 'wave'
+  | 'pulse';
 
-export interface DrumDynamics { type: DrumDynamicsType; amount: number; } // amount 0..1
-export interface WeightedMolecule { moleculeId: string; weight: number; } // weight > 0
+export interface DrumDynamics {
+  type: DrumDynamicsType;
+  amount: number;
+} // amount 0..1
+export interface WeightedMolecule {
+  moleculeId: string;
+  weight: number;
+} // weight > 0
 export interface DrumClip {
-  startBar: number;          // 0-based, 0 ≤ startBar < length
-  lengthBars: number;        // ≥1, startBar + lengthBars ≤ length
-  pool: WeightedMolecule[];  // ≥1; взвешенный выбор НА КАЖДЫЙ такт спана
+  startBar: number; // 0-based, 0 ≤ startBar < length
+  lengthBars: number; // ≥1, startBar + lengthBars ≤ length
+  pool: WeightedMolecule[]; // ≥1; взвешенный выбор НА КАЖДЫЙ такт спана
 }
 export interface DrumLane {
-  name: string;              // роль/свободная метка
-  probability: number;       // 0..1 per-lane «иногда»
-  clips: DrumClip[];         // непересекающиеся
+  name: string; // роль/свободная метка
+  probability: number; // 0..1 per-lane «иногда»
+  clips: DrumClip[]; // непересекающиеся
 }
 export interface DrumCell {
-  id: string; style: DrumPatternStyle;
-  length: 8 | 16 | 32; timeSignature: [4, 4] | [5, 4];
-  velocity: number;          // 0..1 мастер
+  id: string;
+  style: DrumPatternStyle;
+  length: 8 | 16 | 32;
+  timeSignature: [4, 4] | [5, 4];
+  velocity: number; // 0..1 мастер
   dynamics: DrumDynamics;
-  lanes: DrumLane[];         // 1..15
-  weight: number;            // выбор клетки организмом
+  lanes: DrumLane[]; // 1..15
+  weight: number; // выбор клетки организмом
 }
 ```
 
 ### convertLegacyCell() — черновик и worked example (swing-16-verse)
 
 Правила конвертера:
+
 1. `velocity ← legacy.volumeMul`; `dynamics ← { type: legacy.dynamicsType, amount: 0.15 }`.
 2. Каждую молекулу `grooveMoleculePool` → отдельный лейн (по семье звука/тегу), клип `[0,length]`,
    пул `[{id, weight:10}]`, `probability:1`.
@@ -125,11 +140,16 @@ snare-backbeat, fill-triplet-1, crash — 8 уникальных id. Лейно�
 ### validateCell() — сигнатура и правила
 
 ```ts
-export interface CellValidationError { code: string; lane?: string; detail: string; }
+export interface CellValidationError {
+  code: string;
+  lane?: string;
+  detail: string;
+}
 export function validateCell(cell: DrumCell): CellValidationError[];
 ```
 
 Правила:
+
 - `1 ≤ lanes.length ≤ 15`.
 - Для каждого лейна: клипы попарно не пересекаются по `[startBar, startBar+lengthBars)`;
   `0 ≤ startBar`, `lengthBars ≥ 1`, `startBar + lengthBars ≤ length`.
@@ -137,8 +157,8 @@ export function validateCell(cell: DrumCell): CellValidationError[];
 - `moleculeId` уникален по ВСЕЙ клетке (по всем лейнам/клипам/пулам); дубль → ошибка.
 - Диапазоны: `velocity, probability, amount ∈ [0,1]`, `weight > 0`, `cell.weight > 0`.
 - Все `moleculeId` существуют в `DRUM_MOLECULES` (или в overrides).
-Редактор вызывает `validateCell` на лету и блокирует недопустимые действия (пересечение,
-добавление уже присутствующей молекулы, >15 лейнов).
+  Редактор вызывает `validateCell` на лету и блокирует недопустимые действия (пересечение,
+  добавление уже присутствующей молекулы, >15 лейнов).
 
 ### Test Plan (движок и валидатор)
 
@@ -198,12 +218,12 @@ export function validateCell(cell: DrumCell): CellValidationError[];
 
 ## Visual Artifacts
 
-| Artifact                        | Type       | Path                                            | Preview       | Purpose                                                                 |
-| ------------------------------- | ---------- | ----------------------------------------------- | ------------- | ----------------------------------------------------------------------- |
-| Модель данных v2 (лейны/пулы)   | Mermaid    | `output/files/data-model.mmd`                   | not generated | `DrumCell`→`DrumLane`→`DrumClip`→`WeightedMolecule`, dynamics, организм  |
-| Сборка такта v2                 | Mermaid    | `output/files/assemble-bar-flow.mmd`            | not generated | Детерминированная лейн-сборка: probability + weightedPick + тайлинг      |
-| Конвертер legacy→new (пример)   | Mermaid    | `output/files/converter-mapping.mmd`            | not generated | Маппинг полей `swing-16-verse` в лейны/клипы/пулы                        |
-| Редактор-таймлайн v2 (эскиз)    | Excalidraw | `output/files/cell-timeline-editor.excalidraw`  | not generated | UX: лейны с probability, клипы со взвешенными пулами, инспектор velocity |
+| Artifact                      | Type       | Path                                           | Preview       | Purpose                                                                  |
+| ----------------------------- | ---------- | ---------------------------------------------- | ------------- | ------------------------------------------------------------------------ |
+| Модель данных v2 (лейны/пулы) | Mermaid    | `output/files/data-model.mmd`                  | not generated | `DrumCell`→`DrumLane`→`DrumClip`→`WeightedMolecule`, dynamics, организм  |
+| Сборка такта v2               | Mermaid    | `output/files/assemble-bar-flow.mmd`           | not generated | Детерминированная лейн-сборка: probability + weightedPick + тайлинг      |
+| Конвертер legacy→new (пример) | Mermaid    | `output/files/converter-mapping.mmd`           | not generated | Маппинг полей `swing-16-verse` в лейны/клипы/пулы                        |
+| Редактор-таймлайн v2 (эскиз)  | Excalidraw | `output/files/cell-timeline-editor.excalidraw` | not generated | UX: лейны с probability, клипы со взвешенными пулами, инспектор velocity |
 
 ## Changes From Previous Iteration
 

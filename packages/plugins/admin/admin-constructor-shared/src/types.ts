@@ -147,7 +147,10 @@ export interface ConstructorStrategy<TStyle extends string, TSound extends strin
   defaultVelocity: number;
 
   // ── assembly callbacks ──
-  resolveMolecule: (id: string, overrides: Record<string, Molecule<TStyle, TSound>>) => Molecule<TStyle, TSound> | undefined;
+  resolveMolecule: (
+    id: string,
+    overrides: Record<string, Molecule<TStyle, TSound>>,
+  ) => Molecule<TStyle, TSound> | undefined;
   moleculeLabel: (id: string, overrides: Record<string, Molecule<TStyle, TSound>>) => string;
   assembleOrganism: (
     organism: PatternOrganism<TStyle>,

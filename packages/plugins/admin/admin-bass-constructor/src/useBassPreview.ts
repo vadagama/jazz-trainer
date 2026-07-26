@@ -57,7 +57,10 @@ const TPBAR = PPQ * BEATS_PER_BAR;
  * Pattern family by molecule style — mirrors BassInstrument's STYLE_DEFAULT_PATTERN.
  * The step engine needs this to pick idiomatic chord steps per style.
  */
-const PATTERN_FOR_STYLE: Record<BassPatternStyle, 'walking' | 'root-5th' | 'syncopated' | 'montuno' | 'two-feel'> = {
+const PATTERN_FOR_STYLE: Record<
+  BassPatternStyle,
+  'walking' | 'root-5th' | 'syncopated' | 'montuno' | 'two-feel'
+> = {
   swing: 'walking',
   bossa: 'root-5th',
   funk: 'syncopated',
@@ -110,8 +113,7 @@ export function useBassPreview(): PreviewControls<BassArticulation> {
     // electric (electric-only). Так preview звучит тем же тембром, что выбрал
     // пользователь в тулбаре конструктора.
     for (const artic of ALL_BASS_ARTICULATIONS) {
-      const variant =
-        artic === 'rel' || artic === 'stac' ? 'electric' : activeVariant;
+      const variant = artic === 'rel' || artic === 'stac' ? 'electric' : activeVariant;
       const urls = SAMPLER_URL_BUILDERS[variant][artic]();
       const sampler = new Tone.Sampler({ urls, baseUrl: BASS_SAMPLER_BASE_URL, release: 1.5 });
       samplersRef.current.set(artic, sampler.toDestination());
@@ -143,7 +145,10 @@ export function useBassPreview(): PreviewControls<BassArticulation> {
   }, [disposeSamplers]);
 
   const play = useCallback(
-    async (hits: BassHit[], opts: { bpm: number; loopBars: number; loop?: boolean; style?: string }) => {
+    async (
+      hits: BassHit[],
+      opts: { bpm: number; loopBars: number; loop?: boolean; style?: string },
+    ) => {
       stop();
       if (hits.length === 0) return;
 
@@ -180,7 +185,7 @@ export function useBassPreview(): PreviewControls<BassArticulation> {
           if (!sampler) return;
           const dur = hit.durationTicks * secPerTick;
           // Микро-разнос 1ms на голос — предотвращает voice-stealing в Tone.Sampler
-          const voiceOffset = (hi * 1) * 0.001;
+          const voiceOffset = hi * 1 * 0.001;
           sampler.triggerAttackRelease(
             pitch,
             Math.max(0.05, dur),

@@ -33,14 +33,14 @@
 
 ### 2.1. Базовые типы опеваний (MVP)
 
-| Тип | Формула | Пример для цели E (в C) | Название в UI |
-| --- | --- | --- | --- |
-| **Diatonic upper** | ↑2 → цель | `F → E` | Диатонический сверху |
-| **Diatonic lower** | ↓2 → цель | `D → E` | Диатонический снизу |
-| **Chromatic upper** | ↑½ → цель | `F → E` | Хроматический сверху |
-| **Chromatic lower** | ↓½ → цель | `E♭ → E` | Хроматический снизу |
-| **Full diatonic enclosure** | ↑2 → ↓2 → цель | `F → D → E` | Полное диатоническое |
-| **Full chromatic enclosure** | ↑½ → ↓½ → цель | `F → E♭ → E` | Полное хроматическое |
+| Тип                          | Формула        | Пример для цели E (в C) | Название в UI        |
+| ---------------------------- | -------------- | ----------------------- | -------------------- |
+| **Diatonic upper**           | ↑2 → цель      | `F → E`                 | Диатонический сверху |
+| **Diatonic lower**           | ↓2 → цель      | `D → E`                 | Диатонический снизу  |
+| **Chromatic upper**          | ↑½ → цель      | `F → E`                 | Хроматический сверху |
+| **Chromatic lower**          | ↓½ → цель      | `E♭ → E`                | Хроматический снизу  |
+| **Full diatonic enclosure**  | ↑2 → ↓2 → цель | `F → D → E`             | Полное диатоническое |
+| **Full chromatic enclosure** | ↑½ → ↓½ → цель | `F → E♭ → E`            | Полное хроматическое |
 
 > В UI добавляется опция **«Все (случайно)»** — на каждый такт случайно выбирается один из 6 типов.
 
@@ -48,25 +48,25 @@
 
 В MVP поддерживаются только аккордовые звуки:
 
-| Ступень | Важность |
-| --- | --- |
-| **3** | Критичная — определяет мажор/минор |
-| **7** | Критичная — определяет функцию аккорда |
-| **5** | Стабильный звук |
-| **1** | Тоника |
+| Ступень | Важность                               |
+| ------- | -------------------------------------- |
+| **3**   | Критичная — определяет мажор/минор     |
+| **7**   | Критичная — определяет функцию аккорда |
+| **5**   | Стабильный звук                        |
+| **1**   | Тоника                                 |
 
 Пользователь может выбрать одну или несколько ступеней. Если выбрано несколько — в режиме `over-chords` на каждый аккорд выпадает одна случайная ступень из выбранных. Если выбрана одна — отработка только этой ступени.
 
 ### 2.3. Почему опевания похожи на гаммы
 
-| Аспект | Гаммы | Опевания |
-| --- | --- | --- |
-| Режим «отдельно» | `source.type === 'unified'` | `source.type === 'unified'` |
-| Режим «по прогрессии» | `source.type === 'pattern' / 'random' / 'dsl'` | `source.type === 'pattern' / 'random' / 'dsl'` |
-| Карточка | аккорд + лад | аккорд + ступень + ноты оборота |
-| Что играет пользователь | лад вверх/вниз | оборот вокруг ступени |
-| Генератор | `scaleExercise.ts` | `enclosureExercise.ts` |
-| UI-шаг | `StepScaleConfig.tsx` | `StepEnclosureConfig.tsx` |
+| Аспект                  | Гаммы                                          | Опевания                                       |
+| ----------------------- | ---------------------------------------------- | ---------------------------------------------- |
+| Режим «отдельно»        | `source.type === 'unified'`                    | `source.type === 'unified'`                    |
+| Режим «по прогрессии»   | `source.type === 'pattern' / 'random' / 'dsl'` | `source.type === 'pattern' / 'random' / 'dsl'` |
+| Карточка                | аккорд + лад                                   | аккорд + ступень + ноты оборота                |
+| Что играет пользователь | лад вверх/вниз                                 | оборот вокруг ступени                          |
+| Генератор               | `scaleExercise.ts`                             | `enclosureExercise.ts`                         |
+| UI-шаг                  | `StepScaleConfig.tsx`                          | `StepEnclosureConfig.tsx`                      |
 
 ---
 
@@ -164,14 +164,14 @@
 
 ## 6. Риски и допущения
 
-| ID | Риск | Решение |
-| --- | --- | --- |
-| R1 | Расчёт диатонических соседей требует лада — для нестандартных аккордов может быть неоднозначно | Использовать `chordDegreeToScale(degree, quality)` — детерминированный маппинг. Для альтераций — fallback на хроматические обороты. |
-| R2 | При множестве ступеней пользователь не понимает, почему ступени случайны | В UI пояснение: «Выберите одну ступень для систематической отработки». |
-| R3 | `parseChord` не возвращает массив ступеней `1/3/5/7` | Для MVP вычислять ступени по `quality + root` внутри `music-core/enclosures.ts`. Расширения `9/11/13` — P2. |
-| R4 | Октавная привязка нот может выходить за удобный регистр | Генератор выбирает октаву относительно тоники аккорда; `octaves: 1 \| 2` для диапазона. |
-| R5 | Карточка может быть перегружена | Компактный 3-строчный лейаут; на мобильных форсировать `mode='current'`. |
-| R6 | Размещение `enclosures.ts` в `music-core` добавляет зависимость | `music-core` зависит только от stdlib + `@jazz/shared`; новые функции не нарушают boundaries. |
+| ID  | Риск                                                                                           | Решение                                                                                                                             |
+| --- | ---------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| R1  | Расчёт диатонических соседей требует лада — для нестандартных аккордов может быть неоднозначно | Использовать `chordDegreeToScale(degree, quality)` — детерминированный маппинг. Для альтераций — fallback на хроматические обороты. |
+| R2  | При множестве ступеней пользователь не понимает, почему ступени случайны                       | В UI пояснение: «Выберите одну ступень для систематической отработки».                                                              |
+| R3  | `parseChord` не возвращает массив ступеней `1/3/5/7`                                           | Для MVP вычислять ступени по `quality + root` внутри `music-core/enclosures.ts`. Расширения `9/11/13` — P2.                         |
+| R4  | Октавная привязка нот может выходить за удобный регистр                                        | Генератор выбирает октаву относительно тоники аккорда; `octaves: 1 \| 2` для диапазона.                                             |
+| R5  | Карточка может быть перегружена                                                                | Компактный 3-строчный лейаут; на мобильных форсировать `mode='current'`.                                                            |
+| R6  | Размещение `enclosures.ts` в `music-core` добавляет зависимость                                | `music-core` зависит только от stdlib + `@jazz/shared`; новые функции не нарушают boundaries.                                       |
 
 ---
 
@@ -244,21 +244,21 @@
 
 ## Приложение Б: Техническая карта (дельта от существующего practice-cards)
 
-| Компонент | Где живёт | Что делает | Статус |
-| --- | --- | --- | --- |
-| `enclosures.ts` (домен) | `packages/music-core/src/chords/enclosures.ts` | Типы и функции расчёта оборотов | 🔴 Новый |
-| `enclosureExercise.ts` | `practice-cards/src/generators/enclosureExercise.ts` | Генератор `EnclosureExerciseConfig → PracticeBar[]` | 🔴 Новый |
-| `StepEnclosureConfig.tsx` | `practice-cards/src/components/StepEnclosureConfig.tsx` | UI-шаг настройки | 🔴 Новый |
-| Расширение `PracticeBar` + типов | `practice-cards/src/generators/types.ts` | Поля `enclosure*` | 🟡 Расширение |
-| Расширение `CardDisplay` | `practice-cards/src/components/CardDisplay.tsx` | Отображение ступени и нот оборота | 🟡 Расширение |
-| Расширение `StepTypeSelect` | `practice-cards/src/components/StepTypeSelect.tsx` | Активация плитки | 🟡 Расширение |
-| Расширение `ExerciseWizard` | `practice-cards/src/components/ExerciseWizard.tsx` | Роутинг на `StepEnclosureConfig` | 🟡 Расширение |
-| Расширение `StepPreview` | `practice-cards/src/components/StepPreview.tsx` | Превью оборотов | 🟡 Расширение |
-| Расширение `degreeFunctions.ts` | `practice-cards/src/components/degreeFunctions.ts` | `enclosure-standalone` / `enclosure-over-chords` previews | 🟡 Расширение |
-| Расширение `ExerciseComplete` | `practice-cards/src/components/ExerciseComplete.tsx` | Подпись «Опевания» | 🟡 Расширение |
-| Расширение `defaults.ts` | `practice-cards/src/defaults.ts` | Дефолты для опеваний | 🟡 Расширение |
-| Расширение `UserSettingsDTO` | `packages/shared/src/dto.ts` | Поля `lastEnclosure*` | 🟡 Расширение |
-| Реэкспорт в `chords/index.ts` | `packages/music-core/src/chords/index.ts` | Экспорт типов/функций опеваний | 🟡 Расширение |
+| Компонент                        | Где живёт                                               | Что делает                                                | Статус        |
+| -------------------------------- | ------------------------------------------------------- | --------------------------------------------------------- | ------------- |
+| `enclosures.ts` (домен)          | `packages/music-core/src/chords/enclosures.ts`          | Типы и функции расчёта оборотов                           | 🔴 Новый      |
+| `enclosureExercise.ts`           | `practice-cards/src/generators/enclosureExercise.ts`    | Генератор `EnclosureExerciseConfig → PracticeBar[]`       | 🔴 Новый      |
+| `StepEnclosureConfig.tsx`        | `practice-cards/src/components/StepEnclosureConfig.tsx` | UI-шаг настройки                                          | 🔴 Новый      |
+| Расширение `PracticeBar` + типов | `practice-cards/src/generators/types.ts`                | Поля `enclosure*`                                         | 🟡 Расширение |
+| Расширение `CardDisplay`         | `practice-cards/src/components/CardDisplay.tsx`         | Отображение ступени и нот оборота                         | 🟡 Расширение |
+| Расширение `StepTypeSelect`      | `practice-cards/src/components/StepTypeSelect.tsx`      | Активация плитки                                          | 🟡 Расширение |
+| Расширение `ExerciseWizard`      | `practice-cards/src/components/ExerciseWizard.tsx`      | Роутинг на `StepEnclosureConfig`                          | 🟡 Расширение |
+| Расширение `StepPreview`         | `practice-cards/src/components/StepPreview.tsx`         | Превью оборотов                                           | 🟡 Расширение |
+| Расширение `degreeFunctions.ts`  | `practice-cards/src/components/degreeFunctions.ts`      | `enclosure-standalone` / `enclosure-over-chords` previews | 🟡 Расширение |
+| Расширение `ExerciseComplete`    | `practice-cards/src/components/ExerciseComplete.tsx`    | Подпись «Опевания»                                        | 🟡 Расширение |
+| Расширение `defaults.ts`         | `practice-cards/src/defaults.ts`                        | Дефолты для опеваний                                      | 🟡 Расширение |
+| Расширение `UserSettingsDTO`     | `packages/shared/src/dto.ts`                            | Поля `lastEnclosure*`                                     | 🟡 Расширение |
+| Реэкспорт в `chords/index.ts`    | `packages/music-core/src/chords/index.ts`               | Экспорт типов/функций опеваний                            | 🟡 Расширение |
 
 ---
 

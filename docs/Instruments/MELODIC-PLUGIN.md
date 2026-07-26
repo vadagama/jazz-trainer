@@ -13,6 +13,7 @@
 ## 1. Что такое мелодический инструмент в Jazz Trainer
 
 Мелодический (pitched) инструмент — это `Instrument`, который:
+
 - Получает гармонию из `ChordTimeline` (сетка аккордов)
 - Строит **voicing'и** (наборы нот) для каждого аккорда
 - Планирует ноты в будущее через `ScheduleContext.scheduleEvent()` — **не играет сам**
@@ -25,8 +26,8 @@
 ### Семейство `pitched`
 
 ```ts
-family: 'pitched'  // → sdk понимает, что нужен Tone.Sampler (полифонический),
-                   //   а не Tone.Players (oneshots). Влияет на UI (voicing-контролы).
+family: 'pitched'; // → sdk понимает, что нужен Tone.Sampler (полифонический),
+//   а не Tone.Players (oneshots). Влияет на UI (voicing-контролы).
 ```
 
 ---
@@ -43,13 +44,13 @@ export const STYLES = ['swing', 'bossa', 'funk', 'latin', 'ballad'] as const;
 export type Style = (typeof STYLES)[number];
 ```
 
-| Стиль   | Темп  | Swing | Характер                               |
-| ------- | ----- | ----- | -------------------------------------- |
-| `swing` | 140   | 0.67  | Ride-heavy, walking bass, rootless     |
-| `bossa` | 120   | 0.5   | Straight ритм, nylon-гитара, shell2    |
-| `funk`  | 100   | 0.5   | Синкопы, electric bass, rootless4      |
-| `latin` | 160   | 0.5   | Cascara/clave, montuno-бас, quartal    |
-| `ballad`| 60    | 0.58  | Brushes, two-feel, мягкие voicing      |
+| Стиль    | Темп | Swing | Характер                            |
+| -------- | ---- | ----- | ----------------------------------- |
+| `swing`  | 140  | 0.67  | Ride-heavy, walking bass, rootless  |
+| `bossa`  | 120  | 0.5   | Straight ритм, nylon-гитара, shell2 |
+| `funk`   | 100  | 0.5   | Синкопы, electric bass, rootless4   |
+| `latin`  | 160  | 0.5   | Cascara/clave, montuno-бас, quartal |
+| `ballad` | 60   | 0.58  | Brushes, two-feel, мягкие voicing   |
 
 **Правило:** `perStyleDefaults` в `InstrumentManifest` **обязан** содержать записи для
 всех 5 стилей. Даже если инструмент не используется в стиле — запись `{ ...OFF }`
@@ -95,10 +96,10 @@ export const SECTION_TYPE_LABELS: Record<SectionType, string> = {
 ```ts
 // packages/music-core/src/audio/instrument.ts
 interface Instrument {
-  setTimeline(timeline: ChordTimeline): void;        // гармония
-  setStyleProfile(profile: StyleProfile): void;      // стиль + per-instrument defaults
-  schedule(window: ScheduleWindow, ctx: ScheduleContext): void;  // главный метод
-  dispose(): void;                                    // очистка
+  setTimeline(timeline: ChordTimeline): void; // гармония
+  setStyleProfile(profile: StyleProfile): void; // стиль + per-instrument defaults
+  schedule(window: ScheduleWindow, ctx: ScheduleContext): void; // главный метод
+  dispose(): void; // очистка
 }
 ```
 
@@ -161,12 +162,12 @@ schedule(window: ScheduleWindow, ctx: ScheduleContext): void {
 
 ### 3.2. Обязательные методы поддержки
 
-| Метод | Назначение |
-|---|---|
-| `setTimeline(t)` | Получить новую сетку аккордов |
-| `setStyleProfile(p)` | Стиль + `instrumentDefaults` из `StyleProfile` |
-| `reset()` | Сбросить `prevVoicing`, счётчики — опционально, но **рекомендовано** |
-| `dispose()` | Очистить ссылки |
+| Метод                | Назначение                                                           |
+| -------------------- | -------------------------------------------------------------------- |
+| `setTimeline(t)`     | Получить новую сетку аккордов                                        |
+| `setStyleProfile(p)` | Стиль + `instrumentDefaults` из `StyleProfile`                       |
+| `reset()`            | Сбросить `prevVoicing`, счётчики — опционально, но **рекомендовано** |
+| `dispose()`          | Очистить ссылки                                                      |
 
 ---
 
@@ -182,19 +183,19 @@ Voicing — главный строительный блок pitched-инстр�
 import { buildPianoVoicing, type PianoVoicingDensity } from './pianoVoicing.js';
 
 const voicing = buildPianoVoicing(
-  chord,          // ChordSymbol
-  this.density,   // 'shell2' | 'rootless3' | 'rootless4' | 'quartal'
+  chord, // ChordSymbol
+  this.density, // 'shell2' | 'rootless3' | 'rootless4' | 'quartal'
   this.prevVoicing, // предыдущий voicing для voice leading (null при старте)
 );
 ```
 
 Плотности:
-| `density`    | Нот | Что входит       |
+| `density` | Нот | Что входит |
 |-------------|-----|------------------|
-| `shell2`    | 2   | 3-й + 7-й тон    |
-| `rootless3` | 3   | 3 + 7 + 9 (color)|
-| `rootless4` | 4   | 3 + 7 + 9 + 13   |
-| `quartal`   | 3–4 | Квартовые стеки  |
+| `shell2` | 2 | 3-й + 7-й тон |
+| `rootless3` | 3 | 3 + 7 + 9 (color)|
+| `rootless4` | 4 | 3 + 7 + 9 + 13 |
+| `quartal` | 3–4 | Квартовые стеки |
 
 ### 4.2. Собственный voicing-движок
 
@@ -208,7 +209,7 @@ function buildGuitarVoicing(chord: ChordSymbol, voicing: GuitarVoicing): string[
   const notes: number[] = [];
   for (const interval of intervals) {
     let midi = rootMidi + interval;
-    while (midi < MIN_MIDI) midi += 12;   // в диапазон
+    while (midi < MIN_MIDI) midi += 12; // в диапазон
     while (midi > MAX_MIDI) midi -= 12;
     if (!notes.includes(midi)) notes.push(midi);
   }
@@ -218,6 +219,7 @@ function buildGuitarVoicing(chord: ChordSymbol, voicing: GuitarVoicing): string[
 ```
 
 **Правила хорошего voicing'а:**
+
 - Диапазон инструмента: `MIN_MIDI` … `MAX_MIDI`
 - Избегать дубликатов pitch-классов
 - Предпочитать close-voiced стеки в среднем регистре
@@ -253,7 +255,9 @@ export class MyInstrument implements Instrument {
   }
 
   // ─── Сеттеры (вызываются хостом) ─────────────────────────────────
-  setTimeline(t: ChordTimeline) { this.timeline = t; }
+  setTimeline(t: ChordTimeline) {
+    this.timeline = t;
+  }
 
   setStyleProfile(profile: StyleProfile) {
     this.style = profile.id;
@@ -266,7 +270,9 @@ export class MyInstrument implements Instrument {
     this.baseVelocity = Math.max(0, Math.min(2, v));
   }
 
-  setHumanize(on: boolean) { this.humanize = on; }
+  setHumanize(on: boolean) {
+    this.humanize = on;
+  }
 
   reset() {
     this.prevVoicing = null;
@@ -286,7 +292,7 @@ export class MyInstrument implements Instrument {
     const maxJitter = this.humanize ? Math.round(0.006 * (ctx.bpm / 60) * PPQ) : 0;
 
     const firstBar = Math.floor(window.fromTicks / tpBar);
-    const lastBar  = Math.floor((window.toTicks - 1) / tpBar);
+    const lastBar = Math.floor((window.toTicks - 1) / tpBar);
 
     for (let bar = firstBar; bar <= lastBar; bar++) {
       // ... построить и запланировать ноты (см. §3.1)
@@ -302,14 +308,14 @@ export class MyInstrument implements Instrument {
 
 ### Что можно добавить (опционально)
 
-| Возможность | Где посмотреть |
-|---|---|
-| Несколько режимов (pads, stabs, inserts) | `OrganInstrument`, `VibraphoneInstrument` |
-| Комплементарный слой (layer mode) | `RhodesInstrument.setLayerMode()` |
-| Sub-bar chord resolution | `RhodesInstrument.schedule()` — `getChordAtTick(eventTicks)` |
-| Стиле-специфичные паттерны (guitar) | `GuitarInstrument.scheduleBossaComping()` / `scheduleFunkChops()` |
-| Арпеджио / cycling через voicing | `VibraphoneInstrument.scheduleInserts()` |
-| Контрапункт / мелодические линии | `ClarinetInstrument` — монофонический, contourUp/down |
+| Возможность                              | Где посмотреть                                                    |
+| ---------------------------------------- | ----------------------------------------------------------------- |
+| Несколько режимов (pads, stabs, inserts) | `OrganInstrument`, `VibraphoneInstrument`                         |
+| Комплементарный слой (layer mode)        | `RhodesInstrument.setLayerMode()`                                 |
+| Sub-bar chord resolution                 | `RhodesInstrument.schedule()` — `getChordAtTick(eventTicks)`      |
+| Стиле-специфичные паттерны (guitar)      | `GuitarInstrument.scheduleBossaComping()` / `scheduleFunkChops()` |
+| Арпеджио / cycling через voicing         | `VibraphoneInstrument.scheduleInserts()`                          |
+| Контрапункт / мелодические линии         | `ClarinetInstrument` — монофонический, contourUp/down             |
 
 ---
 
@@ -322,14 +328,16 @@ export class MyInstrument implements Instrument {
 import type { NoteMap } from '@jazz/music-core';
 
 const MY_LAYERS: Record<string, NoteMap> = {
-  soft: {                    // velocity-слой (тихий)
+  soft: {
+    // velocity-слой (тихий)
     C3: 'my_inst_c3_soft.m4a',
     E3: 'my_inst_e3_soft.m4a',
     G3: 'my_inst_g3_soft.m4a',
     C4: 'my_inst_c4_soft.m4a',
     // ... анкерные ноты через квинту/терцию
   },
-  loud: {                    // velocity-слой (громкий)
+  loud: {
+    // velocity-слой (громкий)
     C3: 'my_inst_c3_loud.m4a',
     // ...
   },
@@ -337,6 +345,7 @@ const MY_LAYERS: Record<string, NoteMap> = {
 ```
 
 **Правила:**
+
 - Анкерные ноты — **через квинту (C/G)** или **малую терцию** — Tone.js интерполирует ±2 пт
 - Минимум 1 velocity-слой, рекомендовано 2–3
 - `release` — время затухания сэмпла в секундах (для Tone.Sampler)
@@ -352,17 +361,17 @@ import { ChordTimeline } from '@jazz/music-core';
 import { MY_LAYERS, MY_SAMPLER_BASE_URL } from './sampleRegistry.js';
 
 const MY_SAMPLE_MANIFEST: SampleManifest = {
-  baseUrl: MY_SAMPLER_BASE_URL,            // '/samples/aac/my-instrument/'
+  baseUrl: MY_SAMPLER_BASE_URL, // '/samples/aac/my-instrument/'
   fallbackBaseUrl: '/samples/mp3/my-instrument/',
   layers: MY_LAYERS,
   release: 1.5,
 };
 
 export const myManifest: InstrumentManifest = {
-  id: 'my-instrument',          // уникальный ID — используется в scheduleEvent()
-  name: 'My Instrument',        // читаемое имя в UI
-  family: 'pitched',            // дискриминатор
-  settingsPrefix: 'myInstr',    // префикс настроек в DTO
+  id: 'my-instrument', // уникальный ID — используется в scheduleEvent()
+  name: 'My Instrument', // читаемое имя в UI
+  family: 'pitched', // дискриминатор
+  settingsPrefix: 'myInstr', // префикс настроек в DTO
   createInstrument: () => new MyInstrument(new ChordTimeline()),
   sampleManifest: MY_SAMPLE_MANIFEST,
   defaultSettings: {
@@ -372,25 +381,25 @@ export const myManifest: InstrumentManifest = {
     voicingDensity: 'rootless3',
   },
   perStyleDefaults: {
-    swing:  { pattern: 'pads',    voicingDensity: 'rootless3' },
-    bossa:  { pattern: 'pads',    voicingDensity: 'shell2' },
-    funk:   { pattern: 'stabs',   voicingDensity: 'rootless4' },
-    latin:  { pattern: 'inserts', voicingDensity: 'rootless3' },
-    ballad: { pattern: 'pads',    voicingDensity: 'shell2' },
+    swing: { pattern: 'pads', voicingDensity: 'rootless3' },
+    bossa: { pattern: 'pads', voicingDensity: 'shell2' },
+    funk: { pattern: 'stabs', voicingDensity: 'rootless4' },
+    latin: { pattern: 'inserts', voicingDensity: 'rootless3' },
+    ballad: { pattern: 'pads', voicingDensity: 'shell2' },
   },
 };
 ```
 
-| Поле | Обязательно | Описание |
-|---|---|---|
-| `id` | ✅ | Уникальный ID. Используется в `ctx.scheduleEvent(id, ...)`. |
-| `name` | ✅ | Имя для UI |
-| `family` | ✅ | `'pitched'` |
-| `settingsPrefix` | ✅ | Ключ для `user_settings` (напр. `'organ'`) |
-| `createInstrument` | ✅ | Фабрика `() => new MyInstrument(new ChordTimeline())` |
-| `sampleManifest` | ✅ | Описание сэмплов (см. §6.1) |
-| `defaultSettings` | ❌ | Настройки по умолчанию |
-| `perStyleDefaults` | ❌ | Per-style оверрайды. **Должны покрывать все 5 стилей** (см. §2.1). |
+| Поле               | Обязательно | Описание                                                           |
+| ------------------ | ----------- | ------------------------------------------------------------------ |
+| `id`               | ✅          | Уникальный ID. Используется в `ctx.scheduleEvent(id, ...)`.        |
+| `name`             | ✅          | Имя для UI                                                         |
+| `family`           | ✅          | `'pitched'`                                                        |
+| `settingsPrefix`   | ✅          | Ключ для `user_settings` (напр. `'organ'`)                         |
+| `createInstrument` | ✅          | Фабрика `() => new MyInstrument(new ChordTimeline())`              |
+| `sampleManifest`   | ✅          | Описание сэмплов (см. §6.1)                                        |
+| `defaultSettings`  | ❌          | Настройки по умолчанию                                             |
+| `perStyleDefaults` | ❌          | Per-style оверрайды. **Должны покрывать все 5 стилей** (см. §2.1). |
 
 ---
 
@@ -442,6 +451,7 @@ import myInstrument from '@jazz/plugin-my-instrument';
 ```
 
 Добавить алиасы в 3 файла (по образцу соседних):
+
 - `apps/web/vite.config.ts`
 - `tsconfig.base.json`
 - `vitest.config.ts`
@@ -456,7 +466,7 @@ import myInstrument from '@jazz/plugin-my-instrument';
 
 ```ts
 export type InstrumentId =
-  | 'my-instrument'   // ← добавить
+  | 'my-instrument' // ← добавить
   | (string & {});
 ```
 
@@ -511,15 +521,15 @@ setStyleProfile(profile: StyleProfile): void {
 
 ## 9. Где размещать код
 
-| Что | Где |
-|---|---|
-| Класс `Instrument` | `packages/music-core/src/audio/<имя>Instrument.ts` |
-| Voicing-логика | Там же или отдельный `<имя>Voicing.ts` |
-| Манифест | `packages/music-core/src/audio/<имя>Manifest.ts` (или в плагине) |
-| SampleRegistry | `packages/music-core/src/audio/<имя>SampleRegistry.ts` (или в плагине) |
-| Плагинная обёртка | `packages/plugins/instruments/<имя>/src/index.ts` |
-| Сэмплы (AAC) | `apps/web/public/samples/aac/<имя>/` |
-| Сэмплы (MP3 fallback) | `apps/web/public/samples/mp3/<имя>/` |
+| Что                   | Где                                                                    |
+| --------------------- | ---------------------------------------------------------------------- |
+| Класс `Instrument`    | `packages/music-core/src/audio/<имя>Instrument.ts`                     |
+| Voicing-логика        | Там же или отдельный `<имя>Voicing.ts`                                 |
+| Манифест              | `packages/music-core/src/audio/<имя>Manifest.ts` (или в плагине)       |
+| SampleRegistry        | `packages/music-core/src/audio/<имя>SampleRegistry.ts` (или в плагине) |
+| Плагинная обёртка     | `packages/plugins/instruments/<имя>/src/index.ts`                      |
+| Сэмплы (AAC)          | `apps/web/public/samples/aac/<имя>/`                                   |
+| Сэмплы (MP3 fallback) | `apps/web/public/samples/mp3/<имя>/`                                   |
 
 **На данный момент (2026-07):** часть инструментов (Rhodes, Guitar, Vibraphone, Organ, Clarinet) живут целиком в `music-core`. Миграция в плагины — по мере необходимости. **Новые инструменты** следует сразу создавать как плагины.
 
@@ -548,14 +558,14 @@ setStyleProfile(profile: StyleProfile): void {
 
 ## 11. Эталонные реализации
 
-| Инструмент | Файл | Особенности |
-|---|---|---|
-| **Rhodes** | `rhodesInstrument.ts` | Комплементарный слой (`setLayerMode`), sub-bar chord resolution, conflict avoidance с Grand Piano |
-| **Guitar** | `guitarInstrument.ts` | Собственный voicing-движок, стиле-специфичные паттерны (bossa, funk, Freddie Green), два режима (comp/fingerstyle) |
-| **Vibraphone** | `vibraphoneInstrument.ts` | Два паттерна (pads/inserts), cycling arpeggio, переиспользует `buildPianoVoicing` |
-| **Organ** | `organInstrument.ts` | Три паттерна (pads/stabs/pads-stabs), offbeat-акценты, переиспользует `buildPianoVoicing` |
-| **Clarinet** | `clarinetInstrument.ts` | Монофонический, counterpoint + melodicPhrases, contour direction toggle |
-| **Upright Piano** | `packages/plugins/instruments/upright-piano/` | Плагинная модель, 3 velocity-слоя, `contributes.instruments` |
+| Инструмент                    | Файл                                                                   | Особенности                                                                                                                                                          |
+| ----------------------------- | ---------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Rhodes**                    | `rhodesInstrument.ts`                                                  | Комплементарный слой (`setLayerMode`), sub-bar chord resolution, conflict avoidance с Grand Piano                                                                    |
+| **Guitar**                    | `guitarInstrument.ts`                                                  | Собственный voicing-движок, стиле-специфичные паттерны (bossa, funk, Freddie Green), два режима (comp/fingerstyle)                                                   |
+| **Vibraphone**                | `vibraphoneInstrument.ts`                                              | Два паттерна (pads/inserts), cycling arpeggio, переиспользует `buildPianoVoicing`                                                                                    |
+| **Organ**                     | `organInstrument.ts`                                                   | Три паттерна (pads/stabs/pads-stabs), offbeat-акценты, переиспользует `buildPianoVoicing`                                                                            |
+| **Clarinet**                  | `clarinetInstrument.ts`                                                | Монофонический, counterpoint + melodicPhrases, contour direction toggle                                                                                              |
+| **Upright Piano**             | `packages/plugins/instruments/upright-piano/`                          | Плагинная модель, 3 velocity-слоя, `contributes.instruments`                                                                                                         |
 | **Bass (upright + electric)** | `packages/plugins/instruments/bass/` + `music-core/src/audio/bass*.ts` | Pattern-engine pitched (2-й после piano), `atom.sound` = `${step}-${articulation}`, один плагин → 2 инструмента, авто-переключение варианта по стилю, диапазон B1–C4 |
 
 ---

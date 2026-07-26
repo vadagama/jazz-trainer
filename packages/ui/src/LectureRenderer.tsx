@@ -170,9 +170,7 @@ function LectureHeader({ lecture }: { lecture: LectureDefinition }): ReactNode {
     return labels[meta.level] ?? `Уровень ${meta.level}`;
   })();
 
-  const tags = meta.tags.filter(
-    (tag) => tag.toLowerCase() !== levelLabel.toLowerCase(),
-  );
+  const tags = meta.tags.filter((tag) => tag.toLowerCase() !== levelLabel.toLowerCase());
 
   return (
     <Card className="mb-8">

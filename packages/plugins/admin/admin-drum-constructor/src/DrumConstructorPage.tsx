@@ -15,7 +15,10 @@ export default function DrumConstructorPage() {
     () => ({
       ready: drumPreview.ready,
       currentBar: drumPreview.currentBar,
-      play: drumPreview.play as (hits: DrumHit[], opts: { bpm: number; loopBars: number; loop?: boolean }) => Promise<void>,
+      play: drumPreview.play as (
+        hits: DrumHit[],
+        opts: { bpm: number; loopBars: number; loop?: boolean },
+      ) => Promise<void>,
       stop: drumPreview.stop,
     }),
     [drumPreview],
@@ -28,5 +31,11 @@ export default function DrumConstructorPage() {
     [strategy],
   );
 
-  return <ConstructorPage<DrumPatternStyle, DrumSound> strategy={strategy} preview={preview} store={store} />;
+  return (
+    <ConstructorPage<DrumPatternStyle, DrumSound>
+      strategy={strategy}
+      preview={preview}
+      store={store}
+    />
+  );
 }

@@ -1,9 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  cloneMolecule,
-  cloneCell,
-  cloneOrganism,
-} from '../clone';
+import { cloneMolecule, cloneCell, cloneOrganism } from '../clone';
 import {
   subdivisionsPerBeat,
   ticksPerCol,

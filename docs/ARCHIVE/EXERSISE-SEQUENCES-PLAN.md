@@ -22,8 +22,8 @@
      export type ConcreteSequenceType = Exclude<SequenceType, 'all'>;
      export type SequenceNoteRole = 'pattern' | 'root';
      export interface SequenceNote {
-       name: string;      // например "Eb"
-       pc: number;        // pitch class 0–11
+       name: string; // например "Eb"
+       pc: number; // pitch class 0–11
        role: SequenceNoteRole;
      }
      export type Rng = () => number;
@@ -38,7 +38,11 @@
        pentatonic: [0, 1, 2, 4, 5],
      };
      export const CONCRETE_SEQUENCE_TYPES: ConcreteSequenceType[] = [
-       '1235', '1234', '1357', '1531', 'pentatonic',
+       '1235',
+       '1234',
+       '1357',
+       '1531',
+       'pentatonic',
      ];
      ```
   3. Реализовать `resolveSequencePattern(startPc, type, key, scaleType): SequenceNote[]`:
@@ -404,13 +408,13 @@ T-012 (typecheck + lint + test + ручные проверки)
 
 ## 3. Оценка суммарной трудоёмкости
 
-| Сложность | Количество | Задачи |
-| --- | --- | --- |
-| XS (<1d) | 0 | — |
-| S (1–2d) | 7 | T-002, T-005, T-006, T-007, T-008, T-009, T-011 |
-| M (3–5d) | 3 | T-001, T-003, T-004, T-010 |
-| L (1–2w) | 0 | — |
-| XL (>2w) | 0 | — |
+| Сложность | Количество | Задачи                                          |
+| --------- | ---------- | ----------------------------------------------- |
+| XS (<1d)  | 0          | —                                               |
+| S (1–2d)  | 7          | T-002, T-005, T-006, T-007, T-008, T-009, T-011 |
+| M (3–5d)  | 3          | T-001, T-003, T-004, T-010                      |
+| L (1–2w)  | 0          | —                                               |
+| XL (>2w)  | 0          | —                                               |
 
 **Суммарно (соло):**
 

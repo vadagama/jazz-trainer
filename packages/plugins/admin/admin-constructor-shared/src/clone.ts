@@ -30,14 +30,19 @@ export function cloneCell<TStyle extends string>(c: Cell<TStyle>): Cell<TStyle> 
   };
 }
 
-export function cloneOrganism<TStyle extends string>(o: PatternOrganism<TStyle>): PatternOrganism<TStyle> {
+export function cloneOrganism<TStyle extends string>(
+  o: PatternOrganism<TStyle>,
+): PatternOrganism<TStyle> {
   const sectionMap: PatternOrganism<TStyle>['sectionMap'] = {};
   for (const [key, pool] of Object.entries(o.sectionMap) as [string, string[]][]) {
     sectionMap[key as keyof typeof sectionMap] = [...pool];
   }
   const overrides: Record<string, Record<string, string[]>> = {};
   if (o.timeSignatureOverrides) {
-    for (const [ts, map] of Object.entries(o.timeSignatureOverrides) as [string, Record<string, string[]>][]) {
+    for (const [ts, map] of Object.entries(o.timeSignatureOverrides) as [
+      string,
+      Record<string, string[]>,
+    ][]) {
       const tsMap: Record<string, string[]> = {};
       for (const [sec, pool] of Object.entries(map) as [string, string[]][]) {
         tsMap[sec] = [...pool];
@@ -49,6 +54,9 @@ export function cloneOrganism<TStyle extends string>(o: PatternOrganism<TStyle>)
     ...o,
     sectionMap,
     ...(Object.keys(overrides).length > 0 ? { timeSignatureOverrides: overrides } : {}),
-    defaultForm: o.defaultForm?.map((s: typeof o.defaultForm[number]) => ({ ...s, cellPool: [...s.cellPool] })),
+    defaultForm: o.defaultForm?.map((s: (typeof o.defaultForm)[number]) => ({
+      ...s,
+      cellPool: [...s.cellPool],
+    })),
   };
 }

@@ -30,10 +30,20 @@ export const BASS_SAMPLER_BASE_URL = '/samples/aac/bass/';
  * Electric добавляет rel и stac (electric-only сэмплы).
  */
 export const UPRIGHT_ARTICULATIONS: readonly BassArticulation[] = ['regular', 'muted'];
-export const ELECTRIC_ARTICULATIONS: readonly BassArticulation[] = ['regular', 'muted', 'rel', 'stac'];
+export const ELECTRIC_ARTICULATIONS: readonly BassArticulation[] = [
+  'regular',
+  'muted',
+  'rel',
+  'stac',
+];
 
 /** Все 4 артикуляции (для preview, который грузит все сэмплеры). */
-export const ALL_BASS_ARTICULATIONS: readonly BassArticulation[] = ['regular', 'muted', 'rel', 'stac'];
+export const ALL_BASS_ARTICULATIONS: readonly BassArticulation[] = [
+  'regular',
+  'muted',
+  'rel',
+  'stac',
+];
 
 /** Список артикуляций для варианта. */
 export function articulationsForVariant(variant: BassVariant): readonly BassArticulation[] {

@@ -14,9 +14,7 @@ function FeaturedCard({ entry }: { entry: CatalogEntry }) {
         Выбор редакции
       </div>
       <h3 className="truncate font-semibold leading-snug">{entry.name}</h3>
-      {entry.author && (
-        <p className="truncate text-xs text-muted-foreground">{entry.author}</p>
-      )}
+      {entry.author && <p className="truncate text-xs text-muted-foreground">{entry.author}</p>}
       <div className="mt-auto flex items-center gap-2 text-xs capitalize text-muted-foreground">
         <span>{entry.timeSignature}</span>
         {entry.recommendedTempo && (

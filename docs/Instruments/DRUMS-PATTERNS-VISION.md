@@ -44,17 +44,17 @@ DrumRandomizer.apply(hits, ctx)
 
 ### 2.2. Ограничения
 
-| Аспект | Сейчас | Проблема |
-|--------|--------|----------|
-| **Структура** | Один цикл на стиль, повторяется каждый такт | Нет развития; слушатель слышит «loop» |
-| **Latin** | Деградирует до swing | Босса — не латино; нужны cascara, montuno, songo |
-| **Ballad** | Деградирует до swing | Нужны brushes-текстуры, разреженный kick, мягкий ride |
-| **Вариативность** | Постфактум (randomizer меняет готовые hits) | Нет выбора альтернативных молекул; вариации случайны, а не музыкальны |
-| **Многотактовость** | Только fills каждые N тактов | Нет фразировки на 4–8 тактов; нет нарастания/спада |
-| **Crash** | Каждые `crashFrequency` тактов на beat 1 | Нет связи crash с fills; нет вариантов crash (sizzle, splash) |
-| **Fills** | Только на beat 4, стиль-специфичные | Нет томовых fills перед crash; нет buzz/flam в fills |
-| **Ghost notes** | Случайные на 'e' и 'a' | Нет стиле-специфичных ghost-фраз; нет buzz/flam ghost |
-| **Humanize** | Только timing jitter ±2–7 мс | Нет velocity-вариаций внутри молекулы; нет микро-сдвигов |
+| Аспект              | Сейчас                                      | Проблема                                                              |
+| ------------------- | ------------------------------------------- | --------------------------------------------------------------------- |
+| **Структура**       | Один цикл на стиль, повторяется каждый такт | Нет развития; слушатель слышит «loop»                                 |
+| **Latin**           | Деградирует до swing                        | Босса — не латино; нужны cascara, montuno, songo                      |
+| **Ballad**          | Деградирует до swing                        | Нужны brushes-текстуры, разреженный kick, мягкий ride                 |
+| **Вариативность**   | Постфактум (randomizer меняет готовые hits) | Нет выбора альтернативных молекул; вариации случайны, а не музыкальны |
+| **Многотактовость** | Только fills каждые N тактов                | Нет фразировки на 4–8 тактов; нет нарастания/спада                    |
+| **Crash**           | Каждые `crashFrequency` тактов на beat 1    | Нет связи crash с fills; нет вариантов crash (sizzle, splash)         |
+| **Fills**           | Только на beat 4, стиль-специфичные         | Нет томовых fills перед crash; нет buzz/flam в fills                  |
+| **Ghost notes**     | Случайные на 'e' и 'a'                      | Нет стиле-специфичных ghost-фраз; нет buzz/flam ghost                 |
+| **Humanize**        | Только timing jitter ±2–7 мс                | Нет velocity-вариаций внутри молекулы; нет микро-сдвигов              |
 
 ### 2.3. Что уже есть и будет переиспользовано
 
@@ -68,6 +68,7 @@ DrumRandomizer.apply(hits, ctx)
 ## 3. Целевая архитектура: атомы → молекулы → клетки → организмы
 
 > **Принцип разделения ответственности:**
+>
 > - **Атом** = один звук (что звучит)
 > - **Молекула** = ритмическая фигура на 1–2 такта (как звучит один фрагмент)
 > - **Клетка** = стабильный groove-блок на 8/16/32 такта с вариациями, fills и crash по расписанию (как звучит одна часть формы)
@@ -81,9 +82,9 @@ DrumRandomizer.apply(hits, ctx)
 
 ```ts
 interface DrumAtom {
-  sound: DrumSound;        // 'kick', 'snare_center', 'ride_bow', 'snare_buzz', ...
-  atTick: number;          // смещение от начала молекулы/такта в тиках
-  velocity: number;        // 0–1
+  sound: DrumSound; // 'kick', 'snare_center', 'ride_bow', 'snare_buzz', ...
+  atTick: number; // смещение от начала молекулы/такта в тиках
+  velocity: number; // 0–1
   durationTicks: number;
   /** Артикуляция уже разрешена (не legacy 'snare'/'ride') */
 }
@@ -139,93 +140,93 @@ interface MoleculeConditions {
 
 ##### Swing
 
-| ID | Описание | Тактов | Категория |
-|----|----------|--------|-----------|
-| `swing-ride-basic` | Ride ding-ding-a-ding + hihat chick 2/4 | 1 | groove |
-| `swing-ride-variation-1` | Ride с дополнительным skip на 1& | 1 | groove |
-| `swing-ride-variation-2` | Ride с bell-акцентом на 1 (если rideBellEnabled) | 1 | groove |
-| `swing-feathering-1` | Bass drum feathering (все 4 доли) | 1 | groove |
-| `swing-feathering-2` | Bass drum только 1 и 3 | 1 | groove |
-| `swing-feathering-3` | Bass drum 1, 3&, 4 (syncopated) | 1 | groove |
-| `swing-snare-backbeat` | Snare на 2 и 4 | 1 | groove |
-| `swing-snare-ghost-phrase` | Ghost-ноты на 'e' и 'a' 3-й доли | 1 | texture |
-| `swing-stir-texture` | Stir на 2 и 4 (джазовая текстура) | 1 | texture |
-| `swing-crash-accent` | Crash на 1-й доле | 1 | accent |
-| `swing-fill-triplet-1` | Триольный fill snare + tom | 1 | fill |
-| `swing-fill-tom-run` | Томовый run 16-ми | 1 | fill |
-| `swing-intro-4clicks` | 4 клика stick-click перед входом | 1 | intro |
-| `swing-ending-crash` | Финальный crash + release | 1 | ending |
+| ID                         | Описание                                         | Тактов | Категория |
+| -------------------------- | ------------------------------------------------ | ------ | --------- |
+| `swing-ride-basic`         | Ride ding-ding-a-ding + hihat chick 2/4          | 1      | groove    |
+| `swing-ride-variation-1`   | Ride с дополнительным skip на 1&                 | 1      | groove    |
+| `swing-ride-variation-2`   | Ride с bell-акцентом на 1 (если rideBellEnabled) | 1      | groove    |
+| `swing-feathering-1`       | Bass drum feathering (все 4 доли)                | 1      | groove    |
+| `swing-feathering-2`       | Bass drum только 1 и 3                           | 1      | groove    |
+| `swing-feathering-3`       | Bass drum 1, 3&, 4 (syncopated)                  | 1      | groove    |
+| `swing-snare-backbeat`     | Snare на 2 и 4                                   | 1      | groove    |
+| `swing-snare-ghost-phrase` | Ghost-ноты на 'e' и 'a' 3-й доли                 | 1      | texture   |
+| `swing-stir-texture`       | Stir на 2 и 4 (джазовая текстура)                | 1      | texture   |
+| `swing-crash-accent`       | Crash на 1-й доле                                | 1      | accent    |
+| `swing-fill-triplet-1`     | Триольный fill snare + tom                       | 1      | fill      |
+| `swing-fill-tom-run`       | Томовый run 16-ми                                | 1      | fill      |
+| `swing-intro-4clicks`      | 4 клика stick-click перед входом                 | 1      | intro     |
+| `swing-ending-crash`       | Финальный crash + release                        | 1      | ending    |
 
 ##### Bossa Nova
 
-| ID | Описание | Тактов | Категория |
-|----|----------|--------|-----------|
-| `bossa-clave-rim-1` | Базовый clave: rim на 1, 2, 3 | 1 | groove |
-| `bossa-clave-rim-2` | Clave с вариацией: rim на 1, 2&, 3, 4 | 1 | groove |
-| `bossa-clave-xstick` | Cross-stick вариант clave | 1 | groove |
-| `bossa-kick-partido` | Partido alto kick: 1, 2&, 3& | 1 | groove |
-| `bossa-kick-syncopated` | Синкопированный kick: 1, 2&, 3, 4& | 1 | groove |
-| `bossa-hihat-8ths` | Восьмые hihat (закрытый + полуоткрытый) | 1 | groove |
-| `bossa-hihat-chick` | Hihat chick на 2 и 4 | 1 | groove |
-| `bossa-ride-bossa` | Ride bossa-паттерн (1, 1&, 2&, 3, 3&, 4&) | 1 | groove |
-| `bossa-fill-tom-samba` | Томовый fill в стиле samba | 1 | fill |
-| `bossa-fill-rim-variation` | Вариация clave с дополнительными rim | 1 | fill |
-| `bossa-crash-accent` | Crash на 1-й доле | 1 | accent |
+| ID                         | Описание                                  | Тактов | Категория |
+| -------------------------- | ----------------------------------------- | ------ | --------- |
+| `bossa-clave-rim-1`        | Базовый clave: rim на 1, 2, 3             | 1      | groove    |
+| `bossa-clave-rim-2`        | Clave с вариацией: rim на 1, 2&, 3, 4     | 1      | groove    |
+| `bossa-clave-xstick`       | Cross-stick вариант clave                 | 1      | groove    |
+| `bossa-kick-partido`       | Partido alto kick: 1, 2&, 3&              | 1      | groove    |
+| `bossa-kick-syncopated`    | Синкопированный kick: 1, 2&, 3, 4&        | 1      | groove    |
+| `bossa-hihat-8ths`         | Восьмые hihat (закрытый + полуоткрытый)   | 1      | groove    |
+| `bossa-hihat-chick`        | Hihat chick на 2 и 4                      | 1      | groove    |
+| `bossa-ride-bossa`         | Ride bossa-паттерн (1, 1&, 2&, 3, 3&, 4&) | 1      | groove    |
+| `bossa-fill-tom-samba`     | Томовый fill в стиле samba                | 1      | fill      |
+| `bossa-fill-rim-variation` | Вариация clave с дополнительными rim      | 1      | fill      |
+| `bossa-crash-accent`       | Crash на 1-й доле                         | 1      | accent    |
 
 ##### Funk
 
-| ID | Описание | Тактов | Категория |
-|----|----------|--------|-----------|
-| `funk-kick-linear-1` | Linear kick: 1, 1&, 2&, 3, 3e | 1 | groove |
-| `funk-kick-linear-2` | Linear kick: 1, 1a, 2&, 3&, 4 | 1 | groove |
-| `funk-kick-ghosted` | Kick с ghost-нотами на 'e' и 'a' | 1 | groove |
-| `funk-snare-backbeat` | Snare accent на 2 и 4 | 1 | groove |
-| `funk-snare-rimshot` | Rimshot на 2 и 4 (accent) | 1 | groove |
-| `funk-snare-ghost-16ths` | Ghost-ноты 16-ми между backbeat'ами | 1 | texture |
-| `funk-snare-buzz-phrase` | Buzz-roll фраза (2 такта) | 2 | texture |
-| `funk-snare-flam-accent` | Flam на 4-й доле → переход | 1 | accent |
-| `funk-hihat-16ths` | Закрытый hihat 16-ми | 1 | groove |
-| `funk-hihat-open-offbeat` | Открытый hihat на offbeat'ах | 1 | groove |
-| `funk-hihat-bark` | Hihat bark (короткий открытый) на 1& | 1 | accent |
-| `funk-ride-bell` | Ride bell на 1 и 3 | 1 | groove |
-| `funk-crash-sizzle` | Sizzle crash на 1-й доле | 1 | accent |
-| `funk-fill-16ths` | 16-е snare fill + crash | 1 | fill |
-| `funk-fill-tom-bass` | Tom + kick fill перед crash | 1 | fill |
-| `funk-fill-buzz-flam` | Fill с buzz + flam | 1 | fill |
-| `funk-intro-4bars` | 4-тактовое intro (kick build-up) | 2 | intro |
+| ID                        | Описание                             | Тактов | Категория |
+| ------------------------- | ------------------------------------ | ------ | --------- |
+| `funk-kick-linear-1`      | Linear kick: 1, 1&, 2&, 3, 3e        | 1      | groove    |
+| `funk-kick-linear-2`      | Linear kick: 1, 1a, 2&, 3&, 4        | 1      | groove    |
+| `funk-kick-ghosted`       | Kick с ghost-нотами на 'e' и 'a'     | 1      | groove    |
+| `funk-snare-backbeat`     | Snare accent на 2 и 4                | 1      | groove    |
+| `funk-snare-rimshot`      | Rimshot на 2 и 4 (accent)            | 1      | groove    |
+| `funk-snare-ghost-16ths`  | Ghost-ноты 16-ми между backbeat'ами  | 1      | texture   |
+| `funk-snare-buzz-phrase`  | Buzz-roll фраза (2 такта)            | 2      | texture   |
+| `funk-snare-flam-accent`  | Flam на 4-й доле → переход           | 1      | accent    |
+| `funk-hihat-16ths`        | Закрытый hihat 16-ми                 | 1      | groove    |
+| `funk-hihat-open-offbeat` | Открытый hihat на offbeat'ах         | 1      | groove    |
+| `funk-hihat-bark`         | Hihat bark (короткий открытый) на 1& | 1      | accent    |
+| `funk-ride-bell`          | Ride bell на 1 и 3                   | 1      | groove    |
+| `funk-crash-sizzle`       | Sizzle crash на 1-й доле             | 1      | accent    |
+| `funk-fill-16ths`         | 16-е snare fill + crash              | 1      | fill      |
+| `funk-fill-tom-bass`      | Tom + kick fill перед crash          | 1      | fill      |
+| `funk-fill-buzz-flam`     | Fill с buzz + flam                   | 1      | fill      |
+| `funk-intro-4bars`        | 4-тактовое intro (kick build-up)     | 2      | intro     |
 
 ##### Latin
 
-| ID | Описание | Тактов | Категория |
-|----|----------|--------|-----------|
-| `latin-cascara-1` | Cascara на ride/rim: 1, 1&, 2, 2&, 3, 3a, 4 | 1 | groove |
-| `latin-cascara-2` | Cascara вариация с акцентами | 1 | groove |
-| `latin-clave-son-2-3` | Son clave 2-3 | 2 | groove |
-| `latin-clave-son-3-2` | Son clave 3-2 | 2 | groove |
-| `latin-clave-rumba-3-2` | Rumba clave 3-2 | 2 | groove |
-| `latin-kick-tumbao` | Tumbao kick: 1, 2&, 3, 4 | 1 | groove |
-| `latin-kick-montuno` | Montuno kick: синкопированный | 1 | groove |
-| `latin-hihat-cascara` | Hihat + cascara комбинация | 1 | groove |
-| `latin-crash-accent` | Crash на 1 | 1 | accent |
-| `latin-fill-timbal` | Timbal-style fill | 1 | fill |
-| `latin-fill-conga` | Conga-style томовый fill | 1 | fill |
+| ID                      | Описание                                    | Тактов | Категория |
+| ----------------------- | ------------------------------------------- | ------ | --------- |
+| `latin-cascara-1`       | Cascara на ride/rim: 1, 1&, 2, 2&, 3, 3a, 4 | 1      | groove    |
+| `latin-cascara-2`       | Cascara вариация с акцентами                | 1      | groove    |
+| `latin-clave-son-2-3`   | Son clave 2-3                               | 2      | groove    |
+| `latin-clave-son-3-2`   | Son clave 3-2                               | 2      | groove    |
+| `latin-clave-rumba-3-2` | Rumba clave 3-2                             | 2      | groove    |
+| `latin-kick-tumbao`     | Tumbao kick: 1, 2&, 3, 4                    | 1      | groove    |
+| `latin-kick-montuno`    | Montuno kick: синкопированный               | 1      | groove    |
+| `latin-hihat-cascara`   | Hihat + cascara комбинация                  | 1      | groove    |
+| `latin-crash-accent`    | Crash на 1                                  | 1      | accent    |
+| `latin-fill-timbal`     | Timbal-style fill                           | 1      | fill      |
+| `latin-fill-conga`      | Conga-style томовый fill                    | 1      | fill      |
 
 ##### Ballad
 
-| ID | Описание | Тактов | Категория |
-|----|----------|--------|-----------|
-| `ballad-ride-soft` | Мягкий ride (только доли, без swing-восьмых) | 1 | groove |
-| `ballad-ride-brushes` | Ride + stir (имитация щёток) | 1 | groove |
-| `ballad-kick-feathering` | Bass drum feathering (очень мягко) | 1 | groove |
-| `ballad-kick-two-feel` | Kick на 1 и 3 (two-feel) | 1 | groove |
-| `ballad-snare-crossstick` | Cross-stick на 2 и 4 (вместо snare) | 1 | groove |
-| `ballad-snare-soft` | Snare на 2 и 4 (мягко) | 1 | groove |
-| `ballad-hihat-chick` | Hihat chick на 2 и 4 (очень тихо) | 1 | groove |
-| `ballad-stir-texture` | Stir текстурный слой | 1 | texture |
-| `ballad-crash-soft` | Мягкий crash (sizzle) на 1 | 1 | accent |
-| `ballad-fill-brush` | Мягкий fill (snare ghost + cross-stick) | 1 | fill |
-| `ballad-fill-tom-swell` | Томовый swell (крещендо) | 2 | fill |
-| `ballad-ending-ritard` | Замедляющийся ending | 2 | ending |
+| ID                        | Описание                                     | Тактов | Категория |
+| ------------------------- | -------------------------------------------- | ------ | --------- |
+| `ballad-ride-soft`        | Мягкий ride (только доли, без swing-восьмых) | 1      | groove    |
+| `ballad-ride-brushes`     | Ride + stir (имитация щёток)                 | 1      | groove    |
+| `ballad-kick-feathering`  | Bass drum feathering (очень мягко)           | 1      | groove    |
+| `ballad-kick-two-feel`    | Kick на 1 и 3 (two-feel)                     | 1      | groove    |
+| `ballad-snare-crossstick` | Cross-stick на 2 и 4 (вместо snare)          | 1      | groove    |
+| `ballad-snare-soft`       | Snare на 2 и 4 (мягко)                       | 1      | groove    |
+| `ballad-hihat-chick`      | Hihat chick на 2 и 4 (очень тихо)            | 1      | groove    |
+| `ballad-stir-texture`     | Stir текстурный слой                         | 1      | texture   |
+| `ballad-crash-soft`       | Мягкий crash (sizzle) на 1                   | 1      | accent    |
+| `ballad-fill-brush`       | Мягкий fill (snare ghost + cross-stick)      | 1      | fill      |
+| `ballad-fill-tom-swell`   | Томовый swell (крещендо)                     | 2      | fill      |
+| `ballad-ending-ritard`    | Замедляющийся ending                         | 2      | ending    |
 
 ### 3.3. Уровень 2: Клетки
 
@@ -285,13 +286,13 @@ interface DrumCell {
 
 **Ключевые отличия от v1.0:**
 
-| Аспект | v1.0 (старая клетка) | v1.1 (новая клетка) |
-|--------|----------------------|---------------------|
-| Структура | Секции разных типов: groove→build→peak→fill→crash | Единый groove-блок с вариациями и fills по расписанию |
-| Смена манеры | Каждые 2–4 такта (внутри клетки) | Только при смене клетки (организм управляет) |
-| Intro/ending | Как тип секции внутри клетки | Как отдельная клетка, назначаемая организмом |
-| Build | Как тип секции внутри клетки | Реализуется через `dynamicsType: 'crescendo'` или отдельную build-клетку |
-| Рандомизация | Секции перемешиваются (`sectionShuffle`) | `DrumRandomizer` работает внутри стабильного groove (ride variation, ghost notes) |
+| Аспект       | v1.0 (старая клетка)                              | v1.1 (новая клетка)                                                               |
+| ------------ | ------------------------------------------------- | --------------------------------------------------------------------------------- |
+| Структура    | Секции разных типов: groove→build→peak→fill→crash | Единый groove-блок с вариациями и fills по расписанию                             |
+| Смена манеры | Каждые 2–4 такта (внутри клетки)                  | Только при смене клетки (организм управляет)                                      |
+| Intro/ending | Как тип секции внутри клетки                      | Как отдельная клетка, назначаемая организмом                                      |
+| Build        | Как тип секции внутри клетки                      | Реализуется через `dynamicsType: 'crescendo'` или отдельную build-клетку          |
+| Рандомизация | Секции перемешиваются (`sectionShuffle`)          | `DrumRandomizer` работает внутри стабильного groove (ride variation, ghost notes) |
 
 #### Примеры клеток
 
@@ -428,6 +429,7 @@ interface DrumCell {
 **Организм** — композиционная форма произведения, состоящая из клеток. Это верхний уровень иерархии, отвечающий за макро-структуру.
 
 Организм определяет:
+
 - **Форму:** intro → A1 → A2 → B → ending (повторяет структуру произведения)
 - **Какая клетка играет в каждой части формы**
 - **Смену манеры игры** — именно организм решает, когда перейти от сдержанного groove к эмоциональному, от groove к texture и т.д.
@@ -467,13 +469,13 @@ interface OrganismSection {
 
 **Типы секций организма и их поведение:**
 
-| Тип | Поведение | Пример клеток |
-|-----|-----------|---------------|
-| `intro` | Играется однократно в начале. Использует специальные intro-клетки (4 клика, нарастание). **Intro-молекулы задействуются только здесь.** | `swing-4-intro`, `funk-8-intro` |
-| `verse` | Основная часть формы (A1, A2). Сдержанный groove с периодическими вариациями. Может повторяться (`repeats: 2`). | `swing-16-restrained`, `bossa-16-verse` |
-| `chorus` | Припев. Более плотный groove, возможен build-up через `dynamicsType: 'crescendo'` в клетке. | `swing-16-peak`, `funk-16-chorus` |
+| Тип      | Поведение                                                                                                                                                             | Пример клеток                             |
+| -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| `intro`  | Играется однократно в начале. Использует специальные intro-клетки (4 клика, нарастание). **Intro-молекулы задействуются только здесь.**                               | `swing-4-intro`, `funk-8-intro`           |
+| `verse`  | Основная часть формы (A1, A2). Сдержанный groove с периодическими вариациями. Может повторяться (`repeats: 2`).                                                       | `swing-16-restrained`, `bossa-16-verse`   |
+| `chorus` | Припев. Более плотный groove, возможен build-up через `dynamicsType: 'crescendo'` в клетке.                                                                           | `swing-16-peak`, `funk-16-chorus`         |
 | `bridge` | Бридж (B). Эмоциональный groove, текстурные элементы. **Эмоциональный грув — только здесь.** После завершения может переключиться groove→texture (`switchToTexture`). | `swing-16-emotional`, `ballad-16-texture` |
-| `ending` | Играется однократно в конце. Использует ending-клетки (замедление, финальный crash). **Ending-молекулы задействуются только здесь.** | `swing-8-ending`, `ballad-16-ending` |
+| `ending` | Играется однократно в конце. Использует ending-клетки (замедление, финальный crash). **Ending-молекулы задействуются только здесь.**                                  | `swing-8-ending`, `ballad-16-ending`      |
 
 #### Примеры организмов
 
@@ -591,10 +593,10 @@ interface DrumPatternEngine {
   /** Собрать hits для конкретного такта внутри клетки */
   assembleBar(
     cell: DrumCell,
-    barInCell: number,        // 0..cell.length-1
-    barInOrganism: number,    // абсолютный индекс такта в организме
+    barInCell: number, // 0..cell.length-1
+    barInOrganism: number, // абсолютный индекс такта в организме
     settings: DrumInstrumentSettings,
-    swingRatio: number,       // 0.5 (straight) – 0.75 (heavy swing)
+    swingRatio: number, // 0.5 (straight) – 0.75 (heavy swing)
     seed: number,
   ): DrumHit[];
 
@@ -613,7 +615,7 @@ interface DrumPatternEngine {
 
 > **Инвариант идемпотентности.** `assembleBar()` (и вся диспетчеризация в
 > `DrumInstrument.schedule()`) обязана быть **чистой функцией от `(cell, barInCell,
-> barInOrganism, seed)`**. Планировщик транспорта режет такты на под-тактовые окна
+barInOrganism, seed)`**. Планировщик транспорта режет такты на под-тактовые окна
 > и может вызвать `schedule()` для одного и того же абсолютного такта несколько раз.
 > Позиция в организме (`barInCell`, номер секции) должна выводиться **детерминированно
 > из абсолютного номера такта**, а не из мутабельного счётчика: иначе один такт
@@ -686,7 +688,7 @@ interface DrumPatternEngine {
 > «убегает». Рабочая реализация вычисляет позицию детерминированно из абсолютного
 > номера такта: организм разворачивается в плоский layout секций
 > (`resolveBar(bar)`), `posInOrg = bar % organismTotalLength`, `barInCell = (posInOrg -
-> sectionStart) % cell.length`. Состояние между вызовами `schedule()` не хранится
+sectionStart) % cell.length`. Состояние между вызовами `schedule()` не хранится
 > (кроме одноразового выбора организма).
 
 ```ts
@@ -703,7 +705,9 @@ class DrumInstrument implements Instrument {
     if (!this.currentOrganism || this.formChanged(ctx)) {
       this.organismSeed = this.generateSeed(ctx);
       this.currentOrganism = this.patternEngine.selectOrganism(
-        this.currentStyle, ctx.formLength, this.organismSeed
+        this.currentStyle,
+        ctx.formLength,
+        this.organismSeed,
       );
       this.currentSectionIndex = 0;
       this.barInSection = 0;
@@ -733,7 +737,8 @@ class DrumInstrument implements Instrument {
   private selectNextCell(ctx: ScheduleContext): void {
     const section = this.currentOrganism.sections[this.currentSectionIndex];
     this.currentCell = this.patternEngine.selectCellForSection(
-      section, this.currentStyle,
+      section,
+      this.currentStyle,
       this.organismSeed + this.currentSectionIndex * 1000,
       this.settings,
     );
@@ -748,7 +753,7 @@ class DrumInstrument implements Instrument {
       this.currentSectionIndex++;
       if (this.currentSectionIndex >= this.currentOrganism.sections.length) {
         // Организм завершён — начать заново (loop) или остановить
-        this.currentSectionIndex = 0;  // loop
+        this.currentSectionIndex = 0; // loop
       }
       // Применить switchToTexture для bridge-секции
       if (section.params?.switchToTexture && this.currentCell.textureMoleculePool) {
@@ -767,11 +772,11 @@ class DrumInstrument implements Instrument {
 
 Рандомизация действует на трёх уровнях:
 
-| Уровень | Что варьирует | Настройка |
-|---------|---------------|-----------|
-| **Молекулярный** | Выбор молекул из пула (groove, variation), ghost-ноты внутри молекул | `randomizationLevel` |
-| **Клеточный** | Выбор конкретной клетки из пула секции организма, выбор вариаций | `cellVariationRandomization` |
-| **Микро** | Humanize (timing, velocity), `DrumRandomizer` (ride variation, ghost notes) | `humanizeIntensity` |
+| Уровень          | Что варьирует                                                               | Настройка                    |
+| ---------------- | --------------------------------------------------------------------------- | ---------------------------- |
+| **Молекулярный** | Выбор молекул из пула (groove, variation), ghost-ноты внутри молекул        | `randomizationLevel`         |
+| **Клеточный**    | Выбор конкретной клетки из пула секции организма, выбор вариаций            | `cellVariationRandomization` |
+| **Микро**        | Humanize (timing, velocity), `DrumRandomizer` (ride variation, ghost notes) | `humanizeIntensity`          |
 
 > **v1.1 изменение:** «Клеточная рандомизация» больше не означает перестановку секций внутри клетки (секций больше нет). Теперь это выбор клетки из пула и выбор вариационных молекул.
 
@@ -860,12 +865,12 @@ interface DrumInstrumentSettings {
 
 ### 5.3. Таблица вероятностей молекулярной рандомизации
 
-| Уровень | Шанс выбора alt-молекулы | Шанс ghost-вариации | Шанс пропуска ride |
-|---------|--------------------------|---------------------|---------------------|
-| `off` | 0% | 0% | 0% |
-| `subtle` | 10% | 15% | 5% |
-| `moderate` | 25% | 30% | 10% |
-| `high` | 40% | 50% | 20% |
+| Уровень    | Шанс выбора alt-молекулы | Шанс ghost-вариации | Шанс пропуска ride |
+| ---------- | ------------------------ | ------------------- | ------------------ |
+| `off`      | 0%                       | 0%                  | 0%                 |
+| `subtle`   | 10%                      | 15%                 | 5%                 |
+| `moderate` | 25%                      | 30%                 | 10%                |
+| `high`     | 40%                      | 50%                 | 20%                |
 
 ## 6. Наследование свинга (swing ratio)
 
@@ -879,21 +884,26 @@ interface DrumInstrumentSettings {
 
 ### 6.2. Что сдвигается
 
-| Стиль | Сдвигаются | Не сдвигаются |
-|-------|-----------|---------------|
-| **Swing** | Ride skip-ноты, hihat offbeat, bass drum syncopation | Snare на 2 и 4, crash, kick на 1 и 3 |
-| **Bossa** | Hihat восьмые, bass drum 2& | Rim clave (строгая доля), crash |
-| **Funk** | Hihat 1&, bass drum syncopation | Snare на 2 и 4, 16-е 'e' и 'a' |
-| **Latin** | Cascara offbeat, hihat восьмые | Clave (строгая доля) |
-| **Ballad** | Ride offbeat (если есть) | Всё остальное (ballad ≈ straight) |
+| Стиль      | Сдвигаются                                           | Не сдвигаются                        |
+| ---------- | ---------------------------------------------------- | ------------------------------------ |
+| **Swing**  | Ride skip-ноты, hihat offbeat, bass drum syncopation | Snare на 2 и 4, crash, kick на 1 и 3 |
+| **Bossa**  | Hihat восьмые, bass drum 2&                          | Rim clave (строгая доля), crash      |
+| **Funk**   | Hihat 1&, bass drum syncopation                      | Snare на 2 и 4, 16-е 'e' и 'a'       |
+| **Latin**  | Cascara offbeat, hihat восьмые                       | Clave (строгая доля)                 |
+| **Ballad** | Ride offbeat (если есть)                             | Всё остальное (ballad ≈ straight)    |
 
 ### 6.3. Реализация
 
 ```ts
-function applySwing(tick: number, beatStart: number, beatDuration: number, swingRatio: number): number {
+function applySwing(
+  tick: number,
+  beatStart: number,
+  beatDuration: number,
+  swingRatio: number,
+): number {
   const offsetInBeat = tick - beatStart;
   // Только offbeat-восьмые: вторая половина доли
-  if (offsetInBeat >= beatDuration / 3 && offsetInBeat <= beatDuration * 2 / 3) {
+  if (offsetInBeat >= beatDuration / 3 && offsetInBeat <= (beatDuration * 2) / 3) {
     return beatStart + Math.round(swingRatio * beatDuration);
   }
   return tick;
@@ -930,13 +940,13 @@ Fill занимает последний такт перед crash. Всегда
 
 **Fill-молекулы по стилям:**
 
-| Стиль | simple | medium | complex |
-|-------|--------|--------|---------|
-| **Swing** | Snare восьмые на beat 4 | Snare + kick триоли | Tom run 16-е + crash |
-| **Bossa** | Rim вариация | Rim + syncopated kick | Tom samba fill |
-| **Funk** | Snare 16-е | Snare + tom 16-е | Snare + tom + buzz + flam |
-| **Latin** | Cascara вариация | Timbal fill | Конговый fill + crash |
-| **Ballad** | Snare ghost | Cross-stick + мягкий том | Томовый swell |
+| Стиль      | simple                  | medium                   | complex                   |
+| ---------- | ----------------------- | ------------------------ | ------------------------- |
+| **Swing**  | Snare восьмые на beat 4 | Snare + kick триоли      | Tom run 16-е + crash      |
+| **Bossa**  | Rim вариация            | Rim + syncopated kick    | Tom samba fill            |
+| **Funk**   | Snare 16-е              | Snare + tom 16-е         | Snare + tom + buzz + flam |
+| **Latin**  | Cascara вариация        | Timbal fill              | Конговый fill + crash     |
+| **Ballad** | Snare ghost             | Cross-stick + мягкий том | Томовый swell             |
 
 ### 7.3. Fill → Crash цепочка
 
@@ -966,28 +976,28 @@ Ghost notes — тихие (velocity 0.15–0.35) удары по snare на с�
 // Пример ghost-фразы для swing:
 // Такт с ghost-нотами на 3e, 3a, 4e
 const swingGhostPhrase: DrumAtom[] = [
-  { sound: 'snare', atTick: beat3Tick + sub16th,       velocity: 0.2, durationTicks: 60 },  // 3e
-  { sound: 'snare', atTick: beat3Tick + sub16th * 3,    velocity: 0.25, durationTicks: 60 }, // 3a
-  { sound: 'snare', atTick: beat4Tick + sub16th,        velocity: 0.3, durationTicks: 60 },  // 4e (crescendo к следующему backbeat)
+  { sound: 'snare', atTick: beat3Tick + sub16th, velocity: 0.2, durationTicks: 60 }, // 3e
+  { sound: 'snare', atTick: beat3Tick + sub16th * 3, velocity: 0.25, durationTicks: 60 }, // 3a
+  { sound: 'snare', atTick: beat4Tick + sub16th, velocity: 0.3, durationTicks: 60 }, // 4e (crescendo к следующему backbeat)
 ];
 ```
 
 **Настройки:**
 
-| Параметр | Описание | Значения |
-|----------|----------|----------|
-| `snareGhosts` | Включить ghost notes | `boolean` |
-| `ghostIntensity` | Интенсивность (0–1) | влияет на частоту и velocity |
-| `ghostStyle` | Стиль ghost-фраз | `'sparse' \| 'medium' \| 'dense' \| 'funk'` |
+| Параметр         | Описание             | Значения                                    |
+| ---------------- | -------------------- | ------------------------------------------- |
+| `snareGhosts`    | Включить ghost notes | `boolean`                                   |
+| `ghostIntensity` | Интенсивность (0–1)  | влияет на частоту и velocity                |
+| `ghostStyle`     | Стиль ghost-фраз     | `'sparse' \| 'medium' \| 'dense' \| 'funk'` |
 
 **Стили ghost-фраз:**
 
-| ghostStyle | Характер | Пример |
-|------------|----------|--------|
-| `sparse` | 1–2 ghost-ноты на такт, только 'e' | Swing ballad |
-| `medium` | 2–4 ghost-ноты, 'e' и 'a' | Swing medium |
-| `dense` | 4–6 ghost-нот, включая offbeat | Swing up-tempo |
-| `funk` | 16-е ghost-сетки с акцентами | Funk |
+| ghostStyle | Характер                           | Пример         |
+| ---------- | ---------------------------------- | -------------- |
+| `sparse`   | 1–2 ghost-ноты на такт, только 'e' | Swing ballad   |
+| `medium`   | 2–4 ghost-ноты, 'e' и 'a'          | Swing medium   |
+| `dense`    | 4–6 ghost-нот, включая offbeat     | Swing up-tempo |
+| `funk`     | 16-е ghost-сетки с акцентами       | Funk           |
 
 ### 8.2. Buzz (buzz-roll)
 
@@ -998,11 +1008,11 @@ Buzz — прессовый удар (multiple bounce), маркируется �
 
 **Настройки:**
 
-| Параметр | Описание | Значения |
-|----------|----------|----------|
-| `buzzEnabled` | Включить buzz | `boolean` |
+| Параметр          | Описание                               | Значения           |
+| ----------------- | -------------------------------------- | ------------------ |
+| `buzzEnabled`     | Включить buzz                          | `boolean`          |
 | `buzzProbability` | Вероятность замены ghost на buzz (0–1) | `0.3` по умолчанию |
-| `buzzMinVelocity` | Минимальная velocity для buzz | `0.15` |
+| `buzzMinVelocity` | Минимальная velocity для buzz          | `0.15`             |
 
 **Алгоритм замены ghost → buzz:**
 
@@ -1022,11 +1032,11 @@ Flam — форшлаг (основной удар + тихий предудар
 
 **Настройки:**
 
-| Параметр | Описание | Значения |
-|----------|----------|----------|
-| `flamEnabled` | Включить flam | `boolean` |
+| Параметр          | Описание                                        | Значения           |
+| ----------------- | ----------------------------------------------- | ------------------ |
+| `flamEnabled`     | Включить flam                                   | `boolean`          |
 | `flamProbability` | Вероятность flam на акцентированной snare (0–1) | `0.2` по умолчанию |
-| `flamMinVelocity` | Минимальная velocity для flam | `0.75` |
+| `flamMinVelocity` | Минимальная velocity для flam                   | `0.75`             |
 
 **Алгоритм замены snare → flam:**
 
@@ -1106,29 +1116,46 @@ interface DrumInstrumentSettings {
 ```ts
 function isAtomEnabled(atom: DrumAtom, s: DrumInstrumentSettings): boolean {
   switch (atom.sound) {
-    case 'kick':              return s.bassDrumEnabled;
+    case 'kick':
+      return s.bassDrumEnabled;
     case 'snare_center':
     case 'snare_edge':
-    case 'snare_dig':         return s.snareEnabled;
-    case 'snare_buzz':        return s.snareEnabled && s.snareBuzzEnabled;
-    case 'snare_flam':        return s.snareEnabled && s.snareFlamEnabled;
-    case 'snare_rimshot':     return s.snareEnabled && s.snareRimshotEnabled;
-    case 'snare_crossstick':  return s.snareEnabled && s.snareCrossstickEnabled;
-    case 'snare_muted':       return s.snareEnabled && s.snareMutedEnabled;
+    case 'snare_dig':
+      return s.snareEnabled;
+    case 'snare_buzz':
+      return s.snareEnabled && s.snareBuzzEnabled;
+    case 'snare_flam':
+      return s.snareEnabled && s.snareFlamEnabled;
+    case 'snare_rimshot':
+      return s.snareEnabled && s.snareRimshotEnabled;
+    case 'snare_crossstick':
+      return s.snareEnabled && s.snareCrossstickEnabled;
+    case 'snare_muted':
+      return s.snareEnabled && s.snareMutedEnabled;
     case 'hihat_closed':
-    case 'hihat_open':        return s.hihatEnabled;
-    case 'hihat_foot':        return s.hihatEnabled && s.hihatFootEnabled;
-    case 'hihat_stir':        return s.stirEnabled;
-    case 'ride_bow':          return s.rideEnabled;
-    case 'ride_bell':         return s.rideEnabled && s.rideBellEnabled;
-    case 'crash':             return s.crashEnabled;
-    case 'crash_sizzle':      return s.crashEnabled && s.crashSizzleEnabled;
-    case 'splash':            return s.splashEnabled;
+    case 'hihat_open':
+      return s.hihatEnabled;
+    case 'hihat_foot':
+      return s.hihatEnabled && s.hihatFootEnabled;
+    case 'hihat_stir':
+      return s.stirEnabled;
+    case 'ride_bow':
+      return s.rideEnabled;
+    case 'ride_bell':
+      return s.rideEnabled && s.rideBellEnabled;
+    case 'crash':
+      return s.crashEnabled;
+    case 'crash_sizzle':
+      return s.crashEnabled && s.crashSizzleEnabled;
+    case 'splash':
+      return s.splashEnabled;
     case 'tom_hi':
     case 'tom_lo':
     case 'tom_mhi':
-    case 'tom_mlow':          return s.tomEnabled;
-    default:                  return true;
+    case 'tom_mlow':
+      return s.tomEnabled;
+    default:
+      return true;
   }
 }
 ```
@@ -1139,9 +1166,9 @@ function isAtomEnabled(atom: DrumAtom, s: DrumInstrumentSettings): boolean {
 
 ```ts
 const HUMANIZE_PARAMS: Record<HumanizeIntensity, { timingMs: number }> = {
-  off:  { timingMs: 0 },
-  low:  { timingMs: 2 },
-  med:  { timingMs: 4 },
+  off: { timingMs: 0 },
+  low: { timingMs: 2 },
+  med: { timingMs: 4 },
   high: { timingMs: 7 },
 };
 ```
@@ -1165,21 +1192,35 @@ interface HumanizeParams {
 }
 
 const HUMANIZE_PRESETS: Record<HumanizeIntensity, HumanizeParams> = {
-  off:  { timingMs: 0, velocityVar: 0,    microShiftTicks: 0, barGrooveTicks: 0, dropProbability: 0    },
-  low:  { timingMs: 2, velocityVar: 0.03, microShiftTicks: 2, barGrooveTicks: 3, dropProbability: 0.01 },
-  med:  { timingMs: 4, velocityVar: 0.06, microShiftTicks: 4, barGrooveTicks: 5, dropProbability: 0.02 },
-  high: { timingMs: 7, velocityVar: 0.10, microShiftTicks: 6, barGrooveTicks: 8, dropProbability: 0.05 },
+  off: { timingMs: 0, velocityVar: 0, microShiftTicks: 0, barGrooveTicks: 0, dropProbability: 0 },
+  low: {
+    timingMs: 2,
+    velocityVar: 0.03,
+    microShiftTicks: 2,
+    barGrooveTicks: 3,
+    dropProbability: 0.01,
+  },
+  med: {
+    timingMs: 4,
+    velocityVar: 0.06,
+    microShiftTicks: 4,
+    barGrooveTicks: 5,
+    dropProbability: 0.02,
+  },
+  high: {
+    timingMs: 7,
+    velocityVar: 0.1,
+    microShiftTicks: 6,
+    barGrooveTicks: 8,
+    dropProbability: 0.05,
+  },
 };
 ```
 
 ### 10.3. Алгоритм применения
 
 ```ts
-function humanizeHit(
-  hit: DrumHit,
-  params: HumanizeParams,
-  rng: () => number,
-): DrumHit {
+function humanizeHit(hit: DrumHit, params: HumanizeParams, rng: () => number): DrumHit {
   // 1. Timing jitter (преобразуем мс → тики на основе BPM)
   const jitterTicks = (rng() - 0.5) * 2 * msToTicks(params.timingMs, bpm);
 
@@ -1219,98 +1260,98 @@ barGrooveOffset(bar) → сдвиг в пределах ±barGrooveTicks
 
 Разные звуки получают разную амплитуду jitter:
 
-| Категория звука | Timing jitter | Velocity variation | Micro-shift |
-|-----------------|---------------|-------------------|-------------|
-| Kick (сильная доля) | ×0.5 | ×0.3 | ×0.3 |
-| Kick (слабая доля) | ×1.0 | ×0.7 | ×1.0 |
-| Snare backbeat | ×0.3 | ×0.2 | ×0.2 |
-| Snare ghost | ×1.5 | ×1.0 | ×1.5 |
-| Hihat (ровные) | ×0.7 | ×0.5 | ×0.7 |
-| Ride | ×1.0 | ×0.5 | ×1.0 |
-| Crash | ×0.2 | ×0.1 | ×0.1 |
-| Tom | ×1.0 | ×1.0 | ×1.0 |
-| Stir | ×1.2 | ×0.8 | ×1.2 |
+| Категория звука     | Timing jitter | Velocity variation | Micro-shift |
+| ------------------- | ------------- | ------------------ | ----------- |
+| Kick (сильная доля) | ×0.5          | ×0.3               | ×0.3        |
+| Kick (слабая доля)  | ×1.0          | ×0.7               | ×1.0        |
+| Snare backbeat      | ×0.3          | ×0.2               | ×0.2        |
+| Snare ghost         | ×1.5          | ×1.0               | ×1.5        |
+| Hihat (ровные)      | ×0.7          | ×0.5               | ×0.7        |
+| Ride                | ×1.0          | ×0.5               | ×1.0        |
+| Crash               | ×0.2          | ×0.1               | ×0.1        |
+| Tom                 | ×1.0          | ×1.0               | ×1.0        |
+| Stir                | ×1.2          | ×0.8               | ×1.2        |
 
 ## 11. Специфика стилей
 
 ### 11.1. Swing
 
-| Характеристика | Значение |
-|----------------|----------|
-| **Основа groove** | Ride ding-ding-a-ding + hihat chick 2/4 |
-| **Kick** | Feathering (все 4 доли), разная velocity |
-| **Snare** | Backbeat 2/4, ghost notes на 'e'/'a' |
-| **Swing ratio** | 0.60–0.70 (классический swing) |
-| **Артикуляции** | Stir, snare_dig, snare_edge, ride_bow, splash |
-| **Особенности** | Stir-текстура на 2/4; splash как accent; ride — главный голос |
-| **Crash** | Каждые 16–32 такта (редко), sizzle в ballad |
-| **Fills** | Триольные, snare + kick; томовые run'ы на complex |
-| **Динамика** | Мягкая, нет резких перепадов |
-| **Пример организма** | `swing-aaba-32` (intro → A1 → A2 → B → A3 → ending) |
+| Характеристика       | Значение                                                      |
+| -------------------- | ------------------------------------------------------------- |
+| **Основа groove**    | Ride ding-ding-a-ding + hihat chick 2/4                       |
+| **Kick**             | Feathering (все 4 доли), разная velocity                      |
+| **Snare**            | Backbeat 2/4, ghost notes на 'e'/'a'                          |
+| **Swing ratio**      | 0.60–0.70 (классический swing)                                |
+| **Артикуляции**      | Stir, snare_dig, snare_edge, ride_bow, splash                 |
+| **Особенности**      | Stir-текстура на 2/4; splash как accent; ride — главный голос |
+| **Crash**            | Каждые 16–32 такта (редко), sizzle в ballad                   |
+| **Fills**            | Триольные, snare + kick; томовые run'ы на complex             |
+| **Динамика**         | Мягкая, нет резких перепадов                                  |
+| **Пример организма** | `swing-aaba-32` (intro → A1 → A2 → B → A3 → ending)           |
 
 ### 11.2. Bossa Nova
 
-| Характеристика | Значение |
-|----------------|----------|
-| **Основа groove** | Rim clave (1, 2, 3) или cross-stick |
-| **Kick** | Partido alto: 1, 2&; вариация 1, 2&, 3& |
-| **Snare** | НЕ ИСПОЛЬЗУЕТСЯ (snareEnabled=false) |
-| **Hihat** | Восьмые (закрытый + полуоткрытый) |
-| **Swing ratio** | 0.5 (straight! Bossa — не swing) |
-| **Артикуляции** | Rim/cross-stick, hihat_closed/open, tom |
-| **Особенности** | Нет backbeat; ритмическая основа — clave; бразильская эстетика |
-| **Crash** | Каждые 16 тактов |
-| **Fills** | Томовые samba-fills, rim вариации |
-| **Динамика** | Ровная, циклическая |
-| **Пример организма** | `bossa-aaba-64` (intro → A1×2 → B → A2 → ending) |
+| Характеристика       | Значение                                                       |
+| -------------------- | -------------------------------------------------------------- |
+| **Основа groove**    | Rim clave (1, 2, 3) или cross-stick                            |
+| **Kick**             | Partido alto: 1, 2&; вариация 1, 2&, 3&                        |
+| **Snare**            | НЕ ИСПОЛЬЗУЕТСЯ (snareEnabled=false)                           |
+| **Hihat**            | Восьмые (закрытый + полуоткрытый)                              |
+| **Swing ratio**      | 0.5 (straight! Bossa — не swing)                               |
+| **Артикуляции**      | Rim/cross-stick, hihat_closed/open, tom                        |
+| **Особенности**      | Нет backbeat; ритмическая основа — clave; бразильская эстетика |
+| **Crash**            | Каждые 16 тактов                                               |
+| **Fills**            | Томовые samba-fills, rim вариации                              |
+| **Динамика**         | Ровная, циклическая                                            |
+| **Пример организма** | `bossa-aaba-64` (intro → A1×2 → B → A2 → ending)               |
 
 ### 11.3. Funk
 
-| Характеристика | Значение |
-|----------------|----------|
-| **Основа groove** | 16-е hihat + syncopated kick |
-| **Kick** | Linear patterns, много синкоп, ghost-kick |
-| **Snare** | Backbeat 2/4 (accent), rimshot на сильных, ghost-сетки 16-х |
-| **Hihat** | Закрытый 16-е, открытый на offbeat, bark-акценты |
-| **Swing ratio** | 0.5 (straight 16ths, но может быть slight swing ~0.55) |
-| **Артикуляции** | snare_rimshot, snare_buzz, snare_flam, snare_muted, ride_bell, crash_sizzle |
-| **Особенности** | Максимальная плотность; buzz + flam + ghost — ключевая фишка |
-| **Crash** | Каждые 8–16 тактов, часто sizzle crash |
-| **Fills** | 16-е snare, томовые run'ы, buzz-flam fills |
-| **Динамика** | Агрессивная, контрастная |
-| **Пример организма** | `funk-verse-chorus-32` (intro → A1 → B(chorus) → A2 → ending) |
+| Характеристика       | Значение                                                                    |
+| -------------------- | --------------------------------------------------------------------------- |
+| **Основа groove**    | 16-е hihat + syncopated kick                                                |
+| **Kick**             | Linear patterns, много синкоп, ghost-kick                                   |
+| **Snare**            | Backbeat 2/4 (accent), rimshot на сильных, ghost-сетки 16-х                 |
+| **Hihat**            | Закрытый 16-е, открытый на offbeat, bark-акценты                            |
+| **Swing ratio**      | 0.5 (straight 16ths, но может быть slight swing ~0.55)                      |
+| **Артикуляции**      | snare_rimshot, snare_buzz, snare_flam, snare_muted, ride_bell, crash_sizzle |
+| **Особенности**      | Максимальная плотность; buzz + flam + ghost — ключевая фишка                |
+| **Crash**            | Каждые 8–16 тактов, часто sizzle crash                                      |
+| **Fills**            | 16-е snare, томовые run'ы, buzz-flam fills                                  |
+| **Динамика**         | Агрессивная, контрастная                                                    |
+| **Пример организма** | `funk-verse-chorus-32` (intro → A1 → B(chorus) → A2 → ending)               |
 
 ### 11.4. Latin
 
-| Характеристика | Значение |
-|----------------|----------|
-| **Основа groove** | Cascara + clave (son или rumba) |
-| **Kick** | Tumbao (1, 2&, 3, 4) или montuno |
-| **Snare** | Не используется (как правило); rim/cross-stick вместо snare |
-| **Hihat** | Cascara-паттерн или ровные восьмые |
-| **Swing ratio** | 0.5 (straight) |
-| **Артикуляции** | rim, cross-stick, tom (для timbal-эффектов) |
-| **Особенности** | 2-тактовые clave-паттерны (2-3 или 3-2); cascara на ride/rim |
-| **Crash** | Каждые 16–32 такта |
-| **Fills** | Timbal/conga fills, cascara вариации |
-| **Динамика** | Циклическая, полиритмическая |
+| Характеристика       | Значение                                                     |
+| -------------------- | ------------------------------------------------------------ |
+| **Основа groove**    | Cascara + clave (son или rumba)                              |
+| **Kick**             | Tumbao (1, 2&, 3, 4) или montuno                             |
+| **Snare**            | Не используется (как правило); rim/cross-stick вместо snare  |
+| **Hihat**            | Cascara-паттерн или ровные восьмые                           |
+| **Swing ratio**      | 0.5 (straight)                                               |
+| **Артикуляции**      | rim, cross-stick, tom (для timbal-эффектов)                  |
+| **Особенности**      | 2-тактовые clave-паттерны (2-3 или 3-2); cascara на ride/rim |
+| **Crash**            | Каждые 16–32 такта                                           |
+| **Fills**            | Timbal/conga fills, cascara вариации                         |
+| **Динамика**         | Циклическая, полиритмическая                                 |
 | **Пример организма** | `latin-aaba-32` (intro → A1 → A2 → B(montuno) → A3 → ending) |
 
 ### 11.5. Ballad
 
-| Характеристика | Значение |
-|----------------|----------|
-| **Основа groove** | Мягкий ride (только доли) + stir-текстура |
-| **Kick** | Feathering (очень мягко) или two-feel (1 и 3) |
-| **Snare** | Cross-stick на 2/4 или мягкий snare |
-| **Hihat** | Chick на 2/4 (очень тихо) |
-| **Swing ratio** | 0.55–0.65 (soft swing) |
-| **Артикуляции** | stir, cross-stick, crash_sizzle |
-| **Особенности** | Минимальная плотность; stir — ключевая текстура; общая громкость ×0.6 |
-| **Crash** | Редко (каждые 32 такта), sizzle |
-| **Fills** | Мягкие (brush-style), томовые swells |
-| **Динамика** | Очень мягкая, с gradual build-up |
-| **Пример организма** | `ballad-aaba-32` (intro → A1 → A2 → B(texture) → A3 → ending) |
+| Характеристика       | Значение                                                              |
+| -------------------- | --------------------------------------------------------------------- |
+| **Основа groove**    | Мягкий ride (только доли) + stir-текстура                             |
+| **Kick**             | Feathering (очень мягко) или two-feel (1 и 3)                         |
+| **Snare**            | Cross-stick на 2/4 или мягкий snare                                   |
+| **Hihat**            | Chick на 2/4 (очень тихо)                                             |
+| **Swing ratio**      | 0.55–0.65 (soft swing)                                                |
+| **Артикуляции**      | stir, cross-stick, crash_sizzle                                       |
+| **Особенности**      | Минимальная плотность; stir — ключевая текстура; общая громкость ×0.6 |
+| **Crash**            | Редко (каждые 32 такта), sizzle                                       |
+| **Fills**            | Мягкие (brush-style), томовые swells                                  |
+| **Динамика**         | Очень мягкая, с gradual build-up                                      |
+| **Пример организма** | `ballad-aaba-32` (intro → A1 → A2 → B(texture) → A3 → ending)         |
 
 ## 12. Out of Scope
 
@@ -1325,14 +1366,14 @@ barGrooveOffset(bar) → сдвиг в пределах ±barGrooveTicks
 
 ## 13. Риски и допущения
 
-| Риск | Вероятность | Влияние | Митигация |
-|------|------------|---------|-----------|
-| Сложность авторского наполнения молекулами (30–50 молекул на стиль) | Высокая | Задержка | Начать с MVP: 10–15 молекул на стиль. Остальные добавлять итеративно |
-| Молекулы не стыкуются друг с другом (артефакты на границах) | Средняя | Звуковые щелчки/провалы | Каждая молекула включает «хвост» предыдущего звука (ride/snare release). Тестирование на стыках |
-| Переусложнение: `DrumPatternEngine` дублирует логику `DrumRandomizer` | Средняя | Раздувание кода | `DrumRandomizer` остаётся для микро-вариаций (post-hoc). `DrumPatternEngine` — для структурных решений |
-| Клетки звучат «заскриптовано» без достаточной рандомизации | Высокая | Пользователь слышит повтор | Высокий `randomizationLevel` + `DrumRandomizer` внутри клетки + множество вариационных молекул + выбор клетки из пула организма |
-| Производительность: сборка cell каждый такт | Низкая | Заметная задержка при старте | Кеширование собранной клетки; ассемблирование только при смене формы/настроек |
-| Swing в bossa/latin — специфика стиля теряется | Средняя | Bossa звучит как swing | `swingRatio` форсируется в 0.5 для bossa/latin через `perStyleDefaults` |
+| Риск                                                                  | Вероятность | Влияние                      | Митигация                                                                                                                       |
+| --------------------------------------------------------------------- | ----------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Сложность авторского наполнения молекулами (30–50 молекул на стиль)   | Высокая     | Задержка                     | Начать с MVP: 10–15 молекул на стиль. Остальные добавлять итеративно                                                            |
+| Молекулы не стыкуются друг с другом (артефакты на границах)           | Средняя     | Звуковые щелчки/провалы      | Каждая молекула включает «хвост» предыдущего звука (ride/snare release). Тестирование на стыках                                 |
+| Переусложнение: `DrumPatternEngine` дублирует логику `DrumRandomizer` | Средняя     | Раздувание кода              | `DrumRandomizer` остаётся для микро-вариаций (post-hoc). `DrumPatternEngine` — для структурных решений                          |
+| Клетки звучат «заскриптовано» без достаточной рандомизации            | Высокая     | Пользователь слышит повтор   | Высокий `randomizationLevel` + `DrumRandomizer` внутри клетки + множество вариационных молекул + выбор клетки из пула организма |
+| Производительность: сборка cell каждый такт                           | Низкая      | Заметная задержка при старте | Кеширование собранной клетки; ассемблирование только при смене формы/настроек                                                   |
+| Swing в bossa/latin — специфика стиля теряется                        | Средняя     | Bossa звучит как swing       | `swingRatio` форсируется в 0.5 для bossa/latin через `perStyleDefaults`                                                         |
 
 ## 14. Метрики успеха
 
@@ -1359,4 +1400,4 @@ barGrooveOffset(bar) → сдвиг в пределах ±barGrooveTicks
 
 ---
 
-*Следующий шаг: обсуждение и уточнение архитектуры → декомпозиция на задачи → создание `DRUMS-PATTERNS-PLAN.md`.*
+_Следующий шаг: обсуждение и уточнение архитектуры → декомпозиция на задачи → создание `DRUMS-PATTERNS-PLAN.md`._

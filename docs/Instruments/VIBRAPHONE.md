@@ -15,10 +15,10 @@
 
 ## 2. Паттерны
 
-| Паттерн   | Описание                                               | Стиль по умолчанию |
-| --------- | ------------------------------------------------------ | ------------------ |
-| `pads`    | Целая нота на beat 1, длительность 0.9 такта           | swing, bossa, funk, ballad |
-| `inserts` | Арпеджио: 4 ноты на такт (beats 1, 2, 3, 4), cycling  | latin              |
+| Паттерн   | Описание                                             | Стиль по умолчанию         |
+| --------- | ---------------------------------------------------- | -------------------------- |
+| `pads`    | Целая нота на beat 1, длительность 0.9 такта         | swing, bossa, funk, ballad |
+| `inserts` | Арпеджио: 4 ноты на такт (beats 1, 2, 3, 4), cycling | latin                      |
 
 ### 2.1. Pads
 
@@ -49,11 +49,11 @@ Voicing строится через `buildPianoVoicing()` (общий с Piano v
 
 Использует общий с Piano voicing-движок (`buildPianoVoicing`). Поддерживаемые плотности:
 
-| Плотность    | Нот | Состав               |
-| ------------ | --- | -------------------- |
-| `shell2`     | 2   | 3-й + 7-й тон        |
-| `rootless3`  | 3   | 3 + 7 + 9            |
-| `rootless4`  | 4   | 3 + 7 + 9 + 13       |
+| Плотность   | Нот | Состав         |
+| ----------- | --- | -------------- |
+| `shell2`    | 2   | 3-й + 7-й тон  |
+| `rootless3` | 3   | 3 + 7 + 9      |
+| `rootless4` | 4   | 3 + 7 + 9 + 13 |
 
 По умолчанию: `rootless3`. Voice leading с направленным bias (вниз 0.7×, вверх 1.3×) как у Piano.
 
@@ -88,23 +88,23 @@ export const vibraphoneManifest: InstrumentManifest = {
 ```ts
 class VibraphoneInstrument implements Instrument {
   setTimeline(timeline: ChordTimeline): void;
-  setPattern(pattern: VibraphonePattern): void;     // 'pads' | 'inserts'
+  setPattern(pattern: VibraphonePattern): void; // 'pads' | 'inserts'
   setVoicingDensity(density: PianoVoicingDensity): void;
-  setBaseVelocity(velocity: number): void;            // [0, 2]
+  setBaseVelocity(velocity: number): void; // [0, 2]
   setHumanize(enabled: boolean): void;
-  setStyleProfile(profile: StyleProfile): void;       // стиле-зависимый паттерн
-  setStyle(style: Style): void;                       // @deprecated
-  reset(): void;                                      // сброс голосоведения
+  setStyleProfile(profile: StyleProfile): void; // стиле-зависимый паттерн
+  setStyle(style: Style): void; // @deprecated
+  reset(): void; // сброс голосоведения
   schedule(window: ScheduleWindow, ctx: ScheduleContext): void;
 }
 ```
 
 ## 8. Взаимодействие с другими инструментами
 
-| Инструмент | Правило                                                      |
-| ---------- | ------------------------------------------------------------ |
+| Инструмент | Правило                                                          |
+| ---------- | ---------------------------------------------------------------- |
 | **Piano**  | Разные EventSink'и. Вибрафон — текстурный слой, Piano — основной |
-| **Organ**  | Разные EventSink'и. Оба pads-инструменты, дополняют друг друга  |
+| **Organ**  | Разные EventSink'и. Оба pads-инструменты, дополняют друг друга   |
 | **Bass**   | Вибрафон в среднем регистре (C3–C6), не конфликтует с басом      |
 
 ## 9. Тесты

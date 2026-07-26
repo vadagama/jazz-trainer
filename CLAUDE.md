@@ -3,6 +3,7 @@
 > Минимизация контекста для AI-агентов. Читай этот файл первым — он скажет, что читать дальше, а что можно пропустить.
 
 > **Агенты проекта:**
+>
 > - `software-engineer` (`.agents/skills/software-engineer/SKILL.md`) — Staff Engineer. Активируется при запросах на изменение кода.
 > - `software-architect` (`.agents/skills/software-architect/SKILL.md`) — Senior Software Architect. Активируется при запросах на анализ качества кодовой базы, поиск уязвимостей, формирование TECH_DEPT.md.
 > - `tech-writer` (`.agents/skills/tech-writer/SKILL.md`) — Senior Technical Writer. Активируется при запросах на обновление документации.
@@ -69,6 +70,7 @@ packages/shared/src/dto.ts                 ← Zod-DTO (контракт фро�
 
 ```
 docs/AUTH.md                               ← целевое решение: OAuth, Magic Link, Stripe, GDPR
+docs/Guides/AUTH-SETUP-GUIDE.md               ← инструкция по настройке OAuth, Magic Link, Resend
 apps/api/src/routes/auth.routes.ts         ← OAuth-эндпоинты, Magic Link, сессии
 docs/ROLES.md                              ← каталог ролей и матрица разрешений
 apps/api/src/services/rbac.service.ts       ← permissions, resolvePermissions, resolveFlags
@@ -131,6 +133,7 @@ docs/ARCHIVE/                              ← архив предыдущих V
 ### Шаг 1. Создать пакет
 
 Скопируй `packages/plugins/_template/` → `packages/plugins/<имя>/`. Замени в `src/index.ts`:
+
 - `id`, `name`, `category`, `description` (манифест)
 - `routes`, `navItems` (вклады) — оставь нужные, удали остальные
 - `element: () => import('./ТвойКомпонент')` — создай файл компонента
@@ -138,6 +141,7 @@ docs/ARCHIVE/                              ← архив предыдущих V
 ### Шаг 2. Зарегистрировать
 
 В `packages/plugin-registry/src/index.ts`:
+
 ```ts
 import newPlugin from '@jazz/plugin-<имя>';
 // добавить newPlugin в массив PLUGINS
@@ -146,6 +150,7 @@ import newPlugin from '@jazz/plugin-<имя>';
 ### Шаг 3. Добавить алиасы (3 файла)
 
 В каждом из этих файлов добавить строку по образцу соседних:
+
 - `apps/web/vite.config.ts` — vite-алиас
 - `tsconfig.base.json` — path в compilerOptions.paths
 - `vitest.config.ts` — test-алиас
@@ -160,32 +165,34 @@ npm run typecheck && npm run lint && npm run test
 
 ## Команды (что и зачем)
 
-| Команда | Значение | Когда запускать |
-|---|---|---|
-| `npm run dev` | web (:5173) + api (:3999) | Разработка |
-| `npm run typecheck` | TS strict по всем пакетам | После изменений типов/импортов |
-| `npm run lint` | ESLint + границы (boundaries) | После любых изменений |
-| `npm run test` | 348 тестов (Vitest) | После изменений логики |
-| `npm run test -- --reporter=verbose` | подробный вывод | Когда тест упал |
-| `npm run e2e` | Playwright E2E | Перед PR (если есть тесты) |
-| `npm run build` | typecheck + сборка web + api | Перед деплоем |
-| `npm run format` | Prettier | Перед коммитом |
+| Команда                              | Значение                      | Когда запускать                |
+| ------------------------------------ | ----------------------------- | ------------------------------ |
+| `npm run dev`                        | web (:5173) + api (:3999)     | Разработка                     |
+| `npm run typecheck`                  | TS strict по всем пакетам     | После изменений типов/импортов |
+| `npm run lint`                       | ESLint + границы (boundaries) | После любых изменений          |
+| `npm run test`                       | Vitest                        | После изменений логики         |
+
+| `npm run test -- --reporter=verbose` | подробный вывод               | Когда тест упал                |
+| `npm run e2e`                        | Playwright E2E                | Перед PR (если есть тесты)     |
+| `npm run build`                      | typecheck + сборка web + api  | Перед деплоем                  |
+| `npm run format`                     | Prettier                      | Перед коммитом                 |
 
 ## Границы слоёв (нарушение = ошибка линтера)
 
 Правило: **default disallow** — разрешены только явно указанные импорты.
 
-| Пакет | Может импортировать |
-|---|---|
-| `music-core`, `shared` | stdlib + друг друга |
-| `plugin-sdk` | `music-core`, `shared` |
-| `plugin-host` | `plugin-sdk`, `music-core`, `shared` |
-| `plugins/*` | `plugin-sdk`, `music-core`, `shared` |
-| `adapters/*` | `plugin-sdk`, `music-core`, `shared` |
-| `apps/web` | `plugin-host`, `plugin-sdk`, `music-core`, `shared` |
-| `apps/api` | `music-core`, `shared` |
+| Пакет                  | Может импортировать                                 |
+| ---------------------- | --------------------------------------------------- |
+| `music-core`, `shared` | stdlib + друг друга                                 |
+| `plugin-sdk`           | `music-core`, `shared`                              |
+| `plugin-host`          | `plugin-sdk`, `music-core`, `shared`                |
+| `plugins/*`            | `plugin-sdk`, `music-core`, `shared`                |
+| `adapters/*`           | `plugin-sdk`, `music-core`, `shared`                |
+| `apps/web`             | `plugin-host`, `plugin-sdk`, `music-core`, `shared` |
+| `apps/api`             | `music-core`, `shared`                              |
 
 Запрещено:
+
 - Плагин → плагин (изоляция)
 - `music-core` → браузерные API (чистота)
 - Плагины → shell (независимость от оболочки)
@@ -244,9 +251,17 @@ MIDI-оценка                      → music-core/src/audio/midiEval
 DTO / валидация API              → shared/src/dto.ts
 Константы (звуки, типы)          → shared/src/constants.ts
 Схема БД                         → apps/api/src/db/schema.ts
+Таблицы billing/progress/GDPR     → apps/api/src/db/schema.ts (subscriptions, subscription_tiers, subscription_requests, subscription_history, exercise_progress, theory_progress, user_stats, consent_records)
 Auth / сессии / OAuth / Magic Link → docs/AUTH.md + apps/api/src/routes/auth.routes.ts
-Платежи / подписки (Stripe)      → docs/AUTH.md (целевое) + apps/api/src/routes/billing.routes.ts (план)
-GDPR / защита данных              → docs/AUTH.md (целевое) + apps/api/src/routes/gdpr.routes.ts (план)
+Настройка OAuth / Resend (инструкция) → docs/Guides/AUTH-SETUP-GUIDE.md
+Magic Link / email-сервис        → apps/api/src/services/email.service.ts
+TOTP 2FA                         → apps/api/src/services/totp.service.ts + apps/api/src/routes/totp.routes.ts
+Биллинг / подписки (ручной)      → apps/api/src/services/billing.service.ts + apps/api/src/routes/admin-subscriptions.routes.ts
+Заявки на подписку (лэндинг)     → apps/api/src/routes/subscription-request.routes.ts
+Подписка пользователя            → apps/api/src/routes/subscription.routes.ts
+GDPR / данные / consent          → apps/api/src/db/schema.ts (consent_records) + apps/api/src/routes/auth.routes.ts
+Безопасность (хедеры, CORS)       → apps/api/src/server.ts (helmet, cors, rate-limit, admin-ip-filter)
+
 Настройки пользователя           → apps/api/src/routes/settings.routes.ts
 RBAC-мидлварь                    → apps/api/src/plugins/rbac.plugin.ts
 Роли и разрешения                → docs/ROLES.md
@@ -276,4 +291,4 @@ ESLint-границы                   → eslint.config.js (секция bound
 
 ---
 
-*Обновляй этот файл при изменениях в структуре проекта, добавлении новых модулей или смене конвенций.*
+_Обновляй этот файл при изменениях в структуре проекта, добавлении новых модулей или смене конвенций._

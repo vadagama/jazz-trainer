@@ -140,7 +140,9 @@ export function AdminFilters({ value, onChange }: Props) {
         label="Статус"
         options={['approved', 'modified', 'rejected']}
         selected={value.moderationStatus}
-        onToggle={(v) => onChange({ ...value, moderationStatus: toggle(value.moderationStatus, v) })}
+        onToggle={(v) =>
+          onChange({ ...value, moderationStatus: toggle(value.moderationStatus, v) })
+        }
         renderLabel={(v) => MODERATION_LABEL[v] ?? v}
       />
       <MultiSelect
