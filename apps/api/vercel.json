@@ -1,7 +1,7 @@
 {
   "name": "amazilia-api",
   "framework": null,
-  "buildCommand": "cd ../.. && npm ci && npm rebuild && npm run build -w @jazz/api",
+  "buildCommand": "cd ../.. && npm install && npm run build -w @jazz/api",
   "git": {
     "deploymentEnabled": {
       "main": true

@@ -1,7 +1,7 @@
 {
   "name": "amazilia-studio",
   "framework": null,
-  "buildCommand": "cd ../.. && npm ci && npm rebuild && npm run build -w @jazz/web",
+  "buildCommand": "cd ../.. && npm install && npm run build -w @jazz/web",
   "outputDirectory": "dist",
   "devCommand": "cd ../.. && npm run dev -w @jazz/web",
   "rewrites": [
