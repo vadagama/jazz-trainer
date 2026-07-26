@@ -54,7 +54,6 @@ export async function adminFeatureAccessRoutes(
       }
 
       const featureMap = new Map(parsed.data.features.map((f) => [f.code, f.state]));
-      const existing = getPublicFeatures(db);
 
       const updated = withAuditSync(
         db,

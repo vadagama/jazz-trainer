@@ -58,13 +58,11 @@ describe('email — sendMagicLink', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
     expect(url).toBe('https://api.resend.com/emails');
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const headers = init.headers as Record<string, string> | undefined;
     expect(headers).toMatchObject({
       Authorization: 'Bearer re_test_key',
       'Content-Type': 'application/json',
     });
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const body = JSON.parse(init.body as string) as Record<string, string>;
     expect(body.to).toBe('user@example.com');
     expect(body.from).toBe('noreply@jazztrainer.app');
