@@ -114,7 +114,13 @@ export async function catalogRoutes(
         });
       }
       const isAdmin = request.hasPermission('catalog:moderate');
-      const entry = updateCatalogEntry(db, request.user!.id, request.params.id, parsed.data, isAdmin);
+      const entry = updateCatalogEntry(
+        db,
+        request.user!.id,
+        request.params.id,
+        parsed.data,
+        isAdmin,
+      );
       if (!entry) {
         return reply.status(404).send({
           error: { code: 'NOT_FOUND', message: 'Catalog entry not found or not yours' },

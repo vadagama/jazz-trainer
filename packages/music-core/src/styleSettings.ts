@@ -82,10 +82,10 @@ export function applyStyleDefaults(
     resolved.pianoVoicingDensity =
       (pd.piano?.voicing as UserSettingsDTO['pianoVoicingDensity']) ?? 'rootless3';
   if (!has('pianoSampleLibrary'))
-    resolved.pianoSampleLibrary = (pd.piano?.mode as UserSettingsDTO['pianoSampleLibrary']) ?? 'salamander';
+    resolved.pianoSampleLibrary =
+      (pd.piano?.mode as UserSettingsDTO['pianoSampleLibrary']) ?? 'salamander';
   if (!has('pianoTension'))
-    resolved.pianoTension =
-      (pd.piano?.tension as UserSettingsDTO['pianoTension']) ?? 'clean';
+    resolved.pianoTension = (pd.piano?.tension as UserSettingsDTO['pianoTension']) ?? 'clean';
   if (!has('pianoHumanize')) resolved.pianoHumanize = undefined;
   if (!has('pianoPattern')) resolved.pianoPattern = null;
   if (!has('pianoRandomizationLevel')) resolved.pianoRandomizationLevel = 'off';
@@ -95,11 +95,9 @@ export function applyStyleDefaults(
     resolved.rhodesVoicingDensity =
       (pd.rhodes?.voicing as UserSettingsDTO['rhodesVoicingDensity']) ?? 'rootless3';
   if (!has('rhodesMode'))
-    resolved.rhodesMode =
-      (pd.rhodes?.mode as UserSettingsDTO['rhodesMode']) ?? 'halfNotes';
+    resolved.rhodesMode = (pd.rhodes?.mode as UserSettingsDTO['rhodesMode']) ?? 'halfNotes';
   if (!has('rhodesLayerMode'))
-    resolved.rhodesLayerMode =
-      (pd.rhodes?.mode as UserSettingsDTO['rhodesLayerMode']) ?? 'none';
+    resolved.rhodesLayerMode = (pd.rhodes?.mode as UserSettingsDTO['rhodesLayerMode']) ?? 'none';
   if (!has('rhodesLayerVolume')) resolved.rhodesLayerVolume = 0.5;
   if (!has('rhodesPattern')) resolved.rhodesPattern = undefined;
 
@@ -127,7 +125,8 @@ export function applyStyleDefaults(
   if (!has('percussionPattern')) resolved.percussionPattern = null;
   if (!has('percussionHumanizeIntensity'))
     resolved.percussionHumanizeIntensity =
-      (pd.percussion?.humanize?.intensity as UserSettingsDTO['percussionHumanizeIntensity']) ?? 'low';
+      (pd.percussion?.humanize?.intensity as UserSettingsDTO['percussionHumanizeIntensity']) ??
+      'low';
 
   // Percussion sub-instrument fields — avoid leak across styles.
   if (!has('percussionCongaHighEnabled')) resolved.percussionCongaHighEnabled = true;

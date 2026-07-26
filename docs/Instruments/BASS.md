@@ -17,10 +17,10 @@
 
 Бас существует как **один плагин** (`@jazz/plugin-bass`), контрибутящий **два инструмента** с разными сэмпл-библиотеками:
 
-| Инструмент        | id              | Стили              | Палитра артикуляций                  | Сэмплы    |
-| ----------------- | --------------- | ------------------ | ------------------------------------ | --------- |
-| **Upright Bass**  | `upright-bass`  | swing, bossa, ballad | `regular`, `muted`                 | Sneakybass|
-| **Electric Bass** | `electric-bass` | funk, latin         | `regular`, `muted`, `rel`, `stac`  | darkblack |
+| Инструмент        | id              | Стили                | Палитра артикуляций               | Сэмплы     |
+| ----------------- | --------------- | -------------------- | --------------------------------- | ---------- |
+| **Upright Bass**  | `upright-bass`  | swing, bossa, ballad | `regular`, `muted`                | Sneakybass |
+| **Electric Bass** | `electric-bass` | funk, latin          | `regular`, `muted`, `rel`, `stac` | darkblack  |
 
 ### 2.1. Переключение варианта (user-facing)
 
@@ -70,13 +70,13 @@ Organism (section-driven form)
 
 **Логика по `BassPattern` (walking/root-5th/montuno/syncopated/two-feel) + `tension`:**
 
-| Pattern     | clean                | moderate                  | altered                  | max                        |
-| ----------- | -------------------- | ------------------------- | ------------------------ | -------------------------- |
-| walking     | root, fifth          | + third, approach (B4)    | + seventh                | + chromaticism, octave     |
-| root-5th    | root, fifth          | + approach                | + octave                 | + octave                   |
-| two-feel    | root                 | + fifth                   | + approach               | + approach                 |
-| syncopated  | root, fifth          | + third                   | + seventh, octave        | + full color               |
-| montuno     | root, fifth, octave  | + approach                | + seventh                | + full color               |
+| Pattern    | clean               | moderate               | altered           | max                    |
+| ---------- | ------------------- | ---------------------- | ----------------- | ---------------------- |
+| walking    | root, fifth         | + third, approach (B4) | + seventh         | + chromaticism, octave |
+| root-5th   | root, fifth         | + approach             | + octave          | + octave               |
+| two-feel   | root                | + fifth                | + approach        | + approach             |
+| syncopated | root, fifth         | + third                | + seventh, octave | + full color           |
+| montuno    | root, fifth, octave | + approach             | + seventh         | + full color           |
 
 - **approach** yield'ится когда атом в последней доле такта и `nextChord` отличается от текущего (хроматический/диатонический подход к следующему корню).
 - `useMutedNotes: false` → атомы `muted` пропускаются (thinning the groove).
@@ -159,8 +159,10 @@ export const uprightBassManifest: InstrumentManifest = {
   createInstrument: () => new BassInstrument(new ChordTimeline(), 'upright'),
   sampleManifest: UPRIGHT_BASS_SAMPLE_MANIFEST,
   perStyleDefaults: {
-    swing: { pattern: 'walking' }, bossa: { pattern: 'root-5th' },
-    funk: { enabled: false, volume: 0 }, latin: { enabled: false, volume: 0 },
+    swing: { pattern: 'walking' },
+    bossa: { pattern: 'root-5th' },
+    funk: { enabled: false, volume: 0 },
+    latin: { enabled: false, volume: 0 },
     ballad: { pattern: 'two-feel' },
   },
 };
@@ -172,8 +174,10 @@ export const electricBassManifest: InstrumentManifest = {
   createInstrument: () => new BassInstrument(new ChordTimeline(), 'electric'),
   sampleManifest: ELECTRIC_BASS_SAMPLE_MANIFEST,
   perStyleDefaults: {
-    swing: { enabled: false, volume: 0 }, bossa: { enabled: false, volume: 0 },
-    funk: { pattern: 'syncopated' }, latin: { pattern: 'montuno' },
+    swing: { enabled: false, volume: 0 },
+    bossa: { enabled: false, volume: 0 },
+    funk: { pattern: 'syncopated' },
+    latin: { pattern: 'montuno' },
     ballad: { enabled: false, volume: 0 },
   },
 };

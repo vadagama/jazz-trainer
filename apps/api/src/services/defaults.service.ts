@@ -216,7 +216,8 @@ export function upsertDefaultSettings(
   if (data.rhodesEnabled !== undefined) patch.rhodesEnabled = data.rhodesEnabled;
   if (data.rhodesVolume !== undefined) patch.rhodesVolume = data.rhodesVolume;
   if (data.rhodesMode !== undefined) patch.rhodesMode = data.rhodesMode;
-  if (data.rhodesVoicingDensity !== undefined) patch.rhodesVoicingDensity = data.rhodesVoicingDensity;
+  if (data.rhodesVoicingDensity !== undefined)
+    patch.rhodesVoicingDensity = data.rhodesVoicingDensity;
   if (data.rhodesLayerMode !== undefined) patch.rhodesLayerMode = data.rhodesLayerMode;
   if (data.rhodesLayerVolume !== undefined) patch.rhodesLayerVolume = data.rhodesLayerVolume;
   if (data.pianoEnabled !== undefined) patch.pianoEnabled = data.pianoEnabled;

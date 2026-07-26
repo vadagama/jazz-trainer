@@ -55,18 +55,15 @@ export async function compositionsRoutes(
   });
 
   // ── GET /api/compositions/public/:id — single public composition ────────
-  fastify.get<{ Params: { id: string } }>(
-    '/compositions/public/:id',
-    async (request, reply) => {
-      const composition = getPublicCompositionById(db, request.params.id, request.user?.id);
-      if (!composition) {
-        return reply
-          .status(404)
-          .send({ error: { code: 'NOT_FOUND', message: 'Composition not found' } });
-      }
-      return reply.send(composition);
-    },
-  );
+  fastify.get<{ Params: { id: string } }>('/compositions/public/:id', async (request, reply) => {
+    const composition = getPublicCompositionById(db, request.params.id, request.user?.id);
+    if (!composition) {
+      return reply
+        .status(404)
+        .send({ error: { code: 'NOT_FOUND', message: 'Composition not found' } });
+    }
+    return reply.send(composition);
+  });
 
   // ── GET /api/compositions/mine — own compositions list ──────────────────
   fastify.get('/compositions/mine', { preHandler: requireAuth }, async (request, reply) => {
@@ -91,33 +88,29 @@ export async function compositionsRoutes(
   });
 
   // ── POST /api/compositions/import — import DSL → new composition ────────
-  fastify.post(
-    '/compositions/import',
-    { preHandler: requireAuth },
-    async (request, reply) => {
-      const parsed = ImportCompositionSchema.safeParse(request.body);
-      if (!parsed.success) {
-        return reply.status(400).send({
-          error: {
-            code: 'VALIDATION_ERROR',
-            message: 'Invalid import data',
-            details: parsed.error.issues,
-          },
-        });
-      }
-      const result = importComposition(db, request.user!.id, parsed.data);
-      if (!result.ok) {
-        return reply.status(400).send({
-          error: {
-            code: 'VALIDATION_ERROR',
-            message: 'DSL parse error',
-            details: result.errors,
-          },
-        });
-      }
-      return reply.status(201).send(result.composition);
-    },
-  );
+  fastify.post('/compositions/import', { preHandler: requireAuth }, async (request, reply) => {
+    const parsed = ImportCompositionSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return reply.status(400).send({
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Invalid import data',
+          details: parsed.error.issues,
+        },
+      });
+    }
+    const result = importComposition(db, request.user!.id, parsed.data);
+    if (!result.ok) {
+      return reply.status(400).send({
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'DSL parse error',
+          details: result.errors,
+        },
+      });
+    }
+    return reply.status(201).send(result.composition);
+  });
 
   // ── GET /api/compositions/:id — get own or public composition (editable) ──
   fastify.get<{ Params: { id: string } }>(
@@ -175,21 +168,12 @@ export async function compositionsRoutes(
           },
         });
       }
-      const composition = updateComposition(
-        db,
-        request.user!.id,
-        request.params.id,
-        parsed.data,
-      );
+      const composition = updateComposition(db, request.user!.id, request.params.id, parsed.data);
       if (composition) return reply.send(composition);
 
       // Fallback: catalog moderators can edit any public composition
       if (hasPermission(db, request.user!.id, 'catalog:moderate')) {
-        const modUpdate = updateCompositionAsModerator(
-          db,
-          request.params.id,
-          parsed.data,
-        );
+        const modUpdate = updateCompositionAsModerator(db, request.params.id, parsed.data);
         if (modUpdate) return reply.send(modUpdate);
       }
 

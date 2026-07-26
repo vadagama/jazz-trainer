@@ -16,40 +16,40 @@
 
 ### 2.1. Core (8 звуков, включены по умолчанию)
 
-| Звук           | Функция                                     |
-| -------------- | ------------------------------------------- |
-| `congaHigh`    | Высокая конга — ритмический рисунок         |
-| `congaLow`     | Низкая конга — басовые акценты              |
-| `timbales`     | Тимбалес — металлические акценты            |
-| `cowbell`      | Ковбелл — ритмический pulse                 |
-| `clave`        | Клаве — ключевой ритмический паттерн         |
-| `shaker`       | Шейкер — непрерывная текстурная пульсация    |
-| `guiro`        | Гуиро — скребущий звук                      |
-| `triangle`     | Треугольник — высокие акценты                |
+| Звук        | Функция                                   |
+| ----------- | ----------------------------------------- |
+| `congaHigh` | Высокая конга — ритмический рисунок       |
+| `congaLow`  | Низкая конга — басовые акценты            |
+| `timbales`  | Тимбалес — металлические акценты          |
+| `cowbell`   | Ковбелл — ритмический pulse               |
+| `clave`     | Клаве — ключевой ритмический паттерн      |
+| `shaker`    | Шейкер — непрерывная текстурная пульсация |
+| `guiro`     | Гуиро — скребущий звук                    |
+| `triangle`  | Треугольник — высокие акценты             |
 
 ### 2.2. Extended (8 звуков, отключены по умолчанию)
 
-| Звук           | Функция                                     |
-| -------------- | ------------------------------------------- |
-| `bongoLow`     | Низкий бонго                                |
-| `tumba`        | Тумба — глубокая конга                      |
-| `cabasa`       | Кабаса — металлическая текстура             |
-| `tambourine`   | Тамбурин — яркие акценты                    |
-| `vibraslap`    | Вибраслэп — эффектный звук                  |
-| `belltree`     | Колокольчики — нисходящее глиссандо         |
-| `whistle`      | Свисток — сигнальные акценты                |
-| `sleighBells`  | Бубенцы — праздничная текстура              |
+| Звук          | Функция                             |
+| ------------- | ----------------------------------- |
+| `bongoLow`    | Низкий бонго                        |
+| `tumba`       | Тумба — глубокая конга              |
+| `cabasa`      | Кабаса — металлическая текстура     |
+| `tambourine`  | Тамбурин — яркие акценты            |
+| `vibraslap`   | Вибраслэп — эффектный звук          |
+| `belltree`    | Колокольчики — нисходящее глиссандо |
+| `whistle`     | Свисток — сигнальные акценты        |
+| `sleighBells` | Бубенцы — праздничная текстура      |
 
 ## 3. Стили и паттерны
 
 Percussion работает только для **3 стилей**: `latin`, `bossa`, `funk`.
 Для `swing` и `ballad` percussion отключён (`enabled: false`).
 
-| Стиль    | Organism         | Описание                                                |
-| -------- | ---------------- | ------------------------------------------------------- |
-| `latin`  | `latin-default`  | Cascara + clave (son 3-2), tumbao, cowbell, montuno     |
-| `bossa`  | `bossa-default`  | Бразильская текстура: shaker 8-ми, clave, conga, guiro   |
-| `funk`   | `funk-default`   | Ровный текстурный бит: even 16-е shaker/tambourine, cowbell на 1/3. Humanize **off** |
+| Стиль   | Organism        | Описание                                                                             |
+| ------- | --------------- | ------------------------------------------------------------------------------------ |
+| `latin` | `latin-default` | Cascara + clave (son 3-2), tumbao, cowbell, montuno                                  |
+| `bossa` | `bossa-default` | Бразильская текстура: shaker 8-ми, clave, conga, guiro                               |
+| `funk`  | `funk-default`  | Ровный текстурный бит: even 16-е shaker/tambourine, cowbell на 1/3. Humanize **off** |
 
 Паттерны реализованы через pattern-engine (organism → cell → molecule → atom),
 как и drum kit. См. `packages/plugins/instruments/percussion/` и
@@ -59,30 +59,46 @@ Percussion работает только для **3 стилей**: `latin`, `bo
 
 ```ts
 interface PercussionInstrumentSettings {
-  enabled: boolean;            // мастер-выключатель
-  volume: number;              // общая громкость
+  enabled: boolean; // мастер-выключатель
+  volume: number; // общая громкость
 
   // Core (8 звуков) — per-sound enable + volume
-  congaHighEnabled: boolean;   congaHighVolume: number;
-  congaLowEnabled: boolean;    congaLowVolume: number;
-  timbalesEnabled: boolean;    timbalesVolume: number;
-  cowbellEnabled: boolean;     cowbellVolume: number;
-  claveEnabled: boolean;       claveVolume: number;
-  shakerEnabled: boolean;      shakerVolume: number;
-  guiroEnabled: boolean;       guiroVolume: number;
-  triangleEnabled: boolean;    triangleVolume: number;
+  congaHighEnabled: boolean;
+  congaHighVolume: number;
+  congaLowEnabled: boolean;
+  congaLowVolume: number;
+  timbalesEnabled: boolean;
+  timbalesVolume: number;
+  cowbellEnabled: boolean;
+  cowbellVolume: number;
+  claveEnabled: boolean;
+  claveVolume: number;
+  shakerEnabled: boolean;
+  shakerVolume: number;
+  guiroEnabled: boolean;
+  guiroVolume: number;
+  triangleEnabled: boolean;
+  triangleVolume: number;
 
   // Extended (8 звуков) — отключены по умолчанию
-  bongoLowEnabled: boolean;    bongoLowVolume: number;
-  tumbaEnabled: boolean;       tumbaVolume: number;
-  cabasaEnabled: boolean;      cabasaVolume: number;
-  tambourineEnabled: boolean;  tambourineVolume: number;
-  vibraslapEnabled: boolean;   vibraslapVolume: number;
-  belltreeEnabled: boolean;    belltreeVolume: number;
-  whistleEnabled: boolean;     whistleVolume: number;
-  sleighBellsEnabled: boolean; sleighBellsVolume: number;
+  bongoLowEnabled: boolean;
+  bongoLowVolume: number;
+  tumbaEnabled: boolean;
+  tumbaVolume: number;
+  cabasaEnabled: boolean;
+  cabasaVolume: number;
+  tambourineEnabled: boolean;
+  tambourineVolume: number;
+  vibraslapEnabled: boolean;
+  vibraslapVolume: number;
+  belltreeEnabled: boolean;
+  belltreeVolume: number;
+  whistleEnabled: boolean;
+  whistleVolume: number;
+  sleighBellsEnabled: boolean;
+  sleighBellsVolume: number;
 
-  humanizeIntensity: HumanizeIntensity;  // 'off' | 'low' | 'med' | 'high'
+  humanizeIntensity: HumanizeIntensity; // 'off' | 'low' | 'med' | 'high'
 }
 ```
 
@@ -110,10 +126,10 @@ export const percussionManifest: InstrumentManifest = {
     // ... per-sound defaults (см. DEFAULT_PERCUSSION_SETTINGS)
   },
   perStyleDefaults: {
-    swing:  { enabled: false },
-    bossa:  { organismId: 'bossa-default', enabled: true },
-    funk:   { organismId: 'funk-default', enabled: true, humanizeIntensity: 'off' },
-    latin:  { organismId: 'latin-default', enabled: true },
+    swing: { enabled: false },
+    bossa: { organismId: 'bossa-default', enabled: true },
+    funk: { organismId: 'funk-default', enabled: true, humanizeIntensity: 'off' },
+    latin: { organismId: 'latin-default', enabled: true },
     ballad: { enabled: false },
   },
 };
@@ -121,11 +137,11 @@ export const percussionManifest: InstrumentManifest = {
 
 ## 7. Взаимодействие с другими инструментами
 
-| Инструмент     | Правило                                                           |
-| -------------- | ----------------------------------------------------------------- |
+| Инструмент     | Правило                                                                |
+| -------------- | ---------------------------------------------------------------------- |
 | **Drums**      | Разные EventSink'и (`'drums'` vs `'percussion'`). Могут звучать вместе |
-| **Modern Kit** | Аналогично drums — независимый EventSink                          |
-| **Bass**       | Разные частотные диапазоны, не конфликтуют                         |
+| **Modern Kit** | Аналогично drums — независимый EventSink                               |
+| **Bass**       | Разные частотные диапазоны, не конфликтуют                             |
 
 ## 8. Тесты
 

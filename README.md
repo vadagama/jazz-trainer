@@ -17,8 +17,8 @@ packages/
   shared/                 DTO (Zod), константы, общие типы
   plugin-sdk/             Контракты плагинов (extension points, хуки, apiClient)
   plugin-host/            Загрузка плагинов, агрегация вкладов
-  plugin-registry/        Build-time реестр (44 плагина)
-  plugins/                44 плагина (вся фичевая логика)
+  plugin-registry/        Build-time реестр (54 плагина)
+  plugins/                54 плагина (вся фичевая логика)
   adapters/               Платформенные адаптеры (Tone.js → AudioPort, Web MIDI)
   ui/                     Общие UI-компоненты
 docs/                     Документация
@@ -36,20 +36,20 @@ docs/                     Документация
 
 12 инструментов аккомпанемента в `music-core/audio`, каждый со своим манифестом и рандомайзером:
 
-| Инструмент       | Семплы                           | Документация                      |
-| ---------------- | -------------------------------- | --------------------------------- |
-| Bass             | SneakyBass (контрабас)           | [BASS.md](docs/Instruments/BASS.md)           |
-| Drums            | Swirly Drums v2 (8 звуков)       | [DRUMS.md](docs/Instruments/DRUMS.md)         |
-| Modern Kit       | Modern Kit (10 звуков + stir)    | [DRUMS.md](docs/Instruments/DRUMS.md)         |
-| Grand Piano      | Upright KW / Salamander Grand    | [PIANO.md](docs/Instruments/PIANO.md)         |
-| Rhodes           | jRhodes3c (комплементарный слой) | [RHODES.md](docs/Instruments/RHODES.md)       |
-| Guitar           | Nylon / Steel                    | [GUITAR.md](docs/Instruments/GUITAR.md)       |
-| Electric Guitar  | Electric (2 velocity-слоя)       | [GUITAR.md](docs/Instruments/GUITAR.md)       |
-| Vibraphone       | Vibraphone (2 velocity-слоя)     | [VIBRAPHONE.md](docs/Instruments/VIBRAPHONE.md) |
-| Organ            | Hammond-style (2 velocity-слоя)  | [ORGAN.md](docs/Instruments/ORGAN.md)         |
-| Percussion       | Latin perc (16 звуков)           | [PERCUSSION.md](docs/Instruments/PERCUSSION.md) |
-| Clarinet         | Clarinet (2 velocity-слоя)       | [CLARINET.md](docs/Instruments/CLARINET.md)   |
-| Metronome        | 5 звуков                         | —                                 |
+| Инструмент      | Семплы                           | Документация                                    |
+| --------------- | -------------------------------- | ----------------------------------------------- |
+| Bass            | SneakyBass (контрабас)           | [BASS.md](docs/Instruments/BASS.md)             |
+| Drums           | Swirly Drums v2 (8 звуков)       | [DRUMS.md](docs/Instruments/DRUMS.md)           |
+| Modern Kit      | Modern Kit (10 звуков + stir)    | [DRUMS.md](docs/Instruments/DRUMS.md)           |
+| Grand Piano     | Upright KW / Salamander Grand    | [PIANO.md](docs/Instruments/PIANO.md)           |
+| Rhodes          | jRhodes3c (комплементарный слой) | [RHODES.md](docs/Instruments/RHODES.md)         |
+| Guitar          | Nylon / Steel                    | [GUITAR.md](docs/Instruments/GUITAR.md)         |
+| Electric Guitar | Electric (2 velocity-слоя)       | [GUITAR.md](docs/Instruments/GUITAR.md)         |
+| Vibraphone      | Vibraphone (2 velocity-слоя)     | [VIBRAPHONE.md](docs/Instruments/VIBRAPHONE.md) |
+| Organ           | Hammond-style (2 velocity-слоя)  | [ORGAN.md](docs/Instruments/ORGAN.md)           |
+| Percussion      | Latin perc (16 звуков)           | [PERCUSSION.md](docs/Instruments/PERCUSSION.md) |
+| Clarinet        | Clarinet (2 velocity-слоя)       | [CLARINET.md](docs/Instruments/CLARINET.md)     |
+| Metronome       | 8 звуков                         | —                                               |
 
 **Сольные инструменты** — 7 MIDI-тембров для live-ввода: `synthDefault`, `pianoUprightSolo`, `pianoSalamanderSolo`, `rhodesJRhodes3cSolo`, `clarinetSolo`, `vibraphoneSolo`, `guitarNylonSolo`. Подробнее: [MIDI_INSTRUMENT_ARCHITECTURE.md](docs/ARCHIVE/MIDI_INSTRUMENT_ARCHITECTURE.md).
 
@@ -82,6 +82,7 @@ npm run dev:web
 ```
 
 После запуска:
+
 - Web: http://localhost:5173
 - API health: http://localhost:3999/api/health → `{ "status": "ok" }`
 
@@ -106,12 +107,12 @@ npm run dev:web
 
 Миграция на плагинную архитектуру:
 
-| Фаза                | Статус | Ключевой результат                                              |
-| ------------------- | ------ | --------------------------------------------------------------- |
-| Ф0 — Границы        | ✅     | ESLint boundaries + strict, 0 нарушений                         |
-| Ф1 — SDK + Host     | ✅     | `plugin-sdk`, `plugin-host`, `plugin-registry`, shell bootstrap |
-| ФR — RBAC + аудит   | ✅     | 3 роли, 11 permissions, audit log                               |
-| Ф2 — AudioPort      | 🟢     | Адаптеры готовы, 12 инструментов, манифесты, EventSink, StyleProfile           |
-| Ф3 — Фичи → плагины | ✅     | `core-editor`, `core-player`, `catalog` вынесены                |
-| Ф4 — Новые домены   | 🟡     | 37 domain-плагинов + `core-settings`, наполнение контентом в процессе           |
-| Ф5 — MIDI           | 🟡     | MIDI-плагины и `midiEval` готовы, Desktop исключён из скоупа    |
+| Фаза                | Статус | Ключевой результат                                                    |
+| ------------------- | ------ | --------------------------------------------------------------------- |
+| Ф0 — Границы        | ✅     | ESLint boundaries + strict, 0 нарушений                               |
+| Ф1 — SDK + Host     | ✅     | `plugin-sdk`, `plugin-host`, `plugin-registry`, shell bootstrap       |
+| ФR — RBAC + аудит   | ✅     | 4 роли, 23 permissions, audit log                                     |
+| Ф2 — AudioPort      | 🟢     | Адаптеры готовы, 12 инструментов, манифесты, EventSink, StyleProfile  |
+| Ф3 — Фичи → плагины | ✅     | `core-editor`, `core-player`, `catalog` вынесены                      |
+| Ф4 — Новые домены   | 🟡     | 37 domain-плагинов + `core-settings`, наполнение контентом в процессе |
+| Ф5 — MIDI           | 🟡     | MIDI-плагины и `midiEval` готовы, Desktop исключён из скоупа          |

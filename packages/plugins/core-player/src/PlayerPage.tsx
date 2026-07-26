@@ -2,7 +2,12 @@ import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Loader2, AlertCircle } from 'lucide-react';
 import type { Key, Section, Style } from '@jazz/shared';
-import { transposeSections, getStyleProfile, applyStyleDefaults, type InputPort } from '@jazz/music-core';
+import {
+  transposeSections,
+  getStyleProfile,
+  applyStyleDefaults,
+  type InputPort,
+} from '@jazz/music-core';
 import type { SoloInstrumentManifest } from '@jazz/music-core/audio';
 import { SOLO_INSTRUMENT_MANIFESTS } from '@jazz/music-core/audio';
 import { usePublicComposition } from './queries/usePublicCompositions';
@@ -21,7 +26,8 @@ import {
   VirtualKeyboardPanel,
   PlayerMidiControls,
   SoloSettingsDialog,
- InstrumentsDialog } from '@jazz/ui';
+  InstrumentsDialog,
+} from '@jazz/ui';
 
 // ---------------------------------------------------------------------------
 // -- Global adapter reference (for immediate solo volume/ducking feedback) --
@@ -192,7 +198,10 @@ export function PlayerPage() {
   };
 
   const effectiveVolume = localVolume ?? settings.volume;
-  const effectiveStyle = (localStyle ?? (grid?.recommendedStyle as Style | undefined) ?? settings.style ?? 'swing') as Style;
+  const effectiveStyle = (localStyle ??
+    (grid?.recommendedStyle as Style | undefined) ??
+    settings.style ??
+    'swing') as Style;
 
   // Effective settings resolved for the active style — includes admin per-style
   // defaults (tempo, swing, instruments). Declared before effectiveBpm so the
@@ -257,9 +266,7 @@ export function PlayerPage() {
     const lastSection = sections[sections.length - 1]!;
     const lastBar = lastSection.bars[lastSection.bars.length - 1];
     const currentCount = lastBar?.repeatEnd?.count;
-    const desiredCount = repeatOverridden
-      ? repeatOverride
-      : (currentCount ?? null); // default: infinite when no repeatEnd
+    const desiredCount = repeatOverridden ? repeatOverride : (currentCount ?? null); // default: infinite when no repeatEnd
 
     if (desiredCount === currentCount) return sections;
 
@@ -289,7 +296,13 @@ export function PlayerPage() {
       : (grid?.barsCount ?? 0);
 
   const transport = usePluginTransport({
-    settings: { ...resolvedSettings, bpm: effectiveBpm, volume: effectiveVolume, style: effectiveStyle, drumKit: effectiveDrumKit },
+    settings: {
+      ...resolvedSettings,
+      bpm: effectiveBpm,
+      volume: effectiveVolume,
+      style: effectiveStyle,
+      drumKit: effectiveDrumKit,
+    },
     timeSignature: effectiveTimeSig,
     totalBars,
     sections: displaySections,

@@ -14,6 +14,7 @@
 ## 1. Что такое ритмический инструмент в Jazz Trainer
 
 Ритмический (unpitched) инструмент — это `Instrument`, который:
+
 - Планирует **отдельные звуки** (kick, snare, hihat, conga, clave, …) — не ноты
 - Не зависит от гармонии (нет `ChordTimeline`)
 - Может использовать **pattern-engine** (organism → cell → molecule → atom) для стиле-зависимых грувов
@@ -22,10 +23,10 @@
 
 **Два семейства:**
 
-| `family` | Тип сэмплов | Примеры |
-|---|---|---|
-| `'drums'` | `velocityOneshots` (звук → velocity-слой → [RR]) | jazz-drum-kit, funk-drum-kit |
-| `'percussion'` | `oneshots` (звук → [RR]) | percussion (conga, clave, shaker…) |
+| `family`       | Тип сэмплов                                      | Примеры                            |
+| -------------- | ------------------------------------------------ | ---------------------------------- |
+| `'drums'`      | `velocityOneshots` (звук → velocity-слой → [RR]) | jazz-drum-kit, funk-drum-kit       |
+| `'percussion'` | `oneshots` (звук → [RR])                         | percussion (conga, clave, shaker…) |
 
 ---
 
@@ -42,13 +43,13 @@ export const STYLES = ['swing', 'bossa', 'funk', 'latin', 'ballad'] as const;
 export type Style = (typeof STYLES)[number];
 ```
 
-| Стиль   | Темп  | Swing | Характер                               |
-| ------- | ----- | ----- | -------------------------------------- |
-| `swing` | 140   | 0.67  | Ride-heavy, walking bass, rootless     |
-| `bossa` | 120   | 0.5   | Straight ритм, nylon-гитара, shell2    |
-| `funk`  | 100   | 0.5   | Синкопы, electric bass, rootless4      |
-| `latin` | 160   | 0.5   | Cascara/clave, montuno-бас, quartal    |
-| `ballad`| 60    | 0.58  | Brushes, two-feel, мягкие voicing      |
+| Стиль    | Темп | Swing | Характер                            |
+| -------- | ---- | ----- | ----------------------------------- |
+| `swing`  | 140  | 0.67  | Ride-heavy, walking bass, rootless  |
+| `bossa`  | 120  | 0.5   | Straight ритм, nylon-гитара, shell2 |
+| `funk`   | 100  | 0.5   | Синкопы, electric bass, rootless4   |
+| `latin`  | 160  | 0.5   | Cascara/clave, montuno-бас, quartal |
+| `ballad` | 60   | 0.58  | Brushes, two-feel, мягкие voicing   |
 
 **Правило:** `perStyleDefaults` в `InstrumentManifest` **обязан** содержать записи для
 всех 5 стилей. И organism-driven реестры (молекулы, клетки, организмы) должны
@@ -122,12 +123,12 @@ DrumOrganism  (sectionMap + defaultForm)
                            └─ DrumAtom (один удар: sound + atTick + velocity)
 ```
 
-| Уровень | Где живёт | Тип (generic) |
-|---|---|---|
-| Atom | `drumMolecules.ts` | `Atom<DrumSound>` |
+| Уровень  | Где живёт          | Тип (generic)                           |
+| -------- | ------------------ | --------------------------------------- |
+| Atom     | `drumMolecules.ts` | `Atom<DrumSound>`                       |
 | Molecule | `drumMolecules.ts` | `Molecule<DrumPatternStyle, DrumSound>` |
-| Cell | `drumCells.ts` | `Cell<DrumPatternStyle>` |
-| Organism | `drumOrganisms.ts` | `Organism<DrumPatternStyle>` |
+| Cell     | `drumCells.ts`     | `Cell<DrumPatternStyle>`                |
+| Organism | `drumOrganisms.ts` | `Organism<DrumPatternStyle>`            |
 
 ### 3.2. Generic pattern-engine
 
@@ -157,8 +158,8 @@ export type MySound =
   | 'hihat_closed'
   | 'hihat_open'
   | 'ride_bow'
-  | 'crash'
-  // ...
+  | 'crash';
+// ...
 
 // Стили паттернов — обязательно все 5 (см. §2.1)
 export type MyPatternStyle = 'swing' | 'bossa' | 'funk' | 'latin' | 'ballad';
@@ -181,14 +182,14 @@ export const MY_MOLECULES: Record<string, MyMolecule> = {
   'swing-ride-basic': {
     id: 'swing-ride-basic',
     label: 'Ride basic',
-    style: 'swing',                      // один из 5 стилей
+    style: 'swing', // один из 5 стилей
     bars: 1,
     category: 'groove',
     conditions: { requireRide: true },
     tags: [],
     weight: 1,
     atoms: [
-      { sound: 'ride_bow', atTick: 0,   velocity: 0.6, durationTicks: 240 },
+      { sound: 'ride_bow', atTick: 0, velocity: 0.6, durationTicks: 240 },
       { sound: 'ride_bow', atTick: 240, velocity: 0.5, durationTicks: 240 },
       { sound: 'ride_bow', atTick: 480, velocity: 0.6, durationTicks: 240 },
       { sound: 'ride_bow', atTick: 720, velocity: 0.5, durationTicks: 240 },
@@ -200,6 +201,7 @@ export const MY_MOLECULES: Record<string, MyMolecule> = {
 ```
 
 **Правила написания молекул:**
+
 - `atTick` — **прямые тики** (без swing). Swing применяется движком при `assembleBar()`
 - PPQ = 480. Такт 4/4 = 1920 тиков, одна четверть = 480, восьмая = 240
 - `bars: 1 | 2` — длина молекулы в тактах
@@ -218,8 +220,8 @@ export const MY_CELLS: Record<string, MyCell> = {
     id: 'swing-verse',
     style: 'swing',
     label: 'Swing verse',
-    length: 16,          // длина в тактах
-    velocity: 0.75,      // базовая velocity клетки
+    length: 16, // длина в тактах
+    velocity: 0.75, // базовая velocity клетки
     dynamics: { type: 'static' },
     lanes: [
       {
@@ -237,8 +239,8 @@ export const MY_CELLS: Record<string, MyCell> = {
         name: 'kick',
         probability: 1.0,
         clips: [
-          { startBar: 0, lengthBars: 8,  pool: ['swing-feathering-1'] },
-          { startBar: 8, lengthBars: 8,  pool: ['swing-feathering-2'] },
+          { startBar: 0, lengthBars: 8, pool: ['swing-feathering-1'] },
+          { startBar: 8, lengthBars: 8, pool: ['swing-feathering-2'] },
         ],
       },
       // ... snare, hihat, fills
@@ -249,6 +251,7 @@ export const MY_CELLS: Record<string, MyCell> = {
 ```
 
 **Правила клеток:**
+
 - `length` — длина клетки в тактах (8, 16, 32)
 - `lanes[].clips` — непересекающиеся временные отрезки с пулами молекул
 - `pool` cycling: каждый повтор такта берёт следующую молекулу из пула
@@ -267,14 +270,14 @@ export const MY_ORGANISMS: Record<string, MyOrganism> = {
     label: 'Swing AABA',
     // sectionMap покрывает ВСЕ 8 типов секций (см. §2.2)
     sectionMap: {
-      intro:   ['intro-4bar'],
-      verseA:  ['swing-verse', 'swing-verse-alt'],
-      verseB:  ['swing-verse'],          // fallback: та же клетка
-      verseC:  ['swing-verse'],          // fallback
-      chorus:  ['swing-chorus'],
-      bridge:  ['swing-bridge'],
-      solo:    ['swing-solo'],
-      ending:  ['ending-2bar'],
+      intro: ['intro-4bar'],
+      verseA: ['swing-verse', 'swing-verse-alt'],
+      verseB: ['swing-verse'], // fallback: та же клетка
+      verseC: ['swing-verse'], // fallback
+      chorus: ['swing-chorus'],
+      bridge: ['swing-bridge'],
+      solo: ['swing-solo'],
+      ending: ['ending-2bar'],
     },
     defaultForm: [
       { type: 'verseA', repeats: 2, label: 'Verse A' },
@@ -295,6 +298,7 @@ export const MY_ORGANISMS: Record<string, MyOrganism> = {
 ```
 
 **Правила организмов:**
+
 - `sectionMap` — пулы клеток по типам секций. **Обязательно покрывать все 8**: `intro`, `verseA`, `verseB`, `verseC`, `chorus`, `bridge`, `solo`, `ending`
 - `defaultForm` — макро-форма (fallback, когда нет grid-секций)
 - `timeSignatureOverrides` — клетки для нестандартных размеров
@@ -341,17 +345,23 @@ export class MyInstrument implements Instrument {
 
     // Для каждого такта в окне — определить секцию, выбрать клетку, собрать hits
     for (let bar = firstBar; bar <= lastBar; bar++) {
-      const section = this.gridSections
-        ? findSectionForBar(bar, this.gridSections)
-        : null;
+      const section = this.gridSections ? findSectionForBar(bar, this.gridSections) : null;
 
       const hits = this.patternEngine.resolveBarSlot(
-        this.organism, bar, section?.type, ctx.timeSignature
+        this.organism,
+        bar,
+        section?.type,
+        ctx.timeSignature,
       );
 
       for (const hit of hits) {
-        ctx.scheduleEvent(this.instrumentId, { sound: hit.sound },
-          barStart + hit.atTick, hit.velocity, hit.durationTicks);
+        ctx.scheduleEvent(
+          this.instrumentId,
+          { sound: hit.sound },
+          barStart + hit.atTick,
+          hit.velocity,
+          hit.durationTicks,
+        );
       }
     }
   }
@@ -389,7 +399,7 @@ export class MyPercussionInstrument implements Instrument {
     const maxJitter = this.humanize ? Math.round(0.004 * (ctx.bpm / 60) * 480) : 0;
 
     const firstBar = Math.floor(window.fromTicks / tpBar);
-    const lastBar  = Math.floor((window.toTicks - 1) / tpBar);
+    const lastBar = Math.floor((window.toTicks - 1) / tpBar);
 
     for (let bar = firstBar; bar <= lastBar; bar++) {
       const events = this.getPattern(this.pattern); // массив { sound, beatPos, velocity }
@@ -400,7 +410,9 @@ export class MyPercussionInstrument implements Instrument {
 
         let atTicks = eventTicks;
         let vel = ev.velocity * this.baseVolume;
-        if (this.humanize) { /* ± jitter */ }
+        if (this.humanize) {
+          /* ± jitter */
+        }
 
         ctx.scheduleEvent('my-perc', { sound: ev.sound }, atTicks, vel, 120);
       }
@@ -428,10 +440,12 @@ const MY_SAMPLE_MANIFEST: SampleManifest = {
       vl1: ['kick_vl1_rr1.m4a', 'kick_vl1_rr2.m4a', 'kick_vl1_rr3.m4a', 'kick_vl1_rr4.m4a'],
       vl2: ['kick_vl2_rr1.m4a', 'kick_vl2_rr2.m4a', 'kick_vl2_rr3.m4a', 'kick_vl2_rr4.m4a'],
     },
-    snare_center: { /* ... */ },
+    snare_center: {
+      /* ... */
+    },
     // ...
   },
-  velocityLayers: ['vl1', 'vl2', 'vl3', 'vl4'],  // от тихого к громкому
+  velocityLayers: ['vl1', 'vl2', 'vl3', 'vl4'], // от тихого к громкому
   rrCount: 4,
 };
 ```
@@ -444,7 +458,7 @@ const MY_SAMPLE_MANIFEST: SampleManifest = {
   fallbackBaseUrl: '/samples/mp3/percussion/my-perc/',
   oneshots: {
     conga_high: ['conga_high_rr1.m4a', 'conga_high_rr2.m4a'],
-    clave:      ['clave_rr1.m4a', 'clave_rr2.m4a'],
+    clave: ['clave_rr1.m4a', 'clave_rr2.m4a'],
     // ...
   },
   rrCount: 2,
@@ -458,10 +472,10 @@ const MY_SAMPLE_MANIFEST: SampleManifest = {
 ```ts
 // sampleRegistry.ts
 export const MY_ARTICULATION_MAP: Partial<Record<DrumSound, DrumSound>> = {
-  bassDrum: 'kick',          // legacy → конкретный ключ сэмпла
-  snare:    'snare_center',
-  hihat:    'hihat_closed',
-  ride:     'ride_bow',
+  bassDrum: 'kick', // legacy → конкретный ключ сэмпла
+  snare: 'snare_center',
+  hihat: 'hihat_closed',
+  ride: 'ride_bow',
   // ...
 };
 ```
@@ -480,7 +494,7 @@ contributes: {
 export const myKitManifest: InstrumentManifest = {
   id: 'my-kit',
   name: 'My Drum Kit',
-  family: 'drums',              // 'drums' или 'percussion'
+  family: 'drums', // 'drums' или 'percussion'
   settingsPrefix: 'drums',
   createInstrument: () => new MyInstrument(),
   sampleManifest: MY_SAMPLE_MANIFEST,
@@ -494,14 +508,14 @@ export const myKitManifest: InstrumentManifest = {
     hihatEnabled: true,
     hihatVolume: 0.7,
     // ... per-sound on/off + volume
-    useArticulations: true,       // включить артикуляции (если поддерживаются)
+    useArticulations: true, // включить артикуляции (если поддерживаются)
   },
   perStyleDefaults: {
-    swing:  { pattern: 'swing',  volume: 0.7 },
-    bossa:  { pattern: 'bossa',  snareEnabled: false, rimEnabled: true },
-    funk:   { pattern: 'funk',   volume: 0.75, tomEnabled: true },
-    latin:  { pattern: 'funk',   tomEnabled: true },
-    ballad: { pattern: 'swing',  volume: 0.55 },
+    swing: { pattern: 'swing', volume: 0.7 },
+    bossa: { pattern: 'bossa', snareEnabled: false, rimEnabled: true },
+    funk: { pattern: 'funk', volume: 0.75, tomEnabled: true },
+    latin: { pattern: 'funk', tomEnabled: true },
+    ballad: { pattern: 'swing', volume: 0.55 },
   },
 };
 ```
@@ -563,8 +577,7 @@ export function validateCell(cell: MyCell): CellValidationError[] {
 
   if (cell.lanes.length < 1 || cell.lanes.length > MAX_LANES)
     errors.push({ code: 'lane-count', detail: `…` });
-  if (cell.velocity < 0 || cell.velocity > 1)
-    errors.push({ code: 'velocity-range', detail: `…` });
+  if (cell.velocity < 0 || cell.velocity > 1) errors.push({ code: 'velocity-range', detail: `…` });
 
   for (const lane of cell.lanes) {
     // Проверить clips: overlap, bounds, пустые пулы, неизвестные moleculeId
@@ -646,11 +659,11 @@ Organism-driven инструменты **могут** получить свой 
 
 ## 12. Эталонные реализации
 
-| Инструмент | Файл | Подход | Особенности |
-|---|---|---|---|
-| **Jazz Drum Kit** | `packages/plugins/instruments/jazz-drum-kit/` | Pattern-engine | 4 velocity-слоя, 15+ артикуляций (stir, splash, dig, edge), `articulationMap`, kit-level gates, per-style defaults для всех 5 стилей |
-| **Funk Drum Kit** | `packages/plugins/instruments/funk-drum-kit/` | Pattern-engine | 2–5 velocity-слоёв, 15+ артикуляций (buzz, flam, rimshot, bell, sizzle), per-style оверрайды для funk-артикуляций |
-| **Percussion** | `packages/plugins/instruments/percussion/` | Pattern-engine | 16 звуков (conga, clave, shaker, …), 3 стиля (latin/bossa/funk), per-sound gates. Funk — ровный бит (humanize off). Engine: `PercussionInstrument` в `music-core` |
+| Инструмент        | Файл                                          | Подход         | Особенности                                                                                                                                                       |
+| ----------------- | --------------------------------------------- | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Jazz Drum Kit** | `packages/plugins/instruments/jazz-drum-kit/` | Pattern-engine | 4 velocity-слоя, 15+ артикуляций (stir, splash, dig, edge), `articulationMap`, kit-level gates, per-style defaults для всех 5 стилей                              |
+| **Funk Drum Kit** | `packages/plugins/instruments/funk-drum-kit/` | Pattern-engine | 2–5 velocity-слоёв, 15+ артикуляций (buzz, flam, rimshot, bell, sizzle), per-style оверрайды для funk-артикуляций                                                 |
+| **Percussion**    | `packages/plugins/instruments/percussion/`    | Pattern-engine | 16 звуков (conga, clave, shaker, …), 3 стиля (latin/bossa/funk), per-sound gates. Funk — ровный бит (humanize off). Engine: `PercussionInstrument` в `music-core` |
 
 ---
 

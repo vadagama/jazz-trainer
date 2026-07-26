@@ -111,10 +111,7 @@ export function buildBassRegUrls(rr: 1 | 2 | 3 | 4): NoteMap {
 }
 
 /** Build a NoteMap for an electric articulation that carries its token (stac/rel/ghost). */
-export function buildBassArticUrls(
-  artic: 'stac' | 'rel' | 'ghost',
-  rr: 1 | 2 | 3 | 4,
-): NoteMap {
+export function buildBassArticUrls(artic: 'stac' | 'rel' | 'ghost', rr: 1 | 2 | 3 | 4): NoteMap {
   const velToken = artic === 'ghost' ? '_f' : '';
   return Object.fromEntries(
     ELECTRIC_BASS_ANCHOR_NOTES.map((note) => [

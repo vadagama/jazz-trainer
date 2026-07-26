@@ -48,29 +48,26 @@
       "@jazz/plugin-admin-assets": ["packages/plugins/admin/admin-assets/src/index.ts"],
       "@jazz/plugin-admin-diagnostics": ["packages/plugins/admin/admin-diagnostics/src/index.ts"],
       "@jazz/plugin-admin-defaults": ["packages/plugins/admin/admin-defaults/src/index.ts"],
+      "@jazz/plugin-admin-subscriptions": ["packages/plugins/admin/admin-subscriptions/src/index.ts"],
       "@jazz/plugin-admin-drum-constructor": [
-        "packages/plugins/admin/admin-drum-constructor/src/index.ts",
+        "packages/plugins/admin/admin-drum-constructor/src/index.ts"
       ],
       "@jazz/plugin-admin-percussion-constructor": [
-        "packages/plugins/admin/admin-percussion-constructor/src/index.ts",
+        "packages/plugins/admin/admin-percussion-constructor/src/index.ts"
       ],
       "@jazz/plugin-admin-piano-constructor": [
-        "packages/plugins/admin/admin-piano-constructor/src/index.ts",
+        "packages/plugins/admin/admin-piano-constructor/src/index.ts"
       ],
       "@jazz/plugin-admin-bass-constructor": [
-        "packages/plugins/admin/admin-bass-constructor/src/index.ts",
+        "packages/plugins/admin/admin-bass-constructor/src/index.ts"
       ],
       "@jazz/plugin-admin-rhodes-constructor": [
-        "packages/plugins/admin/admin-rhodes-constructor/src/index.ts",
+        "packages/plugins/admin/admin-rhodes-constructor/src/index.ts"
       ],
-      "@jazz/plugin-admin-exercises": [
-        "packages/plugins/admin/admin-exercises/src/index.ts",
-      ],
-      "@jazz/plugin-admin-theory": [
-        "packages/plugins/admin/admin-theory/src/index.ts",
-      ],
+      "@jazz/plugin-admin-exercises": ["packages/plugins/admin/admin-exercises/src/index.ts"],
+      "@jazz/plugin-admin-theory": ["packages/plugins/admin/admin-theory/src/index.ts"],
       "@jazz/plugin-admin-constructor-shared": [
-        "packages/plugins/admin/admin-constructor-shared/src/index.ts",
+        "packages/plugins/admin/admin-constructor-shared/src/index.ts"
       ],
       "@jazz/plugin-jazz-drum-kit": ["packages/plugins/instruments/jazz-drum-kit/src/index.ts"],
       "@jazz/plugin-funk-drum-kit": ["packages/plugins/instruments/funk-drum-kit/src/index.ts"],
@@ -81,10 +78,10 @@
       "@jazz/plugin-rhodes": ["packages/plugins/instruments/rhodes/src/index.ts"],
       "@jazz/plugin-template": ["packages/plugins/_template/src/index.ts"],
       "@jazz/plugin-theory-chord-tones": [
-        "packages/plugins/theory/theory-chord-tones/src/index.ts",
+        "packages/plugins/theory/theory-chord-tones/src/index.ts"
       ],
       "@jazz/plugin-theory-approach-notes": [
-        "packages/plugins/theory/theory-approach-notes/src/index.ts",
+        "packages/plugins/theory/theory-approach-notes/src/index.ts"
       ],
       "@jazz/plugin-theory-arpeggios": ["packages/plugins/theory/theory-arpeggios/src/index.ts"],
       "@jazz/plugin-theory-blues": ["packages/plugins/theory/theory-blues/src/index.ts"],
@@ -95,46 +92,46 @@
       "@jazz/plugin-theory-groove": ["packages/plugins/theory/theory-groove/src/index.ts"],
       "@jazz/plugin-theory-ii-v-i": ["packages/plugins/theory/theory-ii-v-i/src/index.ts"],
       "@jazz/plugin-theory-scales-jazz": [
-        "packages/plugins/theory/theory-scales-jazz/src/index.ts",
+        "packages/plugins/theory/theory-scales-jazz/src/index.ts"
       ],
       "@jazz/plugin-theory-voicings": ["packages/plugins/theory/theory-voicings/src/index.ts"],
       "@jazz/plugin-theory-voice-leading": [
-        "packages/plugins/theory/theory-voice-leading/src/index.ts",
+        "packages/plugins/theory/theory-voice-leading/src/index.ts"
       ],
       "@jazz/plugin-theory-diminished-harmony": [
-        "packages/plugins/theory/theory-diminished-harmony/src/index.ts",
+        "packages/plugins/theory/theory-diminished-harmony/src/index.ts"
       ],
       "@jazz/plugin-theory-coltrane-changes": [
-        "packages/plugins/theory/theory-coltrane-changes/src/index.ts",
+        "packages/plugins/theory/theory-coltrane-changes/src/index.ts"
       ],
       "@jazz/plugin-theory-blues-advanced": [
-        "packages/plugins/theory/theory-blues-advanced/src/index.ts",
+        "packages/plugins/theory/theory-blues-advanced/src/index.ts"
       ],
       "@jazz/plugin-theory-rhythm-changes": [
-        "packages/plugins/theory/theory-rhythm-changes/src/index.ts",
+        "packages/plugins/theory/theory-rhythm-changes/src/index.ts"
       ],
       "@jazz/plugin-theory-modal-interchange": [
-        "packages/plugins/theory/theory-modal-interchange/src/index.ts",
+        "packages/plugins/theory/theory-modal-interchange/src/index.ts"
       ],
       "@jazz/plugin-theory-secondary-dominants": [
-        "packages/plugins/theory/theory-secondary-dominants/src/index.ts",
+        "packages/plugins/theory/theory-secondary-dominants/src/index.ts"
       ],
       "@jazz/plugin-theory-tritone-sub": [
-        "packages/plugins/theory/theory-tritone-sub/src/index.ts",
+        "packages/plugins/theory/theory-tritone-sub/src/index.ts"
       ],
       "@jazz/plugin-theory-turnarounds": [
-        "packages/plugins/theory/theory-turnarounds/src/index.ts",
+        "packages/plugins/theory/theory-turnarounds/src/index.ts"
       ],
       "@jazz/plugin-theory-catalog": ["packages/plugins/theory/theory-catalog/src/index.ts"],
       "@jazz/plugin-ear-training": ["packages/plugins/ear-training/src/index.ts"],
       "@jazz/plugin-rhythm-drills": ["packages/plugins/rhythm-drills/src/index.ts"],
       "@jazz/plugin-chord-quiz": ["packages/plugins/chord-quiz/src/index.ts"],
       "@jazz/plugin-progression-recognition": [
-        "packages/plugins/progression-recognition/src/index.ts",
+        "packages/plugins/progression-recognition/src/index.ts"
       ],
       "@jazz/plugin-practice-cards": ["packages/plugins/practice-cards/src/index.ts"],
       "@jazz/plugin-visual-midi-keyboard": ["packages/plugins/visual-midi-keyboard/src/index.ts"],
-      "@jazz/plugin-core-settings": ["packages/plugins/core-settings/src/index.ts"],
-    },
-  },
+      "@jazz/plugin-core-settings": ["packages/plugins/core-settings/src/index.ts"]
+    }
+  }
 }

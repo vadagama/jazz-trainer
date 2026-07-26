@@ -103,9 +103,7 @@ describe('ClarinetInstrument — counterpoint', () => {
 
     expect(events).toHaveLength(6); // 2 bars × 3 notes
     // Bar 2 events should start at 2 * TPBAR
-    const bar2Events = events.filter(
-      (e) => e.at >= 2 * TPBAR && e.at < 3 * TPBAR,
-    );
+    const bar2Events = events.filter((e) => e.at >= 2 * TPBAR && e.at < 3 * TPBAR);
     expect(bar2Events).toHaveLength(3);
   });
 
@@ -289,7 +287,6 @@ describe('ClarinetInstrument — reset / seek', () => {
 
     // First pass: schedule bar 1
     inst.schedule({ fromTicks: TPBAR, toTicks: 2 * TPBAR }, ctx);
-    const firstEvents = events.map((e) => ({ ...e }));
     events.length = 0;
 
     // Backward seek: schedule bar 0

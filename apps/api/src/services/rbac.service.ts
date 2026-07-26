@@ -1,5 +1,12 @@
 import { eq } from 'drizzle-orm';
-import { users, roles, rolePermissions, userPermissions, userRoles, featureFlags } from '../db/schema.js';
+import {
+  users,
+  roles,
+  rolePermissions,
+  userPermissions,
+  userRoles,
+  featureFlags,
+} from '../db/schema.js';
 import type { DrizzleDb } from '../db/index.js';
 import type { SystemRole } from '@jazz/shared';
 
@@ -39,6 +46,9 @@ export const RBAC_PERMISSIONS = {
   // System settings (reserved for future)
   SYSTEM_SETTINGS_READ: 'system:settings:read',
   SYSTEM_SETTINGS_WRITE: 'system:settings:write',
+  // Billing
+  BILLING_READ: 'billing:read',
+  BILLING_MANAGE: 'billing:manage',
 } as const;
 
 export type PermissionCode = (typeof RBAC_PERMISSIONS)[keyof typeof RBAC_PERMISSIONS];
@@ -51,6 +61,9 @@ export const RBAC_ROLES = {
   ADMIN: 'admin',
   USER: 'user',
   CATALOG_EDITOR: 'catalog_editor',
+  SUBSCRIBER_FREE: 'subscriber_free',
+  SUBSCRIBER_PRO: 'subscriber_pro',
+  SUBSCRIBER_PREMIUM: 'subscriber_premium',
 } as const satisfies Record<string, SystemRole>;
 
 export type RoleName = (typeof RBAC_ROLES)[keyof typeof RBAC_ROLES];

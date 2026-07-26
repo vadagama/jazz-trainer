@@ -108,8 +108,7 @@ export function getCatalog(
   if (q.style.length) conditions.push(inArray(harmonyCompositions.recommendedStyle, q.style));
   if (q.timeSignature.length)
     conditions.push(inArray(harmonyCompositions.timeSignature, q.timeSignature));
-  if (q.difficulty.length)
-    conditions.push(inArray(harmonyCompositions.difficulty, q.difficulty));
+  if (q.difficulty.length) conditions.push(inArray(harmonyCompositions.difficulty, q.difficulty));
   if (q.key.length) conditions.push(inArray(harmonyCompositions.key, q.key));
   if (q.author) conditions.push(like(harmonyCompositions.author, `%${q.author}%`));
   if (q.publisherId) conditions.push(eq(harmonyCompositions.userId, q.publisherId));
@@ -224,10 +223,7 @@ export function getCatalogById(
       .select()
       .from(compositionLikes)
       .where(
-        and(
-          eq(compositionLikes.compositionId, id),
-          eq(compositionLikes.userId, currentUserId),
-        ),
+        and(eq(compositionLikes.compositionId, id), eq(compositionLikes.userId, currentUserId)),
       )
       .get();
     likedByMe = !!like;
@@ -277,10 +273,7 @@ export function getCatalogTags(db: DrizzleDb, includeHidden = false): CatalogTag
   const visible = includeHidden ? rows : rows.filter((r) => !r.hidden);
 
   // compute usage counts
-  const allComps = db
-    .select({ tags: harmonyCompositions.tags })
-    .from(harmonyCompositions)
-    .all();
+  const allComps = db.select({ tags: harmonyCompositions.tags }).from(harmonyCompositions).all();
   const counts = new Map<string, number>();
   for (const c of allComps) {
     for (const t of parseTags(c.tags)) {
@@ -333,7 +326,7 @@ export function getCatalogStats(db: DrizzleDb, full = false): CatalogStats {
     total: publicApproved.length,
     approved: publicApproved.length,
     rejected: full
-      ? db
+      ? (db
           .select({ count: sql<number>`count(*)` })
           .from(harmonyCompositions)
           .where(
@@ -342,7 +335,7 @@ export function getCatalogStats(db: DrizzleDb, full = false): CatalogStats {
               eq(harmonyCompositions.moderationStatus, 'rejected'),
             ),
           )
-          .get()?.count ?? 0
+          .get()?.count ?? 0)
       : 0,
     featured: publicApproved.filter((r) => r.featured).length,
     byStyle,
@@ -482,11 +475,7 @@ export function unpublishCatalogEntry(
 
 // ── admin: moderate / feature ─────────────────────────────────────────────
 
-export function rejectCatalogEntry(
-  db: DrizzleDb,
-  request: FastifyRequest,
-  id: string,
-): boolean {
+export function rejectCatalogEntry(db: DrizzleDb, request: FastifyRequest, id: string): boolean {
   const existing = db
     .select()
     .from(harmonyCompositions)
@@ -510,11 +499,7 @@ export function rejectCatalogEntry(
   ).ok;
 }
 
-export function approveCatalogEntry(
-  db: DrizzleDb,
-  request: FastifyRequest,
-  id: string,
-): boolean {
+export function approveCatalogEntry(db: DrizzleDb, request: FastifyRequest, id: string): boolean {
   const existing = db
     .select()
     .from(harmonyCompositions)
@@ -551,11 +536,12 @@ export function toggleFeatured(
   if (!existing) return null;
 
   // cap featured at 10
-  const featuredCount = db
-    .select({ count: sql<number>`count(*)` })
-    .from(harmonyCompositions)
-    .where(eq(harmonyCompositions.featured, true))
-    .get()?.count ?? 0;
+  const featuredCount =
+    db
+      .select({ count: sql<number>`count(*)` })
+      .from(harmonyCompositions)
+      .where(eq(harmonyCompositions.featured, true))
+      .get()?.count ?? 0;
   if (!existing.featured && featuredCount >= 10) {
     return null; // cap reached
   }
@@ -564,10 +550,11 @@ export function toggleFeatured(
   // assign featuredOrder: max + 1 when enabling; null when disabling
   let newOrder = existing.featuredOrder;
   if (newFeatured && existing.featuredOrder === null) {
-    const maxOrder = db
-      .select({ max: sql<number>`COALESCE(MAX(featured_order), 0)` })
-      .from(harmonyCompositions)
-      .get()?.max ?? 0;
+    const maxOrder =
+      db
+        .select({ max: sql<number>`COALESCE(MAX(featured_order), 0)` })
+        .from(harmonyCompositions)
+        .get()?.max ?? 0;
     newOrder = maxOrder + 1;
   }
   if (!newFeatured) newOrder = null;
@@ -589,11 +576,7 @@ export function toggleFeatured(
   );
 }
 
-export function reorderFeatured(
-  db: DrizzleDb,
-  id: string,
-  order: number,
-): boolean {
+export function reorderFeatured(db: DrizzleDb, id: string, order: number): boolean {
   const existing = db
     .select()
     .from(harmonyCompositions)
@@ -607,11 +590,7 @@ export function reorderFeatured(
   return true;
 }
 
-export function deleteCatalogEntry(
-  db: DrizzleDb,
-  request: FastifyRequest,
-  id: string,
-): boolean {
+export function deleteCatalogEntry(db: DrizzleDb, request: FastifyRequest, id: string): boolean {
   const existing = db
     .select()
     .from(harmonyCompositions)
@@ -743,30 +722,19 @@ export function createCatalogTag(
   if (existing) return null; // duplicate value
 
   const id = crypto.randomUUID();
-  withAuditSync(
-    db,
-    request,
-    'catalog:tag:create',
-    'catalog_tag',
-    id,
-    {},
-    () => {
-      db.insert(catalogTags)
-        .values({
-          id,
-          value: input.value,
-          category: input.category,
-          description: input.description ?? null,
-          hidden: false,
-        })
-        .run();
-      return { ok: true };
-    },
-  );
-  return toTagDTO(
-    db.select().from(catalogTags).where(eq(catalogTags.id, id)).get()!,
-    0,
-  );
+  withAuditSync(db, request, 'catalog:tag:create', 'catalog_tag', id, {}, () => {
+    db.insert(catalogTags)
+      .values({
+        id,
+        value: input.value,
+        category: input.category,
+        description: input.description ?? null,
+        hidden: false,
+      })
+      .run();
+    return { ok: true };
+  });
+  return toTagDTO(db.select().from(catalogTags).where(eq(catalogTags.id, id)).get()!, 0);
 }
 
 export function updateCatalogTag(
@@ -802,35 +770,20 @@ export function updateCatalogTag(
     }
   }
 
-  return withAuditSync(
-    db,
-    request,
-    'catalog:tag:update',
-    'catalog_tag',
-    id,
-    { before },
-    () => {
-      const patch: Partial<CatalogTagRecord> = {};
-      if (input.value !== undefined) patch.value = input.value;
-      if (input.category !== undefined) patch.category = input.category;
-      if (input.description !== undefined) patch.description = input.description;
-      if (input.hidden !== undefined) patch.hidden = input.hidden;
-      db.update(catalogTags).set(patch).where(eq(catalogTags.id, id)).run();
-      return db.select().from(catalogTags).where(eq(catalogTags.id, id)).get()!;
-    },
-  )
-    ? toTagDTO(
-        db.select().from(catalogTags).where(eq(catalogTags.id, id)).get()!,
-        0,
-      )
+  return withAuditSync(db, request, 'catalog:tag:update', 'catalog_tag', id, { before }, () => {
+    const patch: Partial<CatalogTagRecord> = {};
+    if (input.value !== undefined) patch.value = input.value;
+    if (input.category !== undefined) patch.category = input.category;
+    if (input.description !== undefined) patch.description = input.description;
+    if (input.hidden !== undefined) patch.hidden = input.hidden;
+    db.update(catalogTags).set(patch).where(eq(catalogTags.id, id)).run();
+    return db.select().from(catalogTags).where(eq(catalogTags.id, id)).get()!;
+  })
+    ? toTagDTO(db.select().from(catalogTags).where(eq(catalogTags.id, id)).get()!, 0)
     : null;
 }
 
-export function deleteCatalogTag(
-  db: DrizzleDb,
-  request: FastifyRequest,
-  id: string,
-): boolean {
+export function deleteCatalogTag(db: DrizzleDb, request: FastifyRequest, id: string): boolean {
   const existing = db.select().from(catalogTags).where(eq(catalogTags.id, id)).get();
   if (!existing) return false;
 
@@ -940,10 +893,7 @@ export function getUserPrivateCompositionsForCatalog(
     .select()
     .from(harmonyCompositions)
     .where(
-      and(
-        eq(harmonyCompositions.userId, userId),
-        eq(harmonyCompositions.visibility, 'private'),
-      ),
+      and(eq(harmonyCompositions.userId, userId), eq(harmonyCompositions.visibility, 'private')),
     )
     .orderBy(desc(harmonyCompositions.updatedAt))
     .all();

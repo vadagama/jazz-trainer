@@ -9,7 +9,9 @@ export default definePlugin({
     description: 'Каталог лекций по джазовой теории с поиском, сортировкой и лайками.',
   },
   contributes: {
-    routes: [{ path: '/theory', element: () => import('./TheoryCatalogPage'), requires: 'theory:read' }],
+    routes: [
+      { path: '/theory', element: () => import('./TheoryCatalogPage'), requires: 'theory:read' },
+    ],
     navItems: [{ section: 'learn', label: 'Теория', to: '/theory', icon: 'book-open' }],
   },
 });

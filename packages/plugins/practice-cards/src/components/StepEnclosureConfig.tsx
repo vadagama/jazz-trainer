@@ -151,10 +151,7 @@ export function StepEnclosureConfig({ config, onChange, settings }: StepEnclosur
           <CardTitle className="text-base">Лад для опеваний</CardTitle>
         </CardHeader>
         <CardContent>
-          <Select
-            value={scaleType}
-            onValueChange={(v) => onChange({ scaleType: v as ScaleType })}
-          >
+          <Select value={scaleType} onValueChange={(v) => onChange({ scaleType: v as ScaleType })}>
             <SelectTrigger className="w-full">
               <SelectValue />
             </SelectTrigger>

@@ -9,7 +9,13 @@ export default definePlugin({
     description: 'Интерактивные упражнения для тренировки аккордов и гамм',
   },
   contributes: {
-    routes: [{ path: '/practice-cards', element: () => import('./PracticeCardsPage'), requires: 'exercises:read' }],
+    routes: [
+      {
+        path: '/practice-cards',
+        element: () => import('./PracticeCardsPage'),
+        requires: 'exercises:read',
+      },
+    ],
     navItems: [{ section: 'practice', label: 'Упражнения', to: '/practice-cards' }],
   },
 });

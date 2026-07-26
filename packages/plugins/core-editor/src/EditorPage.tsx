@@ -2,7 +2,12 @@ import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Loader2, AlertCircle, Pencil } from 'lucide-react';
 import type { TimeSignatureString, Key, Style } from '@jazz/shared';
-import { transposeSections, getStyleProfile, applyStyleDefaults, type InputPort } from '@jazz/music-core';
+import {
+  transposeSections,
+  getStyleProfile,
+  applyStyleDefaults,
+  type InputPort,
+} from '@jazz/music-core';
 import { SOLO_INSTRUMENT_MANIFESTS } from '@jazz/music-core/audio';
 import { useComposition, useUpdateComposition } from './queries/useComposition';
 import {
@@ -45,7 +50,9 @@ function ModerationBadge({ status }: { status: string }) {
     );
   }
   return (
-    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs ${cfg.className}`}>
+    <span
+      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs ${cfg.className}`}
+    >
       {cfg.label}
     </span>
   );
@@ -161,9 +168,7 @@ export function EditorPage() {
   const [soloDialogOpen, setSoloDialogOpen] = useState(false);
   const [instrumentsDialogOpen, setInstrumentsDialogOpen] = useState(false);
   const [playerKey, setPlayerKey] = useState<Key>(grid?.key ?? 'C');
-  const [localBpm, setLocalBpm] = useState<number | null>(
-    grid?.recommendedTempo ?? null,
-  );
+  const [localBpm, setLocalBpm] = useState<number | null>(grid?.recommendedTempo ?? null);
   const [localStyle, setLocalStyle] = useState<Style | null>(
     (grid?.recommendedStyle as Style | undefined) ?? null,
   );
@@ -298,7 +303,8 @@ export function EditorPage() {
     // Sync local overrides from grid metadata on first load / composition switch.
     // Only when localBpm/localStyle haven't been changed by the user yet.
     if (grid?.recommendedTempo != null && localBpm === null) setLocalBpm(grid.recommendedTempo);
-    if (grid?.recommendedStyle != null && localStyle === null) setLocalStyle(grid.recommendedStyle as Style);
+    if (grid?.recommendedStyle != null && localStyle === null)
+      setLocalStyle(grid.recommendedStyle as Style);
   }, [grid?.content, grid?.recommendedTempo, grid?.recommendedStyle, setContent]);
 
   // Auto-save debounced: saves content when isDirty becomes true
@@ -457,7 +463,10 @@ export function EditorPage() {
   const defaultTimeSignature: TimeSignatureString =
     sections[0]?.timeSignature ?? grid?.timeSignature ?? '4/4';
   const effectiveVolume = localVolume ?? settings.volume;
-  const effectiveStyle = (localStyle ?? (grid?.recommendedStyle as Style | undefined) ?? settings.style ?? 'swing') as Style;
+  const effectiveStyle = (localStyle ??
+    (grid?.recommendedStyle as Style | undefined) ??
+    settings.style ??
+    'swing') as Style;
 
   // Effective settings resolved for the active style (admin per-style defaults
   // included). Declared before effectiveBpm so the tempo fallback reads the
@@ -478,7 +487,13 @@ export function EditorPage() {
   const totalBars = sections.reduce((sum, s) => sum + s.bars.length, 0);
 
   const transport = usePluginTransport({
-    settings: { ...resolvedSettings, bpm: effectiveBpm, volume: effectiveVolume, style: effectiveStyle, drumKit: effectiveDrumKit },
+    settings: {
+      ...resolvedSettings,
+      bpm: effectiveBpm,
+      volume: effectiveVolume,
+      style: effectiveStyle,
+      drumKit: effectiveDrumKit,
+    },
     timeSignature: effectiveTimeSig,
     totalBars,
     sections: displaySections,

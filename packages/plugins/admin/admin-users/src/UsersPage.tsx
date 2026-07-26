@@ -95,9 +95,7 @@ export default function UsersPage() {
         <table className="w-full">
           <thead>
             <tr className="border-b border-border bg-muted/50">
-              <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">
-                Имя
-              </th>
+              <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Имя</th>
               <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">
                 Email
               </th>
@@ -181,9 +179,7 @@ export default function UsersPage() {
                                 </Badge>
                               ))
                             ) : (
-                              <span className="text-muted-foreground text-xs">
-                                Нет ролей
-                              </span>
+                              <span className="text-muted-foreground text-xs">Нет ролей</span>
                             )}
                             <ChevronDown className="h-3 w-3 text-muted-foreground shrink-0" />
                           </button>
@@ -275,7 +271,11 @@ export default function UsersPage() {
                         size="icon"
                         className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                         onClick={() => {
-                          if (window.confirm(`Удалить пользователя «${u.name}» (${u.email})? Это действие необратимо.`)) {
+                          if (
+                            window.confirm(
+                              `Удалить пользователя «${u.name}» (${u.email})? Это действие необратимо.`,
+                            )
+                          ) {
                             deleteMutation.mutate(u.id);
                           }
                         }}

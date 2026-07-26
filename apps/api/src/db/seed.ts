@@ -13,11 +13,7 @@ import {
 } from './schema.js';
 import type { DrizzleDb } from './index.js';
 import type { CompositionContent } from '@jazz/shared';
-import {
-  CATALOG_TAGS,
-  ALL_FEATURE_CODES,
-  DEFAULT_ACTIVE_FEATURE_CODES,
-} from '@jazz/shared';
+import { CATALOG_TAGS, ALL_FEATURE_CODES, DEFAULT_ACTIVE_FEATURE_CODES } from '@jazz/shared';
 import { RBAC_PERMISSIONS, RBAC_ROLES } from '../services/rbac.service.js';
 
 const SYSTEM_USER_ID = 'system';
@@ -76,11 +72,7 @@ export function seedDevUser(db: DrizzleDb): void {
     .run();
 
   // Assign super_admin role via user_roles
-  const existingUr = db
-    .select()
-    .from(userRoles)
-    .where(eq(userRoles.userId, id))
-    .all();
+  const existingUr = db.select().from(userRoles).where(eq(userRoles.userId, id)).all();
   if (existingUr.length === 0) {
     db.insert(userRoles).values({ userId: id, roleId: 'role-super-admin' }).run();
   }
@@ -148,6 +140,8 @@ const SEED_PERMISSIONS = [
   RBAC_PERMISSIONS.PROFILE_WRITE,
   RBAC_PERMISSIONS.SYSTEM_SETTINGS_READ,
   RBAC_PERMISSIONS.SYSTEM_SETTINGS_WRITE,
+  RBAC_PERMISSIONS.BILLING_READ,
+  RBAC_PERMISSIONS.BILLING_MANAGE,
 ];
 
 interface SeedRole {
@@ -182,6 +176,25 @@ const ADMIN_PERMISSIONS = [
   RBAC_PERMISSIONS.PROFILE_READ,
   RBAC_PERMISSIONS.PROFILE_WRITE,
   RBAC_PERMISSIONS.SYSTEM_SETTINGS_READ,
+  RBAC_PERMISSIONS.BILLING_READ,
+  RBAC_PERMISSIONS.BILLING_MANAGE,
+];
+
+const SUBSCRIBER_FREE_PERMISSIONS = [
+  RBAC_PERMISSIONS.CATALOG_READ,
+  RBAC_PERMISSIONS.COMPOSITIONS_READ,
+  RBAC_PERMISSIONS.PROFILE_READ,
+  RBAC_PERMISSIONS.PROFILE_WRITE,
+];
+
+const SUBSCRIBER_PRO_PERMISSIONS = [
+  ...SUBSCRIBER_FREE_PERMISSIONS,
+  RBAC_PERMISSIONS.COMPOSITIONS_WRITE,
+  ...ALL_FEATURE_CODES,
+];
+
+const SUBSCRIBER_PREMIUM_PERMISSIONS = [
+  ...SUBSCRIBER_PRO_PERMISSIONS,
 ];
 
 const USER_PERMISSIONS = [
@@ -222,6 +235,21 @@ const SEED_ROLES: SeedRole[] = [
     id: 'role-user',
     name: RBAC_ROLES.USER,
     permissions: USER_PERMISSIONS,
+  },
+  {
+    id: 'role-subscriber-free',
+    name: RBAC_ROLES.SUBSCRIBER_FREE,
+    permissions: SUBSCRIBER_FREE_PERMISSIONS,
+  },
+  {
+    id: 'role-subscriber-pro',
+    name: RBAC_ROLES.SUBSCRIBER_PRO,
+    permissions: SUBSCRIBER_PRO_PERMISSIONS,
+  },
+  {
+    id: 'role-subscriber-premium',
+    name: RBAC_ROLES.SUBSCRIBER_PREMIUM,
+    permissions: SUBSCRIBER_PREMIUM_PERMISSIONS,
   },
 ];
 

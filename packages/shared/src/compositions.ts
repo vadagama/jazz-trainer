@@ -33,9 +33,7 @@ export const HarmonyCompositionSummaryDTOSchema = z.object({
   recommendedStyle: StyleSchema.nullable(),
   recommendedTempo: z.number().int().min(20).max(400).nullable(),
 });
-export type HarmonyCompositionSummaryDTO = z.infer<
-  typeof HarmonyCompositionSummaryDTOSchema
->;
+export type HarmonyCompositionSummaryDTO = z.infer<typeof HarmonyCompositionSummaryDTOSchema>;
 
 // ── Full composition (includes content) ───────────────────────────────────
 
@@ -59,9 +57,7 @@ export const PublicCompositionSummaryDTOSchema = z.object({
   likedByMe: z.boolean(),
   updatedAt: z.number().int(),
 });
-export type PublicCompositionSummaryDTO = z.infer<
-  typeof PublicCompositionSummaryDTOSchema
->;
+export type PublicCompositionSummaryDTO = z.infer<typeof PublicCompositionSummaryDTOSchema>;
 
 export const PublicCompositionDTOSchema = PublicCompositionSummaryDTOSchema.extend({
   content: CompositionContentSchema,
@@ -152,13 +148,7 @@ export type LikeResponse = z.infer<typeof LikeResponseSchema>;
 // ── Catalog query: rich filtering, sorting, pagination (§6.4) ─────────────
 
 /** Comma-separated multi-values are split into arrays by the service layer. */
-export const CatalogSortSchema = z.enum([
-  'popular',
-  'newest',
-  'updated',
-  'name_asc',
-  'copies',
-]);
+export const CatalogSortSchema = z.enum(['popular', 'newest', 'updated', 'name_asc', 'copies']);
 export type CatalogSort = z.infer<typeof CatalogSortSchema>;
 
 export const CatalogQuerySchema = z.object({
@@ -181,7 +171,10 @@ export const CatalogQuerySchema = z.object({
 export type CatalogQuery = z.infer<typeof CatalogQuerySchema>;
 
 /** Parsed/normalized catalog query after multi-value split. */
-export interface CatalogQueryParsed extends Omit<CatalogQuery, 'style' | 'timeSignature' | 'difficulty' | 'key' | 'tags'> {
+export interface CatalogQueryParsed extends Omit<
+  CatalogQuery,
+  'style' | 'timeSignature' | 'difficulty' | 'key' | 'tags'
+> {
   style: string[];
   timeSignature: string[];
   difficulty: string[];

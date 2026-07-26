@@ -86,15 +86,13 @@ function GroupRow({ group, style, rosterBadge }: GroupRowProps) {
     [settings, style],
   );
 
-  const enabled =
-    prefix
-      ? (resolved as Record<string, unknown>)[`${prefix}Enabled`] !== false
-      : defaults.enabled;
+  const enabled = prefix
+    ? (resolved as Record<string, unknown>)[`${prefix}Enabled`] !== false
+    : defaults.enabled;
 
-  const volume =
-    prefix
-      ? (((resolved as Record<string, unknown>)[`${prefix}Volume`] as number) ?? defaults.volume)
-      : defaults.volume;
+  const volume = prefix
+    ? (((resolved as Record<string, unknown>)[`${prefix}Volume`] as number) ?? defaults.volume)
+    : defaults.volume;
 
   const handleToggle = useCallback(() => {
     if (!prefix) return;
@@ -170,6 +168,7 @@ function GroupRow({ group, style, rosterBadge }: GroupRowProps) {
             max={1}
             step={0.01}
             value={[volume]}
+            disabled={!enabled}
             onValueChange={handleVolumeChange}
             className="flex-1"
             aria-label={`Громкость ${group.name}`}
@@ -202,7 +201,12 @@ function GroupRow({ group, style, rosterBadge }: GroupRowProps) {
 
 // ─── Dialog ─────────────────────────────────────────────────────────────────
 
-export function InstrumentsDialog({ open, onClose, onStyleChange, style: styleOverride }: InstrumentsDialogProps) {
+export function InstrumentsDialog({
+  open,
+  onClose,
+  onStyleChange,
+  style: styleOverride,
+}: InstrumentsDialogProps) {
   const settings = useEffectiveSettings();
   const updateSettings = useUpdateSettings();
   const currentStyle: Style = styleOverride ?? (settings.style as Style) ?? 'swing';

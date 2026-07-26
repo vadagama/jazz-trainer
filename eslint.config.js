@@ -34,6 +34,13 @@ export default tseslint.config(
       ],
     },
   },
+  // Browser globals for the landing page (vanilla JS)
+  {
+    files: ['apps/landing/**/*.js'],
+    languageOptions: {
+      globals: { ...globals.browser },
+    },
+  },
   // Browser globals + React rules for the web app
   {
     files: ['apps/web/**/*.{ts,tsx}'],

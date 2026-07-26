@@ -1,15 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, Save, Trash2, Play, Star, Check, X } from 'lucide-react';
-import {
-  STYLES,
-  KEYS,
-  TIME_SIGNATURES,
-  CATALOG_DIFFICULTIES,
-  CATALOG_TAGS,
-} from '@jazz/shared';
+import { STYLES, KEYS, TIME_SIGNATURES, CATALOG_DIFFICULTIES, CATALOG_TAGS } from '@jazz/shared';
 import type { CatalogDifficulty, CatalogTagCategory } from '@jazz/shared';
-import { Button, Input, Label, Textarea ,
+import {
+  Button,
+  Input,
+  Label,
+  Textarea,
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -100,9 +98,7 @@ export function CatalogEditPage() {
       )
         ? (entry.timeSignature as (typeof TIME_SIGNATURES)[number])
         : '4/4';
-      const validDifficulty = CATALOG_DIFFICULTIES.includes(
-        entry.difficulty as CatalogDifficulty,
-      )
+      const validDifficulty = CATALOG_DIFFICULTIES.includes(entry.difficulty as CatalogDifficulty)
         ? entry.difficulty
         : 'intermediate';
       setForm({
@@ -221,8 +217,7 @@ export function CatalogEditPage() {
       await deleteEntry.mutateAsync(entry.id);
       navigate('/admin/catalog');
     } catch (err) {
-      const msg =
-        err instanceof Error ? err.message : 'Не удалось удалить композицию';
+      const msg = err instanceof Error ? err.message : 'Не удалось удалить композицию';
       alert(msg);
     }
   };
@@ -241,9 +236,7 @@ export function CatalogEditPage() {
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
           <div className="mb-1 flex items-center gap-2">
-            {entry.featured && (
-              <Star className="size-4 fill-amber-400 text-amber-400" />
-            )}
+            {entry.featured && <Star className="size-4 fill-amber-400 text-amber-400" />}
             <h1 className="text-2xl font-semibold tracking-tight">Редактирование</h1>
           </div>
           <p className="text-sm text-muted-foreground">
@@ -319,9 +312,7 @@ export function CatalogEditPage() {
               onChange={(e) => set('name', e.target.value)}
               className={errors.name ? 'border-red-500 focus-visible:ring-red-500' : ''}
             />
-            {errors.name && (
-              <p className="text-xs text-red-500">{errors.name}</p>
-            )}
+            {errors.name && <p className="text-xs text-red-500">{errors.name}</p>}
           </div>
 
           <div className="space-y-1">
@@ -332,9 +323,7 @@ export function CatalogEditPage() {
               onChange={(e) => set('author', e.target.value)}
               className={errors.author ? 'border-red-500 focus-visible:ring-red-500' : ''}
             />
-            {errors.author && (
-              <p className="text-xs text-red-500">{errors.author}</p>
-            )}
+            {errors.author && <p className="text-xs text-red-500">{errors.author}</p>}
           </div>
 
           <div className="space-y-1">
@@ -347,9 +336,7 @@ export function CatalogEditPage() {
               rows={3}
               className={errors.description ? 'border-red-500 focus-visible:ring-red-500' : ''}
             />
-            {errors.description && (
-              <p className="text-xs text-red-500">{errors.description}</p>
-            )}
+            {errors.description && <p className="text-xs text-red-500">{errors.description}</p>}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -374,9 +361,7 @@ export function CatalogEditPage() {
                 id="style"
                 className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm"
                 value={form.recommendedStyle}
-                onChange={(e) =>
-                  set('recommendedStyle', e.target.value as (typeof STYLES)[number])
-                }
+                onChange={(e) => set('recommendedStyle', e.target.value as (typeof STYLES)[number])}
               >
                 {STYLES.map((s) => (
                   <option key={s} value={s}>
@@ -394,7 +379,9 @@ export function CatalogEditPage() {
                 max={400}
                 value={form.recommendedTempo}
                 onChange={(e) => set('recommendedTempo', Number(e.target.value))}
-                className={errors.recommendedTempo ? 'border-red-500 focus-visible:ring-red-500' : ''}
+                className={
+                  errors.recommendedTempo ? 'border-red-500 focus-visible:ring-red-500' : ''
+                }
               />
               {errors.recommendedTempo && (
                 <p className="text-xs text-red-500">{errors.recommendedTempo}</p>

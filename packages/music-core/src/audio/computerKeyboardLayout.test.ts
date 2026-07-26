@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildKeyMap, DEFAULT_WHITE_KEYS, DEFAULT_BLACK_KEYS } from './computerKeyboardLayout';
+import { buildKeyMap } from './computerKeyboardLayout';
 
 describe('buildKeyMap', () => {
   it('maps white keys a-k to C4-C5', () => {

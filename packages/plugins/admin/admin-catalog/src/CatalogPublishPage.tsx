@@ -272,7 +272,10 @@ function parseDslToContent(dsl: string) {
   const cleaned = dsl.trim();
   if (!cleaned) return null;
   // split by bar delimiter, filter empties
-  const tokens = cleaned.split('|').map((s) => s.trim()).filter(Boolean);
+  const tokens = cleaned
+    .split('|')
+    .map((s) => s.trim())
+    .filter(Boolean);
   if (!tokens.length) return null;
   const bars = tokens.map((barStr, i) => {
     const symbols = barStr.split(/\s+/).filter(Boolean);

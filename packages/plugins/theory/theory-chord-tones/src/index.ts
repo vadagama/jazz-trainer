@@ -9,7 +9,13 @@ export default definePlugin({
     description: 'Лекция: аккордовые звуки — фундамент джазовой импровизации.',
   },
   contributes: {
-    routes: [{ path: '/theory/chord-tones', element: () => import('./ChordTonesPage'), requires: 'theory:chordTones' }],
+    routes: [
+      {
+        path: '/theory/chord-tones',
+        element: () => import('./ChordTonesPage'),
+        requires: 'theory:chordTones',
+      },
+    ],
     navItems: [
       { section: 'learn', label: 'Аккордовые звуки', to: '/theory/chord-tones', icon: 'music' },
     ],

@@ -553,8 +553,7 @@ const BALLAD_PROFILE: StyleProfile = {
 const BLUES_PROFILE: StyleProfile = {
   id: 'blues',
   name: 'Blues',
-  description:
-    'Блюзовый шаффл: свинговые барабаны, walking-бас, блюзовые voicing на фортепиано.',
+  description: 'Блюзовый шаффл: свинговые барабаны, walking-бас, блюзовые voicing на фортепиано.',
   defaultTempo: 90,
   swingRatio: 0.67,
   timeSignaturePresets: ['4/4', '12/8'],
@@ -616,8 +615,7 @@ const BLUES_PROFILE: StyleProfile = {
 const SOUL_PROFILE: StyleProfile = {
   id: 'soul',
   name: 'Soul',
-  description:
-    'Соул-грув: Rhodes — ведущий гармонический, прямой бит, электрический бас.',
+  description: 'Соул-грув: Rhodes — ведущий гармонический, прямой бит, электрический бас.',
   defaultTempo: 100,
   swingRatio: 0.5,
   timeSignaturePresets: ['4/4'],

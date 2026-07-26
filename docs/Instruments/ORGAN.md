@@ -16,11 +16,11 @@
 
 ## 2. Паттерны
 
-| Паттерн      | Описание                                                   | Стиль по умолчанию |
-| ------------ | ---------------------------------------------------------- | ------------------ |
-| `pads`       | Целая нота на beat 1, длительность 0.92 такта              | swing, bossa, latin, ballad |
-| `stabs`      | Короткие аккорды (0.15 длительности) на 2&, 3&, 4&         | —                  |
-| `pads-stabs` | pads на beat 1 + stabs на offbeat'ах                       | funk               |
+| Паттерн      | Описание                                           | Стиль по умолчанию          |
+| ------------ | -------------------------------------------------- | --------------------------- |
+| `pads`       | Целая нота на beat 1, длительность 0.92 такта      | swing, bossa, latin, ballad |
+| `stabs`      | Короткие аккорды (0.15 длительности) на 2&, 3&, 4& | —                           |
+| `pads-stabs` | pads на beat 1 + stabs на offbeat'ах               | funk                        |
 
 ### 2.1. Pads
 
@@ -86,24 +86,24 @@ export const organManifest: InstrumentManifest = {
 ```ts
 class OrganInstrument implements Instrument {
   setTimeline(timeline: ChordTimeline): void;
-  setPattern(pattern: OrganPattern): void;              // 'pads' | 'stabs' | 'pads-stabs'
+  setPattern(pattern: OrganPattern): void; // 'pads' | 'stabs' | 'pads-stabs'
   setVoicingDensity(density: PianoVoicingDensity): void;
-  setBaseVelocity(velocity: number): void;               // [0, 2]
+  setBaseVelocity(velocity: number): void; // [0, 2]
   setHumanize(enabled: boolean): void;
-  setStyleProfile(profile: StyleProfile): void;          // стиле-зависимый паттерн
-  setStyle(style: Style): void;                          // @deprecated
-  reset(): void;                                         // сброс голосоведения
+  setStyleProfile(profile: StyleProfile): void; // стиле-зависимый паттерн
+  setStyle(style: Style): void; // @deprecated
+  reset(): void; // сброс голосоведения
   schedule(window: ScheduleWindow, ctx: ScheduleContext): void;
 }
 ```
 
 ## 8. Взаимодействие с другими инструментами
 
-| Инструмент    | Правило                                                          |
-| ------------- | ---------------------------------------------------------------- |
-| **Piano**     | Разные EventSink'и. Орган — фоновый pads, Piano — активный компинг |
-| **Vibraphone**| Разные EventSink'и. Оба pads-инструменты, орган плотнее (rootless4 vs rootless3) |
-| **Bass**      | Орган в среднем/верхнем регистре (C2–C7), не конфликтует с басом    |
+| Инструмент     | Правило                                                                          |
+| -------------- | -------------------------------------------------------------------------------- |
+| **Piano**      | Разные EventSink'и. Орган — фоновый pads, Piano — активный компинг               |
+| **Vibraphone** | Разные EventSink'и. Оба pads-инструменты, орган плотнее (rootless4 vs rootless3) |
+| **Bass**       | Орган в среднем/верхнем регистре (C2–C7), не конфликтует с басом                 |
 
 ## 9. Тесты
 

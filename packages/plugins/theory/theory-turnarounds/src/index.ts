@@ -9,7 +9,13 @@ export default definePlugin({
     description: 'Лекция: обороты (turnarounds) — I–VI–II–V и iii–VI–II–V.',
   },
   contributes: {
-    routes: [{ path: '/theory/turnarounds', element: () => import('./TurnaroundsPage'), requires: 'theory:turnarounds' }],
+    routes: [
+      {
+        path: '/theory/turnarounds',
+        element: () => import('./TurnaroundsPage'),
+        requires: 'theory:turnarounds',
+      },
+    ],
     navItems: [
       {
         section: 'learn',

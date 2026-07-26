@@ -4,15 +4,9 @@ import { ChordTimeline } from './chordTimeline.js';
 import { parseTimeSignature } from '../time/timeSignature.js';
 import type { ScheduleContext, BassEvent } from './instrument.js';
 import type { ChordSymbol, Style } from '@jazz/shared';
-import {
-  UPRIGHT_BASS_MOLECULE_LIST,
-  ELECTRIC_BASS_MOLECULE_LIST,
-} from './bassMolecules.js';
+import { UPRIGHT_BASS_MOLECULE_LIST, ELECTRIC_BASS_MOLECULE_LIST } from './bassMolecules.js';
 import { UPRIGHT_BASS_CELL_LIST, ELECTRIC_BASS_CELL_LIST } from './bassCells.js';
-import {
-  UPRIGHT_BASS_ORGANISM_LIST,
-  ELECTRIC_BASS_ORGANISM_LIST,
-} from './bassOrganisms.js';
+import { UPRIGHT_BASS_ORGANISM_LIST, ELECTRIC_BASS_ORGANISM_LIST } from './bassOrganisms.js';
 
 /** Articulations available per variant (mirrors the new 4-articulation model). */
 const UPRIGHT_ARTS = ['regular', 'muted'] as const;
@@ -184,8 +178,14 @@ describe('BassInstrument — scheduling', () => {
     const timeline = new ChordTimeline([{ barIndex: 0, chord: makeChord('D') }]);
     const swing: Captured[] = [];
     const bossa: Captured[] = [];
-    makeBass(timeline, 'upright', 'swing').schedule({ fromTicks: 0, toTicks: TPBAR }, makeCtx(swing));
-    makeBass(timeline, 'upright', 'bossa').schedule({ fromTicks: 0, toTicks: TPBAR }, makeCtx(bossa));
+    makeBass(timeline, 'upright', 'swing').schedule(
+      { fromTicks: 0, toTicks: TPBAR },
+      makeCtx(swing),
+    );
+    makeBass(timeline, 'upright', 'bossa').schedule(
+      { fromTicks: 0, toTicks: TPBAR },
+      makeCtx(bossa),
+    );
     // bossa = root + fifth half-notes → 2 notes; swing walking → 4 notes
     expect(bossa.length).toBeLessThanOrEqual(swing.length);
     expect(bossa.length).toBeGreaterThanOrEqual(1);

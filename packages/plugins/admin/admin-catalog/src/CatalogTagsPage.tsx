@@ -3,12 +3,7 @@ import { Trash2, Plus, Eye, EyeOff } from 'lucide-react';
 import { CATALOG_TAG_CATEGORIES } from '@jazz/shared';
 import type { CatalogTagCategory } from '@jazz/shared';
 import { Button, Input, Label } from '@jazz/ui';
-import {
-  useAdminTags,
-  useCreateTag,
-  useUpdateTag,
-  useDeleteTag,
-} from './queries/useCatalogAdmin';
+import { useAdminTags, useCreateTag, useUpdateTag, useDeleteTag } from './queries/useCatalogAdmin';
 
 const CATEGORY_LABEL: Record<CatalogTagCategory, string> = {
   genre: 'Жанр / Форма',
@@ -146,15 +141,11 @@ export function CatalogTagsPage() {
                 <td className="p-3 text-xs text-muted-foreground">
                   {CATEGORY_LABEL[tag.category]}
                 </td>
-                <td className="p-3 text-xs text-muted-foreground">
-                  {tag.description ?? '—'}
-                </td>
+                <td className="p-3 text-xs text-muted-foreground">{tag.description ?? '—'}</td>
                 <td className="p-3 text-center font-medium">{tag.usageCount}</td>
                 <td className="p-3 text-center">
                   <button
-                    onClick={() =>
-                      updateTag.mutate({ id: tag.id, hidden: !tag.hidden })
-                    }
+                    onClick={() => updateTag.mutate({ id: tag.id, hidden: !tag.hidden })}
                     className={`rounded p-1.5 ${
                       tag.hidden
                         ? 'text-muted-foreground hover:bg-accent'

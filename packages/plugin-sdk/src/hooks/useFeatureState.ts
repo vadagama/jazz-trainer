@@ -32,9 +32,7 @@ export interface FeatureGroupVisibility {
  * Used to decide whether to render a parent menu item ("Теория"/"Упражнения"):
  * hide it entirely when every child is `hidden`.
  */
-export function useFeatureGroupVisibility(
-  codes: readonly string[],
-): FeatureGroupVisibility {
+export function useFeatureGroupVisibility(codes: readonly string[]): FeatureGroupVisibility {
   const { permissions, inactivePermissions, isLoading } = useAuth();
   if (isLoading) return { isVisible: false, anyActive: false };
   const visibleSet = new Set([...permissions, ...inactivePermissions]);

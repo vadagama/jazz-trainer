@@ -7,11 +7,7 @@ import {
   randomSequenceType,
   scalePitchClasses,
 } from '@jazz/music-core';
-import type {
-  ScaleType,
-  ConcreteSequenceType,
-  SequenceNote,
-} from '@jazz/music-core';
+import type { ScaleType, ConcreteSequenceType, SequenceNote } from '@jazz/music-core';
 import type { Key } from '@jazz/shared';
 import type { SequenceExerciseConfig, PracticeBar, SequenceDirection } from './types.js';
 import {
@@ -118,10 +114,13 @@ function expandStartDegrees(
   }
   // both: up then down (mirror without duplicating the peak)
   const up = ascending.map((degree) => ({ degree, direction: 'up' as const }));
-  const down = [...ascending].reverse().slice(1).map((degree) => ({
-    degree,
-    direction: 'down' as const,
-  }));
+  const down = [...ascending]
+    .reverse()
+    .slice(1)
+    .map((degree) => ({
+      degree,
+      direction: 'down' as const,
+    }));
   return [...up, ...down];
 }
 

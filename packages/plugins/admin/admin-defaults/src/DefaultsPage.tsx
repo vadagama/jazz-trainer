@@ -76,12 +76,27 @@ const HUMANIZE_PHRASING = ['flat', 'gentle', 'expressive'] as const;
 const HUMANIZE_INTENSITY = ['off', 'low', 'med', 'high'] as const;
 const BASS_RANGE_OPTIONS = ['narrow', 'medium', 'wide'] as const;
 const RHODES_MODES = [
-  'wholeNotes', 'halfNotes', 'quarterNotes', 'charleston', 'reverse-charleston',
-  'basie-2-4', 'offbeat-2-4', 'anticipation-4and', 'one-twoand-four',
-  'oneand-three', 'twoand-only', 'four-and-sparse', 'two-threeand',
+  'wholeNotes',
+  'halfNotes',
+  'quarterNotes',
+  'charleston',
+  'reverse-charleston',
+  'basie-2-4',
+  'offbeat-2-4',
+  'anticipation-4and',
+  'one-twoand-four',
+  'oneand-three',
+  'twoand-only',
+  'four-and-sparse',
+  'two-threeand',
 ] as const;
 const RHODES_LAYER_MODES = [
-  'pads', 'subtle-offbeats', 'high-comping', 'ambient-swells', 'stab-accents', 'none',
+  'pads',
+  'subtle-offbeats',
+  'high-comping',
+  'ambient-swells',
+  'stab-accents',
+  'none',
 ] as const;
 const NONE_VALUE = '__none__';
 const BASS_COMPLEXITY_OPTIONS = [
@@ -120,7 +135,15 @@ function TabBar({ active, onChange }: { active: TabId; onChange: (id: TabId) => 
 
 // ─── Tempo input (keyboard-friendly, +5/-5 buttons) ────────────────────────────
 
-function TempoControl({ value, disabled, onChange }: { value: number; disabled: boolean; onChange: (v: number) => void }) {
+function TempoControl({
+  value,
+  disabled,
+  onChange,
+}: {
+  value: number;
+  disabled: boolean;
+  onChange: (v: number) => void;
+}) {
   const clamp = (v: number) => clampNumber(v, 20, 400);
   const {
     text,
@@ -207,8 +230,6 @@ function CountInControl({
     />
   );
 }
-
-
 
 // ─── Shared controls ───────────────────────────────────────────────────────────
 
@@ -343,7 +364,10 @@ export function DefaultsPage() {
       const mySettings = await apiClient.get<Record<string, unknown>>('/api/settings');
       // Strip personal fields: practiceCards, midiDeviceId, midiChannel
       const { practiceCards: _pc, midiDeviceId: _md, midiChannel: _mc, ...defaults } = mySettings;
-      return apiClient.put<DefaultSettingsDTO>('/api/admin/default-settings', defaults as Partial<DefaultSettingsDTO>);
+      return apiClient.put<DefaultSettingsDTO>(
+        '/api/admin/default-settings',
+        defaults as Partial<DefaultSettingsDTO>,
+      );
     },
     onSuccess: (data) => {
       qc.setQueryData<DefaultSettingsDTO>(ADMIN_DEFAULTS_KEY, data);
@@ -420,32 +444,32 @@ export function DefaultsPage() {
           </Button>
 
           <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button variant="outline" size="sm" disabled={!canWrite || resetMutation.isPending}>
-              <RotateCcw className="size-4 mr-2" />
-              Сбросить к заводским
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Сбросить к заводским настройкам?</AlertDialogTitle>
-              <AlertDialogDescription>
-                Все переопределения будут удалены. Значения вернутся к профилям стилей. Существующих
-                пользователей это не затронет.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Отмена</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={() => resetMutation.mutate()}
-                disabled={resetMutation.isPending}
-              >
-                Сбросить
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </div>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" size="sm" disabled={!canWrite || resetMutation.isPending}>
+                <RotateCcw className="size-4 mr-2" />
+                Сбросить к заводским
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Сбросить к заводским настройкам?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Все переопределения будут удалены. Значения вернутся к профилям стилей.
+                  Существующих пользователей это не затронет.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Отмена</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => resetMutation.mutate()}
+                  disabled={resetMutation.isPending}
+                >
+                  Сбросить
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
       </div>
 
       <Card className="border-amber-500/40 bg-amber-500/5">
@@ -561,18 +585,39 @@ export function DefaultsPage() {
               </div>
 
               {/* Per-beat metronome settings */}
-              {([
-                { key: 'clickStrong', label: 'Сильная доля (1)', volKey: 'metronomeStrongVolume' as const, enKey: 'metronomeStrongEnabled' as const },
-                { key: 'clickStrong2', label: 'Вторая сильная (3)', volKey: 'metronomeStrong2Volume' as const, enKey: 'metronomeStrong2Enabled' as const },
-                { key: 'clickWeak', label: 'Слабая доля (2, 4)', volKey: 'metronomeWeakVolume' as const, enKey: 'metronomeWeakEnabled' as const },
-              ]).map(({ key, label, volKey, enKey }) => {
-                const beatVol = Math.round(((settings[volKey as keyof DefaultSettingsDTO] as number) ?? 0.8) * 100);
-                const soundValue = (settings[key as keyof DefaultSettingsDTO] as string | undefined) ?? NONE_VALUE;
-                const beatEnabled = (settings[enKey as keyof DefaultSettingsDTO] as boolean) ?? true;
+              {[
+                {
+                  key: 'clickStrong',
+                  label: 'Сильная доля (1)',
+                  volKey: 'metronomeStrongVolume' as const,
+                  enKey: 'metronomeStrongEnabled' as const,
+                },
+                {
+                  key: 'clickStrong2',
+                  label: 'Вторая сильная (3)',
+                  volKey: 'metronomeStrong2Volume' as const,
+                  enKey: 'metronomeStrong2Enabled' as const,
+                },
+                {
+                  key: 'clickWeak',
+                  label: 'Слабая доля (2, 4)',
+                  volKey: 'metronomeWeakVolume' as const,
+                  enKey: 'metronomeWeakEnabled' as const,
+                },
+              ].map(({ key, label, volKey, enKey }) => {
+                const beatVol = Math.round(
+                  ((settings[volKey as keyof DefaultSettingsDTO] as number) ?? 0.8) * 100,
+                );
+                const soundValue =
+                  (settings[key as keyof DefaultSettingsDTO] as string | undefined) ?? NONE_VALUE;
+                const beatEnabled =
+                  (settings[enKey as keyof DefaultSettingsDTO] as boolean) ?? true;
                 return (
                   <div key={key} className="space-y-2 border border-border rounded-lg p-3">
                     <div className="flex items-center justify-between">
-                      <span className={`text-sm font-medium ${metronomeOn ? '' : 'text-muted-foreground'}`}>
+                      <span
+                        className={`text-sm font-medium ${metronomeOn ? '' : 'text-muted-foreground'}`}
+                      >
                         {label}
                       </span>
                       <Checkbox
@@ -589,7 +634,9 @@ export function DefaultsPage() {
                         value={soundValue}
                         disabled={!canWrite || !metronomeOn || !beatEnabled}
                         onValueChange={(v) =>
-                          mutate({ [key]: v === NONE_VALUE ? null : v } as Partial<DefaultSettingsDTO>)
+                          mutate({
+                            [key]: v === NONE_VALUE ? null : v,
+                          } as Partial<DefaultSettingsDTO>)
                         }
                       >
                         <SelectTrigger className="w-40">
@@ -608,7 +655,9 @@ export function DefaultsPage() {
                     <div className="space-y-1">
                       <div className="flex items-center justify-between">
                         <span className="text-xs text-muted-foreground">Громкость</span>
-                        <span className="text-xs tabular-nums text-muted-foreground">{beatVol}%</span>
+                        <span className="text-xs tabular-nums text-muted-foreground">
+                          {beatVol}%
+                        </span>
                       </div>
                       <Slider
                         min={0}
@@ -678,7 +727,14 @@ export function DefaultsPage() {
               <div className="flex items-center gap-3">
                 <span className="text-sm font-medium text-muted-foreground">Темп</span>
                 <TempoControl
-                  value={(readPerStyle(settings, previewStyle, 'bpm', getStyleProfile(previewStyle).defaultTempo) as number)}
+                  value={
+                    readPerStyle(
+                      settings,
+                      previewStyle,
+                      'bpm',
+                      getStyleProfile(previewStyle).defaultTempo,
+                    ) as number
+                  }
                   disabled={!canWrite}
                   onChange={(v) => mutatePerStyle('bpm', v)}
                 />
@@ -691,7 +747,14 @@ export function DefaultsPage() {
                     max={0.75}
                     step={0.01}
                     disabled={!canWrite}
-                    value={[(readPerStyle(settings, previewStyle, 'swingRatio', settings.swingRatio ?? 0.5) as number)]}
+                    value={[
+                      readPerStyle(
+                        settings,
+                        previewStyle,
+                        'swingRatio',
+                        settings.swingRatio ?? 0.5,
+                      ) as number,
+                    ]}
                     onValueChange={(v) => mutatePerStyle('swingRatio', v[0])}
                   />
                   <div className="flex justify-between mt-1 px-1">
@@ -703,12 +766,21 @@ export function DefaultsPage() {
                       { v: 0.7, label: 'Глубокий' },
                       { v: 0.75, label: 'Шаффл' },
                     ].map(({ v, label }) => (
-                      <span key={v} className="text-[10px] text-muted-foreground/50">{label}</span>
+                      <span key={v} className="text-[10px] text-muted-foreground/50">
+                        {label}
+                      </span>
                     ))}
                   </div>
                 </div>
                 <span className="w-10 text-right text-xs tabular-nums text-muted-foreground">
-                  {(readPerStyle(settings, previewStyle, 'swingRatio', settings.swingRatio ?? 0.5) as number).toFixed(2)}
+                  {(
+                    readPerStyle(
+                      settings,
+                      previewStyle,
+                      'swingRatio',
+                      settings.swingRatio ?? 0.5,
+                    ) as number
+                  ).toFixed(2)}
                 </span>
               </div>
             </CardContent>
@@ -812,7 +884,6 @@ export function DefaultsPage() {
 // Instrument cards (compact, matching user settings InstrumentTile style)
 // ═══════════════════════════════════════════════════════════════════════════════════
 
-
 // ─── Pattern select dropdown ──────────────────────────────────────────────────
 
 function PatternSelect({
@@ -862,7 +933,7 @@ function BassCard({
 }) {
   const $ = (k: string, fb: unknown) => readPerStyle(settings, style, k, fb);
   const h = ($('bassHumanize', {}) ?? {}) as Record<string, string>;
-  const enabled = ($('bassEnabled', true) as boolean);
+  const enabled = $('bassEnabled', true) as boolean;
 
   return (
     <Card>
@@ -904,26 +975,69 @@ function BassCard({
             </SelectContent>
           </Select>
         </SettingRow>
-        <SettingSelect label="Tension" value={($('bassTension', 'clean') as string) ?? 'clean'} options={TENSION_OPTIONS} disabled={disabled} onChange={(v) => onMutate('bassTension', v)} />
-        <SettingSelect label="Вариант" value={($('bassVariant', 'upright') as string) ?? 'upright'} options={['upright', 'electric']} disabled={disabled} onChange={(v) => onMutate('bassVariant', v)} />
-        <SettingSelect label="Диапазон" value={($('bassRange', 'medium') as string) ?? 'medium'} options={BASS_RANGE_OPTIONS} disabled={disabled} onChange={(v) => onMutate('bassRange', v)} />
+        <SettingSelect
+          label="Tension"
+          value={($('bassTension', 'clean') as string) ?? 'clean'}
+          options={TENSION_OPTIONS}
+          disabled={disabled}
+          onChange={(v) => onMutate('bassTension', v)}
+        />
+        <SettingSelect
+          label="Вариант"
+          value={($('bassVariant', 'upright') as string) ?? 'upright'}
+          options={['upright', 'electric']}
+          disabled={disabled}
+          onChange={(v) => onMutate('bassVariant', v)}
+        />
+        <SettingSelect
+          label="Диапазон"
+          value={($('bassRange', 'medium') as string) ?? 'medium'}
+          options={BASS_RANGE_OPTIONS}
+          disabled={disabled}
+          onChange={(v) => onMutate('bassRange', v)}
+        />
         <SettingRow label="Паттерн">
           <PatternSelect
-            value={($('bassPattern', null) as string | null)}
+            value={$('bassPattern', null) as string | null}
             disabled={disabled}
-            organisms={useMemo(() => getBassOrganismsForStyle(style).map(o => ({ value: o.id, label: o.label })), [style])}
+            organisms={useMemo(
+              () => getBassOrganismsForStyle(style).map((o) => ({ value: o.id, label: o.label })),
+              [style],
+            )}
             onChange={(v) => onMutate('bassPattern', v)}
           />
         </SettingRow>
         <SettingRow label="Muted notes">
-          <Checkbox checked={($('bassUseMutedNotes', true) as boolean)} disabled={disabled} onChange={(e) => onMutate('bassUseMutedNotes', e.target.checked)} />
+          <Checkbox
+            checked={$('bassUseMutedNotes', true) as boolean}
+            disabled={disabled}
+            onChange={(e) => onMutate('bassUseMutedNotes', e.target.checked)}
+          />
         </SettingRow>
         <div className="border-t border-border pt-3">
           <Label className="text-xs font-semibold uppercase text-muted-foreground">Humanize</Label>
           <div className="mt-2 space-y-2">
-            <SettingSelect label="Timing" value={h.timingJitterMs ?? 'none'} options={HUMANIZE_LEVELS} disabled={disabled} onChange={(v) => onMutateHumanize('bassHumanize', { timingJitterMs: v })} />
-            <SettingSelect label="Velocity" value={h.velocityVariation ?? 'off'} options={HUMANIZE_VELOCITY} disabled={disabled} onChange={(v) => onMutateHumanize('bassHumanize', { velocityVariation: v })} />
-            <SettingSelect label="Phrasing" value={h.phrasing ?? 'flat'} options={HUMANIZE_PHRASING} disabled={disabled} onChange={(v) => onMutateHumanize('bassHumanize', { phrasing: v })} />
+            <SettingSelect
+              label="Timing"
+              value={h.timingJitterMs ?? 'none'}
+              options={HUMANIZE_LEVELS}
+              disabled={disabled}
+              onChange={(v) => onMutateHumanize('bassHumanize', { timingJitterMs: v })}
+            />
+            <SettingSelect
+              label="Velocity"
+              value={h.velocityVariation ?? 'off'}
+              options={HUMANIZE_VELOCITY}
+              disabled={disabled}
+              onChange={(v) => onMutateHumanize('bassHumanize', { velocityVariation: v })}
+            />
+            <SettingSelect
+              label="Phrasing"
+              value={h.phrasing ?? 'flat'}
+              options={HUMANIZE_PHRASING}
+              disabled={disabled}
+              onChange={(v) => onMutateHumanize('bassHumanize', { phrasing: v })}
+            />
           </div>
         </div>
       </CardContent>
@@ -946,7 +1060,7 @@ function PianoCard({
 }) {
   const $ = (k: string, fb: unknown) => readPerStyle(settings, style, k, fb);
   const h = ($('pianoHumanize', {}) ?? {}) as Record<string, string>;
-  const enabled = ($('pianoEnabled', false) as boolean);
+  const enabled = $('pianoEnabled', false) as boolean;
 
   return (
     <Card>
@@ -972,23 +1086,74 @@ function PianoCard({
         />
         <SettingRow label="Паттерн">
           <PatternSelect
-            value={($('pianoPattern', null) as string | null)}
+            value={$('pianoPattern', null) as string | null}
             disabled={disabled}
-            organisms={useMemo(() => getPianoOrganismsForStyle(style).map(o => ({ value: o.id, label: o.label })), [style])}
+            organisms={useMemo(
+              () => getPianoOrganismsForStyle(style).map((o) => ({ value: o.id, label: o.label })),
+              [style],
+            )}
             onChange={(v) => onMutate('pianoPattern', v)}
           />
         </SettingRow>
-        <SettingSelect label="Voicing" value={($('pianoVoicingDensity', 'rootless3') as string) ?? 'rootless3'} options={VOICING_DENSITIES} disabled={disabled} onChange={(v) => onMutate('pianoVoicingDensity', v)} />
-        <SettingSelect label="Сэмплы" value={($('pianoSampleLibrary', 'salamander') as string) ?? 'salamander'} options={['salamander', 'upright']} disabled={disabled} onChange={(v) => onMutate('pianoSampleLibrary', v)} />
-        <SettingSelect label="Tension" value={($('pianoTension', 'clean') as string) ?? 'clean'} options={TENSION_OPTIONS} disabled={disabled} onChange={(v) => onMutate('pianoTension', v)} />
-        <SettingSelect label="Randomize" value={($('pianoRandomizationLevel', 'off') as string) ?? 'off'} options={['off', 'subtle', 'moderate', 'high']} disabled={disabled} onChange={(v) => onMutate('pianoRandomizationLevel', v)} />
+        <SettingSelect
+          label="Voicing"
+          value={($('pianoVoicingDensity', 'rootless3') as string) ?? 'rootless3'}
+          options={VOICING_DENSITIES}
+          disabled={disabled}
+          onChange={(v) => onMutate('pianoVoicingDensity', v)}
+        />
+        <SettingSelect
+          label="Сэмплы"
+          value={($('pianoSampleLibrary', 'salamander') as string) ?? 'salamander'}
+          options={['salamander', 'upright']}
+          disabled={disabled}
+          onChange={(v) => onMutate('pianoSampleLibrary', v)}
+        />
+        <SettingSelect
+          label="Tension"
+          value={($('pianoTension', 'clean') as string) ?? 'clean'}
+          options={TENSION_OPTIONS}
+          disabled={disabled}
+          onChange={(v) => onMutate('pianoTension', v)}
+        />
+        <SettingSelect
+          label="Randomize"
+          value={($('pianoRandomizationLevel', 'off') as string) ?? 'off'}
+          options={['off', 'subtle', 'moderate', 'high']}
+          disabled={disabled}
+          onChange={(v) => onMutate('pianoRandomizationLevel', v)}
+        />
         <div className="border-t border-border pt-3">
           <Label className="text-xs font-semibold uppercase text-muted-foreground">Humanize</Label>
           <div className="mt-2 space-y-2">
-            <SettingSelect label="Timing" value={h.timingJitterMs ?? 'none'} options={HUMANIZE_LEVELS} disabled={disabled} onChange={(v) => onMutateHumanize('pianoHumanize', { timingJitterMs: v })} />
-            <SettingSelect label="Velocity" value={h.velocityVariation ?? 'off'} options={HUMANIZE_VELOCITY} disabled={disabled} onChange={(v) => onMutateHumanize('pianoHumanize', { velocityVariation: v })} />
-            <SettingSelect label="Chord spread" value={h.chordSpreadMs ?? 'none'} options={HUMANIZE_LEVELS} disabled={disabled} onChange={(v) => onMutateHumanize('pianoHumanize', { chordSpreadMs: v })} />
-            <SettingSelect label="Phrasing" value={h.phrasing ?? 'flat'} options={HUMANIZE_PHRASING} disabled={disabled} onChange={(v) => onMutateHumanize('pianoHumanize', { phrasing: v })} />
+            <SettingSelect
+              label="Timing"
+              value={h.timingJitterMs ?? 'none'}
+              options={HUMANIZE_LEVELS}
+              disabled={disabled}
+              onChange={(v) => onMutateHumanize('pianoHumanize', { timingJitterMs: v })}
+            />
+            <SettingSelect
+              label="Velocity"
+              value={h.velocityVariation ?? 'off'}
+              options={HUMANIZE_VELOCITY}
+              disabled={disabled}
+              onChange={(v) => onMutateHumanize('pianoHumanize', { velocityVariation: v })}
+            />
+            <SettingSelect
+              label="Chord spread"
+              value={h.chordSpreadMs ?? 'none'}
+              options={HUMANIZE_LEVELS}
+              disabled={disabled}
+              onChange={(v) => onMutateHumanize('pianoHumanize', { chordSpreadMs: v })}
+            />
+            <SettingSelect
+              label="Phrasing"
+              value={h.phrasing ?? 'flat'}
+              options={HUMANIZE_PHRASING}
+              disabled={disabled}
+              onChange={(v) => onMutateHumanize('pianoHumanize', { phrasing: v })}
+            />
           </div>
         </div>
       </CardContent>
@@ -1008,7 +1173,7 @@ function RhodesCard({
   onMutate: (key: string, value: unknown) => void;
 }) {
   const $ = (k: string, fb: unknown) => readPerStyle(settings, style, k, fb);
-  const enabled = ($('rhodesEnabled', false) as boolean);
+  const enabled = $('rhodesEnabled', false) as boolean;
 
   return (
     <Card>
@@ -1034,15 +1199,36 @@ function RhodesCard({
         />
         <SettingRow label="Паттерн">
           <PatternSelect
-            value={($('rhodesPattern', null) as string | null)}
+            value={$('rhodesPattern', null) as string | null}
             disabled={disabled}
-            organisms={useMemo(() => getRhodesOrganismsForStyle(style).map(o => ({ value: o.id, label: o.label })), [style])}
+            organisms={useMemo(
+              () => getRhodesOrganismsForStyle(style).map((o) => ({ value: o.id, label: o.label })),
+              [style],
+            )}
             onChange={(v) => onMutate('rhodesPattern', v)}
           />
         </SettingRow>
-        <SettingSelect label="Voicing" value={($('rhodesVoicingDensity', 'rootless3') as string) ?? 'rootless3'} options={VOICING_DENSITIES} disabled={disabled} onChange={(v) => onMutate('rhodesVoicingDensity', v)} />
-        <SettingSelect label="Режим" value={($('rhodesMode', 'halfNotes') as string) ?? 'halfNotes'} options={RHODES_MODES} disabled={disabled} onChange={(v) => onMutate('rhodesMode', v)} />
-        <SettingSelect label="Layer" value={($('rhodesLayerMode', 'none') as string) ?? 'none'} options={RHODES_LAYER_MODES} disabled={disabled} onChange={(v) => onMutate('rhodesLayerMode', v)} />
+        <SettingSelect
+          label="Voicing"
+          value={($('rhodesVoicingDensity', 'rootless3') as string) ?? 'rootless3'}
+          options={VOICING_DENSITIES}
+          disabled={disabled}
+          onChange={(v) => onMutate('rhodesVoicingDensity', v)}
+        />
+        <SettingSelect
+          label="Режим"
+          value={($('rhodesMode', 'halfNotes') as string) ?? 'halfNotes'}
+          options={RHODES_MODES}
+          disabled={disabled}
+          onChange={(v) => onMutate('rhodesMode', v)}
+        />
+        <SettingSelect
+          label="Layer"
+          value={($('rhodesLayerMode', 'none') as string) ?? 'none'}
+          options={RHODES_LAYER_MODES}
+          disabled={disabled}
+          onChange={(v) => onMutate('rhodesLayerMode', v)}
+        />
         <VolSlider
           value={($('rhodesLayerVolume', 0.5) as number) ?? 0.5}
           disabled={disabled}
@@ -1065,7 +1251,7 @@ function DrumsCard({
   onMutate: (key: string, value: unknown) => void;
 }) {
   const $ = (k: string, fb: unknown) => readPerStyle(settings, style, k, fb);
-  const enabled = ($('drumsEnabled', true) as boolean);
+  const enabled = $('drumsEnabled', true) as boolean;
 
   return (
     <Card>
@@ -1089,16 +1275,31 @@ function DrumsCard({
           disabled={disabled}
           onChange={(v) => onMutate('drumsVolume', v)}
         />
-        <SettingSelect label="Кит" value={($('drumKit', 'jazz-drum-kit') as string) ?? 'jazz-drum-kit'} options={DRUM_KIT_OPTIONS} disabled={disabled} onChange={(v) => onMutate('drumKit', v)} />
+        <SettingSelect
+          label="Кит"
+          value={($('drumKit', 'jazz-drum-kit') as string) ?? 'jazz-drum-kit'}
+          options={DRUM_KIT_OPTIONS}
+          disabled={disabled}
+          onChange={(v) => onMutate('drumKit', v)}
+        />
         <SettingRow label="Паттерн">
           <PatternSelect
-            value={($('drumsPattern', null) as string | null)}
+            value={$('drumsPattern', null) as string | null}
             disabled={disabled}
-            organisms={useMemo(() => getOrganismsForStyle(style).map(o => ({ value: o.id, label: o.label })), [style])}
+            organisms={useMemo(
+              () => getOrganismsForStyle(style).map((o) => ({ value: o.id, label: o.label })),
+              [style],
+            )}
             onChange={(v) => onMutate('drumsPattern', v)}
           />
         </SettingRow>
-        <SettingSelect label="Humanize" value={($('drumsHumanizeIntensity', 'off') as string) ?? 'off'} options={HUMANIZE_INTENSITY} disabled={disabled} onChange={(v) => onMutate('drumsHumanizeIntensity', v)} />
+        <SettingSelect
+          label="Humanize"
+          value={($('drumsHumanizeIntensity', 'off') as string) ?? 'off'}
+          options={HUMANIZE_INTENSITY}
+          disabled={disabled}
+          onChange={(v) => onMutate('drumsHumanizeIntensity', v)}
+        />
       </CardContent>
     </Card>
   );
@@ -1116,7 +1317,7 @@ function PercussionCard({
   onMutate: (key: string, value: unknown) => void;
 }) {
   const $ = (k: string, fb: unknown) => readPerStyle(settings, style, k, fb);
-  const enabled = ($('percussionEnabled', false) as boolean);
+  const enabled = $('percussionEnabled', false) as boolean;
 
   return (
     <Card>
@@ -1142,13 +1343,23 @@ function PercussionCard({
         />
         <SettingRow label="Паттерн">
           <PatternSelect
-            value={($('percussionPattern', null) as string | null)}
+            value={$('percussionPattern', null) as string | null}
             disabled={disabled}
-            organisms={useMemo(() => getPercussionOrganismsForStyle(style).map(o => ({ value: o.id, label: o.label })), [style])}
+            organisms={useMemo(
+              () =>
+                getPercussionOrganismsForStyle(style).map((o) => ({ value: o.id, label: o.label })),
+              [style],
+            )}
             onChange={(v) => onMutate('percussionPattern', v)}
           />
         </SettingRow>
-        <SettingSelect label="Humanize" value={($('percussionHumanizeIntensity', 'off') as string) ?? 'off'} options={HUMANIZE_INTENSITY} disabled={disabled} onChange={(v) => onMutate('percussionHumanizeIntensity', v)} />
+        <SettingSelect
+          label="Humanize"
+          value={($('percussionHumanizeIntensity', 'off') as string) ?? 'off'}
+          options={HUMANIZE_INTENSITY}
+          disabled={disabled}
+          onChange={(v) => onMutate('percussionHumanizeIntensity', v)}
+        />
       </CardContent>
     </Card>
   );
@@ -1166,7 +1377,7 @@ function GuitarCard({
   onMutate: (key: string, value: unknown) => void;
 }) {
   const $ = (k: string, fb: unknown) => readPerStyle(settings, style, k, fb);
-  const enabled = ($('guitarEnabled', false) as boolean);
+  const enabled = $('guitarEnabled', false) as boolean;
 
   return (
     <Card>

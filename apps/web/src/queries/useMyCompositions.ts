@@ -1,5 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import type { HarmonyCompositionSummaryDTO, HarmonyCompositionDTO, CreateCompositionInput } from '@jazz/shared';
+import type {
+  HarmonyCompositionSummaryDTO,
+  HarmonyCompositionDTO,
+  CreateCompositionInput,
+} from '@jazz/shared';
 import { apiClient } from '@/lib/apiClient';
 
 const MINE_KEY = ['compositions', 'mine'] as const;

@@ -4,10 +4,7 @@ import type { Hit } from '@jazz/music-core';
 import { getInstrument } from '../shell/instrumentRegistry';
 import { createOneshotResources } from '@jazz/tone-audio-adapter';
 import { useEffectiveSettings } from '@jazz/plugin-sdk';
-import type {
-  PercussionPreviewControls,
-  PercussionPreviewPlayOptions,
-} from '@jazz/plugin-sdk';
+import type { PercussionPreviewControls, PercussionPreviewPlayOptions } from '@jazz/plugin-sdk';
 
 const PPQ = 480;
 const BEATS_PER_BAR = 4;

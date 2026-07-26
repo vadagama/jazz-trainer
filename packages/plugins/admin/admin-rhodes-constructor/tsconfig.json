@@ -12,8 +12,8 @@
       "@jazz/plugin-sdk": ["../../../plugin-sdk/src/index.ts"],
       "@jazz/ui": ["../../../ui/src/index.ts"],
       "@jazz/ui/*": ["../../../ui/src/*"],
-      "@jazz/plugin-admin-constructor-shared": ["../admin-constructor-shared/src/index.ts"],
-    },
+      "@jazz/plugin-admin-constructor-shared": ["../admin-constructor-shared/src/index.ts"]
+    }
   },
-  "include": ["src"],
+  "include": ["src"]
 }

@@ -103,11 +103,11 @@ function buildInitialConfig(
         ...common,
         type: 'enclosures' as const,
         source: { type: 'unified' as const, symbols: [] },
-        enclosureType: (pc.lastEnclosureType ?? 'diatonic-upper') as EnclosureExerciseConfig['enclosureType'],
-        targetDegrees:
-          (pc.lastEnclosureDegrees?.map(
-            (d) => Number(d) as EnclosureExerciseConfig['targetDegrees'][number],
-          ) ?? [1]),
+        enclosureType: (pc.lastEnclosureType ??
+          'diatonic-upper') as EnclosureExerciseConfig['enclosureType'],
+        targetDegrees: pc.lastEnclosureDegrees?.map(
+          (d) => Number(d) as EnclosureExerciseConfig['targetDegrees'][number],
+        ) ?? [1],
         scaleType: (pc.lastEnclosureScaleType ?? 'major') as EnclosureExerciseConfig['scaleType'],
       };
     }
@@ -116,11 +116,12 @@ function buildInitialConfig(
         ...common,
         type: 'sequences' as const,
         source: { type: 'unified' as const, symbols: [] },
-        sequenceType: (pc.lastSequenceType ?? DEF_SEQUENCE_TYPE) as SequenceExerciseConfig['sequenceType'],
+        sequenceType: (pc.lastSequenceType ??
+          DEF_SEQUENCE_TYPE) as SequenceExerciseConfig['sequenceType'],
         startDegrees:
-          (pc.lastSequenceStartDegrees?.map(
+          pc.lastSequenceStartDegrees?.map(
             (d) => Number(d) as SequenceExerciseConfig['startDegrees'][number],
-          ) ?? DEF_SEQUENCE_START_DEGREES),
+          ) ?? DEF_SEQUENCE_START_DEGREES,
         scaleType: (pc.lastSequenceScaleType ?? 'major') as SequenceExerciseConfig['scaleType'],
         direction: DEF_SEQUENCE_DIRECTION,
       };
@@ -168,8 +169,8 @@ function buildPracticeCardsSettings(
     ...(kind === 'sequences'
       ? {
           lastSequenceType: (config as SequenceExerciseConfig).sequenceType,
-          lastSequenceStartDegrees: (config as SequenceExerciseConfig).startDegrees.map((d) =>
-            String(d) as '1' | '2' | '3' | '4' | '5' | '6' | '7',
+          lastSequenceStartDegrees: (config as SequenceExerciseConfig).startDegrees.map(
+            (d) => String(d) as '1' | '2' | '3' | '4' | '5' | '6' | '7',
           ),
           lastSequenceScaleType: (config as SequenceExerciseConfig).scaleType,
         }
@@ -252,8 +253,7 @@ function buildConfig(
         type: 'unified' as const,
         symbols: [],
       },
-      sequenceType:
-        (partial as Partial<SequenceExerciseConfig>).sequenceType ?? DEF_SEQUENCE_TYPE,
+      sequenceType: (partial as Partial<SequenceExerciseConfig>).sequenceType ?? DEF_SEQUENCE_TYPE,
       startDegrees:
         (partial as Partial<SequenceExerciseConfig>).startDegrees ?? DEF_SEQUENCE_START_DEGREES,
       scaleType: (partial as Partial<SequenceExerciseConfig>).scaleType ?? 'major',
@@ -406,9 +406,11 @@ export function ExerciseWizard({ onStart, initialConfig }: ExerciseWizardProps) 
     (kind === 'chords'
       ? isValidSource((config as Partial<ChordExerciseConfig>).source, kind)
       : isValidSource(
-          (config as Partial<
-            ScaleExerciseConfig | EnclosureExerciseConfig | SequenceExerciseConfig
-          >).source,
+          (
+            config as Partial<
+              ScaleExerciseConfig | EnclosureExerciseConfig | SequenceExerciseConfig
+            >
+          ).source,
           kind,
         ));
 
@@ -495,9 +497,7 @@ export function ExerciseWizard({ onStart, initialConfig }: ExerciseWizardProps) 
       )}
 
       {/* Step content */}
-      {step === 1 && (
-        <StepTypeSelect states={tileStates} onSelect={handleTypeSelect} />
-      )}
+      {step === 1 && <StepTypeSelect states={tileStates} onSelect={handleTypeSelect} />}
 
       {step === 2 && kind === 'chords' && (
         <Step2Shell

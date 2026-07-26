@@ -9,6 +9,7 @@ import {
   seedRbac,
   seedDefaultSettings,
 } from './db/seed.js';
+import { seedSubscriptionTiers, degradeExpiredSubscriptions } from './services/billing.service.js';
 import { execSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -48,6 +49,7 @@ async function main(): Promise<void> {
   }
   seedSystemUser(db);
   seedRbac(db);
+  seedSubscriptionTiers(db);
   seedDemoCompositions(db);
   seedDefaultSettings(db);
   if (config.authDevMode) seedDevUser(db);
@@ -61,6 +63,20 @@ async function main(): Promise<void> {
     app.log.error(err);
     process.exit(1);
   }
+
+  // ── Cron: degrade expired subscriptions every hour ───────────────────────
+  const CRON_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
+  const cronTimer = setInterval(() => {
+    try {
+      const result = degradeExpiredSubscriptions(db, config);
+      if (result.degraded > 0 || result.notified > 0) {
+        console.log(`[cron] subscriptions: degraded=${result.degraded} notified=${result.notified}`);
+      }
+    } catch (err) {
+      console.error('[cron] subscription degradation failed:', err);
+    }
+  }, CRON_INTERVAL_MS);
+  cronTimer.unref(); // Don't keep the process alive for the timer alone
 
   // Graceful shutdown: close DB and server on SIGTERM/SIGINT
   const shutdown = async (signal: string) => {

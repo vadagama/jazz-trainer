@@ -9,7 +9,9 @@ export default definePlugin({
     description: 'Лекция: понятие грува в джазе, взаимодействие ритм-секции.',
   },
   contributes: {
-    routes: [{ path: '/theory/groove', element: () => import('./GroovePage'), requires: 'theory:groove' }],
+    routes: [
+      { path: '/theory/groove', element: () => import('./GroovePage'), requires: 'theory:groove' },
+    ],
     navItems: [{ section: 'learn', label: 'Грув', to: '/theory/groove', icon: 'music' }],
   },
 });

@@ -23,9 +23,7 @@ export function DrumKitSelector() {
           {k.name}
         </Button>
       ))}
-      {!preview.ready && (
-        <span className="text-xs text-muted-foreground">загрузка сэмплов…</span>
-      )}
+      {!preview.ready && <span className="text-xs text-muted-foreground">загрузка сэмплов…</span>}
     </div>
   );
 }

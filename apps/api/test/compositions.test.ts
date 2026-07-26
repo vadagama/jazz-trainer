@@ -268,7 +268,9 @@ describe('compositions CRUD (authenticated)', () => {
 
   it('PATCH /api/compositions/:id can set visibility to public', async () => {
     const created = await agent.post('/api/compositions').send({ name: 'Will be public' });
-    const res = await agent.patch(`/api/compositions/${created.body.id}`).send({ visibility: 'public' });
+    const res = await agent
+      .patch(`/api/compositions/${created.body.id}`)
+      .send({ visibility: 'public' });
     expect(res.status).toBe(200);
     expect(res.body.visibility).toBe('public');
   });
@@ -317,7 +319,9 @@ describe('permission isolation: user B cannot access user A compositions', () =>
   });
 
   it("PATCH /api/compositions/:id — B gets 404 on A's private composition", async () => {
-    expect((await agentB.patch(`/api/compositions/${compositionId}`).send({ name: 'Hacked' })).status).toBe(404);
+    expect(
+      (await agentB.patch(`/api/compositions/${compositionId}`).send({ name: 'Hacked' })).status,
+    ).toBe(404);
   });
 
   it("DELETE /api/compositions/:id — B gets 404 on A's private composition", async () => {
@@ -329,7 +333,9 @@ describe('permission isolation: user B cannot access user A compositions', () =>
   });
 
   it("B cannot copy A's private composition", async () => {
-    expect((await agentB.post(`/api/compositions/${compositionId}/copy`).send({})).status).toBe(404);
+    expect((await agentB.post(`/api/compositions/${compositionId}/copy`).send({})).status).toBe(
+      404,
+    );
   });
 
   it('B can copy a public composition (creates private copy with sourceCompositionId)', async () => {

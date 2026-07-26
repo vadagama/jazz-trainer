@@ -95,12 +95,12 @@ Grand Piano — **основной гармонический инструмен
 `buildPianoVoicing(chord, density, prevVoicing, tension, seed)` — четвёртый параметр `tension`
 управляет тем, добавляется ли поверх базового voicing'а надстройка (upper structure triad):
 
-| `tension`  | Поведение |
-| ---------- | --------- |
-| `clean`    | Только density-voicing, надстройки выключены |
-| `moderate` | Надстройки изредка (35%), только «мягкие» цвета |
+| `tension`  | Поведение                                                |
+| ---------- | -------------------------------------------------------- |
+| `clean`    | Только density-voicing, надстройки выключены             |
+| `moderate` | Надстройки изредка (35%), только «мягкие» цвета          |
 | `altered`  | Надстройки часто (70%), включая альтерации на доминантах |
-| `max`      | Надстройки почти всегда (100%) |
+| `max`      | Надстройки почти всегда (100%)                           |
 
 Выбор конкретной надстройки — `suggestUpperStructure(chord, functionHint, tension, seed)`
 (`pianoUpperStructures.ts`): таблица триад по `chord.quality` (dominant/major/minor/
@@ -211,7 +211,7 @@ export const uprightPianoManifest: InstrumentManifest = {
   family: 'pitched',
   settingsPrefix: 'piano',
   createInstrument: () => new PianoInstrument(new ChordTimeline()),
-  sampleManifest: UPRIGHT_SAMPLE_MANIFEST,   // 3 vel. слоя, release 1.8
+  sampleManifest: UPRIGHT_SAMPLE_MANIFEST, // 3 vel. слоя, release 1.8
   defaultSettings: {
     enabled: false,
     volume: 0.7,
@@ -229,7 +229,9 @@ export const uprightPianoManifest: InstrumentManifest = {
 };
 
 // music-core/src/audio/pianoManifest.ts — @deprecated (2 vel. слоя, release 0.8)
-export const pianoManifest: InstrumentManifest = { /* ... */ };
+export const pianoManifest: InstrumentManifest = {
+  /* ... */
+};
 
 // music-core/src/audio/salamanderManifest.ts — Salamander Grand Piano
 export const salamanderManifest: InstrumentManifest = {
@@ -265,13 +267,13 @@ export const salamanderManifest: InstrumentManifest = {
 Атом молекулы (`PianoAtom`) хранит **когда**, **как громко**, **какой длительности** и
 **какую роль голоса** играть — `sound: VoiceRole`:
 
-| Роль       | Что играет |
-| ---------- | ---------- |
-| `chord`    | Весь текущий voicing (по умолчанию) |
-| `shell`    | Только 2 нижних голоса (3 + 7) |
-| `bass`     | Только самый нижний голос |
-| `top`      | Только самый верхний голос |
-| `upper`    | Цветные тона выше shell — надстройка, если `tension` её включил |
+| Роль    | Что играет                                                      |
+| ------- | --------------------------------------------------------------- |
+| `chord` | Весь текущий voicing (по умолчанию)                             |
+| `shell` | Только 2 нижних голоса (3 + 7)                                  |
+| `bass`  | Только самый нижний голос                                       |
+| `top`   | Только самый верхний голос                                      |
+| `upper` | Цветные тона выше shell — надстройка, если `tension` её включил |
 
 Никаких «зашитых» интервалов в молекуле — один и тот же ритм (например, Charleston)
 корректно звучит на любом аккорде и любом уровне `tension`. Это устраняет
@@ -359,6 +361,7 @@ class PianoInstrument implements Instrument {
 **Путь:** `/admin/piano-constructor` (требует `content:write`)
 
 **Особенности pitched-конструктора:**
+
 - **Piano-roll редактор молекул** (`PianoMoleculeTable`) — вместо step-grid'а барабанов, ноты отображаются в двумерной сетке (роль × tick)
 - **Роли голоса как «звуки»** — `sound: VoiceRole` (`chord`, `shell`, `bass`, `top`, `upper`)
 - **Предпрослушивание через сэмплер** (`usePianoPreview`) — загружает сэмплы выбранного варианта (Upright/Salamander) и играет плоские PianoHit'ы

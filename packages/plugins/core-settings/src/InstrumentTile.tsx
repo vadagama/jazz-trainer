@@ -480,11 +480,7 @@ function PianoTile({ style }: { style: Style }) {
   return (
     <Card className={!on ? 'opacity-50' : undefined}>
       <CardHeader className="pb-2">
-        <TileHeader
-          name="Piano"
-          enabled={on}
-          onToggle={() => set({ [`${prefix}Enabled`]: !on })}
-        />
+        <TileHeader name="Piano" enabled={on} onToggle={() => set({ [`${prefix}Enabled`]: !on })} />
       </CardHeader>
       <CardContent className={on ? 'space-y-3' : 'space-y-3 pointer-events-none opacity-60'}>
         <SettingRow label="Громкость">

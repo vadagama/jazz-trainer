@@ -10,10 +10,7 @@ import {
 import { requirePermission } from '../plugins/rbac.plugin.js';
 import { requireAuth } from '../plugins/auth.plugin.js';
 import { withAuditSync } from '../services/audit.service.js';
-import {
-  UpdateDefaultSettingsSchema,
-  type DefaultSettingsDTO,
-} from '@jazz/shared';
+import { UpdateDefaultSettingsSchema, type DefaultSettingsDTO } from '@jazz/shared';
 
 export interface DefaultsRoutesOptions {
   db: DrizzleDb;

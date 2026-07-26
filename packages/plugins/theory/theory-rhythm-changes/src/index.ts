@@ -9,7 +9,13 @@ export default definePlugin({
     description: 'Лекция: Rhythm Changes — гармоническая структура на основе I Got Rhythm.',
   },
   contributes: {
-    routes: [{ path: '/theory/rhythm-changes', element: () => import('./RhythmChangesPage'), requires: 'theory:rhythmChanges' }],
+    routes: [
+      {
+        path: '/theory/rhythm-changes',
+        element: () => import('./RhythmChangesPage'),
+        requires: 'theory:rhythmChanges',
+      },
+    ],
     navItems: [
       { section: 'learn', label: 'Rhythm Changes', to: '/theory/rhythm-changes', icon: 'music' },
     ],

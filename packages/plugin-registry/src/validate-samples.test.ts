@@ -67,7 +67,8 @@ function collectMissing(): Missing[] {
 
         if (sm.fallbackBaseUrl) {
           const fallback = join(PUBLIC_DIR, sm.fallbackBaseUrl, toFallbackName(file, swap));
-          if (!existsSync(fallback)) missing.push({ instrument: id, format: 'mp3', path: fallback });
+          if (!existsSync(fallback))
+            missing.push({ instrument: id, format: 'mp3', path: fallback });
         }
       }
     }

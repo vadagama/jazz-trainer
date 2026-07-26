@@ -21,7 +21,12 @@ function formatTime(ts: number): string {
   return d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
 }
 
-export function SaveIndicator({ isDirty, hasPublished, saving, lastPublishedAt }: SaveIndicatorProps) {
+export function SaveIndicator({
+  isDirty,
+  hasPublished,
+  saving,
+  lastPublishedAt,
+}: SaveIndicatorProps) {
   if (saving) {
     return (
       <span className="flex items-center gap-1 text-xs text-muted-foreground">

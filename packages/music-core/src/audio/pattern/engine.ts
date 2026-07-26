@@ -3,7 +3,7 @@
  * `TStyle` and `TSound`. Drum-specific {@link DrumPatternEngine} binds these
  * to the drum registries via callbacks; future instruments reuse the same core.
  */
-import type { Atom, Cell, Dynamics, Hit, Molecule, Organism } from './types.js';
+import type { Cell, Dynamics, Hit, Molecule, Organism } from './types.js';
 
 const PPQ = 480;
 

@@ -3,7 +3,7 @@
  * prepare-drum-samples.mjs — Конвертация драм-сэмплов (Jazz Kit + Funk Kit)
  */
 import { execSync } from 'child_process';
-import { mkdirSync, existsSync, readdirSync } from 'fs';
+import { mkdirSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -43,15 +43,7 @@ function findSrc(folder, prefix, vl, rr, suffixes) {
   return null;
 }
 
-/**
- * Find any file matching vl+rr in a folder (for irregular naming).
- */
-function findAny(folder, vl, rr) {
-  const files = readdirSync(folder).filter(
-    (f) => f.includes(`_vl${vl}_rr${rr}`) && !f.startsWith('.'),
-  );
-  return files.length > 0 ? join(folder, files[0]) : null;
-}
+
 
 // ══════════════════════════════════════════════════════════════════════════════
 // Jazz Kit

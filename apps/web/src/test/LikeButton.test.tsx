@@ -4,7 +4,7 @@ import { LikeButton, CopyToMineButton } from '@jazz/plugin-catalog';
 import { renderWithProviders } from './renderWithProviders';
 
 vi.mock('@/queries/useAuth', () => ({
-  useAuth: vi.fn(() => ({ user: null, isLoading: false })),
+  useAuth: vi.fn(() => ({ user: null, theme: null, isLoading: false })),
   useLogout: vi.fn(() => ({ mutate: vi.fn() })),
 }));
 

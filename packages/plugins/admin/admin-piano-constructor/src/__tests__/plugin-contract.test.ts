@@ -12,9 +12,7 @@ describe('Piano Constructor plugin — contract', () => {
   });
 
   it('exposes the admin route guarded by content:write', () => {
-    const route = plugin.contributes.routes?.find(
-      (r) => r.path === '/admin/piano-constructor',
-    );
+    const route = plugin.contributes.routes?.find((r) => r.path === '/admin/piano-constructor');
     expect(route).toBeDefined();
     expect(route!.requires).toBe('content:write');
   });

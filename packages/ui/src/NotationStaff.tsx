@@ -49,7 +49,11 @@ interface StaffNote {
 
 function midiToStaffNote(midi: number): StaffNote {
   const noteName = midiToNoteName(midi);
-  const accidental = noteName.includes('#') ? '#' as const : noteName.includes('b') ? 'b' as const : null;
+  const accidental = noteName.includes('#')
+    ? ('#' as const)
+    : noteName.includes('b')
+      ? ('b' as const)
+      : null;
 
   if (midi >= GRAND_SPLIT) {
     // Treble clef: E4 (64) = bottom line → position 0
@@ -145,10 +149,7 @@ export function NotationStaff({
     () => highlightedNotes.map((m) => midiToStaffNote(m)),
     [highlightedNotes],
   );
-  const selected = useMemo(
-    () => selectedNotes.map((m) => midiToStaffNote(m)),
-    [selectedNotes],
-  );
+  const selected = useMemo(() => selectedNotes.map((m) => midiToStaffNote(m)), [selectedNotes]);
   const allDisplayNotes = useMemo(() => {
     if (!showNotes) return [];
     // Merge highlighted + selected, deduplicated by MIDI
@@ -159,8 +160,14 @@ export function NotationStaff({
   }, [showNotes, highlighted, selected]);
 
   // Separate notes by staff
-  const trebleNotes = useMemo(() => allDisplayNotes.filter((n) => n.staff === 'treble'), [allDisplayNotes]);
-  const bassNotes = useMemo(() => allDisplayNotes.filter((n) => n.staff === 'bass'), [allDisplayNotes]);
+  const trebleNotes = useMemo(
+    () => allDisplayNotes.filter((n) => n.staff === 'treble'),
+    [allDisplayNotes],
+  );
+  const bassNotes = useMemo(
+    () => allDisplayNotes.filter((n) => n.staff === 'bass'),
+    [allDisplayNotes],
+  );
 
   // ── Always render grand staff (treble + bass) ────────────────────────
   const trebleTopY = topY;
@@ -257,19 +264,18 @@ export function NotationStaff({
       }
 
       // Accidental
-      const accidentalEl =
-        note.accidental ? (
-          <text
-            x={noteX - noteRadius * 2.2}
-            y={y + noteRadius * 0.35}
-            fontSize={layout.accidentalFontSize}
-            fill={fill}
-            textAnchor="middle"
-            style={{ pointerEvents: 'none' }}
-          >
-            {note.accidental === '#' ? '♯' : '♭'}
-          </text>
-        ) : null;
+      const accidentalEl = note.accidental ? (
+        <text
+          x={noteX - noteRadius * 2.2}
+          y={y + noteRadius * 0.35}
+          fontSize={layout.accidentalFontSize}
+          fill={fill}
+          textAnchor="middle"
+          style={{ pointerEvents: 'none' }}
+        >
+          {note.accidental === '#' ? '♯' : '♭'}
+        </text>
+      ) : null;
 
       elements.push(
         <g key={`note-${note.midi}`}>
@@ -315,25 +321,25 @@ export function NotationStaff({
           userSelect: 'none',
         }}
       >
-      {/* Grand staff brace */}
-      <line
-        x1={leftMargin - clefWidth - 2}
-        y1={trebleTopY}
-        x2={leftMargin - clefWidth - 2}
-        y2={bassTopY + staffHeight}
-        stroke={LINE_COLOR}
-        strokeWidth={1.5}
-      />
+        {/* Grand staff brace */}
+        <line
+          x1={leftMargin - clefWidth - 2}
+          y1={trebleTopY}
+          x2={leftMargin - clefWidth - 2}
+          y2={bassTopY + staffHeight}
+          stroke={LINE_COLOR}
+          strokeWidth={1.5}
+        />
 
-      {/* Treble staff */}
-      {renderStaffLines(trebleTopY, 'treble-lines')}
-      {renderClef('treble', trebleTopY)}
-      {renderNotes(trebleNotes, trebleTopY)}
+        {/* Treble staff */}
+        {renderStaffLines(trebleTopY, 'treble-lines')}
+        {renderClef('treble', trebleTopY)}
+        {renderNotes(trebleNotes, trebleTopY)}
 
-      {/* Bass staff */}
-      {renderStaffLines(bassTopY, 'bass-lines')}
-      {renderClef('bass', bassTopY)}
-      {renderNotes(bassNotes, bassTopY)}
+        {/* Bass staff */}
+        {renderStaffLines(bassTopY, 'bass-lines')}
+        {renderClef('bass', bassTopY)}
+        {renderNotes(bassNotes, bassTopY)}
       </svg>
     </div>
   );

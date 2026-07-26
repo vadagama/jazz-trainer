@@ -4,10 +4,7 @@
  * Связывает generic-базу @jazz/plugin-admin-constructor-shared с перкуссионными
  * реестрами music-core: step-grid редактор молекул, 16 звуков, 3 стиля.
  */
-import type {
-  ConstructorStrategy,
-  CellValidationError,
-} from '@jazz/plugin-admin-constructor-shared';
+import type { ConstructorStrategy } from '@jazz/plugin-admin-constructor-shared';
 import {
   cloneCell,
   cloneMolecule,

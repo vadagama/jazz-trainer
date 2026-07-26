@@ -46,9 +46,7 @@ function updateLikeCount(
 ) {
   qc.setQueriesData<CatalogEntry[]>({ queryKey: ['catalog'] }, (old) =>
     old?.map((g) =>
-      g.id === compositionId
-        ? { ...g, likeCount: Math.max(0, g.likeCount + delta), likedByMe }
-        : g,
+      g.id === compositionId ? { ...g, likeCount: Math.max(0, g.likeCount + delta), likedByMe } : g,
     ),
   );
 }

@@ -69,9 +69,9 @@ export function CatalogModerationPage() {
   const publishEntry = usePublishEntry();
 
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [batchAction, setBatchAction] = useState<'publish' | 'unpublish' | 'addToCatalog' | 'delete'>(
-    'publish',
-  );
+  const [batchAction, setBatchAction] = useState<
+    'publish' | 'unpublish' | 'addToCatalog' | 'delete'
+  >('publish');
 
   // Search & filter state
   const [query, setQuery] = useState('');
@@ -82,7 +82,9 @@ export function CatalogModerationPage() {
   // Client-side filtering & sorting
   const filteredEntries = useMemo(() => {
     if (!entries) return undefined;
-    let result = entries.filter((e) => matchesQuery(e, debouncedQuery) && matchesFilters(e, filters));
+    let result = entries.filter(
+      (e) => matchesQuery(e, debouncedQuery) && matchesFilters(e, filters),
+    );
     if (sort === 'name_asc') {
       result = [...result].sort((a, b) => a.name.localeCompare(b.name, 'ru'));
     } else if (sort === 'updated') {
@@ -194,9 +196,7 @@ export function CatalogModerationPage() {
       {/* Batch actions */}
       {filteredEntries && filteredEntries.length > 0 && (
         <div className="flex items-center gap-2 rounded-md border border-border bg-card p-3">
-          <span className="text-sm text-muted-foreground">
-            Выбрано: {selected.size}
-          </span>
+          <span className="text-sm text-muted-foreground">Выбрано: {selected.size}</span>
           <select
             value={batchAction}
             onChange={(e) => setBatchAction(e.target.value as typeof batchAction)}
@@ -207,11 +207,7 @@ export function CatalogModerationPage() {
             <option value="addToCatalog">Добавить в каталог</option>
             <option value="delete">Удалить</option>
           </select>
-          <Button
-            size="sm"
-            disabled={selected.size === 0 || batch.isPending}
-            onClick={runBatch}
-          >
+          <Button size="sm" disabled={selected.size === 0 || batch.isPending} onClick={runBatch}>
             Применить
           </Button>
         </div>
@@ -232,7 +228,11 @@ export function CatalogModerationPage() {
                 <th className="p-3">
                   <input
                     type="checkbox"
-                    checked={!!filteredEntries && selected.size === filteredEntries.length && filteredEntries.length > 0}
+                    checked={
+                      !!filteredEntries &&
+                      selected.size === filteredEntries.length &&
+                      filteredEntries.length > 0
+                    }
                     onChange={toggleAll}
                   />
                 </th>
@@ -341,9 +341,7 @@ function ModerationRow({
           <div className="text-muted-foreground">{entry.publisherName}</div>
         </div>
       </td>
-      <td className="p-3 text-xs text-muted-foreground">
-        {formatDate(entry.catalogPublishedAt)}
-      </td>
+      <td className="p-3 text-xs text-muted-foreground">{formatDate(entry.catalogPublishedAt)}</td>
       <td className="p-3">
         <StatusBadge entry={entry} />
       </td>

@@ -34,9 +34,7 @@ describe('NotationStaff', () => {
   });
 
   it('renders selected notes in green', () => {
-    const { container } = render(
-      <NotationStaff highlightedNotes={[60]} selectedNotes={[64]} />,
-    );
+    const { container } = render(<NotationStaff highlightedNotes={[60]} selectedNotes={[64]} />);
     const ellipses = container.querySelectorAll('ellipse');
     expect(ellipses.length).toBe(2);
   });

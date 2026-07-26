@@ -12,7 +12,7 @@
  * {@link BassRandomizer} can still add variety to `approach` notes upstream.
  */
 import type { ChordSymbol } from '@jazz/shared';
-import type { BassPatternStyle, BassStep, BassTensionLevel } from './bassPatternTypes.js';
+import type { BassStep, BassTensionLevel } from './bassPatternTypes.js';
 import type { BassPattern } from './bassInstrument.js';
 
 /**

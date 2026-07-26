@@ -507,7 +507,10 @@ export function SettingsPage() {
                     const enabled = e.target.checked;
                     mutate(
                       enabled
-                        ? { metronomeEnabled: true, ...(settings?.countIn === 0 ? { countIn: 1 } : {}) }
+                        ? {
+                            metronomeEnabled: true,
+                            ...(settings?.countIn === 0 ? { countIn: 1 } : {}),
+                          }
                         : { metronomeEnabled: false, countIn: 0 },
                     );
                   }}

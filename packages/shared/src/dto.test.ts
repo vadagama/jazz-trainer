@@ -115,8 +115,8 @@ describe('Feature flag DTO — CreateFlagSchema', () => {
     expect(FLAG_CATEGORIES).toEqual(['feature', 'experiment', 'maintenance', 'killswitch']);
   });
 
-  it('FLAG_TARGET_ROLES has the 4 known roles', () => {
-    expect(FLAG_TARGET_ROLES).toEqual(['super_admin', 'admin', 'catalog_editor', 'user']);
+  it('FLAG_TARGET_ROLES has all known roles', () => {
+    expect(FLAG_TARGET_ROLES).toEqual(['super_admin', 'admin', 'catalog_editor', 'user', 'subscriber_free', 'subscriber_pro', 'subscriber_premium']);
   });
 
   it('accepts a minimal valid flag with just a key', () => {

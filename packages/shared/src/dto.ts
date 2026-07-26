@@ -1,5 +1,12 @@
 import { z } from 'zod';
-import { CLICK_SOUNDS, METRONOME_MODES, STYLES, KEYS, TIME_SIGNATURES, SYSTEM_ROLES } from './constants.js';
+import {
+  CLICK_SOUNDS,
+  METRONOME_MODES,
+  STYLES,
+  KEYS,
+  TIME_SIGNATURES,
+  SYSTEM_ROLES,
+} from './constants.js';
 
 /**
  * DTO types and Zod validation schemas for the auth + settings layer (F4).
@@ -14,13 +21,25 @@ export const UserDTOSchema = z.object({
   email: z.string().email(),
   name: z.string(),
   avatarUrl: z.string().url().nullable(),
-  provider: z.enum(['google', 'dev', 'system']),
+  provider: z.enum(['google', 'dev', 'system', 'github', 'magic_link']),
   role: z.string(),
   roles: z.array(z.string()).optional(),
   status: z.enum(['active', 'disabled']),
   createdAt: z.number().int(),
 });
 export type UserDTO = z.infer<typeof UserDTOSchema>;
+
+// ── Session ────────────────────────────────────────────────────────────────
+
+export const SessionDTOSchema = z.object({
+  id: z.string(),
+  device: z.string(),
+  ip: z.string(),
+  createdAt: z.number().int(),
+  lastUsedAt: z.number().int(),
+  current: z.boolean(),
+});
+export type SessionDTO = z.infer<typeof SessionDTOSchema>;
 
 // ── User settings ─────────────────────────────────────────────────────────
 
@@ -228,6 +247,9 @@ export const UserSettingsDTOSchema = z.object({
   soloVolume: z.number().min(0).max(1).optional(),
   duckingEnabled: z.boolean().optional(),
 
+  /** UI theme preference persisted server-side. */
+  theme: z.enum(['dark', 'light']).optional(),
+
   practiceCards: z
     .object({
       lastExerciseType: z.enum(['chords', 'scales', 'enclosures', 'sequences']).optional(),
@@ -336,6 +358,15 @@ export type DefaultSettingsDTO = z.infer<typeof DefaultSettingsSchema>;
 export const UpdateDefaultSettingsSchema = DefaultSettingsSchema.partial();
 export type UpdateDefaultSettingsInput = z.infer<typeof UpdateDefaultSettingsSchema>;
 
+// ── Auth methods ──────────────────────────────────────────────────────────
+
+export interface AuthMethodsDTO {
+  google: boolean;
+  github: boolean;
+  magicLink: boolean;
+  dev: boolean;
+}
+
 // ── Auth requests ─────────────────────────────────────────────────────────
 
 export const DevLoginSchema = z.object({
@@ -344,6 +375,11 @@ export const DevLoginSchema = z.object({
 });
 export type DevLoginInput = z.infer<typeof DevLoginSchema>;
 
+export const SendMagicLinkSchema = z.object({
+  email: z.string().email(),
+});
+export type SendMagicLinkInput = z.infer<typeof SendMagicLinkSchema>;
+
 // ── Auth responses ────────────────────────────────────────────────────────
 
 export const MeResponseSchema = z.object({
@@ -351,6 +387,7 @@ export const MeResponseSchema = z.object({
   permissions: z.array(z.string()),
   inactivePermissions: z.array(z.string()),
   flags: z.record(z.boolean()),
+  theme: z.enum(['dark', 'light']).nullable().optional(),
 });
 export type MeResponse = z.infer<typeof MeResponseSchema>;
 
@@ -450,3 +487,82 @@ export const FlagHistoryEntryDTOSchema = z.object({
   reason: z.string().nullable(),
 });
 export type FlagHistoryEntryDTO = z.infer<typeof FlagHistoryEntryDTOSchema>;
+
+// ── Subscription & Billing DTOs (Phase 8) ─────────────────────────────────
+
+export const AdminSubscriptionUpdateSchema = z.object({
+  tier: z.enum(['pro', 'premium']).nullable(),
+  months: z.number().int().min(1).max(36).optional(),
+  status: z.enum(['active', 'canceled', 'past_due']).optional(),
+});
+export type AdminSubscriptionUpdateInput = z.infer<typeof AdminSubscriptionUpdateSchema>;
+
+export const SubscriptionRequestSchema = z.object({
+  email: z.string().email(),
+  name: z.string().min(1).max(128).optional(),
+  desiredTier: z.enum(['pro', 'premium']),
+  message: z.string().max(2000).optional(),
+});
+export type SubscriptionRequestInput = z.infer<typeof SubscriptionRequestSchema>;
+
+export const SubscriptionChangeSchema = z.object({
+  action: z.enum(['upgrade', 'downgrade', 'cancel']),
+  tier: z.enum(['pro', 'premium']).optional(),
+  message: z.string().max(2000).optional(),
+});
+export type SubscriptionChangeInput = z.infer<typeof SubscriptionChangeSchema>;
+
+export const SubscriptionRequestActionSchema = z.object({
+  reason: z.string().max(2000).optional(),
+});
+export type SubscriptionRequestActionInput = z.infer<typeof SubscriptionRequestActionSchema>;
+
+export const SubscriptionDTOSchema = z.object({
+  tier: z.enum(['free', 'pro', 'premium']).nullable(),
+  status: z.enum(['active', 'past_due', 'canceled', 'expired', 'incomplete']).nullable(),
+  currentPeriodEnd: z.number().nullable(),
+  gracePeriodEnds: z.number().nullable(),
+  isGracePeriod: z.boolean(),
+});
+export type SubscriptionDTO = z.infer<typeof SubscriptionDTOSchema>;
+
+export const AdminSubscriptionDTOSchema = z.object({
+  id: z.string(),
+  userId: z.string(),
+  userEmail: z.string().nullable(),
+  tierName: z.string().nullable(),
+  status: z.string(),
+  currentPeriodStart: z.number().nullable(),
+  currentPeriodEnd: z.number().nullable(),
+  gracePeriodEnds: z.number().nullable(),
+  canceledAt: z.number().nullable(),
+  createdAt: z.number(),
+  updatedAt: z.number(),
+});
+export type AdminSubscriptionDTO = z.infer<typeof AdminSubscriptionDTOSchema>;
+
+export const AdminSubscriptionRequestDTOSchema = z.object({
+  id: z.string(),
+  email: z.string(),
+  name: z.string().nullable(),
+  desiredTier: z.string(),
+  message: z.string().nullable(),
+  status: z.string(),
+  userId: z.string().nullable(),
+  processedBy: z.string().nullable(),
+  processedComment: z.string().nullable(),
+  processedAt: z.number().nullable(),
+  createdAt: z.number(),
+});
+export type AdminSubscriptionRequestDTO = z.infer<typeof AdminSubscriptionRequestDTOSchema>;
+
+export const SubscriptionHistoryEntryDTOSchema = z.object({
+  id: z.string(),
+  eventType: z.string(),
+  actorId: z.string(),
+  oldTier: z.string().nullable(),
+  newTier: z.string().nullable(),
+  metadata: z.unknown(),
+  createdAt: z.number(),
+});
+export type SubscriptionHistoryEntryDTO = z.infer<typeof SubscriptionHistoryEntryDTOSchema>;

@@ -26,6 +26,7 @@
       "@jazz/plugin-admin-assets": ["../../packages/plugins/admin/admin-assets/src/index.ts"],
       "@jazz/plugin-admin-diagnostics": ["../../packages/plugins/admin/admin-diagnostics/src/index.ts"],
       "@jazz/plugin-admin-defaults": ["../../packages/plugins/admin/admin-defaults/src/index.ts"],
+      "@jazz/plugin-admin-subscriptions": ["../../packages/plugins/admin/admin-subscriptions/src/index.ts"],
       "@jazz/plugin-jazz-drum-kit": [
         "../../packages/plugins/instruments/jazz-drum-kit/src/index.ts",
       ],

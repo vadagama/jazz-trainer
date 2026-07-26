@@ -261,16 +261,12 @@ describe('RBAC — resolveFlags', () => {
   });
 
   it('rolloutPercent=0 excludes every user', () => {
-    db.insert(featureFlags)
-      .values({ key: 'rollout-0', enabled: true, rolloutPercent: 0 })
-      .run();
+    db.insert(featureFlags).values({ key: 'rollout-0', enabled: true, rolloutPercent: 0 }).run();
     expect(resolveFlags(db, RBAC_ROLES.USER, 'user-a')['rollout-0']).toBe(false);
   });
 
   it('rolloutPercent is deterministic for the same user', () => {
-    db.insert(featureFlags)
-      .values({ key: 'rollout-50', enabled: true, rolloutPercent: 50 })
-      .run();
+    db.insert(featureFlags).values({ key: 'rollout-50', enabled: true, rolloutPercent: 50 }).run();
     const first = resolveFlags(db, RBAC_ROLES.USER, 'user-a')['rollout-50'];
     const second = resolveFlags(db, RBAC_ROLES.USER, 'user-a')['rollout-50'];
     expect(first).toBe(second);

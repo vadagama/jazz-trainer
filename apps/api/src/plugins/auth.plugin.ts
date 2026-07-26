@@ -1,8 +1,10 @@
 import fp from 'fastify-plugin';
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { eq } from 'drizzle-orm';
 import type { DrizzleDb } from '../db/index.js';
 import type { UserRecord } from '../db/schema.js';
-import { getSessionUser } from '../services/auth.service.js';
+import { sessions } from '../db/schema.js';
+import { getSessionUser, computeFingerprint } from '../services/auth.service.js';
 
 /**
  * Augment Fastify's Request type so `request.user` is typed everywhere.
@@ -16,6 +18,10 @@ declare module 'fastify' {
 
 export interface AuthPluginOptions {
   db: DrizzleDb;
+  sessionTtlMs?: number;
+  maxAbsoluteTtlMs?: number;
+  /** Shorter max absolute TTL for super_admin (default: 15 min). */
+  superAdminMaxAbsoluteTtlMs?: number;
 }
 
 /**
@@ -38,7 +44,26 @@ export const authPlugin = fp(async function authPlugin(
       request.user = null;
       return;
     }
-    request.user = getSessionUser(opts.db, sid);
+    const ip = request.ip;
+    const userAgent = request.headers['user-agent'] ?? '';
+    const requestFingerprint = ip ? computeFingerprint(ip, userAgent) : undefined;
+
+    // Look up session to get metadata (totpVerifiedAt for step-up)
+    const session = opts.db.select().from(sessions).where(eq(sessions.id, sid)).get();
+
+    // Role-based maxAbsoluteTtlMs: super_admin gets shorter TTL
+    const superAdminMaxTtl = opts.superAdminMaxAbsoluteTtlMs ?? 15 * 60 * 1000;
+    request.user = getSessionUser(opts.db, sid, {
+      sessionTtlMs: opts.sessionTtlMs,
+      maxAbsoluteTtlMs: (user) =>
+        user.role === 'super_admin' ? superAdminMaxTtl : (opts.maxAbsoluteTtlMs ?? 0),
+      requestFingerprint,
+    });
+
+    // Store totpVerifiedAt for step-up middleware
+    if (session?.totpVerifiedAt) {
+      request.totpVerifiedAt = session.totpVerifiedAt;
+    }
   });
 });
 

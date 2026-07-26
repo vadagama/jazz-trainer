@@ -100,7 +100,11 @@ function resolveEnclosureForDegree(
   concreteType: import('@jazz/music-core').ConcreteEnclosureType,
   key: Key,
   scaleType: ScaleType,
-): { type: import('@jazz/music-core').ConcreteEnclosureType; targetDegree: import('@jazz/music-core').TargetDegree; notes: import('@jazz/music-core').EnclosureNote[] } {
+): {
+  type: import('@jazz/music-core').ConcreteEnclosureType;
+  targetDegree: import('@jazz/music-core').TargetDegree;
+  notes: import('@jazz/music-core').EnclosureNote[];
+} {
   const targetPc = resolveChordTonePitchClass(symbol, degree, scaleType);
   const notes = resolveEnclosure(targetPc, concreteType, key, scaleType);
   return { type: concreteType, targetDegree: degree, notes };
@@ -182,7 +186,13 @@ function buildEnclosureBars(
     bars.push({
       index: i,
       chords: chunk.chords,
-      enclosure: resolveEnclosureForDegree(symbol, degree, concreteType, chunk.key, resolvedScaleType),
+      enclosure: resolveEnclosureForDegree(
+        symbol,
+        degree,
+        concreteType,
+        chunk.key,
+        resolvedScaleType,
+      ),
     });
   }
 

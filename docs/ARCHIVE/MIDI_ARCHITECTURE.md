@@ -54,14 +54,14 @@ graph TD
 
 Конверсия **имя ноты → MIDI-номер** реализована независимо в **6 местах**:
 
-| Файл | Функция | Строки | Примечание |
-|------|---------|--------|------------|
-| `packages/music-core/src/audio/midiEval.ts` | `parseNoteToMidi()` | 85–93 | Для оценки MIDI-ввода |
-| `packages/music-core/src/audio/keyboardLayout.ts` | `noteNameToMidi()` | 155–163 | Для раскладки клавиатуры |
-| `packages/music-core/src/audio/pianoVoicing.ts` | `noteToMidi()` / `midiToNote()` | 28–38 | Для голосоведения |
-| `packages/music-core/src/audio/rhodesVoicing.ts` | `noteToMidi()` / `midiToNote()` | ≈28–38 | Дубликат pianoVoicing |
-| `packages/adapters/webmidi-adapter/src/WebMidiAdapter.ts` | `noteToMidi()` / `midiToNote()` | 58–74 | Для MIDI-вывода |
-| `packages/music-core/src/audio/bassInstrument.ts` | `NOTE_SEMITONES` (таблица) | 16–26 | Для генерации басовых нот |
+| Файл                                                      | Функция                         | Строки  | Примечание                |
+| --------------------------------------------------------- | ------------------------------- | ------- | ------------------------- |
+| `packages/music-core/src/audio/midiEval.ts`               | `parseNoteToMidi()`             | 85–93   | Для оценки MIDI-ввода     |
+| `packages/music-core/src/audio/keyboardLayout.ts`         | `noteNameToMidi()`              | 155–163 | Для раскладки клавиатуры  |
+| `packages/music-core/src/audio/pianoVoicing.ts`           | `noteToMidi()` / `midiToNote()` | 28–38   | Для голосоведения         |
+| `packages/music-core/src/audio/rhodesVoicing.ts`          | `noteToMidi()` / `midiToNote()` | ≈28–38  | Дубликат pianoVoicing     |
+| `packages/adapters/webmidi-adapter/src/WebMidiAdapter.ts` | `noteToMidi()` / `midiToNote()` | 58–74   | Для MIDI-вывода           |
+| `packages/music-core/src/audio/bassInstrument.ts`         | `NOTE_SEMITONES` (таблица)      | 16–26   | Для генерации басовых нот |
 
 Каждая реализация имеет свой словарь (`NOTE_NAMES`, `SEMITONE`, `NOTE_SEMITONES`) и свою логику конверсии. Это создаёт риск рассинхрона и усложняет рефакторинг.
 
@@ -95,29 +95,29 @@ graph TD
 
 **Граница ответственности:**
 
-| Слой | Представление | Обоснование |
-|------|--------------|-------------|
-| DSL / ChordSymbol | `ChordSymbol` (root + quality + ext + alt) | Аккорд — абстракция, а не набор нот. Сведение `Dm7b5` к `[62,65,68,72]` теряет информацию о *качестве*. |
-| ChordTimeline | `ChordSymbol \| null` | Операции над аккордами, а не нотами |
-| Voicing (pianoVoicing, rhodesVoicing, bass) | `number[]` (MIDI) | Конкретные звуковысотности — естественная точка входа MIDI |
-| InstrumentEventPayload | `number` / `number[]` (MIDI) | Горячий путь — никакой конверсии строк |
-| ScheduledNote | `midiNote: number` (+ `note?: string` для отладки) | Универсальный контракт для всех адаптеров |
-| ToneAudioAdapter | Принимает MIDI, передаёт в Tone.js (поддерживает оба формата) | Без изменений в Tone.js |
-| WebMidiAdapter | Прямая отправка MIDI-байтов (без конверсии) | Убирает `noteToMidi()` на каждом событии |
-| VirtualKeyboard | `number` (MIDI) ✅ | Уже так |
-| SoloInstrument | `number` (MIDI) ✅ | Уже так |
-| midiEval | `number` (MIDI) ✅ | Уже конвертит внутри |
-| Нотный стан (OSMD/VexFlow) | `number` (MIDI) | Обе библиотеки принимают MIDI-номера |
+| Слой                                        | Представление                                                 | Обоснование                                                                                             |
+| ------------------------------------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| DSL / ChordSymbol                           | `ChordSymbol` (root + quality + ext + alt)                    | Аккорд — абстракция, а не набор нот. Сведение `Dm7b5` к `[62,65,68,72]` теряет информацию о _качестве_. |
+| ChordTimeline                               | `ChordSymbol \| null`                                         | Операции над аккордами, а не нотами                                                                     |
+| Voicing (pianoVoicing, rhodesVoicing, bass) | `number[]` (MIDI)                                             | Конкретные звуковысотности — естественная точка входа MIDI                                              |
+| InstrumentEventPayload                      | `number` / `number[]` (MIDI)                                  | Горячий путь — никакой конверсии строк                                                                  |
+| ScheduledNote                               | `midiNote: number` (+ `note?: string` для отладки)            | Универсальный контракт для всех адаптеров                                                               |
+| ToneAudioAdapter                            | Принимает MIDI, передаёт в Tone.js (поддерживает оба формата) | Без изменений в Tone.js                                                                                 |
+| WebMidiAdapter                              | Прямая отправка MIDI-байтов (без конверсии)                   | Убирает `noteToMidi()` на каждом событии                                                                |
+| VirtualKeyboard                             | `number` (MIDI) ✅                                            | Уже так                                                                                                 |
+| SoloInstrument                              | `number` (MIDI) ✅                                            | Уже так                                                                                                 |
+| midiEval                                    | `number` (MIDI) ✅                                            | Уже конвертит внутри                                                                                    |
+| Нотный стан (OSMD/VexFlow)                  | `number` (MIDI)                                               | Обе библиотеки принимают MIDI-номера                                                                    |
 
 ### 2.2. Что НЕ переходит на MIDI
 
-| Артефакт | Почему |
-|----------|--------|
-| `ChordSymbol` | Доменный тип. `{root:"D", quality:"halfDiminished", ext:["7"]}` ≠ `[62,65,68,72]`. Аккорд — это не набор нот, а гармоническая функция. |
-| DSL-парсер (`parseChord`) | Работает со строками по природе. MIDI здесь не применим. |
-| `ChordTimeline` | Оперирует аккордами, а не нотами |
-| `DrumEvent` / `DrumSound` | Не pitched-инструмент. Использует свои идентификаторы (`'ride'`, `'kick'`, etc.) |
-| `ScheduledClick` | Метроном — не pitched |
+| Артефакт                  | Почему                                                                                                                                 |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `ChordSymbol`             | Доменный тип. `{root:"D", quality:"halfDiminished", ext:["7"]}` ≠ `[62,65,68,72]`. Аккорд — это не набор нот, а гармоническая функция. |
+| DSL-парсер (`parseChord`) | Работает со строками по природе. MIDI здесь не применим.                                                                               |
+| `ChordTimeline`           | Оперирует аккордами, а не нотами                                                                                                       |
+| `DrumEvent` / `DrumSound` | Не pitched-инструмент. Использует свои идентификаторы (`'ride'`, `'kick'`, etc.)                                                       |
+| `ScheduledClick`          | Метроном — не pitched                                                                                                                  |
 
 ---
 
@@ -130,11 +130,14 @@ graph TD
 **Риск:** Низкий
 
 **Действия:**
+
 1. Создать `packages/music-core/src/audio/noteConverter.ts`:
+
    ```ts
    export function noteToMidi(note: string): number;
    export function midiToNote(midi: number): string;
    ```
+
    Единая реализация с поддержкой всех нотаций (`C#`, `Db`, двойные октавы).
 
 2. Заменить 6 дубликатов на импорт из `noteConverter.ts`:
@@ -158,18 +161,39 @@ graph TD
 **Действия:**
 
 1. Изменить типы в `instrument.ts`:
+
    ```ts
    // Было:
-   export interface BassEvent { note: string; articulation: BassArticulation; }
-   export interface PianoEvent { notes: string[]; }
-   export interface RhodesEvent { notes: string[]; }
-   export interface GuitarEvent { notes: string[]; strum: GuitarStrum; }
+   export interface BassEvent {
+     note: string;
+     articulation: BassArticulation;
+   }
+   export interface PianoEvent {
+     notes: string[];
+   }
+   export interface RhodesEvent {
+     notes: string[];
+   }
+   export interface GuitarEvent {
+     notes: string[];
+     strum: GuitarStrum;
+   }
 
    // Стало:
-   export interface BassEvent { midiNote: number; articulation: BassArticulation; }
-   export interface PianoEvent { midiNotes: number[]; }
-   export interface RhodesEvent { midiNotes: number[]; }
-   export interface GuitarEvent { midiNotes: number[]; strum: GuitarStrum; }
+   export interface BassEvent {
+     midiNote: number;
+     articulation: BassArticulation;
+   }
+   export interface PianoEvent {
+     midiNotes: number[];
+   }
+   export interface RhodesEvent {
+     midiNotes: number[];
+   }
+   export interface GuitarEvent {
+     midiNotes: number[];
+     strum: GuitarStrum;
+   }
    ```
 
 2. Адаптировать генерацию нот в инструментах:
@@ -193,11 +217,12 @@ graph TD
 **Действия:**
 
 1. Расширить `ScheduledNote` в `ports.ts`:
+
    ```ts
    export interface ScheduledNote {
      time: number;
-     note: string;        // сохраняется для обратной совместимости
-     midiNote?: number;   // новое: каноническое представление
+     note: string; // сохраняется для обратной совместимости
+     midiNote?: number; // новое: каноническое представление
      duration: number;
      velocity: number;
      voice?: string;
@@ -237,6 +262,7 @@ graph TD
 **Описание:** Не менять текущее представление. Строки остаются каноническим форматом.
 
 **Отклонено потому что:**
+
 - Уже есть раздвоение: клавиатура/Solo/MIDI на числах, аккомпанемент на строках
 - Двойная конверсия (voicing → string → MIDI) на горячем пути неоптимальна
 - 6 дубликатов конверсии — техдолг, который будет расти
@@ -246,6 +272,7 @@ graph TD
 **Описание:** Перевести абсолютно всё — и аккорды, и ноты — на MIDI-номера.
 
 **Отклонено потому что:**
+
 - `ChordSymbol` — это **доменная абстракция**. `Dm7b5` ≠ `[62,65,68,72]`. Теряется информация о качестве аккорда, функции, голосоведении.
 - DSL «Dm7b5» — человекочитаемый формат. Замена на `[62,65,68,72]` сделает сетки нечитаемыми.
 - Voicing-алгоритмы (`buildPianoVoicing`) зависят от качества аккорда (major, minor, dominant → разные интервальные формулы). MIDI-номера не несут этой информации.
@@ -256,6 +283,7 @@ graph TD
 **Описание:** Хранить и `note: string`, и `midiNote: number` во всех структурах.
 
 **Отклонено потому что:**
+
 - Раздувает интерфейсы без необходимости
 - Увеличивает риск рассинхрона между полями
 - Усложняет тесты (проверять оба поля)
@@ -297,25 +325,25 @@ graph TD
 
 ## 6. Оценка трудозатрат
 
-| Фаза | Описание | Оценка | Риск | Зависит от |
-|------|----------|--------|------|------------|
-| Ф1 | Унификация конверсии (`noteConverter.ts`) | 4–6 ч | Низкий | — |
-| Ф2 | `InstrumentEventPayload` на MIDI | 16–24 ч | Средний | Ф1 |
-| Ф3 | `ScheduledNote.midiNote` (плавная миграция) | 4–6 ч | Низкий | Ф2 |
-| Ф4 | Нотный стан и хранение | 0 ч (арх. решение) | — | Реализация OSMD |
-| **Итого** | | **24–36 ч** | | |
+| Фаза      | Описание                                    | Оценка             | Риск    | Зависит от      |
+| --------- | ------------------------------------------- | ------------------ | ------- | --------------- |
+| Ф1        | Унификация конверсии (`noteConverter.ts`)   | 4–6 ч              | Низкий  | —               |
+| Ф2        | `InstrumentEventPayload` на MIDI            | 16–24 ч            | Средний | Ф1              |
+| Ф3        | `ScheduledNote.midiNote` (плавная миграция) | 4–6 ч              | Низкий  | Ф2              |
+| Ф4        | Нотный стан и хранение                      | 0 ч (арх. решение) | —       | Реализация OSMD |
+| **Итого** |                                             | **24–36 ч**        |         |                 |
 
 ---
 
 ## 7. Метрики успеха
 
-| Метрика | Было | Стало |
-|---------|------|-------|
-| Дубликатов `noteToMidi` | 6 | 1 |
-| Конверсий string→MIDI на пути `scheduleNote()` в WebMidiAdapter | 1 на каждую ноту | 0 |
-| Конверсий string→MIDI на пути voicing→EventSink | 2 (voicing→string + string→MIDI) | 1 (voicing→MIDI) |
-| Форматов представления нот в системе | 2 (string + MIDI, в разных слоях) | 1 (MIDI — канонический, string — отладочный) |
+| Метрика                                                         | Было                              | Стало                                        |
+| --------------------------------------------------------------- | --------------------------------- | -------------------------------------------- |
+| Дубликатов `noteToMidi`                                         | 6                                 | 1                                            |
+| Конверсий string→MIDI на пути `scheduleNote()` в WebMidiAdapter | 1 на каждую ноту                  | 0                                            |
+| Конверсий string→MIDI на пути voicing→EventSink                 | 2 (voicing→string + string→MIDI)  | 1 (voicing→MIDI)                             |
+| Форматов представления нот в системе                            | 2 (string + MIDI, в разных слоях) | 1 (MIDI — канонический, string — отладочный) |
 
 ---
 
-*ADR принят 2026-06-19. Реализация — согласно плану миграции (4 фазы), начиная с Ф1 (Quick Win: унификация конверсии).*
+_ADR принят 2026-06-19. Реализация — согласно плану миграции (4 фазы), начиная с Ф1 (Quick Win: унификация конверсии)._

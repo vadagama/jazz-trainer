@@ -21,13 +21,13 @@
 
 ## 2. Принципы проектирования
 
-| Принцип | Реализация |
-| --- | --- |
-| **Повторение модели гамм** | Тот же `ExerciseConfig`, те же источники, те же утилиты. Разница только в генераторе и UI-шаге. |
-| **Домен в `music-core`** | Расчёт нот оборота — чистая теория, переиспользуемая в `theory.approach-notes` и будущей MIDI-оценке. |
-| **Слабая связанность** | Плагин не модифицирует `music-core` кроме добавления нового модуля; не трогает другие плагины. |
-| **Расширяемость** | Добавление нового типа опевания = одна строка в `ENclosureType` + одна ветка в `resolveEnclosure`. |
-| **Co-location** | Весь новый UI — в `practice-cards`; весь новый домен — в `music-core/src/chords/`. |
+| Принцип                    | Реализация                                                                                            |
+| -------------------------- | ----------------------------------------------------------------------------------------------------- |
+| **Повторение модели гамм** | Тот же `ExerciseConfig`, те же источники, те же утилиты. Разница только в генераторе и UI-шаге.       |
+| **Домен в `music-core`**   | Расчёт нот оборота — чистая теория, переиспользуемая в `theory.approach-notes` и будущей MIDI-оценке. |
+| **Слабая связанность**     | Плагин не модифицирует `music-core` кроме добавления нового модуля; не трогает другие плагины.        |
+| **Расширяемость**          | Добавление нового типа опевания = одна строка в `ENclosureType` + одна ветка в `resolveEnclosure`.    |
+| **Co-location**            | Весь новый UI — в `practice-cards`; весь новый домен — в `music-core/src/chords/`.                    |
 
 ---
 
@@ -151,10 +151,7 @@ export interface EnclosureExerciseConfig extends BaseExerciseConfig {
   octaves: 1 | 2;
 }
 
-export type ExerciseConfig =
-  | ChordExerciseConfig
-  | ScaleExerciseConfig
-  | EnclosureExerciseConfig;
+export type ExerciseConfig = ChordExerciseConfig | ScaleExerciseConfig | EnclosureExerciseConfig;
 ```
 
 ### 5.3. Такт практики
@@ -188,20 +185,22 @@ export interface ExerciseSession {
 practiceCards: z.object({
   // ... существующие поля ...
   lastExerciseType: z.enum(['chords', 'scales', 'embellishments']).optional(),
-  lastEnclosureType: z.enum([
-    'diatonic-upper',
-    'diatonic-lower',
-    'chromatic-upper',
-    'chromatic-lower',
-    'full-diatonic',
-    'full-chromatic',
-    'all',
-  ]).optional(),
-  lastEnclosureDegrees: z.array(
-    z.union([z.literal(1), z.literal(3), z.literal(5), z.literal(7)]),
-  ).optional(),
+  lastEnclosureType: z
+    .enum([
+      'diatonic-upper',
+      'diatonic-lower',
+      'chromatic-upper',
+      'chromatic-lower',
+      'full-diatonic',
+      'full-chromatic',
+      'all',
+    ])
+    .optional(),
+  lastEnclosureDegrees: z
+    .array(z.union([z.literal(1), z.literal(3), z.literal(5), z.literal(7)]))
+    .optional(),
   lastEnclosureOctaves: z.union([z.literal(1), z.literal(2)]).optional(),
-}).optional()
+}).optional();
 ```
 
 ---
@@ -294,14 +293,24 @@ export function generateEnclosureExercise(
 
 ```ts
 export function generateEnclosureExercise(config, rng) {
-  const { source, enclosureType, targetDegrees, keys, repetitions, infinite, playRandomly, octaves } = config;
+  const {
+    source,
+    enclosureType,
+    targetDegrees,
+    keys,
+    repetitions,
+    infinite,
+    playRandomly,
+    octaves,
+  } = config;
   const barsPerChord = config.barsPerChord ?? 1;
 
   if (keys.length === 0 || targetDegrees.length === 0) return [];
 
-  const concreteType = enclosureType === 'all'
-    ? () => randomEnclosureType(rng)
-    : () => enclosureType as ConcreteEnclosureType;
+  const concreteType =
+    enclosureType === 'all'
+      ? () => randomEnclosureType(rng)
+      : () => enclosureType as ConcreteEnclosureType;
 
   if (source.type === 'unified') {
     const units = buildUnifiedUnits(keys, targetDegrees, octaves, concreteType, rng);
@@ -477,12 +486,12 @@ packages/shared/src/dto.ts     # + lastEnclosure* fields
 
 ## 10. Интеграция с существующими пакетами
 
-| Пакет | Что использует practice-cards | Статус |
-| --- | --- | --- |
+| Пакет              | Что использует practice-cards                                                                                                                                                                                  | Статус    |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
 | `@jazz/music-core` | `resolveEnclosure`, `randomEnclosureType`, `buildTonicChord`, `chordDegreeToScale`, `getChordQualitySuffix`, `keyToPitchClass`, `spellPitchClass`, `parseChord`, `generate`, `parseDegreeGrid`, `listPatterns` | 🟢 Готово |
-| `@jazz/plugin-sdk` | `usePluginTransport`, `usePlaybackStore`, `useSettings`, `useUpdateSettings` | 🟢 Готово |
-| `@jazz/ui` | `Select`, `Checkbox`, `Card*`, `SourceCard`, `KeysCard`, и т.д. | 🟢 Готово |
-| `@jazz/shared` | `Key`, `UserSettingsDTO`, `ChordSymbol` | 🟢 Готово |
+| `@jazz/plugin-sdk` | `usePluginTransport`, `usePlaybackStore`, `useSettings`, `useUpdateSettings`                                                                                                                                   | 🟢 Готово |
+| `@jazz/ui`         | `Select`, `Checkbox`, `Card*`, `SourceCard`, `KeysCard`, и т.д.                                                                                                                                                | 🟢 Готово |
+| `@jazz/shared`     | `Key`, `UserSettingsDTO`, `ChordSymbol`                                                                                                                                                                        | 🟢 Готово |
 
 **Ни один существующий пакет не требует ломающих изменений.**
 
@@ -503,9 +512,9 @@ function chordDegreeToPitchClass(symbol: string, degree: TargetDegree, key: Key)
   // Ступени относительно корня в полутонах
   const DEGREE_OFFSETS: Record<TargetDegree, number> = {
     1: 0,
-    3: quality.includes('min') ? 3 : 4,   // m/m7 → minor 3rd
+    3: quality.includes('min') ? 3 : 4, // m/m7 → minor 3rd
     5: 7,
-    7: quality === 'major' ? 11 : 10,      // maj7 → major 7th, else dominant/minor 7th
+    7: quality === 'major' ? 11 : 10, // maj7 → major 7th, else dominant/minor 7th
   };
 
   return (rootPc + DEGREE_OFFSETS[degree]) % 12;
@@ -518,26 +527,26 @@ function chordDegreeToPitchClass(symbol: string, degree: TargetDegree, key: Key)
 
 ## 12. Тестирование
 
-| Уровень | Что тестируем | Модуль | Инструмент |
-| --- | --- | --- | --- |
-| Юнит | `resolveEnclosure` для всех типов и тональностей | `music-core/src/chords/enclosures.test.ts` | Vitest |
-| Юнит | `generateEnclosureExercise`: unified, over-chords, random, all | `practice-cards/src/generators/enclosureExercise.test.ts` | Vitest |
-| Компонентный | `CardDisplay` рендерит enclosure-ноты | `practice-cards/src/components/__tests__/CardDisplay.test.tsx` | Vitest + RTL |
-| Компонентный | `StepTypeSelect` активна плитка | `practice-cards/src/components/__tests__/StepTypeSelect.test.tsx` | Vitest + RTL |
-| Интеграционный | Wizard → EnclosureConfig → Preview | `practice-cards/src/components/__tests__/ExerciseWizard.test.tsx` | Vitest + RTL |
-| Контракт | `UserSettingsDTO` принимает новые поля | `packages/shared/src/dto.ts` | Zod + Vitest |
+| Уровень        | Что тестируем                                                  | Модуль                                                            | Инструмент   |
+| -------------- | -------------------------------------------------------------- | ----------------------------------------------------------------- | ------------ |
+| Юнит           | `resolveEnclosure` для всех типов и тональностей               | `music-core/src/chords/enclosures.test.ts`                        | Vitest       |
+| Юнит           | `generateEnclosureExercise`: unified, over-chords, random, all | `practice-cards/src/generators/enclosureExercise.test.ts`         | Vitest       |
+| Компонентный   | `CardDisplay` рендерит enclosure-ноты                          | `practice-cards/src/components/__tests__/CardDisplay.test.tsx`    | Vitest + RTL |
+| Компонентный   | `StepTypeSelect` активна плитка                                | `practice-cards/src/components/__tests__/StepTypeSelect.test.tsx` | Vitest + RTL |
+| Интеграционный | Wizard → EnclosureConfig → Preview                             | `practice-cards/src/components/__tests__/ExerciseWizard.test.tsx` | Vitest + RTL |
+| Контракт       | `UserSettingsDTO` принимает новые поля                         | `packages/shared/src/dto.ts`                                      | Zod + Vitest |
 
 ---
 
 ## 13. Ограничения и компромиссы
 
-| Ограничение | Обоснование |
-| --- | --- |
-| Только ступени `1, 3, 5, 7` | `parseChord` не возвращает chord tones; вычисление `9/11/13` требует доработки парсера. |
-| Один тип оборота на такт | Упрощает генератор и карточку; смешанные комбинации — P2. |
-| В режиме `over-chords` одна случайная ступень на аккорд | Соответствует модели гамм; систематическая отработка всех ступеней под прогрессией — P1. |
-| Регистр нот не отображается | В карточке показываются имена pitch class; октавная привязка — для будущей клавиатурной визуализации. |
-| `enclosures.ts` в `music-core`, а не в плагине | Переиспользование в лекции и MIDI-оценке; avoids миграцию. |
+| Ограничение                                             | Обоснование                                                                                           |
+| ------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Только ступени `1, 3, 5, 7`                             | `parseChord` не возвращает chord tones; вычисление `9/11/13` требует доработки парсера.               |
+| Один тип оборота на такт                                | Упрощает генератор и карточку; смешанные комбинации — P2.                                             |
+| В режиме `over-chords` одна случайная ступень на аккорд | Соответствует модели гамм; систематическая отработка всех ступеней под прогрессией — P1.              |
+| Регистр нот не отображается                             | В карточке показываются имена pitch class; октавная привязка — для будущей клавиатурной визуализации. |
+| `enclosures.ts` в `music-core`, а не в плагине          | Переиспользование в лекции и MIDI-оценке; avoids миграцию.                                            |
 
 ---
 

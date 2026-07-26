@@ -18,15 +18,15 @@
 
 По итогам валидации трёх инструментов обнаружено, что «плагинность» фиктивна:
 
-| # | Находка | Файл |
-|---|---|---|
-| F1 | `contributes.instruments` агрегируется, но **поле `AggregatedContributions.instruments` не читает никто** — мёртвый контракт | `plugin-host/src/aggregator.ts` |
-| F2 | Shell **импортирует конкретные плагины напрямую** и выбирает кит хардкод-тернарником | `apps/web/src/hooks/useTransport.ts`, `useDrumPreview.ts` |
-| F3 | `percussion` **не плагин**: манифест, sampleRegistry и движок целиком в `music-core` — асимметрия с китами | `music-core/src/audio/percussion*` |
-| F4a | `manifest.createInstrument()` **никогда не вызывается** для барабанов/перкуссии (shell делает `new DrumInstrument()` напрямую) | `useTransport.ts:540` |
-| F4b | `manifest.perStyleDefaults` и `resolveInstrumentDefaults()` **используются только в тестах** — пер-стилевые дефолты дублируются в `styleProfile.ts` | `instrumentManifest.ts`, `styleProfile.ts` |
-| F5 | Хелпер `rr4` **скопирован** в оба кита (плагины не могут импортировать друг друга) | оба `sampleRegistry.ts` |
-| F7 | Тесты асимметричны: у `jazz` есть `manifest.test.ts`, у `funk` — нет | — |
+| #   | Находка                                                                                                                                             | Файл                                                      |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| F1  | `contributes.instruments` агрегируется, но **поле `AggregatedContributions.instruments` не читает никто** — мёртвый контракт                        | `plugin-host/src/aggregator.ts`                           |
+| F2  | Shell **импортирует конкретные плагины напрямую** и выбирает кит хардкод-тернарником                                                                | `apps/web/src/hooks/useTransport.ts`, `useDrumPreview.ts` |
+| F3  | `percussion` **не плагин**: манифест, sampleRegistry и движок целиком в `music-core` — асимметрия с китами                                          | `music-core/src/audio/percussion*`                        |
+| F4a | `manifest.createInstrument()` **никогда не вызывается** для барабанов/перкуссии (shell делает `new DrumInstrument()` напрямую)                      | `useTransport.ts:540`                                     |
+| F4b | `manifest.perStyleDefaults` и `resolveInstrumentDefaults()` **используются только в тестах** — пер-стилевые дефолты дублируются в `styleProfile.ts` | `instrumentManifest.ts`, `styleProfile.ts`                |
+| F5  | Хелпер `rr4` **скопирован** в оба кита (плагины не могут импортировать друг друга)                                                                  | оба `sampleRegistry.ts`                                   |
+| F7  | Тесты асимметричны: у `jazz` есть `manifest.test.ts`, у `funk` — нет                                                                                | —                                                         |
 
 Корень: **оболочка знает инструменты поимённо**, вместо того чтобы получать их
 из реестра вкладов. Добавление нового кита требует правки shell.
@@ -74,18 +74,20 @@ packages/plugins/instruments/<name>/
 
 ```ts
 interface InstrumentContribution {
-  manifest: InstrumentManifest;          // из @jazz/music-core
+  manifest: InstrumentManifest; // из @jazz/music-core
   articulationMap?: Record<string, string>; // abstract sound → concrete sample key
 }
 ```
 
 **Что остаётся в ядре (`music-core`):**
+
 - классы движков: `DrumInstrument`, `PercussionInstrument`;
 - pattern-инфраструктура (engine, cells, molecules, organisms, types);
 - тип `InstrumentManifest` + `resolveInstrumentDefaults()`;
 - общий хелпер построения RR-раскладки (см. §6, закрывает F5).
 
 **Что живёт в плагине:**
+
 - `InstrumentManifest` конкретного инструмента (данные, не логика);
 - `sampleRegistry` (раскладка файлов) + `articulationMap`;
 - `definePlugin` обёртка и регистрация.
@@ -126,11 +128,11 @@ plugin-registry ──► bootstrap.ts: aggregateContributions()
 
 После унификации (решение 3) источники правды строго разделены:
 
-| Уровень | Где живёт | Что описывает |
-|---|---|---|
-| **Стиль** | `styleProfile.ts` | roster, `defaultVariants` (какой кит активен), tempo, swing, тактовые размеры |
-| **Инструмент × стиль** | `manifest.perStyleDefaults` | пер-стилевые дефолты инструмента (enabled/volume/pattern + гранулярные per-sound) |
-| **Пользователь** | UserSettings DTO (`settings.*`) | ручные оверрайды поверх всего |
+| Уровень                | Где живёт                       | Что описывает                                                                     |
+| ---------------------- | ------------------------------- | --------------------------------------------------------------------------------- |
+| **Стиль**              | `styleProfile.ts`               | roster, `defaultVariants` (какой кит активен), tempo, swing, тактовые размеры     |
+| **Инструмент × стиль** | `manifest.perStyleDefaults`     | пер-стилевые дефолты инструмента (enabled/volume/pattern + гранулярные per-sound) |
+| **Пользователь**       | UserSettings DTO (`settings.*`) | ручные оверрайды поверх всего                                                     |
 
 Разрешение: `styleProfile` выбирает вариант → `resolveInstrumentDefaults(manifest, style)`
 даёт дефолты инструмента → пользовательские `settings.*` накладываются сверху.
@@ -175,8 +177,12 @@ shell и был реальным дублем:
 ```ts
 // music-core/src/audio/sampleManifest.ts
 export function buildVelocityRR(
-  name: string, layers: readonly string[], rrCount = 4,
-): Record<string, string[]> { /* ... */ }
+  name: string,
+  layers: readonly string[],
+  rrCount = 4,
+): Record<string, string[]> {
+  /* ... */
+}
 ```
 
 Оба кита импортируют его из `@jazz/music-core` вместо локальной копии.
@@ -188,6 +194,7 @@ export function buildVelocityRR(
 Gate после каждой фазы: `npm run typecheck && npm run lint && npm run test`.
 
 ### Фаза 1 — Живой реестр (F1, F2, F4a) — без выноса percussion
+
 1. `shell/bootstrap.ts`: экспортировать `instrumentsById: Map<string, InstrumentContribution>`.
 2. `useTransport.ts`, `useDrumPreview.ts`: убрать импорты `@jazz/plugin-*-drum-kit`
    и тернарник `selectDrumKitManifest`; резолвить манифест и `articulationMap`
@@ -196,6 +203,7 @@ Gate после каждой фазы: `npm run typecheck && npm run lint && npm
 4. Fallback: если `drumKit` не найден в реестре → `jazz-drum-kit` (дефолт).
 
 ### Фаза 2 — Percussion как плагин (F3)
+
 5. Создать `packages/plugins/instruments/percussion` (шаблон §3).
 6. Перенести `percussionManifest` + `percussionSampleRegistry` в плагин; движок
    и pattern-слой **оставить** в `music-core`.
@@ -208,6 +216,7 @@ Gate после каждой фазы: `npm run typecheck && npm run lint && npm
 9. Shell резолвит percussion из того же реестра.
 
 ### Фаза 3 — Унификация perStyleDefaults (F4b) — за аудио-гейтом
+
 10. Завести `resolveInstrumentDefaults(manifest, style)` в продакшн (`useTransport`)
     как канонический резолвер per-style дефолтов percussion.
 11. Удалить мёртвый `organismId` из `styleProfile.instrumentDefaults.percussion`
@@ -217,6 +226,7 @@ Gate после каждой фазы: `npm run typecheck && npm run lint && npm
     провабельно эквивалентно; покрыто юнит-тестами манифестов).
 
 ### Фаза 4 — Чистка (F5, F7)
+
 13. Вынести `buildVelocityRR` в ядро, заменить локальные `rr4`.
 14. Добавить `manifest.test.ts` для `funk-drum-kit`.
 
@@ -249,7 +259,10 @@ Gate после каждой фазы: `npm run typecheck && npm run lint && npm
 - **Фаза 3 меняет источник per-style дефолтов** → риск смены звучания. Митигируется
   переносом дефолтов «один в один» и обязательной аудио-проверкой (шаг 12).
 - **Порядок инициализации Tone.js в useTransport** сложный (bespoke setup на
-  каждый инструмент). Реестр меняет только *источник данных*, не порядок setup.
+  каждый инструмент). Реестр меняет только _источник данных_, не порядок setup.
 - **Boundaries**: тесты `music-core` не могут импортировать плагины — тест
   percussion-манифеста обязан переехать в пакет плагина.
+
+```
+
 ```

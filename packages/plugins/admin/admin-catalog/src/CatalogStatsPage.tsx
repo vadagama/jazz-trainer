@@ -23,13 +23,7 @@ function StatCard({
   );
 }
 
-function DistributionBar({
-  label,
-  data,
-}: {
-  label: string;
-  data: Record<string, number>;
-}) {
+function DistributionBar({ label, data }: { label: string; data: Record<string, number> }) {
   const entries = Object.entries(data).sort((a, b) => b[1] - a[1]);
   const max = Math.max(1, ...entries.map(([, v]) => v));
 

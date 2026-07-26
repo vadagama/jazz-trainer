@@ -60,13 +60,13 @@
 
 ```ts
 export type DrumDynamicsType =
-  | 'steady'       // ровно
-  | 'crescendo'    // тише → громче
-  | 'decrescendo'  // громче → тише
-  | 'arch'         // тише → громче → тише (пик в середине)
-  | 'valley'       // громче → тише → громче
-  | 'wave'         // синус по всей длине
-  | 'pulse';       // акцент через такт
+  | 'steady' // ровно
+  | 'crescendo' // тише → громче
+  | 'decrescendo' // громче → тише
+  | 'arch' // тише → громче → тише (пик в середине)
+  | 'valley' // громче → тише → громче
+  | 'wave' // синус по всей длине
+  | 'pulse'; // акцент через такт
 
 export interface DrumDynamics {
   type: DrumDynamicsType;
@@ -79,15 +79,15 @@ export interface WeightedMolecule {
 }
 
 export interface DrumClip {
-  startBar: number;         // 0-based, 0 ≤ startBar < cell.length
-  lengthBars: number;       // ≥ 1, startBar + lengthBars ≤ cell.length
+  startBar: number; // 0-based, 0 ≤ startBar < cell.length
+  lengthBars: number; // ≥ 1, startBar + lengthBars ≤ cell.length
   pool: WeightedMolecule[]; // ≥ 1; взвешенный случайный выбор на КАЖДЫЙ такт спана
 }
 
 export interface DrumLane {
-  name: string;         // роль/метка: 'ride'|'hihat'|'kick'|'snare'|'fill'|'accent'|...
-  probability: number;  // 0..1 — шанс, что лейн звучит в данном такте
-  clips: DrumClip[];    // клипы НЕ пересекаются по тактам
+  name: string; // роль/метка: 'ride'|'hihat'|'kick'|'snare'|'fill'|'accent'|...
+  probability: number; // 0..1 — шанс, что лейн звучит в данном такте
+  clips: DrumClip[]; // клипы НЕ пересекаются по тактам
 }
 
 export interface DrumCell {
@@ -95,14 +95,15 @@ export interface DrumCell {
   style: DrumPatternStyle;
   length: 8 | 16 | 32;
   timeSignature: [4, 4] | [5, 4];
-  velocity: number;     // 0..1 мастер-velocity (масштабирует velocity молекул)
+  velocity: number; // 0..1 мастер-velocity (масштабирует velocity молекул)
   dynamics: DrumDynamics;
   lanes: DrumLane[];
-  weight: number;       // для взвешенного выбора клетки организмом
+  weight: number; // для взвешенного выбора клетки организмом
 }
 ```
 
 Инварианты (валидатор `validateCell` + enforcement в редакторе):
+
 - Клипы внутри лейна не пересекаются по диапазонам `[startBar, startBar+lengthBars)`.
 - `startBar + lengthBars ≤ length` для каждого клипа.
 - Каждый `moleculeId` встречается не более одного раза во всей клетке (по всем лейнам/клипам/пулам).
@@ -164,6 +165,7 @@ pulse:       (bar % 2 == 0) ? 1 : 1 - amount
 ### Migration (сразу, все клетки)
 
 Конвертер `convertLegacyCell(legacy): DrumCell`:
+
 - `velocity` ← `volumeMul` (перенос как музыкальный уровень); `dynamics` ← `{ type: dynamicsType, amount: 0.15 }` (сохранить текущее ощущение).
 - **groove**: каждую молекулу `grooveMoleculePool` кладём в свой лейн (по семье звука), клип `[0,length]`, пул `[{mol, weight: 10}]`. Молекулы `variationMoleculePool` сворачиваем в пул соответствующего лейна с меньшим весом (по тегу/семье), давая вариативность (ответ 3). Что не мэтчится по семье → отдельный лейн `variation` на всю длину с `probability` < 1.
 - **fill**: лейн `fill`, клипы по 1 такту в позициях `fillEveryBars-1, 2*fillEveryBars-1, …`, пул = `fillMoleculePool`, `probability` (напр. 0.6) для «иногда».
@@ -227,15 +229,16 @@ pulse:       (bar % 2 == 0) ? 1 : 1 - amount
 
 ## Visual Artifacts
 
-| Artifact                        | Type       | Path                                            | Preview       | Purpose                                                                 |
-| ------------------------------- | ---------- | ----------------------------------------------- | ------------- | ----------------------------------------------------------------------- |
-| Модель данных v2 (лейны/пулы)   | Mermaid    | `output/files/data-model.mmd`                   | not generated | `DrumCell`→`DrumLane`→`DrumClip`→`WeightedMolecule`, dynamics, организм  |
-| Сборка такта v2                 | Mermaid    | `output/files/assemble-bar-flow.mmd`            | not generated | Детерминированная лейн-сборка: probability + weightedPick + тайлинг      |
-| Редактор-таймлайн v2 (эскиз)    | Excalidraw | `output/files/cell-timeline-editor.excalidraw`  | not generated | UX: лейны с probability, клипы со взвешенными пулами, инспектор velocity |
+| Artifact                      | Type       | Path                                           | Preview       | Purpose                                                                  |
+| ----------------------------- | ---------- | ---------------------------------------------- | ------------- | ------------------------------------------------------------------------ |
+| Модель данных v2 (лейны/пулы) | Mermaid    | `output/files/data-model.mmd`                  | not generated | `DrumCell`→`DrumLane`→`DrumClip`→`WeightedMolecule`, dynamics, организм  |
+| Сборка такта v2               | Mermaid    | `output/files/assemble-bar-flow.mmd`           | not generated | Детерминированная лейн-сборка: probability + weightedPick + тайлинг      |
+| Редактор-таймлайн v2 (эскиз)  | Excalidraw | `output/files/cell-timeline-editor.excalidraw` | not generated | UX: лейны с probability, клипы со взвешенными пулами, инспектор velocity |
 
 ## Changes From Previous Iteration
 
 Итерация переопределяет модель из 001 по ответам пользователя:
+
 - **Добавлено**: `DrumLane` с `probability` (per-lane «иногда»); взвешенный пул `WeightedMolecule[]`
   в клипе (вместо одиночного `moleculeId`); `DrumDynamics { type, amount }` с расширенным набором
   типов (arch/valley/pulse) и настраиваемой глубиной; инварианты (непересечение клипов,

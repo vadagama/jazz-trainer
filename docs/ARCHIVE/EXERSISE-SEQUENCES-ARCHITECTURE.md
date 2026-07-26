@@ -13,6 +13,7 @@
 Ключевое архитектурное решение: **новый доменный модуль `music-core/src/chords/sequences.ts`** — чистая музыкальная теория, вынесенная из плагина для переиспользования (будущая MIDI-оценка, лекции, другие упражнения). Плагин лишь потребляет его функции через генератор `sequenceExercise.ts`.
 
 **Границы изменений:**
+
 - 🟢 Не меняются: `ExerciseRunner`, `usePluginTransport`, `core.ts`, `Step2Shell`, `PracticeCardsPage`.
 - 🟡 Расширяются: `types.ts`, `ExerciseWizard.tsx`, `StepTypeSelect.tsx`, `CardDisplay.tsx`, `degreeFunctions.ts`, `StepPreview.tsx`, `ExerciseComplete.tsx`, `defaults.ts`, `dto.ts`, `chords/index.ts`.
 - 🔴 Новые: `sequences.ts`, `sequenceExercise.ts`, `StepSequenceConfig.tsx` (+ 2 тест-файла).
@@ -21,13 +22,13 @@
 
 ## 2. Принципы проектирования
 
-| Принцип | Применение |
-| --- | --- |
-| **Повторение модели гамм/опеваний** | `SequenceExerciseConfig extends BaseExerciseConfig`; генератор копирует скелет `scaleExercise.ts`/`enclosureExercise.ts`; никаких новых концепций в плагине. |
-| **Слабая связанность** | Доменная логика (расчёт паттернов) живёт в `music-core`, плагин лишь вызывает функции. Генератор не знает про React/транспорт. |
-| **Переиспользование** | `extractChordsFromSource`, `toPracticeBars`, `repeatBars`, `expandBarsPerChord`, `shuffle`, `buildTonicChord`, `resolveChordTonePitchClass`, `scalePitchClasses` — всё берётся готовое. |
-| **Модульность** | Каждый тип упражнения = отдельный генератор + отдельный UI-шаг. Карточка и раннер — generic. |
-| **Co-location** | Тест `sequences.test.ts` рядом с `sequences.ts`; `sequenceExercise.test.ts` рядом с генератором. |
+| Принцип                             | Применение                                                                                                                                                                              |
+| ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Повторение модели гамм/опеваний** | `SequenceExerciseConfig extends BaseExerciseConfig`; генератор копирует скелет `scaleExercise.ts`/`enclosureExercise.ts`; никаких новых концепций в плагине.                            |
+| **Слабая связанность**              | Доменная логика (расчёт паттернов) живёт в `music-core`, плагин лишь вызывает функции. Генератор не знает про React/транспорт.                                                          |
+| **Переиспользование**               | `extractChordsFromSource`, `toPracticeBars`, `repeatBars`, `expandBarsPerChord`, `shuffle`, `buildTonicChord`, `resolveChordTonePitchClass`, `scalePitchClasses` — всё берётся готовое. |
+| **Модульность**                     | Каждый тип упражнения = отдельный генератор + отдельный UI-шаг. Карточка и раннер — generic.                                                                                            |
+| **Co-location**                     | Тест `sequences.test.ts` рядом с `sequences.ts`; `sequenceExercise.test.ts` рядом с генератором.                                                                                        |
 
 ---
 
@@ -119,13 +120,7 @@ sequenceDiagram
 
 ```ts
 /** Тип паттерна секвенции. 'all' означает случайный выбор на каждый такт. */
-export type SequenceType =
-  | '1235'
-  | '1234'
-  | '1357'
-  | '1531'
-  | 'pentatonic'
-  | 'all';
+export type SequenceType = '1235' | '1234' | '1357' | '1531' | 'pentatonic' | 'all';
 
 /** Конкретный тип паттерна (без 'all'). */
 export type ConcreteSequenceType = Exclude<SequenceType, 'all'>;
@@ -242,19 +237,22 @@ export interface ExerciseSession {
 practiceCards: z.object({
   lastExerciseType: z.enum(['chords', 'scales', 'enclosures', 'sequences']).optional(),
   // ...существующие поля...
-  lastSequenceType: z
-    .enum(['1235', '1234', '1357', '1531', 'pentatonic', 'all'])
-    .optional(),
-  lastSequenceStartDegrees: z
-    .array(z.enum(['1', '2', '3', '4', '5', '6', '7']))
-    .optional(),
+  lastSequenceType: z.enum(['1235', '1234', '1357', '1531', 'pentatonic', 'all']).optional(),
+  lastSequenceStartDegrees: z.array(z.enum(['1', '2', '3', '4', '5', '6', '7'])).optional(),
   lastSequenceScaleType: z
     .enum([
-      'major', 'natural-minor', 'harmonic-minor', 'melodic-minor',
-      'dorian', 'mixolydian', 'phrygian', 'lydian', 'locrian',
+      'major',
+      'natural-minor',
+      'harmonic-minor',
+      'melodic-minor',
+      'dorian',
+      'mixolydian',
+      'phrygian',
+      'lydian',
+      'locrian',
     ])
     .optional(),
-})
+});
 ```
 
 ---
@@ -424,6 +422,7 @@ generateSequenceExercise
 ### 8.1. `StepSequenceConfig.tsx`
 
 Копия `StepEnclosureConfig.tsx` с заменами:
+
 - `ENCLOSURE_TYPE_OPTIONS` → `SEQUENCE_TYPE_OPTIONS` (5 паттернов + «Случайная»).
 - `TARGET_DEGREES` → `START_DEGREES` (только 1–7).
 - Карточка «Тип опевания» → «Тип секвенции».
@@ -443,8 +442,12 @@ const SEQUENCE_TYPE_OPTIONS: { value: SequenceType; label: string }[] = [
 ];
 
 const START_DEGREES: { value: TargetDegree; label: string }[] = [
-  { value: 1, label: '1' }, { value: 2, label: '2' }, { value: 3, label: '3' },
-  { value: 4, label: '4' }, { value: 5, label: '5' }, { value: 6, label: '6' },
+  { value: 1, label: '1' },
+  { value: 2, label: '2' },
+  { value: 3, label: '3' },
+  { value: 4, label: '4' },
+  { value: 5, label: '5' },
+  { value: 6, label: '6' },
   { value: 7, label: '7' },
 ];
 ```
@@ -455,18 +458,14 @@ const START_DEGREES: { value: TargetDegree; label: string }[] = [
 
 ```tsx
 if (bar.sequence) {
-  const patternNotes = bar.sequence.notes
-    .filter((n) => n.role === 'pattern')
-    .map((n) => n.name);
+  const patternNotes = bar.sequence.notes.filter((n) => n.role === 'pattern').map((n) => n.name);
   const root = bar.sequence.notes.find((n) => n.role === 'root');
   return (
     <div className="flex flex-col items-center gap-1">
       <span className="text-xl font-semibold text-muted-foreground">
         Ступень {bar.sequence.startDegree}
       </span>
-      {bar.chords[0] && (
-        <span className="text-6xl font-bold text-foreground">{bar.chords[0]}</span>
-      )}
+      {bar.chords[0] && <span className="text-6xl font-bold text-foreground">{bar.chords[0]}</span>}
       <span className="text-3xl font-semibold text-foreground">
         {root && <span className="text-primary">{root.name}</span>}
         {patternNotes.length > 0 && ` ${patternNotes.join(' ')}`}
@@ -525,65 +524,69 @@ packages/
 
 ## 10. Интеграция с существующими пакетами
 
-| Пакет | Что используется | Статус |
-| --- | --- | --- |
-| `music-core` → `SCALE_INTERVALS`, `SCALE_TYPES`, `SCALE_LABELS` | Базовые таблицы ладов | 🟢 Готово |
-| `music-core` → `scalePitchClasses` (из `enclosures.ts`) | Pitch classes лада | 🟢 Готово |
-| `music-core` → `keyToPitchClass`, `spellPitchClass` | Запись нот | 🟢 Готово |
+| Пакет                                                                           | Что используется                    | Статус    |
+| ------------------------------------------------------------------------------- | ----------------------------------- | --------- |
+| `music-core` → `SCALE_INTERVALS`, `SCALE_TYPES`, `SCALE_LABELS`                 | Базовые таблицы ладов               | 🟢 Готово |
+| `music-core` → `scalePitchClasses` (из `enclosures.ts`)                         | Pitch classes лада                  | 🟢 Готово |
+| `music-core` → `keyToPitchClass`, `spellPitchClass`                             | Запись нот                          | 🟢 Готово |
 | `music-core` → `buildTonicChord`, `chordDegreeToScale`, `getChordQualitySuffix` | Тонический аккорд, лады по качеству | 🟢 Готово |
-| `music-core` → `resolveChordTonePitchClass` | Стартовая pc в over-chords | 🟢 Готово |
-| `practice-cards` → `core.ts` хелперы | Конвейер генерации | 🟢 Готово |
-| `shared` → `Key`, `TimeSignatureString` | Типы | 🟢 Готово |
-| `ui` → Card, Select, Checkbox, cn | UI-примитивы | 🟢 Готово |
+| `music-core` → `resolveChordTonePitchClass`                                     | Стартовая pc в over-chords          | 🟢 Готово |
+| `practice-cards` → `core.ts` хелперы                                            | Конвейер генерации                  | 🟢 Готово |
+| `shared` → `Key`, `TimeSignatureString`                                         | Типы                                | 🟢 Готово |
+| `ui` → Card, Select, Checkbox, cn                                               | UI-примитивы                        | 🟢 Готово |
 
 ---
 
 ## 11. Тестирование
 
-| Уровень | Что тестируем | Модуль | Инструмент |
-| --- | --- | --- | --- |
-| Unit (домен) | `resolveSequencePattern` для всех 5 паттернов в C мажоре | `music-core/sequences.test.ts` | vitest |
-| Unit (домен) | `resolveSequencePattern` в миноре/дориане | `music-core/sequences.test.ts` | vitest |
-| Unit (домен) | `buildSequenceCycle` для ступеней 1–5 | `music-core/sequences.test.ts` | vitest |
-| Unit (домен) | `randomSequenceType` покрытие всех типов | `music-core/sequences.test.ts` | vitest |
-| Unit (генератор) | `unified` режим: тонический аккорд + паттерн на каждую ступень | `sequenceExercise.test.ts` | vitest |
-| Unit (генератор) | `over-chords`: стартовая ступень циклически | `sequenceExercise.test.ts` | vitest |
-| Unit (генератор) | `sequenceType === 'all'`: тип меняется случайно | `sequenceExercise.test.ts` | vitest |
-| Unit (генератор) | `playRandomly`: перемешивание и переиндексация | `sequenceExercise.test.ts` | vitest |
-| Unit (генератор) | `direction: 'both'`: вверх + вниз | `sequenceExercise.test.ts` | vitest |
-| Type | Discriminated union корректно сужает тип | `types.ts` | tsc |
+| Уровень          | Что тестируем                                                  | Модуль                         | Инструмент |
+| ---------------- | -------------------------------------------------------------- | ------------------------------ | ---------- |
+| Unit (домен)     | `resolveSequencePattern` для всех 5 паттернов в C мажоре       | `music-core/sequences.test.ts` | vitest     |
+| Unit (домен)     | `resolveSequencePattern` в миноре/дориане                      | `music-core/sequences.test.ts` | vitest     |
+| Unit (домен)     | `buildSequenceCycle` для ступеней 1–5                          | `music-core/sequences.test.ts` | vitest     |
+| Unit (домен)     | `randomSequenceType` покрытие всех типов                       | `music-core/sequences.test.ts` | vitest     |
+| Unit (генератор) | `unified` режим: тонический аккорд + паттерн на каждую ступень | `sequenceExercise.test.ts`     | vitest     |
+| Unit (генератор) | `over-chords`: стартовая ступень циклически                    | `sequenceExercise.test.ts`     | vitest     |
+| Unit (генератор) | `sequenceType === 'all'`: тип меняется случайно                | `sequenceExercise.test.ts`     | vitest     |
+| Unit (генератор) | `playRandomly`: перемешивание и переиндексация                 | `sequenceExercise.test.ts`     | vitest     |
+| Unit (генератор) | `direction: 'both'`: вверх + вниз                              | `sequenceExercise.test.ts`     | vitest     |
+| Type             | Discriminated union корректно сужает тип                       | `types.ts`                     | tsc        |
 
 ---
 
 ## 12. Ограничения и компромиссы
 
-| Компромисс | Обоснование |
-| --- | --- |
-| Пентатоника берётся как подмножество текущего лада `[0,1,2,4,5]`, а не отдельный лад | Упрощает MVP; для мажора/минора звучит корректно. Отдельные пентатонные лады — P2. |
-| Паттерн всегда укладывается в 1 такт | Соответствует гаммам/опеваниям; ритм выбирает пользователь. Звенья > 1 такта — P2. |
-| Стартовая pc для не-диатонической ступени берётся через `resolveChordTonePitchClass` (как в опеваниях) | Переиспользование существующей логики; консистентность между типами упражнений. |
-| Хроматические секвенции не поддерживаются | MVP фокусируется на диатоническом словаре; хроматика — отдельная итерация. |
-| Каскад тернарников в `ExerciseWizard` сохраняется (доп. ветка вместо switch) | Минимум изменений в существующем коде; стиль уже устоялся. |
+| Компромисс                                                                                             | Обоснование                                                                        |
+| ------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------- |
+| Пентатоника берётся как подмножество текущего лада `[0,1,2,4,5]`, а не отдельный лад                   | Упрощает MVP; для мажора/минора звучит корректно. Отдельные пентатонные лады — P2. |
+| Паттерн всегда укладывается в 1 такт                                                                   | Соответствует гаммам/опеваниям; ритм выбирает пользователь. Звенья > 1 такта — P2. |
+| Стартовая pc для не-диатонической ступени берётся через `resolveChordTonePitchClass` (как в опеваниях) | Переиспользование существующей логики; консистентность между типами упражнений.    |
+| Хроматические секвенции не поддерживаются                                                              | MVP фокусируется на диатоническом словаре; хроматика — отдельная итерация.         |
+| Каскад тернарников в `ExerciseWizard` сохраняется (доп. ветка вместо switch)                           | Минимум изменений в существующем коде; стиль уже устоялся.                         |
 
 ---
 
 ## 13. План интеграции (checklist)
 
 ### music-core
+
 - [ ] Создать `packages/music-core/src/chords/sequences.ts` (типы, `SEQUENCE_PATTERNS`, `CONCRETE_SEQUENCE_TYPES`, `randomSequenceType`, `resolveSequencePattern`, `buildSequenceCycle`).
 - [ ] Создать `packages/music-core/src/chords/sequences.test.ts` (все 5 паттернов, минор/дориан, `buildSequenceCycle`, `randomSequenceType`).
 - [ ] Расширить `packages/music-core/src/chords/index.ts` реэкспортом sequences.
 
 ### shared
+
 - [ ] Расширить `packages/shared/src/dto.ts`: `lastExerciseType` += `'sequences'`, добавить `lastSequenceType`, `lastSequenceStartDegrees`, `lastSequenceScaleType`.
 
 ### practice-cards — типы и генератор
+
 - [ ] Расширить `generators/types.ts`: `SequenceExerciseConfig`, `SequenceDirection`, добавить в `ExerciseConfig` union, `PracticeBar.sequence`, `ExerciseSession.type`.
 - [ ] Создать `generators/sequenceExercise.ts` (4 функции по образцу `enclosureExercise.ts`).
 - [ ] Создать `generators/sequenceExercise.test.ts`.
 - [ ] Расширить `src/index.ts` реэкспортом `generateSequenceExercise`.
 
 ### practice-cards — UI
+
 - [ ] Создать `components/StepSequenceConfig.tsx` (копия `StepEnclosureConfig.tsx` с заменами).
 - [ ] Расширить `components/StepTypeSelect.tsx`: убрать `disabled`, заменить иконку, добавить ветку `onClick`.
 - [ ] Расширить `components/ExerciseWizard.tsx` (8 точек: тип, импорты, `buildDefaults`, `buildInitialConfig`, `buildConfig`, `buildPracticeCardsSettings`, `isValidSource`, `handleTypeSelect`, `handlePreview`/`handleQuickStart`, `step2Label`, рендер step 2).
@@ -594,6 +597,7 @@ packages/
 - [ ] Расширить `defaults.ts`: `DEF_SEQUENCE_TYPE`, `DEF_SEQUENCE_START_DEGREES`, `DEF_SEQUENCE_DIRECTION`.
 
 ### Верификация
+
 - [ ] `pnpm typecheck` — зелёный.
 - [ ] `pnpm lint` — зелёный.
 - [ ] `pnpm test` — все тесты зелёные, новые тесты добавлены.

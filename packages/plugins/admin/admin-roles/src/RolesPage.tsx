@@ -23,7 +23,14 @@ const PERMISSION_GROUPS: { label: string; codes: string[] }[] = [
   },
   {
     label: 'Content',
-    codes: ['content:read', 'content:write', 'flags:read', 'flags:write', 'assets:read', 'assets:write'],
+    codes: [
+      'content:read',
+      'content:write',
+      'flags:read',
+      'flags:write',
+      'assets:read',
+      'assets:write',
+    ],
   },
   {
     label: 'Catalog',
@@ -165,7 +172,11 @@ export default function RolesPage() {
             className="max-w-xs"
             onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
           />
-          <Button size="sm" onClick={handleCreate} disabled={!newName.trim() || createMutation.isPending}>
+          <Button
+            size="sm"
+            onClick={handleCreate}
+            disabled={!newName.trim() || createMutation.isPending}
+          >
             <Plus className="h-4 w-4 mr-1" />
             Add
           </Button>
@@ -187,8 +198,7 @@ export default function RolesPage() {
                     </th>
                     {roleList.map((role) => {
                       const isSystem = SYSTEM_ROLE_NAMES.includes(role.name);
-                      const canDeleteRole =
-                        canWrite && !isSystem && role.name !== 'catalog_editor';
+                      const canDeleteRole = canWrite && !isSystem && role.name !== 'catalog_editor';
                       return (
                         <th
                           key={role.id}

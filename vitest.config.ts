@@ -37,8 +37,13 @@ export default defineConfig({
       '@jazz/plugin-admin-content': r('./packages/plugins/admin/admin-content/src/index.ts'),
       '@jazz/plugin-admin-flags': r('./packages/plugins/admin/admin-flags/src/index.ts'),
       '@jazz/plugin-admin-assets': r('./packages/plugins/admin/admin-assets/src/index.ts'),
-      '@jazz/plugin-admin-diagnostics': r('./packages/plugins/admin/admin-diagnostics/src/index.ts'),
+      '@jazz/plugin-admin-diagnostics': r(
+        './packages/plugins/admin/admin-diagnostics/src/index.ts',
+      ),
       '@jazz/plugin-admin-defaults': r('./packages/plugins/admin/admin-defaults/src/index.ts'),
+      '@jazz/plugin-admin-subscriptions': r(
+        './packages/plugins/admin/admin-subscriptions/src/index.ts',
+      ),
       '@jazz/plugin-admin-drum-constructor': r(
         './packages/plugins/admin/admin-drum-constructor/src/index.ts',
       ),
@@ -54,12 +59,8 @@ export default defineConfig({
       '@jazz/plugin-admin-rhodes-constructor': r(
         './packages/plugins/admin/admin-rhodes-constructor/src/index.ts',
       ),
-      '@jazz/plugin-admin-exercises': r(
-        './packages/plugins/admin/admin-exercises/src/index.ts',
-      ),
-      '@jazz/plugin-admin-theory': r(
-        './packages/plugins/admin/admin-theory/src/index.ts',
-      ),
+      '@jazz/plugin-admin-exercises': r('./packages/plugins/admin/admin-exercises/src/index.ts'),
+      '@jazz/plugin-admin-theory': r('./packages/plugins/admin/admin-theory/src/index.ts'),
       '@jazz/plugin-admin-constructor-shared': r(
         './packages/plugins/admin/admin-constructor-shared/src/index.ts',
       ),

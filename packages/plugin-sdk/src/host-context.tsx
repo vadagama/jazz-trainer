@@ -29,7 +29,9 @@ export function PluginProvider({
   children: ReactNode;
 }) {
   return (
-    <HostContext.Provider value={{ useTransport, useDrumPreview, usePercussionPreview, instruments }}>
+    <HostContext.Provider
+      value={{ useTransport, useDrumPreview, usePercussionPreview, instruments }}
+    >
       {children}
     </HostContext.Provider>
   );
