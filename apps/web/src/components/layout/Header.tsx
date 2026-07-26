@@ -46,8 +46,8 @@ export function Header() {
         to="/"
         className="flex items-center gap-3 text-foreground hover:opacity-80 transition-opacity"
       >
-        <Logo className="size-8 shrink-0 text-primary" />
-        <span className="text-2xl font-semibold tracking-tight">Jazz Trainer</span>
+        <Logo className="size-8 shrink-0" />
+        <span className="text-2xl font-semibold tracking-tight">Amazilia</span>
       </Link>
 
       {/* Right: nav + theme toggle + profile */}

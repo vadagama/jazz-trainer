@@ -103,7 +103,7 @@ const I18N = {
     'nav.compare': 'Почему Amazilia',
     'nav.signin': 'Войти',
     'hero.badge': 'В браузере · Бесплатный старт · Без установки',
-    'hero.h1': 'Позволь своей музыке<br /><span class="text-flight">взлететь.</span>',
+    'hero.h1': 'Позволь своей музыке<br /><span class="text-flight">лететь</span>',
     'hero.sub': 'Учись импровизировать с виртуальным ансамблем, который подстраивается под твою гармонию, темп и стиль. С AI-ассистентом.',
     'hero.p1': 'Живой звук',
     'hero.p2': '7 стилей',
@@ -177,7 +177,7 @@ const I18N = {
     'footer.blog': 'Блог',
     'footer.roadmap': 'Роадмап',
     'footer.community': 'Сообщество',
-    'footer.copy': 'Amazilia — Music Improvisation Trainer. Позволь своей музыке взлететь.',
+    'footer.copy': 'Amazilia — Music Improvisation Trainer. Позволь своей музыке лететь.',
   },
 };
 

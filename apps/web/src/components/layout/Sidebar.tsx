@@ -18,6 +18,7 @@ import { useAuth, useLogout } from '@/queries/useAuth';
 import { useTheme } from '@/hooks/useTheme';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
+import { Logo } from './Logo';
 import { contributions } from '@/shell/bootstrap';
 import type { NavItemContribution } from '@jazz/plugin-sdk';
 
@@ -131,8 +132,8 @@ export function Sidebar() {
     <aside className="flex h-screen w-60 shrink-0 flex-col border-r border-border bg-card">
       {/* Logo */}
       <div className="flex h-14 items-center gap-2.5 border-b border-border px-4">
-        <Music4 className="size-5 shrink-0 text-primary" />
-        <span className="font-semibold tracking-tight">Jazz Trainer</span>
+        <Logo className="size-5 shrink-0" />
+        <span className="font-semibold tracking-tight">Amazilia</span>
       </div>
 
       {/* Plugin-contributed navigation by section */}
