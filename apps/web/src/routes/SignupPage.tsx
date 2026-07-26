@@ -1,16 +1,15 @@
 import { useState, useEffect, type FormEvent } from 'react';
 import { useNavigate, useLocation, useSearchParams, Link } from 'react-router-dom';
 import { Music4 } from 'lucide-react';
-import { SendMagicLinkSchema, type MeResponse, type AuthMethodsDTO } from '@jazz/shared';
+import { SendMagicLinkSchema, type AuthMethodsDTO } from '@jazz/shared';
 import { apiClient } from '@/lib/apiClient';
-import { queryClient } from '@/lib/queryClient';
 import { useAuth } from '@/queries/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
 const OAUTH_ERROR_MAP: Record<string, string> = {
-  oauth_denied: 'Authentication was cancelled.',
-  oauth_failed: 'Authentication failed. Please try again.',
+  oauth_denied: 'Registration was cancelled.',
+  oauth_failed: 'Registration failed. Please try again.',
   invalid_state: 'Security check failed. Please try again.',
   invalid_nonce: 'Security check failed. Please try again.',
   no_email: 'No email provided by the provider. Try another method.',
@@ -38,7 +37,7 @@ function GitHubIcon() {
   );
 }
 
-export default function LoginPage() {
+export default function SignupPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
@@ -56,11 +55,6 @@ export default function LoginPage() {
   useEffect(() => {
     apiClient.get<AuthMethodsDTO>('/api/auth/methods').then(setAuthMethods).catch(() => {});
   }, []);
-
-  const [devEmail, setDevEmail] = useState('');
-  const [devName, setDevName] = useState('');
-  const [devError, setDevError] = useState<string | null>(null);
-  const [isDevLoading, setIsDevLoading] = useState(false);
 
   if (!authLoading && user) {
     navigate(returnTo, { replace: true });
@@ -86,41 +80,6 @@ export default function LoginPage() {
     }
   }
 
-  async function handleDevLogin(e: FormEvent) {
-    e.preventDefault();
-    setDevError(null);
-    setIsDevLoading(true);
-    try {
-      const res = await apiClient.post<MeResponse>('/api/auth/dev-login', {
-        email: devEmail,
-        name: devName || undefined,
-      });
-      queryClient.setQueryData(['auth', 'me'], res);
-      navigate(returnTo, { replace: true });
-    } catch (err: unknown) {
-      setDevError(err instanceof Error ? err.message : 'Login failed');
-    } finally {
-      setIsDevLoading(false);
-    }
-  }
-
-  async function handleSuperAdminLogin() {
-    setDevError(null);
-    setIsDevLoading(true);
-    try {
-      const res = await apiClient.post<MeResponse>('/api/auth/dev-login', {
-        email: 'dev@jazz-trainer.local',
-        name: 'Dev User',
-      });
-      queryClient.setQueryData(['auth', 'me'], res);
-      navigate(returnTo, { replace: true });
-    } catch (err: unknown) {
-      setDevError(err instanceof Error ? err.message : 'Login failed');
-    } finally {
-      setIsDevLoading(false);
-    }
-  }
-
   if (authLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
@@ -138,16 +97,16 @@ export default function LoginPage() {
               <Music4 className="size-6 text-primary" />
             </div>
             <div>
-              <h1 className="text-xl font-semibold tracking-tight">Jazz Trainer</h1>
+              <h1 className="text-xl font-semibold tracking-tight">Create your account</h1>
               <p className="mt-1 text-sm text-muted-foreground">
-                Save your compositions, settings, and progress
+                Start your improvisation journey with Amazilia
               </p>
             </div>
           </div>
 
           {oauthError && (
             <div className="mb-4 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-              {OAUTH_ERROR_MAP[oauthError] ?? 'Authentication error. Please try again.'}
+              {OAUTH_ERROR_MAP[oauthError] ?? 'Registration error. Please try again.'}
             </div>
           )}
 
@@ -194,7 +153,7 @@ export default function LoginPage() {
               </div>
               {magicLinkError && <p className="text-sm text-destructive">{magicLinkError}</p>}
               <Button type="submit" className="w-full" disabled={isSending}>
-                {isSending ? 'Sending…' : 'Send sign-in link'}
+                {isSending ? 'Sending…' : 'Create account'}
               </Button>
             </form>
           ) : (
@@ -208,51 +167,12 @@ export default function LoginPage() {
               </button>
             </div>
           )}
-
-          {authMethods?.dev && (
-            <div className="mt-6 space-y-4">
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-border" /></div>
-                <div className="relative flex justify-center">
-                  <span className="bg-card px-3 text-xs uppercase tracking-widest text-muted-foreground">Dev mode</span>
-                </div>
-              </div>
-              <form onSubmit={handleDevLogin} className="space-y-4">
-                <div className="space-y-1.5">
-                  <label htmlFor="dev-email" className="block text-xs font-medium uppercase tracking-widest text-muted-foreground">Email</label>
-                  <Input id="dev-email" type="email" placeholder="dev@example.com" value={devEmail} onChange={(e) => setDevEmail(e.target.value)} className="h-10" />
-                </div>
-                <div className="space-y-1.5">
-                  <label htmlFor="dev-name" className="block text-xs font-medium uppercase tracking-widest text-muted-foreground">Name <span className="font-normal normal-case opacity-60">(optional)</span></label>
-                  <Input id="dev-name" placeholder="Dev User" value={devName} onChange={(e) => setDevName(e.target.value)} className="h-10" />
-                </div>
-                {devError && <p className="text-sm text-destructive">{devError}</p>}
-                <Button type="submit" variant="outline" className="w-full" disabled={isDevLoading}>
-                  {isDevLoading ? 'Signing in…' : 'Dev sign-in'}
-                </Button>
-                <div className="relative mt-2">
-                  <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-border" /></div>
-                  <div className="relative flex justify-center">
-                    <span className="bg-card px-2 text-[10px] uppercase tracking-widest text-muted-foreground">quick</span>
-                  </div>
-                </div>
-                <Button
-                  type="button"
-                  variant="default"
-                  className="w-full"
-                  disabled={isDevLoading}
-                  onClick={handleSuperAdminLogin}
-                >
-                  {isDevLoading ? 'Signing in…' : 'Sign in as super_admin'}
-                </Button>
-              </form>
-            </div>
-          )}
         </div>
+
         <p className="mt-4 text-center text-xs text-muted-foreground">
-          Don’t have an account?{' '}
-          <Link to="/signup" className="font-medium text-primary underline-offset-4 hover:underline">
-            Sign up
+          Already have an account?{' '}
+          <Link to="/login" className="font-medium text-primary underline-offset-4 hover:underline">
+            Sign in
           </Link>
         </p>
       </div>
