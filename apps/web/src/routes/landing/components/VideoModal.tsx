@@ -63,7 +63,7 @@ export function VideoModal({ open, onClose }: { open: boolean; onClose: () => vo
               {t('demoModalSoon')}
             </p>
             <Link
-              to="/"
+              to="/catalog"
               onClick={onClose}
               className="mt-6 inline-flex items-center gap-2 rounded-full px-6 py-3 text-base font-semibold text-white shadow-lg transition-transform hover:scale-[1.03]"
               style={{ background: 'linear-gradient(135deg, var(--amz-cta-from), var(--amz-cta-to))' }}

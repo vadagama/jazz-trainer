@@ -18,7 +18,10 @@ export default definePlugin({
     description: 'Public composition catalog with rich filters, search and featured block.',
   },
   contributes: {
-    routes: [{ path: '/', element: () => import('./CatalogPage') }],
+    routes: [
+      { path: '/', element: () => import('./CatalogRoute') },
+      { path: '/catalog', element: () => import('./CatalogPage') },
+    ],
     navItems: [{ section: 'main', label: 'Каталог', to: '/', icon: 'library' }],
   },
 });
