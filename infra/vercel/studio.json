@@ -10,7 +10,7 @@
       "destination": "https://<api-project>.vercel.app/api/:path*"
     },
     {
-      "source": "/((?!api/).*)",
+      "source": "/((?!api/|.*\\.(png|jpg|jpeg|gif|svg|webp|ico|css|js|woff2?|json|xml|txt)).*)",
       "destination": "/index.html"
     }
   ],
