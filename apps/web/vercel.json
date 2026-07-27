@@ -7,7 +7,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://amazilia-api-olegs-projects-8669fe80.vercel.app/api/:path*"
+      "destination": "https://amazilia-api.vercel.app/api/:path*"
     },
     {
       "source": "/(.*)",
