@@ -108,9 +108,8 @@ export function BrowserFrame({
         <img
           src={src}
           alt={alt}
-          loading="lazy"
           onError={() => setFailed(true)}
-          className="block w-full"
+          className="block w-full aspect-[16/10] object-cover object-top"
         />
       )}
     </div>
