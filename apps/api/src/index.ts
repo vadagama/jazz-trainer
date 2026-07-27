@@ -48,12 +48,12 @@ async function main(): Promise<void> {
       // drizzle-kit may exit non-zero on "nothing to generate" or missing DB; ignore.
     }
   }
-  seedSystemUser(db);
-  seedRbac(db);
-  seedSubscriptionTiers(db);
-  seedDemoCompositions(db);
-  seedDefaultSettings(db);
-  if (config.authDevMode) seedDevUser(db);
+  await seedSystemUser(db);
+  await seedRbac(db);
+  await seedSubscriptionTiers(db);
+  await seedDemoCompositions(db);
+  await seedDefaultSettings(db);
+  if (config.authDevMode) await seedDevUser(db);
 
   const app = await buildServer({ config, db });
 
