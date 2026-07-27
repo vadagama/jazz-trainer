@@ -1,5 +1,6 @@
 import Fastify, { type FastifyInstance, type FastifyError } from 'fastify';
 import cors from '@fastify/cors';
+// eslint-disable-next-line import/default -- @fastify/cookie is CJS without ESM default export
 import cookie from '@fastify/cookie';
 import helmet from '@fastify/helmet';
 import { loadConfig, type ApiConfig } from './config.js';
