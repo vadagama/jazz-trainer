@@ -1,0 +1,12 @@
+{
+  "name": "amazilia-landing",
+  "framework": null,
+  "buildCommand": "cd ../.. && npm install --no-package-lock && npm run build -w @jazz/landing",
+  "outputDirectory": "dist",
+  "devCommand": "cd ../.. && npm run dev -w @jazz/landing",
+  "git": {
+    "deploymentEnabled": {
+      "main": true
+    }
+  }
+}

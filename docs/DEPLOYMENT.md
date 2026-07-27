@@ -148,15 +148,16 @@ vercel env pull .env.local
 
 ### 2.3. Конфигурационные файлы Vercel
 
-#### Лендинг: `vercel.json` (в корне лендинг-проекта)
+#### Лендинг: `vercel.json` (в `apps/landing/`)
+
+Лендинг — отдельный Vite + React проект в монорепо.
 
 ```json
 {
   "framework": null,
-  "buildCommand": "npm run build",
+  "buildCommand": "cd ../.. && npm install --no-package-lock && npm run build -w @jazz/landing",
   "outputDirectory": "dist",
-  "installCommand": "npm ci",
-  "devCommand": "npm run dev",
+  "devCommand": "cd ../.. && npm run dev -w @jazz/landing",
   "git": {
     "deploymentEnabled": {
       "main": true
