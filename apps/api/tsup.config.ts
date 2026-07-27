@@ -7,6 +7,8 @@ export default defineConfig({
   platform: 'node',
   clean: true,
   sourcemap: true,
-  // Bundle the workspace packages (they ship TS source, not compiled JS).
+  // Bundle workspace packages (they ship TS source, not compiled JS).
   noExternal: [/^@jazz\//],
+  // Native modules must stay external.
+  external: ['better-sqlite3', '@libsql/client'],
 });

@@ -22,6 +22,8 @@
     "@fastify/rate-limit": "^11.1.0",
     "@jazz/music-core": "*",
     "@jazz/shared": "*",
+    "@libsql/client": "^0.17.4",
+    "@vercel/fastify": "^0.1.106",
     "better-sqlite3": "^11.9.1",
     "drizzle-orm": "^0.45.2",
     "fastify": "^5.2.0",

@@ -23,6 +23,7 @@
 | Source | Destination |
 |--------|-------------|
 | `/api/:path*` | `https://<api-project>.vercel.app/api/:path*` |
+| `/(.*)` | `/index.html` (SPA fallback, static files served first) |
 
 ## Проект 2: API
 
@@ -31,9 +32,16 @@
 | **Имя** | `amazilia-api` |
 | **Framework** | Other |
 | **Root Directory** | `apps/api` |
-| **Build Command** | `cd ../.. && npm run build -- -w @jazz/api` |
+| **Build Command** | `cd ../.. && npm install --no-package-lock && npm run build -w @jazz/api` |
+| **Output Directory** | `dist` |
 | **Install Command** | `cd ../.. && npm ci` |
 | **Production Branch** | `main` |
+
+### База данных
+
+- **Локально:** SQLite через `better-sqlite3` (синхронный API)
+- **Vercel:** SQLite в `/tmp/jazz-trainer.sqlite` (в рамках serverless-функции)
+- **План:** миграция на Turso (`libsql://`) — требует перевода всех запросов на async (см. DEPLOYMENT.md §5.1)
 
 ### Serverless Function
 

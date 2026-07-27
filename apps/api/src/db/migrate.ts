@@ -43,6 +43,21 @@ export function runMigrations(
   if (sqlite) backfillLegacyIsPublic(sqlite);
 }
 
+/**
+ * Run migrations on a Turso (libsql) database from Vercel serverless.
+ * Uses the libsql migrator — queries are async over HTTP.
+ */
+export async function runTursoMigrations(
+  tursoDb: Awaited<ReturnType<typeof import('./index.js').createTursoDb>>['db'],
+): Promise<void> {
+  const { migrate: migrateLibsql } = await import('drizzle-orm/libsql/migrator');
+  try {
+    await migrateLibsql(tursoDb as unknown as Parameters<typeof migrateLibsql>[0], { migrationsFolder });
+  } catch (err) {
+    console.error('[db] turso migration warning:', (err as Error).message);
+  }
+}
+
 // When executed directly: `npm run db:migrate`
 if (process.argv[1] && import.meta.url.endsWith(process.argv[1].replace(/\\/g, '/'))) {
   const config = loadConfig();
