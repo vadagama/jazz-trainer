@@ -15,7 +15,7 @@ export const builtinCorePlugin = definePlugin({
   },
   contributes: {
     routes: [
-      { path: '/landing', element: () => import('../routes/landing/LandingPage') },
+      { path: '/', element: () => import('../routes/landing/LandingPage') },
       { path: '/login', element: () => import('../routes/LoginPage') },
       { path: '/signup', element: () => import('../routes/SignupPage') },
       { path: '/my', element: () => import('../routes/MyCompositionsPage') },
