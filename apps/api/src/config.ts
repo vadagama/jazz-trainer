@@ -41,6 +41,8 @@ export interface ApiConfig {
   webOrigin: string;
   authDevMode: boolean;
   databaseUrl: string;
+  /** Auth token for Turso (libsql:// URLs). Optional for local SQLite. */
+  databaseAuthToken: string | null;
   sessionSecret: string;
   sessionTtlMs: number;
   sessionMaxAbsoluteTtlMs: number;
@@ -111,7 +113,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ApiConfig {
     port: Number(env.API_PORT ?? 3999),
     webOrigin: env.WEB_ORIGIN ?? 'http://localhost:5173',
     authDevMode: env.AUTH_DEV_MODE === 'true',
-    databaseUrl: env.DATABASE_URL ?? './data/jazz-trainer.sqlite',
+    databaseUrl: env.DATABASE_URL ?? env.TURSO_DATABASE_URL ?? './data/jazz-trainer.sqlite',
+    databaseAuthToken: env.DATABASE_AUTH_TOKEN ?? env.TURSO_AUTH_TOKEN ?? null,
     sessionSecret: env.SESSION_SECRET ?? 'dev-insecure-change-me',
     sessionTtlMs: Number(env.SESSION_TTL_MS ?? ONE_DAY_MS),
     sessionMaxAbsoluteTtlMs: Number(env.SESSION_MAX_ABSOLUTE_TTL_MS ?? SEVEN_DAYS_MS),

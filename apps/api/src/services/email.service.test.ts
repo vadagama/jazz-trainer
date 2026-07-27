@@ -10,6 +10,7 @@ function makeConfig(
     webOrigin: 'http://localhost:5173',
     authDevMode: false,
     databaseUrl: ':memory:',
+    databaseAuthToken: null,
     sessionSecret: 'test',
     sessionTtlMs: 86_400_000,
     sessionMaxAbsoluteTtlMs: 604_800_000,

@@ -43,6 +43,7 @@ const CONFIG_DEFAULTS: ApiConfig = {
   webOrigin: 'http://localhost:5173',
   authDevMode: false,
   databaseUrl: './data/jazz-trainer.sqlite',
+  databaseAuthToken: null,
   sessionSecret: 'dev-insecure-change-me',
   sessionTtlMs: 24 * 60 * 60 * 1000,
   sessionMaxAbsoluteTtlMs: 7 * 24 * 60 * 60 * 1000,
@@ -66,7 +67,7 @@ const CONFIG_DEFAULTS: ApiConfig = {
  */
 export async function buildServer(opts: BuildServerOptions = {}): Promise<FastifyInstance> {
   const config: ApiConfig = { ...CONFIG_DEFAULTS, ...loadConfig(), ...opts.config };
-  const db = opts.db ?? (await createDb(config.databaseUrl)).db;
+  const db = opts.db ?? (await createDb(config.databaseUrl, config.databaseAuthToken ?? undefined)).db;
 
   const app = Fastify({
     // Тесты гоняются с NODE_ENV=test и остаются тихими; в dev/prod пишем через pino.

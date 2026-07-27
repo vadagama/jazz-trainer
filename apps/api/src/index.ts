@@ -32,7 +32,7 @@ async function main(): Promise<void> {
     fs.mkdirSync(path.dirname(path.resolve(config.databaseUrl)), { recursive: true });
   }
 
-  const handle = await createDb(config.databaseUrl);
+  const handle = await createDb(config.databaseUrl, config.databaseAuthToken ?? undefined);
   const { db } = handle;
   await runMigrations(db, handle);
 

@@ -23,11 +23,11 @@ const SYSTEM_USER_ID = 'system';
  * The system user owns the public catalog seed-grids (visibility='public').
  * It cannot log in (provider='system' is rejected by all auth paths).
  */
-export function seedSystemUser(db: DrizzleDb): void {
+export async function seedSystemUser(db: DrizzleDb): Promise<void> {
   const now = Date.now();
-  const existing = db.select().from(users).where(eq(users.id, SYSTEM_USER_ID)).get();
+  const existing = await db.select().from(users).where(eq(users.id, SYSTEM_USER_ID)).get();
   if (!existing) {
-    db.insert(users)
+    await db.insert(users)
       .values({
         id: SYSTEM_USER_ID,
         email: 'system@amazilia.internal',
@@ -49,14 +49,14 @@ export function seedSystemUser(db: DrizzleDb): void {
  * Only called when AUTH_DEV_MODE=true. Used by e2e tests and local dev.
  * Dev user gets super_admin role for full local access.
  */
-export function seedDevUser(db: DrizzleDb): void {
+export async function seedDevUser(db: DrizzleDb): Promise<void> {
   const now = Date.now();
   const email = 'dev@amazilia.local';
-  const existing = db.select().from(users).where(eq(users.email, email)).get();
+  const existing = await db.select().from(users).where(eq(users.email, email)).get();
   if (existing) return;
 
   const id = crypto.randomUUID();
-  db.insert(users)
+  await db.insert(users)
     .values({
       id,
       email,
@@ -72,12 +72,12 @@ export function seedDevUser(db: DrizzleDb): void {
     .run();
 
   // Assign super_admin role via user_roles
-  const existingUr = db.select().from(userRoles).where(eq(userRoles.userId, id)).all();
+  const existingUr = await db.select().from(userRoles).where(eq(userRoles.userId, id)).all();
   if (existingUr.length === 0) {
-    db.insert(userRoles).values({ userId: id, roleId: 'role-super-admin' }).run();
+    await db.insert(userRoles).values({ userId: id, roleId: 'role-super-admin' }).run();
   }
 
-  db.insert(userSettings)
+  await db.insert(userSettings)
     .values({
       userId: id,
       bpm: 120,
@@ -102,9 +102,9 @@ export function seedDevUser(db: DrizzleDb): void {
  * `applyStyleDefaults` from `StyleProfile`. `onConflictDoNothing` keeps admin
  * edits across server restarts.
  */
-export function seedDefaultSettings(db: DrizzleDb): void {
+export async function seedDefaultSettings(db: DrizzleDb): Promise<void> {
   const now = Date.now();
-  db.insert(defaultSettings)
+  await db.insert(defaultSettings)
     .values({ id: 1, createdAt: now, updatedAt: now })
     .onConflictDoNothing()
     .run();
@@ -256,46 +256,46 @@ const SEED_ROLES: SeedRole[] = [
 /**
  * Idempotent: seed RBAC roles and permissions.
  */
-export function seedRbac(db: DrizzleDb): void {
+export async function seedRbac(db: DrizzleDb): Promise<void> {
   const now = Date.now();
 
   // Seed permissions
   for (const code of SEED_PERMISSIONS) {
-    const existing = db
+    const existing = await db
       .select({ id: permissions.id })
       .from(permissions)
       .where(eq(permissions.code, code))
       .get();
     if (existing) continue;
-    db.insert(permissions).values({ id: crypto.randomUUID(), code }).run();
+    await db.insert(permissions).values({ id: crypto.randomUUID(), code }).run();
   }
 
   // Seed roles and role_permissions
   for (const roleDef of SEED_ROLES) {
-    const existingRole = db
+    const existingRole = await db
       .select({ id: roles.id })
       .from(roles)
       .where(eq(roles.id, roleDef.id))
       .get();
     if (!existingRole) {
-      db.insert(roles)
+      await db.insert(roles)
         .values({ id: roleDef.id, name: roleDef.name, createdAt: new Date(now) })
         .run();
     }
 
     for (const permCode of roleDef.permissions) {
-      const allRps = db
+      const allRps = await db
         .select({ permissionCode: rolePermissions.permissionCode })
         .from(rolePermissions)
         .where(eq(rolePermissions.roleId, roleDef.id))
         .all();
       if (allRps.some((rp) => rp.permissionCode === permCode)) continue;
-      db.insert(rolePermissions).values({ roleId: roleDef.id, permissionCode: permCode }).run();
+      await db.insert(rolePermissions).values({ roleId: roleDef.id, permissionCode: permCode }).run();
     }
   }
 
   // Default feature visibility rows depend on roles + permissions just seeded.
-  seedFeatureStates(db);
+  await seedFeatureStates(db);
 }
 
 // ── Feature access defaults ────────────────────────────────────────────────
@@ -311,21 +311,21 @@ export function seedRbac(db: DrizzleDb): void {
  *   seeded roles get just the global rows). Codes and default-active set come
  *   from @jazz/shared — the single source of truth.
  */
-export function seedFeatureStates(db: DrizzleDb): void {
+export async function seedFeatureStates(db: DrizzleDb): Promise<void> {
   for (const code of ALL_FEATURE_CODES) {
     const state: 'active' | 'inactive' = DEFAULT_ACTIVE_FEATURE_CODES.includes(code)
       ? 'active'
       : 'inactive';
-    db.insert(featureAccess).values({ featureCode: code, state }).onConflictDoNothing().run();
+    await db.insert(featureAccess).values({ featureCode: code, state }).onConflictDoNothing().run();
   }
 
-  const roleRows = db.select({ id: roles.id }).from(roles).all();
+  const roleRows = await db.select({ id: roles.id }).from(roles).all();
   for (const role of roleRows) {
     for (const code of ALL_FEATURE_CODES) {
       const state: 'active' | 'inactive' = DEFAULT_ACTIVE_FEATURE_CODES.includes(code)
         ? 'active'
         : 'inactive';
-      db.insert(rolePermissions)
+      await db.insert(rolePermissions)
         .values({ roleId: role.id, permissionCode: code, state })
         .onConflictDoNothing()
         .run();
@@ -722,16 +722,16 @@ const DEMO_COMPOSITIONS: DemoGrid[] = [
 /**
  * Idempotent: seed public demo compositions owned by the system user.
  */
-export function seedDemoCompositions(db: DrizzleDb): void {
+export async function seedDemoCompositions(db: DrizzleDb): Promise<void> {
   const now = Date.now();
   for (const demo of DEMO_COMPOSITIONS) {
-    const existing = db
+    const existing = await db
       .select({ id: harmonyCompositions.id })
       .from(harmonyCompositions)
       .where(eq(harmonyCompositions.id, demo.id))
       .get();
     if (existing) continue;
-    db.insert(harmonyCompositions)
+    await db.insert(harmonyCompositions)
       .values({
         id: demo.id,
         userId: SYSTEM_USER_ID,
@@ -763,15 +763,15 @@ export function seedDemoCompositions(db: DrizzleDb): void {
 /**
  * Idempotent: seed the controlled catalog tag vocabulary (§2.3).
  */
-export function seedCatalogTags(db: DrizzleDb): void {
+export async function seedCatalogTags(db: DrizzleDb): Promise<void> {
   for (const tag of CATALOG_TAGS) {
-    const existing = db
+    const existing = await db
       .select({ id: catalogTags.id })
       .from(catalogTags)
       .where(eq(catalogTags.value, tag.value))
       .get();
     if (existing) continue;
-    db.insert(catalogTags)
+    await db.insert(catalogTags)
       .values({
         id: crypto.randomUUID(),
         value: tag.value,
@@ -793,11 +793,11 @@ if (process.argv[1] && import.meta.url.endsWith(process.argv[1].replace(/\\/g, '
   const handle = await createDb(config.databaseUrl);
   const { db } = handle;
   await runMigrations(db, handle);
-  seedSystemUser(db);
-  seedRbac(db);
-  seedCatalogTags(db);
-  seedDemoCompositions(db);
-  seedDefaultSettings(db);
-  if (config.authDevMode) seedDevUser(db);
+  await seedSystemUser(db);
+  await seedRbac(db);
+  await seedCatalogTags(db);
+  await seedDemoCompositions(db);
+  await seedDefaultSettings(db);
+  if (config.authDevMode) await seedDevUser(db);
   console.log('[db] seed complete');
 }
