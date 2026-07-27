@@ -1,4 +1,3 @@
-import { migrate as migrateBsql } from 'drizzle-orm/better-sqlite3/migrator';
 import { fileURLToPath } from 'node:url';
 import { createDb, type DbHandle, type DrizzleDb } from './index.js';
 import { loadConfig } from '../config.js';
@@ -34,6 +33,7 @@ export async function runMigrations(db: DrizzleDb, handle?: DbHandle): Promise<v
       const { migrate: migrateLibsql } = await import('drizzle-orm/libsql/migrator');
       await migrateLibsql(db as unknown as Parameters<typeof migrateLibsql>[0], { migrationsFolder });
     } else {
+      const { migrate: migrateBsql } = await import('drizzle-orm/better-sqlite3/migrator');
       migrateBsql(db, { migrationsFolder });
     }
   } catch (err) {
