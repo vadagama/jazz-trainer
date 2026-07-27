@@ -1,0 +1,48 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+*.tsbuildinfo
+
+# Test / coverage
+coverage/
+.vitest/
+playwright-report/
+test-results/
+
+# Database
+*.sqlite
+*.sqlite3
+data/
+
+# Large assets (samples are 3GB+)
+apps/web/public/samples/
+
+# Environment
+.env
+.env*.local
+
+# Vercel
+.vercel/
+
+# Editor / OS
+.DS_Store
+.idea/
+
+# Claude Code
+.claude/
+
+# Temp
+tmp/
+
+# Git
+.git/
+
+# Logs
+*.log
+
+# Screenshots
+*.png
+*.jpeg

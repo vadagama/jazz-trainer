@@ -73,34 +73,30 @@
 |--------|---------------|
 | `/assets/(.*)` | `public, max-age=31536000, immutable` |
 
-### 2.3. `amazilia-api` — API-сервер
+### 2.3. `amazilia-api` — API-сервер (Railway)
 
 **Источники:**
-- `apps/api/vercel.json` (рабочий конфиг)
-- `infra/vercel/api.json` (IaC-копия)
+- `Dockerfile.api` (корень монорепо)
+- `.railwayignore` (фильтр загрузки)
+- `infra/railway/README.md` (IaC-документация)
 
 | Параметр | Значение |
 |----------|----------|
-| Framework | Other |
-| Root Directory | `apps/api` |
-| Build Command | `cd ../.. && npm install --no-package-lock && npm run build -w @jazz/api` |
-| Production Branch | `main` |
-
-**Serverless Function:**
-
-| Функция | Memory | Max Duration |
-|---------|--------|-------------|
-| `api/[...path].ts` | 512 MB | 30s |
+| Платформа | Railway |
+| Builder | Docker (`Dockerfile.api`) |
+| Runtime | Node 22 Alpine, Fastify `:3999` |
+| Деплой | GitHub Actions → `railway up` (push в `main`) |
+| База данных | SQLite (`better-sqlite3`, эфемерный диск) |
 
 ### 2.4. Временные домены
 
-До покупки `amazilia.app` используются бесплатные домены Vercel:
+До покупки `amazilia.app` используются бесплатные домены:
 
 | Проект | Домен |
 |--------|-------|
 | Лендинг | `<landing-project>.vercel.app` |
 | Studio | `<studio-project>.vercel.app` |
-| API | `<api-project>.vercel.app` |
+| API | `<project>.up.railway.app` |
 
 ---
 
@@ -127,10 +123,10 @@
 
 ### 3.3. Стратегия деплоя
 
-- **Trunk-based:** единственная ветка `main`, деплой через Vercel Git Integration.
-- Vercel авто-деплоит `main` → Production, PR → Preview Deployments.
-- CI-пайплайн (GitHub Actions) не деплоит — он только проверяет (typecheck, lint, test).
-- Деплой выполняет Vercel после успешного билда.
+- **Trunk-based:** единственная ветка `main`.
+- **Лендинг + Studio:** Vercel Git Integration авто-деплоит `main` → Production, PR → Preview.
+- **API:** GitHub Actions job `deploy-api` → `railway up` (после `verify`), только на push в `main`.
+- CI-пайплайн проверяет (typecheck, lint, test), затем деплоит API через Railway.
 
 ---
 

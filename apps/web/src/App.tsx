@@ -58,7 +58,7 @@ function wrapRoute(r: RouteContribution, child: React.ReactNode): React.ReactNod
 }
 
 /** Маршруты, которые рендерятся внутри AppShell (Header + GridContainer). */
-const APP_SHELL_PATHS = new Set(['/studio', '/my', '/theory', '/settings', '/profile']);
+const APP_SHELL_PATHS = new Set(['/', '/my', '/theory', '/settings', '/profile']);
 
 function isAppShellRoute(path: string): boolean {
   return APP_SHELL_PATHS.has(path) || path.startsWith('/theory/');
@@ -125,6 +125,8 @@ export function App() {
             const element = <LazyRoute key={r.path} importer={r.element} />;
             return <Route key={r.path} path={r.path} element={wrapRoute(r, element)} />;
           })}
+          {/* Backward compatibility: old /studio → / */}
+          <Route path="/studio" element={<Navigate to="/" replace />} />
         </Routes>
       </MidiSoloProvider>
     </PluginProvider>

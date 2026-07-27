@@ -1,8 +1,12 @@
 import { fileURLToPath } from 'node:url';
+import { existsSync } from 'node:fs';
 import { createDb, type DbHandle, type DrizzleDb } from './index.js';
 import { loadConfig } from '../config.js';
 
-const migrationsFolder = fileURLToPath(new URL('../../drizzle', import.meta.url));
+const resolvedMigrationsFolder = fileURLToPath(new URL('../../drizzle', import.meta.url));
+const migrationsFolder =
+  process.env.MIGRATIONS_FOLDER ??
+  (existsSync(resolvedMigrationsFolder) ? resolvedMigrationsFolder : fileURLToPath(new URL('../drizzle', import.meta.url)));
 
 /**
  * One-off backfill for dev databases created before `feature_access` had a

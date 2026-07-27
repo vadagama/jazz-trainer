@@ -56,38 +56,17 @@ graph TD
 
 > **ADR-008 (отменён): Лендинг — статический HTML без JS-фреймворка.** Ранее лендинг был отдельным Vite-проектом (`apps/landing`, vanilla JS). Решение отменено: лендинг реализован как React-роут `/landing` внутри Studio (`apps/web/src/routes/landing/`) — единый деплой, переиспользование UI-примитивов и i18n приложения, общий домен. Отдельный проект `amazilia-landing` удалён.
 
-#### 1.2.1. API на Vercel Serverless
+#### 1.2.1. API на Railway (нативный Fastify)
 
-Текущий `apps/api` — это **stateless REST** на Fastify: 0 WebSocket'ов, 0 cron-задач, 0 in-memory состояния между запросами. Технически совместим с Vercel serverless-функциями через `@fastify/vercel`.
+`apps/api` — **long-lived** Fastify-сервер на Railway: cron-задачи (`setInterval`), in-memory rate-limit, SQLite на диске. В отличие от serverless — нет холодных стартов, нет ограничений на длительность запроса.
 
-> **Бэклог:** если в будущем понадобятся WebSocket'ы (live-джамы, коллаборативная игра), долгие запросы (>60 с) или фоновые задачи — потребуется миграция на long-lived сервер. Но на стадии MVP это не нужно.
+> **Причина выбора Railway вместо Vercel Serverless:** serverless-подход требовал миграции rate-limit на внешний стор (Upstash), переноса cron в Vercel Cron Jobs, и обязательной миграции SQLite → Turso. Railway позволяет оставить текущую архитектуру без изменений.
 
 **Реализация:**
 
-```ts
-// apps/api/api/[...path].ts — одна serverless-функция ловит все /api/* запросы
-import { buildServer } from '../src/server.js';
-import fastifyVercel from '@fastify/vercel';
-
-const app = await buildServer();
-await app.ready();
-export default fastifyVercel(app);
-```
-
-**Что потребуется изменить в коде:**
-
-1. Rate-limit: текущий `rateLimitPlugin` использует in-memory хранилище. Для serverless нужно переключить на `@fastify/rate-limit` с Redis-стором (Upstash) или Turso-счётчиком.
-2. `vercel.json` в `apps/api/` с указанием функции:
-   ```json
-   {
-     "functions": {
-       "api/[...path].ts": {
-         "memory": 512,
-         "maxDuration": 30
-       }
-     }
-   }
-   ```
+- **Dockerfile:** `Dockerfile.api` — двухстадийная сборка (builder + runtime)
+- **CI/CD:** GitHub Actions → `railway up` при push в `main`
+- **Конфигурация:** `.railwayignore`, `infra/railway/README.md`
 
 ### 1.3. Доменная структура
 

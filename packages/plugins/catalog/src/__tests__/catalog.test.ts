@@ -12,10 +12,10 @@ describe('catalog plugin definition', () => {
     );
   });
 
-  it('contributes route for /studio', () => {
+  it('contributes route for / (root catalog)', () => {
     expect(plugin.contributes.routes).toBeDefined();
     expect(plugin.contributes.routes).toHaveLength(1);
-    expect(plugin.contributes.routes![0]!.path).toBe('/studio');
+    expect(plugin.contributes.routes![0]!.path).toBe('/');
     expect(typeof plugin.contributes.routes![0]!.element).toBe('function');
   });
 
@@ -24,7 +24,7 @@ describe('catalog plugin definition', () => {
     expect(plugin.contributes.navItems).toHaveLength(1);
     expect(plugin.contributes.navItems![0]!.section).toBe('main');
     expect(plugin.contributes.navItems![0]!.label).toBe('Каталог');
-    expect(plugin.contributes.navItems![0]!.to).toBe('/studio');
+    expect(plugin.contributes.navItems![0]!.to).toBe('/');
     expect(plugin.contributes.navItems![0]!.icon).toBe('library');
   });
 });

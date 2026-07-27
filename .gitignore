@@ -60,3 +60,4 @@ apps/web/public/samples/_source/
 !apps/web/public/landing/logo.png
 !apps/landing/public/landing/logo.png
 .vercel
+.env*.local
