@@ -306,13 +306,13 @@ function extractSessionMeta(request: import('fastify').FastifyRequest): {
  * Compose the effective permission payload for a user: RBAC permissions with
  * feature codes replaced by the 3-state feature resolution.
  */
-function composeMePayload(db: DrizzleDb, user: UserRecord) {
-  const permSet = resolvePermissions(db, user.id);
+async function composeMePayload(db: DrizzleDb, user: UserRecord) {
+  const permSet = await resolvePermissions(db, user.id);
   for (const code of ALL_FEATURE_CODES) permSet.delete(code);
-  const feature = resolveUserFeatureAccess(db, user);
+  const feature = await resolveUserFeatureAccess(db, user);
   for (const code of feature.active) permSet.add(code);
-  const flags = resolveFlags(db, user.role, user.id);
-  const settings = db
+  const flags = await resolveFlags(db, user.role, user.id);
+  const settings = await db
     .select({ theme: userSettings.theme })
     .from(userSettings)
     .where(eq(userSettings.userId, user.id))
@@ -330,7 +330,7 @@ function composeMePayload(db: DrizzleDb, user: UserRecord) {
  * Link an OAuth provider to an existing user by email.
  * Updates the user's name/avatar and appends the provider to the providers list.
  */
-function linkProviderByEmail(
+async function linkProviderByEmail(
   db: DrizzleDb,
   email: string,
   provider: string,
@@ -338,8 +338,8 @@ function linkProviderByEmail(
   avatarUrl: string | null,
   requestIp?: string,
   userAgent?: string,
-): UserRecord {
-  const existing = db.select().from(users).where(eq(users.email, email)).get();
+): Promise<UserRecord> {
+  const existing = await db.select().from(users).where(eq(users.email, email)).get();
   if (!existing) throw new Error(`User with email ${email} not found`);
 
   let currentProviders: string[] = [];
@@ -361,7 +361,7 @@ function linkProviderByEmail(
     updatedAt: now,
   };
 
-  db.update(users)
+  await db.update(users)
     .set({
       name: updated.name,
       avatarUrl: updated.avatarUrl,
@@ -374,7 +374,7 @@ function linkProviderByEmail(
 
   if (isNewLink) {
     const auditId = crypto.randomUUID();
-    db.insert(auditLog)
+    await db.insert(auditLog)
       .values({
         id: auditId,
         actorUserId: existing.id,
@@ -398,7 +398,7 @@ function linkProviderByEmail(
  * Complete the OAuth login flow: upsert/link user, ensure settings, create session.
  * For super_admin with TOTP enabled, creates a pending-TOTP session.
  */
-function finishOAuthLogin(
+async function finishOAuthLogin(
   db: DrizzleDb,
   config: ApiConfig,
   reply: import('fastify').FastifyReply,
@@ -412,11 +412,11 @@ function finishOAuthLogin(
 ) {
   let user: UserRecord;
   try {
-    user = upsertUser(db, { provider, providerId, email, name, avatarUrl });
+    user = await upsertUser(db, { provider, providerId, email, name, avatarUrl });
   } catch (err) {
     if (isSqliteUniqueError(err)) {
       // Email already exists (e.g., from another provider). Link providers.
-      user = linkProviderByEmail(
+      user = await linkProviderByEmail(
         db,
         email,
         provider,
@@ -429,10 +429,10 @@ function finishOAuthLogin(
       throw err;
     }
   }
-  ensureUserSettings(db, user.id);
+  await ensureUserSettings(db, user.id);
 
-  const needsTotp = user.role === 'super_admin' && isTotpEnabled(db, user.id);
-  const sid = createSession(db, user.id, config.sessionTtlMs, {
+  const needsTotp = user.role === 'super_admin' && (await isTotpEnabled(db, user.id));
+  const sid = await createSession(db, user.id, config.sessionTtlMs, {
     ...meta,
     totpVerified: needsTotp ? 0 : 1,
   });
@@ -440,7 +440,7 @@ function finishOAuthLogin(
 
   // Audit super_admin login
   if (user.role === 'super_admin') {
-    writeAuditLog(db, {
+    await writeAuditLog(db, {
       actorUserId: user.id,
       action: 'auth:super_admin:login',
       targetType: 'user',
@@ -468,13 +468,13 @@ export async function authRoutes(app: FastifyInstance, opts: AuthRoutesOptions):
       // Check for pending TOTP session (totpVerified == 0)
       const sid = request.cookies?.['sid'];
       if (sid) {
-        const pendingSession = db
+        const pendingSession = await db
           .select({ userId: sessions.userId, totpVerified: sessions.totpVerified })
           .from(sessions)
           .where(and(eq(sessions.id, sid), eq(sessions.totpVerified, 0)))
           .get();
         if (pendingSession) {
-          const pendingUser = db.select().from(users).where(eq(users.id, pendingSession.userId)).get();
+          const pendingUser = await db.select().from(users).where(eq(users.id, pendingSession.userId)).get();
           if (pendingUser) {
             return reply.send({
               user: null,
@@ -488,7 +488,7 @@ export async function authRoutes(app: FastifyInstance, opts: AuthRoutesOptions):
           }
         }
       }
-      const pub = resolvePublicFeatureAccess(db);
+      const pub = await resolvePublicFeatureAccess(db);
       return reply.send({
         user: null,
         permissions: [...pub.active],
@@ -497,7 +497,7 @@ export async function authRoutes(app: FastifyInstance, opts: AuthRoutesOptions):
         theme: null,
       });
     }
-    return reply.send(composeMePayload(db, user));
+    return reply.send(await composeMePayload(db, user));
   });
 
   // ── GET /api/auth/methods ─────────────────────────────────────────────
@@ -511,7 +511,7 @@ export async function authRoutes(app: FastifyInstance, opts: AuthRoutesOptions):
   // ── POST /api/auth/logout ──────────────────────────────────────────────
   app.post('/api/auth/logout', async (request, reply) => {
     const sid = request.cookies?.['sid'];
-    if (sid) deleteSession(db, sid);
+    if (sid) await deleteSession(db, sid);
     reply.clearCookie('sid', { path: '/' });
     return {};
   });
@@ -535,7 +535,7 @@ export async function authRoutes(app: FastifyInstance, opts: AuthRoutesOptions):
         const { email, name } = parsed.data;
         let user;
         try {
-          user = upsertUser(db, {
+          user = await upsertUser(db, {
             provider: 'dev',
             providerId: email,
             email,
@@ -550,9 +550,9 @@ export async function authRoutes(app: FastifyInstance, opts: AuthRoutesOptions):
           }
           throw err;
         }
-        ensureUserSettings(db, user.id);
-        const needsTotp = user.role === 'super_admin' && isTotpEnabled(db, user.id);
-        const sid = createSession(db, user.id, config.sessionTtlMs, {
+        await ensureUserSettings(db, user.id);
+        const needsTotp = user.role === 'super_admin' && (await isTotpEnabled(db, user.id));
+        const sid = await createSession(db, user.id, config.sessionTtlMs, {
           ...extractSessionMeta(request),
           totpVerified: needsTotp ? 0 : 1,
         });
@@ -560,7 +560,7 @@ export async function authRoutes(app: FastifyInstance, opts: AuthRoutesOptions):
         if (needsTotp) {
           return { totpRequired: true };
         }
-        return composeMePayload(db, user);
+        return await composeMePayload(db, user);
       },
     );
   }
@@ -646,7 +646,7 @@ export async function authRoutes(app: FastifyInstance, opts: AuthRoutesOptions):
         }
       }
 
-      finishOAuthLogin(
+      await finishOAuthLogin(
         db,
         config,
         reply,
@@ -727,7 +727,7 @@ export async function authRoutes(app: FastifyInstance, opts: AuthRoutesOptions):
         return reply.redirect(`${config.webOrigin}/login?error=no_email`);
       }
 
-      finishOAuthLogin(
+      await finishOAuthLogin(
         db,
         config,
         reply,
@@ -765,7 +765,7 @@ export async function authRoutes(app: FastifyInstance, opts: AuthRoutesOptions):
       const verifyUrl = `${config.webOrigin}/api/auth/magic-link/verify?token=${encodeURIComponent(token)}`;
 
       // Audit: magic link sent
-      withAuditSync(db, request, 'auth:magic_link:sent', 'magic_link', email, {}, () => ({}));
+      await withAuditSync(db, request, 'auth:magic_link:sent', 'magic_link', email, {}, () => ({}));
 
       try {
         await sendMagicLink(config, email, verifyUrl);
@@ -795,25 +795,25 @@ export async function authRoutes(app: FastifyInstance, opts: AuthRoutesOptions):
 
       const email = payload.email;
       const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
-      const verifiedEmail = consumeMagicLink(db, tokenHash);
+      const verifiedEmail = await consumeMagicLink(db, tokenHash);
       if (!verifiedEmail || verifiedEmail !== email) {
         return reply.redirect(`${config.webOrigin}/login?error=expired_token`);
       }
 
-      const user = upsertUserByEmail(db, email, request.ip, request.headers['user-agent']);
-      ensureUserSettings(db, user.id);
+      const user = await upsertUserByEmail(db, email, request.ip, request.headers['user-agent']);
+      await ensureUserSettings(db, user.id);
 
-      const needsTotp = user.role === 'super_admin' && isTotpEnabled(db, user.id);
-      const sid = createSession(db, user.id, config.sessionTtlMs, {
+      const needsTotp = user.role === 'super_admin' && (await isTotpEnabled(db, user.id));
+      const sid = await createSession(db, user.id, config.sessionTtlMs, {
         ...extractSessionMeta(request),
         totpVerified: needsTotp ? 0 : 1,
       });
       reply.setCookie('sid', sid, SESSION_COOKIE);
 
-      withAuditSync(db, request, 'auth:magic_link:verified', 'magic_link', email, {}, () => ({}));
+      await withAuditSync(db, request, 'auth:magic_link:verified', 'magic_link', email, {}, () => ({}));
 
       if (user.role === 'super_admin') {
-        writeAuditLog(db, {
+        await writeAuditLog(db, {
           actorUserId: user.id,
           action: 'auth:super_admin:login',
           targetType: 'user',
@@ -835,7 +835,7 @@ export async function authRoutes(app: FastifyInstance, opts: AuthRoutesOptions):
 
   // ── GET /api/auth/sessions ────────────────────────────────────────────
   app.get('/api/auth/sessions', { preHandler: [requireAuth] }, async (request, reply) => {
-    const allSessions = getUserSessions(db, request.user!.id);
+    const allSessions = await getUserSessions(db, request.user!.id);
     const currentSid = request.cookies?.['sid'] ?? '';
     return reply.send(
       allSessions.map((s) => ({
@@ -854,7 +854,7 @@ export async function authRoutes(app: FastifyInstance, opts: AuthRoutesOptions):
     '/api/auth/sessions/:id',
     { preHandler: [requireAuth] },
     async (request, reply) => {
-      const session = db
+      const session = await db
         .select()
         .from(sessions)
         .where(and(eq(sessions.id, request.params.id), eq(sessions.userId, request.user!.id)))
@@ -865,7 +865,7 @@ export async function authRoutes(app: FastifyInstance, opts: AuthRoutesOptions):
           .send({ error: { code: 'NOT_FOUND', message: 'Session not found' } });
       }
 
-      withAuditSync(
+      await withAuditSync(
         db,
         request,
         AUDIT_ACTIONS.AUTH_SESSION_TERMINATED,
@@ -894,11 +894,11 @@ export async function authRoutes(app: FastifyInstance, opts: AuthRoutesOptions):
     const currentSid = request.cookies?.['sid'] ?? '';
     if (!currentSid) return reply.send({});
 
-    const terminatedSessions = getUserSessions(db, request.user!.id).filter(
+    const terminatedSessions = (await getUserSessions(db, request.user!.id)).filter(
       (s) => s.id !== currentSid,
     );
 
-    withAuditSync(
+    await withAuditSync(
       db,
       request,
       AUDIT_ACTIONS.AUTH_SESSIONS_TERMINATED_ALL,

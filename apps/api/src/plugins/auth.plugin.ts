@@ -49,11 +49,11 @@ export const authPlugin = fp(async function authPlugin(
     const requestFingerprint = ip ? computeFingerprint(ip, userAgent) : undefined;
 
     // Look up session to get metadata (totpVerifiedAt for step-up)
-    const session = opts.db.select().from(sessions).where(eq(sessions.id, sid)).get();
+    const session = await opts.db.select().from(sessions).where(eq(sessions.id, sid)).get();
 
     // Role-based maxAbsoluteTtlMs: super_admin gets shorter TTL
     const superAdminMaxTtl = opts.superAdminMaxAbsoluteTtlMs ?? 15 * 60 * 1000;
-    request.user = getSessionUser(opts.db, sid, {
+    request.user = await getSessionUser(opts.db, sid, {
       sessionTtlMs: opts.sessionTtlMs,
       maxAbsoluteTtlMs: (user) =>
         user.role === 'super_admin' ? superAdminMaxTtl : (opts.maxAbsoluteTtlMs ?? 0),

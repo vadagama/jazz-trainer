@@ -168,9 +168,9 @@ interface UpsertUserInput {
  * Create or update a user by (provider, providerId).
  * On conflict: update email/name/avatarUrl and updatedAt.
  */
-export function upsertUser(db: DrizzleDb, input: UpsertUserInput): UserRecord {
+export async function upsertUser(db: DrizzleDb, input: UpsertUserInput): Promise<UserRecord> {
   const now = Date.now();
-  const existing = db
+  const existing = await db
     .select()
     .from(users)
     .where(and(eq(users.provider, input.provider), eq(users.providerId, input.providerId)))
@@ -239,11 +239,11 @@ export function upsertUser(db: DrizzleDb, input: UpsertUserInput): UserRecord {
  * (first run / failed migration) we fall back to schema-level `.default(...)`.
  * Per-style overrides are copied verbatim so per-style admin tweaks propagate.
  */
-export function ensureUserSettings(db: DrizzleDb, userId: string): void {
-  const existing = db.select().from(userSettings).where(eq(userSettings.userId, userId)).get();
+export async function ensureUserSettings(db: DrizzleDb, userId: string): Promise<void> {
+  const existing = await db.select().from(userSettings).where(eq(userSettings.userId, userId)).get();
   if (existing) return;
   const now = Date.now();
-  const defaults = db.select().from(defaultSettings).where(eq(defaultSettings.id, 1)).get();
+  const defaults = await db.select().from(defaultSettings).where(eq(defaultSettings.id, 1)).get();
   if (defaults) {
     db.insert(userSettings)
       .values({
@@ -374,7 +374,7 @@ export function createSession(
  * 3. Fingerprint matches (if stored on session and requestFingerprint provided)
  * 4. On success: sliding expiration within the absolute TTL window
  */
-export function getSessionUser(
+export async function getSessionUser(
   db: DrizzleDb,
   sessionId: string,
   opts?: {
@@ -382,9 +382,9 @@ export function getSessionUser(
     maxAbsoluteTtlMs?: number | ((user: UserRecord) => number);
     requestFingerprint?: string;
   },
-): UserRecord | null {
+): Promise<UserRecord | null> {
   const now = Date.now();
-  const session = db.select().from(sessions).where(eq(sessions.id, sessionId)).get();
+  const session = await db.select().from(sessions).where(eq(sessions.id, sessionId)).get();
   if (!session || session.expiresAt < now) {
     if (session) db.delete(sessions).where(eq(sessions.id, sessionId)).run();
     return null;
@@ -396,7 +396,7 @@ export function getSessionUser(
   }
 
   // Fetch user before TTL check for role-based maxAbsoluteTtlMs
-  const user = db.select().from(users).where(eq(users.id, session.userId)).get();
+  const user = await db.select().from(users).where(eq(users.id, session.userId)).get();
   if (!user) {
     db.delete(sessions).where(eq(sessions.id, sessionId)).run();
     return null;
@@ -432,16 +432,16 @@ export function getSessionUser(
 }
 
 /** List non-expired sessions for a user. */
-export function getUserSessions(
+export async function getUserSessions(
   db: DrizzleDb,
   userId: string,
-): (typeof sessions.$inferSelect)[] {
+): Promise<(typeof sessions.$inferSelect)[]> {
   const now = Date.now();
-  return db
+  return (await db
     .select()
     .from(sessions)
     .where(eq(sessions.userId, userId))
-    .all()
+    .all())
     .filter((s) => s.expiresAt >= now);
 }
 
@@ -460,13 +460,13 @@ export function deleteSessionsExcept(
  * Find or create a user by email for passwordless (magic_link) authentication.
  * Returns the existing user if found, or creates a new one with provider='magic_link'.
  */
-export function upsertUserByEmail(
+export async function upsertUserByEmail(
   db: DrizzleDb,
   email: string,
   requestIp?: string,
   userAgent?: string,
-): UserRecord {
-  const existing = db.select().from(users).where(eq(users.email, email)).get();
+): Promise<UserRecord> {
+  const existing = await db.select().from(users).where(eq(users.email, email)).get();
   if (existing) {
     // Append magic_link to providers array if not already present
     let currentProviders: string[] = [];
@@ -565,8 +565,8 @@ export function storeMagicLink(
  * Verify and consume a magic link token.
  * Returns the email if valid, or null if expired/used/not found.
  */
-export function consumeMagicLink(db: DrizzleDb, tokenHash: string): string | null {
-  const link = db
+export async function consumeMagicLink(db: DrizzleDb, tokenHash: string): Promise<string | null> {
+  const link = await db
     .select()
     .from(magicLinks)
     .where(and(eq(magicLinks.tokenHash, tokenHash), eq(magicLinks.used, false)))

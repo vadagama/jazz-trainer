@@ -33,7 +33,7 @@ export async function adminFeatureRoleStateRoutes(
     '/admin/feature-role-state',
     { preHandler: [requirePermission('roles:read')] },
     async (_request, reply) => {
-      const rows = db
+      const rows = await db
         .select({
           featureCode: rolePermissions.permissionCode,
           roleName: roles.name,
@@ -64,7 +64,7 @@ export async function adminFeatureRoleStateRoutes(
 
       const { featureCode, roleName, state } = parsed.data;
 
-      const role = db.select().from(roles).where(eq(roles.name, roleName)).get();
+      const role = await db.select().from(roles).where(eq(roles.name, roleName)).get();
       if (!role) {
         return reply.status(404).send({
           error: { code: 'NOT_FOUND', message: `Role '${roleName}' not found` },
@@ -79,9 +79,9 @@ export async function adminFeatureRoleStateRoutes(
       // 'hidden' = absence of a row. Write failures propagate to the Fastify
       // error handler (500) instead of being reported as a successful save.
       if (state === 'hidden') {
-        db.delete(rolePermissions).where(where).run();
+        await db.delete(rolePermissions).where(where).run();
       } else {
-        db.insert(rolePermissions)
+        await db.insert(rolePermissions)
           .values({ roleId: role.id, permissionCode: featureCode, state })
           .onConflictDoUpdate({
             target: [rolePermissions.roleId, rolePermissions.permissionCode],

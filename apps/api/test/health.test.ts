@@ -10,7 +10,7 @@ describe('GET /api/health', () => {
   beforeAll(async () => {
     app = await buildServer({
       config: { port: 0, webOrigin: 'http://localhost:5173', authDevMode: true },
-      db: createTestDb(),
+      db: await createTestDb(),
     });
     await app.ready();
   });

@@ -20,7 +20,7 @@ export async function settingsRoutes(
   // ── GET /api/settings ─────────────────────────────────────────────────────
   fastify.get('/settings', { preHandler: requireAuth }, async (request, reply) => {
     const user = request.user!;
-    const row = db.select().from(userSettings).where(eq(userSettings.userId, user.id)).get();
+    const row = await db.select().from(userSettings).where(eq(userSettings.userId, user.id)).get();
     if (!row) {
       return reply
         .status(404)
@@ -43,7 +43,7 @@ export async function settingsRoutes(
       });
     }
 
-    const existing = db.select().from(userSettings).where(eq(userSettings.userId, user.id)).get();
+    const existing = await db.select().from(userSettings).where(eq(userSettings.userId, user.id)).get();
     if (!existing) {
       return reply
         .status(404)
@@ -228,7 +228,7 @@ export async function settingsRoutes(
     if (data.duckingEnabled !== undefined) patch.duckingEnabled = data.duckingEnabled;
     if (data.theme !== undefined) patch.theme = data.theme;
 
-    db.update(userSettings).set(patch).where(eq(userSettings.userId, user.id)).run();
+    await db.update(userSettings).set(patch).where(eq(userSettings.userId, user.id)).run();
     return reply.send(toSettingsDTO({ ...existing, ...patch }));
   });
 
@@ -243,7 +243,7 @@ export async function settingsRoutes(
       });
     }
 
-    const existing = db.select().from(userSettings).where(eq(userSettings.userId, user.id)).get();
+    const existing = await db.select().from(userSettings).where(eq(userSettings.userId, user.id)).get();
     if (!existing) {
       return reply
         .status(404)
@@ -257,7 +257,7 @@ export async function settingsRoutes(
     delete overrides[style];
 
     const now = Date.now();
-    db.update(userSettings)
+    await db.update(userSettings)
       .set({
         perStyleOverrides: JSON.stringify(overrides),
         updatedAt: now,

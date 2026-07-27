@@ -90,13 +90,13 @@ export function verifyTotpToken(secret: string, token: string): boolean {
 }
 
 /** Setup: store a new TOTP secret for a user (pending enable). */
-export function setupTotp(db: DrizzleDb, userId: string): { secret: string; otpauthUrl: string } {
+export async function setupTotp(db: DrizzleDb, userId: string): Promise<{ secret: string; otpauthUrl: string }> {
   const secret = generateTotpSecret();
-  const user = db.select({ email: users.email }).from(users).where(eq(users.id, userId)).get();
+  const user = await db.select({ email: users.email }).from(users).where(eq(users.id, userId)).get();
   const email = user?.email ?? userId;
   const otpauthUrl = generateTotpUri(secret, email, 'Amazilia');
 
-  const existing = db.select().from(totpSecrets).where(eq(totpSecrets.userId, userId)).get();
+  const existing = await db.select().from(totpSecrets).where(eq(totpSecrets.userId, userId)).get();
   if (existing) {
     db.update(totpSecrets)
       .set({ secret, enabled: false, updatedAt: Date.now() })
@@ -111,8 +111,8 @@ export function setupTotp(db: DrizzleDb, userId: string): { secret: string; otpa
 }
 
 /** Verify TOTP and enable it for the user (first-time setup). */
-export function enableTotp(db: DrizzleDb, userId: string, token: string): boolean {
-  const record = db.select().from(totpSecrets).where(eq(totpSecrets.userId, userId)).get();
+export async function enableTotp(db: DrizzleDb, userId: string, token: string): Promise<boolean> {
+  const record = await db.select().from(totpSecrets).where(eq(totpSecrets.userId, userId)).get();
   if (!record || record.enabled) return false;
   if (!verifyTotpToken(record.secret, token)) return false;
   db.update(totpSecrets)
@@ -123,15 +123,15 @@ export function enableTotp(db: DrizzleDb, userId: string, token: string): boolea
 }
 
 /** Check a TOTP token for an enabled user (login / step-up). */
-export function checkTotp(db: DrizzleDb, userId: string, token: string): boolean {
-  const record = db.select().from(totpSecrets).where(eq(totpSecrets.userId, userId)).get();
+export async function checkTotp(db: DrizzleDb, userId: string, token: string): Promise<boolean> {
+  const record = await db.select().from(totpSecrets).where(eq(totpSecrets.userId, userId)).get();
   if (!record || !record.enabled) return false;
   return verifyTotpToken(record.secret, token);
 }
 
 /** Whether the user has TOTP enabled. */
-export function isTotpEnabled(db: DrizzleDb, userId: string): boolean {
-  const record = db.select().from(totpSecrets).where(eq(totpSecrets.userId, userId)).get();
+export async function isTotpEnabled(db: DrizzleDb, userId: string): Promise<boolean> {
+  const record = await db.select().from(totpSecrets).where(eq(totpSecrets.userId, userId)).get();
   return record?.enabled === true;
 }
 

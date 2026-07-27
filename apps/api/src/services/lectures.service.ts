@@ -12,11 +12,11 @@ function staticLecture(id: string) {
 
 // ── Public listing ──────────────────────────────────────────────────────────
 
-export function getLectures(
+export async function getLectures(
   db: DrizzleDb,
   query: LectureQuery,
   currentUserId?: string,
-): LectureSummaryDTO[] {
+): Promise<LectureSummaryDTO[]> {
   const { q, sort = 'published', type } = query;
 
   let items = [...LECTURES];
@@ -54,7 +54,7 @@ export function getLectures(
   // attach likes
   let likedSet = new Set<string>();
   if (currentUserId) {
-    const rows = db
+    const rows = await db
       .select({ lectureId: lectureLikes.lectureId })
       .from(lectureLikes)
       .where(eq(lectureLikes.userId, currentUserId))
@@ -65,11 +65,11 @@ export function getLectures(
   // count likes per lecture
   const likeCountMap = new Map<string, number>();
   for (const item of items) {
-    const count = db
+    const count = (await db
       .select()
       .from(lectureLikes)
       .where(eq(lectureLikes.lectureId, item.id))
-      .all().length;
+      .all()).length;
     likeCountMap.set(item.id, count);
   }
 
@@ -97,10 +97,10 @@ export function getLectures(
 
 // ── Likes ──────────────────────────────────────────────────────────────────
 
-export function likeLecture(db: DrizzleDb, userId: string, lectureId: string): LikeResponse | null {
+export async function likeLecture(db: DrizzleDb, userId: string, lectureId: string): Promise<LikeResponse | null> {
   if (!staticLecture(lectureId)) return null;
 
-  const existing = db
+  const existing = await db
     .select()
     .from(lectureLikes)
     .where(and(eq(lectureLikes.lectureId, lectureId), eq(lectureLikes.userId, userId)))
@@ -110,23 +110,23 @@ export function likeLecture(db: DrizzleDb, userId: string, lectureId: string): L
     db.insert(lectureLikes).values({ lectureId, userId, createdAt: Date.now() }).run();
   }
 
-  const count = db
+  const count = (await db
     .select()
     .from(lectureLikes)
     .where(eq(lectureLikes.lectureId, lectureId))
-    .all().length;
+    .all()).length;
 
   return { likeCount: count, likedByMe: true };
 }
 
-export function unlikeLecture(
+export async function unlikeLecture(
   db: DrizzleDb,
   userId: string,
   lectureId: string,
-): LikeResponse | null {
+): Promise<LikeResponse | null> {
   if (!staticLecture(lectureId)) return null;
 
-  const existing = db
+  const existing = await db
     .select()
     .from(lectureLikes)
     .where(and(eq(lectureLikes.lectureId, lectureId), eq(lectureLikes.userId, userId)))
@@ -138,11 +138,11 @@ export function unlikeLecture(
       .run();
   }
 
-  const count = db
+  const count = (await db
     .select()
     .from(lectureLikes)
     .where(eq(lectureLikes.lectureId, lectureId))
-    .all().length;
+    .all()).length;
 
   return { likeCount: count, likedByMe: false };
 }

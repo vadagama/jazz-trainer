@@ -135,8 +135,8 @@ export function toDefaultSettingsDTO(s: DefaultSettingsRecord): DefaultSettingsD
  * Callers fall back to schema-level `.default(...)` values via
  * {@link resetDefaultSettings} / the public endpoint.
  */
-export function readDefaultSettings(db: DrizzleDb): DefaultSettingsRecord | null {
-  return db.select().from(defaultSettings).where(eq(defaultSettings.id, 1)).get() ?? null;
+export async function readDefaultSettings(db: DrizzleDb): Promise<DefaultSettingsRecord | null> {
+  return (await db.select().from(defaultSettings).where(eq(defaultSettings.id, 1)).get()) ?? null;
 }
 
 /**
@@ -144,8 +144,8 @@ export function readDefaultSettings(db: DrizzleDb): DefaultSettingsRecord | null
  * returns the hardcoded factory defaults so guests/new users always have a
  * sane starting point (ADMIN-DEFAULT-INSTRUMENT-SETTINGS §4.2 fallback).
  */
-export function getDefaultSettings(db: DrizzleDb): DefaultSettingsDTO {
-  const row = readDefaultSettings(db);
+export async function getDefaultSettings(db: DrizzleDb): Promise<DefaultSettingsDTO> {
+  const row = await readDefaultSettings(db);
   if (!row) return HARDCODED_DEFAULTS;
   return toDefaultSettingsDTO(row);
 }
@@ -156,11 +156,11 @@ export function getDefaultSettings(db: DrizzleDb): DefaultSettingsDTO {
  * instrument fields for the current style are merged into
  * `perStyleOverrides[currentStyle]` so they survive style switches.
  */
-export function upsertDefaultSettings(
+export async function upsertDefaultSettings(
   db: DrizzleDb,
   data: UpdateDefaultSettingsInput,
-): DefaultSettingsDTO {
-  const existing = readDefaultSettings(db);
+): Promise<DefaultSettingsDTO> {
+  const existing = await readDefaultSettings(db);
   const now = Date.now();
 
   // Merge explicit perStyleOverrides first.
@@ -245,7 +245,7 @@ export function upsertDefaultSettings(
       .run();
   }
 
-  const updated = readDefaultSettings(db)!;
+  const updated = (await readDefaultSettings(db))!;
   return toDefaultSettingsDTO(updated);
 }
 
@@ -254,9 +254,9 @@ export function upsertDefaultSettings(
  * SETTINGS §3.5 "Сбросить к заводским"). Per-style values come from
  * StyleProfile at read time, so we only persist a near-empty row.
  */
-export function resetDefaultSettings(db: DrizzleDb): DefaultSettingsDTO {
+export async function resetDefaultSettings(db: DrizzleDb): Promise<DefaultSettingsDTO> {
   const now = Date.now();
-  const existing = readDefaultSettings(db);
+  const existing = await readDefaultSettings(db);
   if (existing) {
     db.update(defaultSettings)
       .set({ updatedAt: now, perStyleOverrides: null })
@@ -267,7 +267,7 @@ export function resetDefaultSettings(db: DrizzleDb): DefaultSettingsDTO {
       .values({ id: 1, createdAt: now, updatedAt: now, perStyleOverrides: null })
       .run();
   }
-  return getDefaultSettings(db);
+  return await getDefaultSettings(db);
 }
 
 // ── Scalars mirrored into perStyleOverrides[currentStyle] ───────────────────

@@ -28,9 +28,9 @@ function emptyResolution(): FeatureAccessResolution {
 }
 
 /** Global feature visibility for anonymous users (the "Public" admin column). */
-export function resolvePublicFeatureAccess(db: DrizzleDb): FeatureAccessResolution {
+export async function resolvePublicFeatureAccess(db: DrizzleDb): Promise<FeatureAccessResolution> {
   const result = emptyResolution();
-  const rows = db.select().from(featureAccess).all();
+  const rows = await db.select().from(featureAccess).all();
   for (const row of rows) {
     if (row.state === 'active') result.active.add(row.featureCode);
     else result.inactive.add(row.featureCode);
@@ -39,16 +39,16 @@ export function resolvePublicFeatureAccess(db: DrizzleDb): FeatureAccessResoluti
 }
 
 /** Full per-user resolution: role states + user overrides + public overlay. */
-export function resolveUserFeatureAccess(
+export async function resolveUserFeatureAccess(
   db: DrizzleDb,
   user: { id: string; role: string | null },
-): FeatureAccessResolution {
+): Promise<FeatureAccessResolution> {
   const result = emptyResolution();
 
   // 1. Role-based states
   const roleNames = new Set<string>();
   if (user.role) roleNames.add(user.role);
-  const urRows = db
+  const urRows = await db
     .select({ roleName: roles.name })
     .from(userRoles)
     .innerJoin(roles, eq(roles.id, userRoles.roleId))
@@ -57,7 +57,7 @@ export function resolveUserFeatureAccess(
   for (const r of urRows) roleNames.add(r.roleName);
 
   if (roleNames.size > 0) {
-    const rows = db
+    const rows = await db
       .select({ code: rolePermissions.permissionCode, state: rolePermissions.state })
       .from(rolePermissions)
       .innerJoin(roles, eq(roles.id, rolePermissions.roleId))
@@ -79,7 +79,7 @@ export function resolveUserFeatureAccess(
   }
 
   // 2. User-specific overrides for feature codes
-  const ups = db
+  const ups = await db
     .select({ code: userPermissions.permissionCode, granted: userPermissions.granted })
     .from(userPermissions)
     .where(eq(userPermissions.userId, user.id))
@@ -96,7 +96,7 @@ export function resolveUserFeatureAccess(
   }
 
   // 3. Public overlay (feature_access applies to everyone)
-  const pub = resolvePublicFeatureAccess(db);
+  const pub = await resolvePublicFeatureAccess(db);
   for (const code of pub.active) {
     result.active.add(code);
     result.inactive.delete(code);

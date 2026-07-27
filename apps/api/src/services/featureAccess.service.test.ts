@@ -35,12 +35,12 @@ function revokeFeature(db: DrizzleDb, userId: string, code: string) {
 describe('featureAccess — resolvePublicFeatureAccess', () => {
   let db: DrizzleDb;
 
-  beforeEach(() => {
-    db = createTestDb();
+  beforeEach(async () => {
+    db = await createTestDb();
   });
 
-  it('returns seeded defaults: 2 active, rest inactive', () => {
-    const pub = resolvePublicFeatureAccess(db);
+  it('returns seeded defaults: 2 active, rest inactive', async () => {
+    const pub = await resolvePublicFeatureAccess(db);
     expect([...pub.active].sort()).toEqual(['exercises:read', 'theory:read']);
     expect(pub.inactive.size).toBe(ALL_FEATURE_CODES.length - 2);
   });
@@ -49,48 +49,48 @@ describe('featureAccess — resolvePublicFeatureAccess', () => {
 describe('featureAccess — resolveUserFeatureAccess', () => {
   let db: DrizzleDb;
 
-  beforeEach(() => {
-    db = createTestDb();
+  beforeEach(async () => {
+    db = await createTestDb();
     seedRbac(db);
   });
 
-  it('regular user: default codes active, other features inactive', () => {
+  it('regular user: default codes active, other features inactive', async () => {
     createUser(db, 'user', 'u1');
-    const res = resolveUserFeatureAccess(db, { id: 'u1', role: 'user' });
+    const res = await resolveUserFeatureAccess(db, { id: 'u1', role: 'user' });
     expect(res.active.has('exercises:read')).toBe(true);
     expect(res.active.has('theory:read')).toBe(true);
     expect(res.active.has('theory:blues')).toBe(false);
     expect(res.inactive.has('theory:blues')).toBe(true);
   });
 
-  it('super_admin: every feature active (plain grants default to active)', () => {
+  it('super_admin: every feature active (plain grants default to active)', async () => {
     createUser(db, 'super_admin', 'sa1');
-    const res = resolveUserFeatureAccess(db, { id: 'sa1', role: 'super_admin' });
+    const res = await resolveUserFeatureAccess(db, { id: 'sa1', role: 'super_admin' });
     for (const code of ALL_FEATURE_CODES) {
       expect(res.active.has(code)).toBe(true);
     }
     expect(res.inactive.size).toBe(0);
   });
 
-  it('user-specific grant activates an inactive feature', () => {
+  it('user-specific grant activates an inactive feature', async () => {
     createUser(db, 'user', 'u2');
     grantFeature(db, 'u2', 'theory:blues');
-    const res = resolveUserFeatureAccess(db, { id: 'u2', role: 'user' });
+    const res = await resolveUserFeatureAccess(db, { id: 'u2', role: 'user' });
     expect(res.active.has('theory:blues')).toBe(true);
     expect(res.inactive.has('theory:blues')).toBe(false);
   });
 
-  it('user-specific revoke removes a role-granted feature from active', () => {
+  it('user-specific revoke removes a role-granted feature from active', async () => {
     createUser(db, 'super_admin', 'sa2');
     revokeFeature(db, 'sa2', 'theory:blues');
-    const res = resolveUserFeatureAccess(db, { id: 'sa2', role: 'super_admin' });
+    const res = await resolveUserFeatureAccess(db, { id: 'sa2', role: 'super_admin' });
     expect(res.active.has('theory:blues')).toBe(false);
   });
 
-  it('non-feature user overrides do not leak into feature resolution', () => {
+  it('non-feature user overrides do not leak into feature resolution', async () => {
     createUser(db, 'user', 'u3');
     grantFeature(db, 'u3', 'catalog:publish');
-    const res = resolveUserFeatureAccess(db, { id: 'u3', role: 'user' });
+    const res = await resolveUserFeatureAccess(db, { id: 'u3', role: 'user' });
     expect(res.active.has('catalog:publish')).toBe(false);
   });
 });

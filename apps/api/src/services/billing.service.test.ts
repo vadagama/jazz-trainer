@@ -81,31 +81,31 @@ describe('Billing — roleNameForTier', () => {
 
 describe('Billing — seedSubscriptionTiers', () => {
   let db: DrizzleDb;
-  beforeEach(() => {
-    db = createTestDb();
+  beforeEach(async () => {
+    db = await createTestDb();
     ensureBillingTables(db);
     seedRbac(db);
   });
-  it('seeds all three tiers', () => {
-    seedSubscriptionTiers(db);
+  it('seeds all three tiers', async () => {
+    await seedSubscriptionTiers(db);
     const tiers = db.select().from(subscriptionTiers).all();
     expect(tiers).toHaveLength(3);
     expect(tiers.map((t) => t.name)).toEqual(expect.arrayContaining(['free', 'pro', 'premium']));
   });
-  it('is idempotent', () => {
-    seedSubscriptionTiers(db);
-    seedSubscriptionTiers(db);
+  it('is idempotent', async () => {
+    await seedSubscriptionTiers(db);
+    await seedSubscriptionTiers(db);
     expect(db.select().from(subscriptionTiers).all()).toHaveLength(3);
   });
 });
 
 describe('Billing — subscription requests', () => {
   let db: DrizzleDb;
-  beforeEach(() => {
-    db = createTestDb();
+  beforeEach(async () => {
+    db = await createTestDb();
     ensureBillingTables(db);
     seedRbac(db);
-    seedSubscriptionTiers(db);
+    await seedSubscriptionTiers(db);
   });
   it('creates a pending request', () => {
     createSubscriptionRequest(db, { email: 'u@t.com', name: 'T', desiredTier: 'pro', message: 'Hi' });
@@ -114,163 +114,164 @@ describe('Billing — subscription requests', () => {
     expect(all[0]!.email).toBe('u@t.com');
     expect(all[0]!.status).toBe('pending');
   });
-  it('rate limit: true for recent request', () => {
+  it('rate limit: true for recent request', async () => {
     createSubscriptionRequest(db, { email: 'a@b.com', desiredTier: 'pro' });
-    expect(isSubscriptionRequestRateLimited(db, 'a@b.com')).toBe(true);
+    expect(await isSubscriptionRequestRateLimited(db, 'a@b.com')).toBe(true);
   });
-  it('rate limit: false for old request', () => {
+  it('rate limit: false for old request', async () => {
     db.insert(subscriptionRequests).values({
       id: crypto.randomUUID(), email: 'a@b.com', name: null,
       desiredTier: 'pro', status: 'pending',
       createdAt: Date.now() - 25 * 60 * 60 * 1000,
     }).run();
-    expect(isSubscriptionRequestRateLimited(db, 'a@b.com')).toBe(false);
+    expect(await isSubscriptionRequestRateLimited(db, 'a@b.com')).toBe(false);
   });
-  it('lists all by default', () => {
+  it('lists all by default', async () => {
     createSubscriptionRequest(db, { email: 'a@b.com', desiredTier: 'pro' });
     createSubscriptionRequest(db, { email: 'c@d.com', desiredTier: 'premium' });
-    expect(listSubscriptionRequests(db)).toHaveLength(2);
+    expect(await listSubscriptionRequests(db)).toHaveLength(2);
   });
-  it('filters by status', () => {
+  it('filters by status', async () => {
     createSubscriptionRequest(db, { email: 'a@b.com', desiredTier: 'pro' });
     db.update(subscriptionRequests).set({ status: 'rejected' }).where(eq(subscriptionRequests.email, 'a@b.com')).run();
-    expect(listSubscriptionRequests(db, 'pending')).toHaveLength(0);
-    expect(listSubscriptionRequests(db, 'rejected')).toHaveLength(1);
+    expect(await listSubscriptionRequests(db, 'pending')).toHaveLength(0);
+    expect(await listSubscriptionRequests(db, 'rejected')).toHaveLength(1);
   });
-  it('getSubscriptionRequest returns by id', () => {
+  it('getSubscriptionRequest returns by id', async () => {
     createSubscriptionRequest(db, { email: 'a@b.com', desiredTier: 'pro' });
     const all = db.select().from(subscriptionRequests).all();
-    expect(getSubscriptionRequest(db, all[0]!.id)!.email).toBe('a@b.com');
+    const req = await getSubscriptionRequest(db, all[0]!.id);
+    expect(req!.email).toBe('a@b.com');
   });
-  it('getSubscriptionRequest returns undefined for unknown', () => {
-    expect(getSubscriptionRequest(db, 'nope')).toBeUndefined();
+  it('getSubscriptionRequest returns undefined for unknown', async () => {
+    expect(await getSubscriptionRequest(db, 'nope')).toBeUndefined();
   });
 });
 
 describe('Billing — subscription lifecycle', () => {
   let db: DrizzleDb;
-  beforeEach(() => {
-    db = createTestDb();
+  beforeEach(async () => {
+    db = await createTestDb();
     ensureBillingTables(db);
     seedRbac(db);
-    seedSubscriptionTiers(db);
+    await seedSubscriptionTiers(db);
     createTestUser(db, 'user-1');
     createTestUser(db, 'admin-1', RBAC_ROLES.ADMIN);
   });
-  it('activates subscription and assigns role', () => {
-    activateSubscription(db, mockRequest('admin-1'), 'user-1', 'pro', 12);
-    const sub = getSubscription(db, 'user-1');
+  it('activates subscription and assigns role', async () => {
+    await activateSubscription(db, mockRequest('admin-1'), 'user-1', 'pro', 12);
+    const sub = await getSubscription(db, 'user-1');
     expect(sub).toBeDefined();
     expect(sub!.status).toBe('active');
   });
-  it('upgrades existing subscription', () => {
-    activateSubscription(db, mockRequest('admin-1'), 'user-1', 'free');
-    activateSubscription(db, mockRequest('admin-1'), 'user-1', 'premium');
-    const sub = getSubscription(db, 'user-1');
+  it('upgrades existing subscription', async () => {
+    await activateSubscription(db, mockRequest('admin-1'), 'user-1', 'free');
+    await activateSubscription(db, mockRequest('admin-1'), 'user-1', 'premium');
+    const sub = await getSubscription(db, 'user-1');
     const tier = db.select().from(subscriptionTiers).where(eq(subscriptionTiers.id, sub!.tierId)).get();
     expect(tier!.name).toBe('premium');
   });
-  it('cancels subscription', () => {
-    activateSubscription(db, mockRequest('admin-1'), 'user-1', 'pro');
-    cancelSubscription(db, mockRequest('admin-1'), 'user-1');
+  it('cancels subscription', async () => {
+    await activateSubscription(db, mockRequest('admin-1'), 'user-1', 'pro');
+    await cancelSubscription(db, mockRequest('admin-1'), 'user-1');
     const sub = db.select().from(subscriptions).where(eq(subscriptions.userId, 'user-1')).get();
     expect(sub!.status).toBe('canceled');
     expect(sub!.canceledAt).toBeDefined();
   });
-  it('cancel throws if no subscription', () => {
-    expect(() => cancelSubscription(db, mockRequest('admin-1'), 'user-1')).toThrow('No active subscription');
+  it('cancel throws if no subscription', async () => {
+    await expect(cancelSubscription(db, mockRequest('admin-1'), 'user-1')).rejects.toThrow('No active subscription');
   });
-  it('setSubscriptionStatus changes to past_due', () => {
-    activateSubscription(db, mockRequest('admin-1'), 'user-1', 'pro');
-    setSubscriptionStatus(db, mockRequest('admin-1'), 'user-1', 'past_due');
+  it('setSubscriptionStatus changes to past_due', async () => {
+    await activateSubscription(db, mockRequest('admin-1'), 'user-1', 'pro');
+    await setSubscriptionStatus(db, mockRequest('admin-1'), 'user-1', 'past_due');
     const sub = db.select().from(subscriptions).where(eq(subscriptions.userId, 'user-1')).get();
     expect(sub!.status).toBe('past_due');
   });
-  it('getSubscriptionWithTier returns tier info', () => {
-    activateSubscription(db, mockRequest('admin-1'), 'user-1', 'pro');
-    const r = getSubscriptionWithTier(db, 'user-1');
+  it('getSubscriptionWithTier returns tier info', async () => {
+    await activateSubscription(db, mockRequest('admin-1'), 'user-1', 'pro');
+    const r = await getSubscriptionWithTier(db, 'user-1');
     expect(r!.tier.name).toBe('pro');
   });
-  it('getUserSubscriptionInfo returns null for non-subscriber', () => {
-    expect(getUserSubscriptionInfo(db, 'user-1')).toBeNull();
+  it('getUserSubscriptionInfo returns null for non-subscriber', async () => {
+    expect(await getUserSubscriptionInfo(db, 'user-1')).toBeNull();
   });
-  it('getUserSubscriptionInfo returns info', () => {
-    activateSubscription(db, mockRequest('admin-1'), 'user-1', 'pro');
-    const info = getUserSubscriptionInfo(db, 'user-1');
+  it('getUserSubscriptionInfo returns info', async () => {
+    await activateSubscription(db, mockRequest('admin-1'), 'user-1', 'pro');
+    const info = await getUserSubscriptionInfo(db, 'user-1');
     expect(info!.tier).toBe('pro');
     expect(info!.isGracePeriod).toBe(false);
   });
-  it('getSubscriptionHistory returns events', () => {
-    activateSubscription(db, mockRequest('admin-1'), 'user-1', 'pro');
-    const h = getSubscriptionHistory(db, 'user-1');
+  it('getSubscriptionHistory returns events', async () => {
+    await activateSubscription(db, mockRequest('admin-1'), 'user-1', 'pro');
+    const h = await getSubscriptionHistory(db, 'user-1');
     expect(h.length).toBeGreaterThanOrEqual(1);
   });
-  it('listSubscriptions returns all', () => {
-    activateSubscription(db, mockRequest('admin-1'), 'user-1', 'pro');
+  it('listSubscriptions returns all', async () => {
+    await activateSubscription(db, mockRequest('admin-1'), 'user-1', 'pro');
     createTestUser(db, 'user-2');
-    activateSubscription(db, mockRequest('admin-1'), 'user-2', 'premium');
-    expect(listSubscriptions(db)).toHaveLength(2);
+    await activateSubscription(db, mockRequest('admin-1'), 'user-2', 'premium');
+    expect(await listSubscriptions(db)).toHaveLength(2);
   });
-  it('listSubscriptions filters by status', () => {
-    activateSubscription(db, mockRequest('admin-1'), 'user-1', 'pro');
-    cancelSubscription(db, mockRequest('admin-1'), 'user-1');
-    expect(listSubscriptions(db, { status: 'active' })).toHaveLength(0);
-    expect(listSubscriptions(db, { status: 'canceled' })).toHaveLength(1);
+  it('listSubscriptions filters by status', async () => {
+    await activateSubscription(db, mockRequest('admin-1'), 'user-1', 'pro');
+    await cancelSubscription(db, mockRequest('admin-1'), 'user-1');
+    expect(await listSubscriptions(db, { status: 'active' })).toHaveLength(0);
+    expect(await listSubscriptions(db, { status: 'canceled' })).toHaveLength(1);
   });
 });
 
 describe('Billing — subscription request approval', () => {
   let db: DrizzleDb;
-  beforeEach(() => {
-    db = createTestDb();
+  beforeEach(async () => {
+    db = await createTestDb();
     ensureBillingTables(db);
     seedRbac(db);
-    seedSubscriptionTiers(db);
+    await seedSubscriptionTiers(db);
     createTestUser(db, 'admin-1', RBAC_ROLES.ADMIN);
     createTestUser(db, 'user-1');
   });
-  it('approves request and activates subscription', () => {
+  it('approves request and activates subscription', async () => {
     createSubscriptionRequest(db, { email: 'new@t.com', desiredTier: 'pro' });
     const req = db.select().from(subscriptionRequests).all()[0]!;
-    approveSubscriptionRequest(db, mockRequest('admin-1'), req.id, 'user-1', 'pro');
-    expect(getSubscriptionRequest(db, req.id)!.status).toBe('approved');
-    expect(getSubscription(db, 'user-1')!.status).toBe('active');
+    await approveSubscriptionRequest(db, mockRequest('admin-1'), req.id, 'user-1', 'pro');
+    expect((await getSubscriptionRequest(db, req.id))!.status).toBe('approved');
+    expect((await getSubscription(db, 'user-1'))!.status).toBe('active');
   });
-  it('rejects request with reason', () => {
+  it('rejects request with reason', async () => {
     createSubscriptionRequest(db, { email: 'x@t.com', desiredTier: 'pro' });
     const req = db.select().from(subscriptionRequests).all()[0]!;
     rejectSubscriptionRequest(db, mockRequest('admin-1'), req.id, 'Nope');
-    const u = getSubscriptionRequest(db, req.id)!;
+    const u = (await getSubscriptionRequest(db, req.id))!;
     expect(u.status).toBe('rejected');
     expect(u.processedComment).toBe('Nope');
   });
-  it('requests info', () => {
+  it('requests info', async () => {
     createSubscriptionRequest(db, { email: 'y@t.com', desiredTier: 'pro' });
     const req = db.select().from(subscriptionRequests).all()[0]!;
     requestInfoSubscriptionRequest(db, mockRequest('admin-1'), req.id, 'More');
-    expect(getSubscriptionRequest(db, req.id)!.status).toBe('needs_info');
+    expect((await getSubscriptionRequest(db, req.id))!.status).toBe('needs_info');
   });
 });
 
 describe('Billing — degradeExpiredSubscriptions', () => {
   let db: DrizzleDb;
-  beforeEach(() => {
-    db = createTestDb();
+  beforeEach(async () => {
+    db = await createTestDb();
     ensureBillingTables(db);
     seedRbac(db);
-    seedSubscriptionTiers(db);
+    await seedSubscriptionTiers(db);
     createTestUser(db, 'user-1');
   });
-  it('keeps future subscription active', () => {
+  it('keeps future subscription active', async () => {
     const future = Date.now() + 30 * 24 * 60 * 60 * 1000;
     db.insert(subscriptions).values({
       id: crypto.randomUUID(), userId: 'user-1', tierId: getTierId(db, 'pro'),
       status: 'active', currentPeriodStart: Date.now(), currentPeriodEnd: future,
       createdAt: Date.now(), updatedAt: Date.now(),
     }).run();
-    expect(degradeExpiredSubscriptions(db, {} as import('../config.js').ApiConfig).degraded).toBe(0);
+    expect((await degradeExpiredSubscriptions(db, {} as import('../config.js').ApiConfig)).degraded).toBe(0);
   });
-  it('enters grace period when ended', () => {
+  it('enters grace period when ended', async () => {
     const past = Date.now() - 1000;
     const id = crypto.randomUUID();
     db.insert(subscriptions).values({
@@ -278,10 +279,10 @@ describe('Billing — degradeExpiredSubscriptions', () => {
       status: 'active', currentPeriodStart: past - 30 * 24 * 60 * 60 * 1000, currentPeriodEnd: past,
       createdAt: Date.now(), updatedAt: Date.now(),
     }).run();
-    expect(degradeExpiredSubscriptions(db, {} as import('../config.js').ApiConfig).notified).toBe(1);
+    expect((await degradeExpiredSubscriptions(db, {} as import('../config.js').ApiConfig)).notified).toBe(1);
     expect(db.select().from(subscriptions).where(eq(subscriptions.id, id)).get()!.gracePeriodEnds).toBeDefined();
   });
-  it('degrades after grace period', () => {
+  it('degrades after grace period', async () => {
     const longPast = Date.now() - 10 * 24 * 60 * 60 * 1000;
     const id = crypto.randomUUID();
     db.insert(subscriptions).values({
@@ -289,7 +290,7 @@ describe('Billing — degradeExpiredSubscriptions', () => {
       status: 'active', currentPeriodStart: longPast - 30 * 24 * 60 * 60 * 1000, currentPeriodEnd: longPast,
       createdAt: Date.now(), updatedAt: Date.now(),
     }).run();
-    expect(degradeExpiredSubscriptions(db, {} as import('../config.js').ApiConfig).degraded).toBe(1);
+    expect((await degradeExpiredSubscriptions(db, {} as import('../config.js').ApiConfig)).degraded).toBe(1);
     expect(db.select().from(subscriptions).where(eq(subscriptions.id, id)).get()!.status).toBe('expired');
   });
 });

@@ -35,7 +35,7 @@ export async function defaultsRoutes(
   // defaults via useEffectiveSettings. Not cached: admin edits must take effect
   // on the next guest reload, so the browser must never serve a stale copy.
   fastify.get('/default-settings', async (_request, reply) => {
-    const dto = getDefaultSettings(db);
+    const dto = await getDefaultSettings(db);
     reply.header('Cache-Control', 'no-store');
     return reply.send(dto satisfies DefaultSettingsDTO);
   });
@@ -45,7 +45,7 @@ export async function defaultsRoutes(
     '/admin/default-settings',
     { preHandler: [requireAuth, requirePermission('system:settings:read')] },
     async (_request, reply) => {
-      const dto = getDefaultSettings(db);
+      const dto = await getDefaultSettings(db);
       return reply.send(dto satisfies DefaultSettingsDTO);
     },
   );
@@ -66,8 +66,8 @@ export async function defaultsRoutes(
         });
       }
 
-      const before = getDefaultSettings(db);
-      const updated = withAuditSync(
+      const before = await getDefaultSettings(db);
+      const updated = await withAuditSync(
         db,
         request,
         'default_settings.update',
@@ -107,8 +107,8 @@ export async function defaultsRoutes(
         });
       }
 
-      const before = getDefaultSettings(db);
-      const updated = withAuditSync(
+      const before = await getDefaultSettings(db);
+      const updated = await withAuditSync(
         db,
         request,
         'default_settings.update',
@@ -126,8 +126,8 @@ export async function defaultsRoutes(
     '/admin/default-settings/reset',
     { preHandler: [requireAuth, requirePermission('system:settings:write')] },
     async (request, reply) => {
-      const before = getDefaultSettings(db);
-      const reset = withAuditSync(
+      const before = await getDefaultSettings(db);
+      const reset = await withAuditSync(
         db,
         request,
         'default_settings.reset',

@@ -8,7 +8,7 @@ import type { DrizzleDb } from '../src/db/index.js';
 async function makeApp(db?: DrizzleDb): Promise<FastifyInstance> {
   return buildServer({
     config: { authDevMode: true, webOrigin: 'http://localhost:5173' },
-    db: db ?? createTestDb(),
+    db: db ?? (await createTestDb()),
   });
 }
 
@@ -298,7 +298,7 @@ describe('permission isolation: user B cannot access user A compositions', () =>
   let compositionId: string;
 
   beforeEach(async () => {
-    const db = createTestDb();
+    const db = await createTestDb();
     app = await makeApp(db);
     await app.ready();
 

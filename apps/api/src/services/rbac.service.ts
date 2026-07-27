@@ -70,8 +70,8 @@ export type RoleName = (typeof RBAC_ROLES)[keyof typeof RBAC_ROLES];
 
 // ── Permission resolution ───────────────────────────────────────────────────
 
-export function resolvePermissions(db: DrizzleDb, userId: string): Set<string> {
-  const u = db
+export async function resolvePermissions(db: DrizzleDb, userId: string): Promise<Set<string>> {
+  const u = await db
     .select({ role: users.role, status: users.status })
     .from(users)
     .where(eq(users.id, userId))
@@ -82,7 +82,7 @@ export function resolvePermissions(db: DrizzleDb, userId: string): Set<string> {
   const effective = new Set<string>();
 
   const roleNames = new Set<string>();
-  const urRows = db
+  const urRows = await db
     .select({ roleName: roles.name })
     .from(userRoles)
     .innerJoin(roles, eq(roles.id, userRoles.roleId))
@@ -92,7 +92,7 @@ export function resolvePermissions(db: DrizzleDb, userId: string): Set<string> {
   if (u.role) roleNames.add(u.role);
 
   for (const roleName of roleNames) {
-    const rps = db
+    const rps = await db
       .select({ code: rolePermissions.permissionCode })
       .from(rolePermissions)
       .innerJoin(roles, eq(roles.id, rolePermissions.roleId))
@@ -101,7 +101,7 @@ export function resolvePermissions(db: DrizzleDb, userId: string): Set<string> {
     for (const rp of rps) effective.add(rp.code);
   }
 
-  const ups = db
+  const ups = await db
     .select({ code: userPermissions.permissionCode, granted: userPermissions.granted })
     .from(userPermissions)
     .where(eq(userPermissions.userId, userId))
@@ -117,8 +117,8 @@ export function resolvePermissions(db: DrizzleDb, userId: string): Set<string> {
 /**
  * Check whether a user has a specific permission.
  */
-export function hasPermission(db: DrizzleDb, userId: string, permission: string): boolean {
-  return resolvePermissions(db, userId).has(permission);
+export async function hasPermission(db: DrizzleDb, userId: string, permission: string): Promise<boolean> {
+  return (await resolvePermissions(db, userId)).has(permission);
 }
 
 // ── Feature flag resolution ──────────────────────────────────────────────────
@@ -151,12 +151,12 @@ function cyrb53(str: string, seed = 0): number {
  *  3. `rolloutPercent` set → deterministic bucket hash (roles/userIds ignored)
  *  4. otherwise → role OR userId match (no filters = available to everyone)
  */
-export function resolveFlags(
+export async function resolveFlags(
   db: DrizzleDb,
   userRole: string,
   userId: string,
-): Record<string, boolean> {
-  const flags = db.select().from(featureFlags).all();
+): Promise<Record<string, boolean>> {
+  const flags = await db.select().from(featureFlags).all();
   const result: Record<string, boolean> = {};
   const now = Date.now();
 

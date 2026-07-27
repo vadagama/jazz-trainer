@@ -88,8 +88,8 @@ function emptyContent(): CompositionContent {
 
 // ── User's own compositions (CRUD) ────────────────────────────────────────
 
-export function getUserCompositions(db: DrizzleDb, userId: string): HarmonyCompositionSummaryDTO[] {
-  const rows = db
+export async function getUserCompositions(db: DrizzleDb, userId: string): Promise<HarmonyCompositionSummaryDTO[]> {
+  const rows = await db
     .select()
     .from(harmonyCompositions)
     .where(
@@ -100,12 +100,12 @@ export function getUserCompositions(db: DrizzleDb, userId: string): HarmonyCompo
   return rows.map(toSummaryDTO);
 }
 
-export function getOwnComposition(
+export async function getOwnComposition(
   db: DrizzleDb,
   userId: string,
   compositionId: string,
-): HarmonyCompositionDTO | null {
-  const row = db
+): Promise<HarmonyCompositionDTO | null> {
+  const row = await db
     .select()
     .from(harmonyCompositions)
     .where(and(eq(harmonyCompositions.id, compositionId), eq(harmonyCompositions.userId, userId)))
@@ -149,13 +149,13 @@ export function createComposition(
   return toDTO(row);
 }
 
-export function updateComposition(
+export async function updateComposition(
   db: DrizzleDb,
   userId: string,
   compositionId: string,
   input: UpdateCompositionInput,
-): HarmonyCompositionDTO | null {
-  const existing = db
+): Promise<HarmonyCompositionDTO | null> {
+  const existing = await db
     .select()
     .from(harmonyCompositions)
     .where(and(eq(harmonyCompositions.id, compositionId), eq(harmonyCompositions.userId, userId)))
@@ -189,12 +189,12 @@ function applyCompositionPatch(
 }
 
 /** Update a public composition without ownership check (moderator fallback). */
-export function updateCompositionAsModerator(
+export async function updateCompositionAsModerator(
   db: DrizzleDb,
   compositionId: string,
   input: UpdateCompositionInput,
-): HarmonyCompositionDTO | null {
-  const existing = db
+): Promise<HarmonyCompositionDTO | null> {
+  const existing = await db
     .select()
     .from(harmonyCompositions)
     .where(eq(harmonyCompositions.id, compositionId))
@@ -203,8 +203,8 @@ export function updateCompositionAsModerator(
   return applyCompositionPatch(db, existing, input);
 }
 
-export function deleteComposition(db: DrizzleDb, userId: string, compositionId: string): boolean {
-  const existing = db
+export async function deleteComposition(db: DrizzleDb, userId: string, compositionId: string): Promise<boolean> {
+  const existing = await db
     .select()
     .from(harmonyCompositions)
     .where(and(eq(harmonyCompositions.id, compositionId), eq(harmonyCompositions.userId, userId)))
@@ -216,14 +216,14 @@ export function deleteComposition(db: DrizzleDb, userId: string, compositionId: 
 
 // ── Copy ──────────────────────────────────────────────────────────────────
 
-export function copyComposition(
+export async function copyComposition(
   db: DrizzleDb,
   userId: string,
   sourceId: string,
   newName?: string,
-): HarmonyCompositionDTO | null {
+): Promise<HarmonyCompositionDTO | null> {
   // source can be own private OR any public composition
-  const source = db
+  const source = await db
     .select()
     .from(harmonyCompositions)
     .where(
@@ -272,12 +272,12 @@ export function copyComposition(
 
 // ── Publish (create public copy) ───────────────────────────────────────────
 
-export function publishComposition(
+export async function publishComposition(
   db: DrizzleDb,
   userId: string,
   sourceId: string,
-): { id: string; name: string } | null {
-  const source = db
+): Promise<{ id: string; name: string } | null> {
+  const source = await db
     .select()
     .from(harmonyCompositions)
     .where(and(eq(harmonyCompositions.id, sourceId), eq(harmonyCompositions.userId, userId)))
@@ -359,12 +359,12 @@ export function importComposition(
   return { ok: true, composition };
 }
 
-export function exportCompositionDsl(
+export async function exportCompositionDsl(
   db: DrizzleDb,
   userId: string,
   compositionId: string,
-): string | null {
-  const row = db
+): Promise<string | null> {
+  const row = await db
     .select()
     .from(harmonyCompositions)
     .where(and(eq(harmonyCompositions.id, compositionId), eq(harmonyCompositions.userId, userId)))
@@ -376,14 +376,14 @@ export function exportCompositionDsl(
 
 // ── Public catalog ─────────────────────────────────────────────────────────
 
-export function getPublicCompositions(
+export async function getPublicCompositions(
   db: DrizzleDb,
   query: PublicCompositionsQuery,
   currentUserId?: string,
-): PublicCompositionSummaryDTO[] {
+): Promise<PublicCompositionSummaryDTO[]> {
   const { q, sort, limit = 20, offset = 0 } = query;
 
-  const rows = db
+  const rows = await db
     .select()
     .from(harmonyCompositions)
     .where(
@@ -410,23 +410,23 @@ export function getPublicCompositions(
   }
 
   const likedSet = new Set(
-    db
+    (await db
       .select({ compositionId: compositionLikes.compositionId })
       .from(compositionLikes)
       .where(eq(compositionLikes.userId, currentUserId))
-      .all()
+      .all())
       .map((r) => r.compositionId),
   );
 
   return rows.map((g) => toPublicSummaryDTO(g, likedSet.has(g.id)));
 }
 
-export function getPublicCompositionById(
+export async function getPublicCompositionById(
   db: DrizzleDb,
   compositionId: string,
   currentUserId?: string,
-): PublicCompositionDTO | null {
-  const row = db
+): Promise<PublicCompositionDTO | null> {
+  const row = await db
     .select()
     .from(harmonyCompositions)
     .where(
@@ -435,12 +435,12 @@ export function getPublicCompositionById(
     .get();
   if (!row) return null;
 
-  const owner = db.select({ name: users.name }).from(users).where(eq(users.id, row.userId)).get();
+  const owner = await db.select({ name: users.name }).from(users).where(eq(users.id, row.userId)).get();
   const ownerName = owner?.name ?? 'Unknown';
 
   let likedByMe = false;
   if (currentUserId) {
-    const like = db
+    const like = await db
       .select()
       .from(compositionLikes)
       .where(
@@ -463,12 +463,12 @@ export interface LikeResult {
   likedByMe: boolean;
 }
 
-export function likeComposition(
+export async function likeComposition(
   db: DrizzleDb,
   userId: string,
   compositionId: string,
-): LikeResult | null {
-  const composition = db
+): Promise<LikeResult | null> {
+  const composition = await db
     .select()
     .from(harmonyCompositions)
     .where(
@@ -477,7 +477,7 @@ export function likeComposition(
     .get();
   if (!composition) return null;
 
-  const existing = db
+  const existing = await db
     .select()
     .from(compositionLikes)
     .where(
@@ -498,12 +498,12 @@ export function likeComposition(
   return { likeCount: composition.likeCount, likedByMe: true };
 }
 
-export function unlikeComposition(
+export async function unlikeComposition(
   db: DrizzleDb,
   userId: string,
   compositionId: string,
-): LikeResult | null {
-  const composition = db
+): Promise<LikeResult | null> {
+  const composition = await db
     .select()
     .from(harmonyCompositions)
     .where(
@@ -512,7 +512,7 @@ export function unlikeComposition(
     .get();
   if (!composition) return null;
 
-  const existing = db
+  const existing = await db
     .select()
     .from(compositionLikes)
     .where(

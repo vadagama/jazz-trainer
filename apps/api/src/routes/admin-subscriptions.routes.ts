@@ -35,7 +35,7 @@ export async function adminSubscriptionsRoutes(
   // ── GET /api/admin/subscriptions ──────────────────────────────────────────
   fastify.get('/admin/subscriptions', { preHandler: [billingRead] }, async (request, reply) => {
     const { status, tier } = request.query as { status?: string; tier?: string };
-    const result = listSubscriptions(db, { status, tier });
+    const result = await listSubscriptions(db, { status, tier });
     return reply.send(result);
   });
 
@@ -46,21 +46,21 @@ export async function adminSubscriptionsRoutes(
     async (request, reply) => {
       const { userId } = request.params;
 
-      const user = db.select().from(users).where(eq(users.id, userId)).get();
+      const user = await db.select().from(users).where(eq(users.id, userId)).get();
       if (!user) {
         return reply.status(404).send({
           error: { code: 'NOT_FOUND', message: 'User not found' },
         });
       }
 
-      const sub = db
+      const sub = await db
         .select()
         .from(subsTable)
         .where(eq(subsTable.userId, userId))
         .orderBy(subsTable.createdAt)
         .all();
 
-      const history = getSubscriptionHistory(db, userId).map((h) => ({
+      const history = (await getSubscriptionHistory(db, userId)).map((h) => ({
         id: h.id,
         eventType: h.eventType,
         actorId: h.actorId,
@@ -70,8 +70,8 @@ export async function adminSubscriptionsRoutes(
         createdAt: h.createdAt,
       }));
 
-      const subscriptionsList = sub.map((s) => {
-        const tier = db
+      const subscriptionsList = await Promise.all(sub.map(async (s) => {
+        const tier = await db
           .select()
           .from(subscriptionTiers)
           .where(eq(subscriptionTiers.id, s.tierId))
@@ -88,7 +88,7 @@ export async function adminSubscriptionsRoutes(
           createdAt: s.createdAt,
           updatedAt: s.updatedAt,
         };
-      });
+      }));
 
       return reply.send({ subscriptions: subscriptionsList, history });
     },
@@ -101,7 +101,7 @@ export async function adminSubscriptionsRoutes(
     async (request, reply) => {
       const { userId } = request.params;
 
-      const user = db.select().from(users).where(eq(users.id, userId)).get();
+      const user = await db.select().from(users).where(eq(users.id, userId)).get();
       if (!user) {
         return reply.status(404).send({
           error: { code: 'NOT_FOUND', message: 'User not found' },
@@ -160,7 +160,7 @@ export async function adminSubscriptionsRoutes(
     { preHandler: [billingRead] },
     async (request, reply) => {
       const { status } = request.query as { status?: string };
-      const result = listSubscriptionRequests(db, status);
+      const result = await listSubscriptionRequests(db, status);
       return reply.send(result);
     },
   );
@@ -171,7 +171,7 @@ export async function adminSubscriptionsRoutes(
     { preHandler: [billingManage] },
     async (request, reply) => {
       const { id } = request.params;
-      const subReq = getSubscriptionRequest(db, id);
+      const subReq = await getSubscriptionRequest(db, id);
       if (!subReq) {
         return reply.status(404).send({
           error: { code: 'NOT_FOUND', message: 'Subscription request not found' },
@@ -179,12 +179,12 @@ export async function adminSubscriptionsRoutes(
       }
 
       // Find or create user by email
-      let user = db.select().from(users).where(eq(users.email, subReq.email)).get();
+      let user = await db.select().from(users).where(eq(users.email, subReq.email)).get();
       if (!user) {
         // Create a placeholder user — they'll log in via Magic Link
         const now = Date.now();
         const userId = crypto.randomUUID();
-        db.insert(users)
+        await db.insert(users)
           .values({
             id: userId,
             email: subReq.email,
@@ -195,7 +195,7 @@ export async function adminSubscriptionsRoutes(
             updatedAt: now,
           })
           .run();
-        user = db.select().from(users).where(eq(users.id, userId)).get()!;
+        user = await db.select().from(users).where(eq(users.id, userId)).get()!;
       }
 
       try {
@@ -222,7 +222,7 @@ export async function adminSubscriptionsRoutes(
     { preHandler: [billingManage] },
     async (request, reply) => {
       const { id } = request.params;
-      const subReq = getSubscriptionRequest(db, id);
+      const subReq = await getSubscriptionRequest(db, id);
       if (!subReq) {
         return reply.status(404).send({
           error: { code: 'NOT_FOUND', message: 'Subscription request not found' },
@@ -232,7 +232,7 @@ export async function adminSubscriptionsRoutes(
       const parsed = SubscriptionRequestActionSchema.safeParse(request.body);
       const reason = parsed.success ? parsed.data.reason : undefined;
       try {
-        rejectSubscriptionRequest(db, request, id, reason);
+        await rejectSubscriptionRequest(db, request, id, reason);
         return reply.send({ success: true });
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Unknown error';
@@ -249,7 +249,7 @@ export async function adminSubscriptionsRoutes(
     { preHandler: [billingManage] },
     async (request, reply) => {
       const { id } = request.params;
-      const subReq = getSubscriptionRequest(db, id);
+      const subReq = await getSubscriptionRequest(db, id);
       if (!subReq) {
         return reply.status(404).send({
           error: { code: 'NOT_FOUND', message: 'Subscription request not found' },
@@ -259,7 +259,7 @@ export async function adminSubscriptionsRoutes(
       const parsed = SubscriptionRequestActionSchema.safeParse(request.body);
       const reason = parsed.success ? parsed.data.reason : undefined;
       try {
-        requestInfoSubscriptionRequest(db, request, id, reason);
+        await requestInfoSubscriptionRequest(db, request, id, reason);
         return reply.send({ success: true });
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Unknown error';

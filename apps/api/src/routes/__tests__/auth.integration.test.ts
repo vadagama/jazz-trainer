@@ -65,7 +65,7 @@ describe('Integration — Health & Auth methods', () => {
   let app: FastifyInstance;
 
   beforeAll(async () => {
-    app = await buildServer({ db: createTestDb(), config: { authDevMode: false } });
+    app = await buildServer({ db: await createTestDb(), config: { authDevMode: false } });
   });
 
   it('GET /api/health returns ok', async () => {
@@ -95,7 +95,7 @@ describe('Integration — Dev Login & Session', () => {
   let db: DrizzleDb;
 
   beforeAll(async () => {
-    db = createTestDb();
+    db = await createTestDb();
     ensureBillingTables(db);
     app = await buildServer({
       db,
@@ -164,7 +164,7 @@ describe('Integration — Magic Link', () => {
   let app: FastifyInstance;
 
   beforeAll(async () => {
-    const db = createTestDb();
+    const db = await createTestDb();
     ensureBillingTables(db);
     app = await buildServer({
       db,
@@ -204,7 +204,7 @@ describe('Integration — GitHub OAuth mock', () => {
   let app: FastifyInstance;
 
   beforeAll(async () => {
-    const db = createTestDb();
+    const db = await createTestDb();
     ensureBillingTables(db);
     app = await buildServer({
       db,
@@ -231,7 +231,7 @@ describe('Integration — Subscription flow', () => {
   let app: FastifyInstance;
 
   beforeAll(async () => {
-    const db = createTestDb();
+    const db = await createTestDb();
     ensureBillingTables(db);
     app = await buildServer({ db, config: { sessionSecret: 'test-billing' } });
   });
@@ -263,7 +263,7 @@ describe('Integration — Admin subscription permission gating', () => {
   let app: FastifyInstance;
 
   beforeAll(async () => {
-    const db = createTestDb();
+    const db = await createTestDb();
     ensureBillingTables(db);
     app = await buildServer({ db, config: { sessionSecret: 'test-admin' } });
   });

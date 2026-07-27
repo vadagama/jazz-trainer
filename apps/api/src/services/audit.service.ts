@@ -32,7 +32,7 @@ export const AUDIT_ACTIONS = {
 } as const;
 
 /** Write a single audit log record. Low-level helper. */
-export function writeAuditLog(
+export async function writeAuditLog(
   db: DrizzleDb,
   params: {
     actorUserId: string;
@@ -45,8 +45,8 @@ export function writeAuditLog(
     userAgent?: string | null;
     reason?: string | null;
   },
-): void {
-  db.insert(auditLog)
+): Promise<void> {
+  await db.insert(auditLog)
     .values({
       id: crypto.randomUUID(),
       actorUserId: params.actorUserId,
@@ -106,18 +106,18 @@ export async function withAudit<T>(
 /**
  * Convenience: wrap a synchronous mutation with audit logging.
  */
-export function withAuditSync<T>(
+export async function withAuditSync<T>(
   db: DrizzleDb,
   request: FastifyRequest,
   action: string,
   targetType: string,
   targetId: string,
   opts: { before?: unknown; reason?: string },
-  fn: () => T,
-): T {
-  const result = fn();
+  fn: () => T | Promise<T>,
+): Promise<T> {
+  const result = await fn();
 
-  writeAuditLog(db, {
+  await writeAuditLog(db, {
     actorUserId: request.user?.id ?? 'anonymous',
     action,
     targetType,
@@ -136,7 +136,7 @@ export function withAuditSync<T>(
  * Audit log entry for system/cron operations (no FastifyRequest).
  * Accepts explicit actor ID, IP and user-agent.
  */
-export function withSystemAudit<T>(
+export async function withSystemAudit<T>(
   db: DrizzleDb,
   action: string,
   targetType: string,
@@ -148,11 +148,11 @@ export function withSystemAudit<T>(
     ip?: string;
     userAgent?: string;
   },
-  fn: () => T,
-): T {
-  const result = fn();
+  fn: () => T | Promise<T>,
+): Promise<T> {
+  const result = await fn();
 
-  writeAuditLog(db, {
+  await writeAuditLog(db, {
     actorUserId: opts.actorUserId ?? 'system',
     action,
     targetType,

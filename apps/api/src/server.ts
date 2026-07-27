@@ -66,7 +66,7 @@ const CONFIG_DEFAULTS: ApiConfig = {
  */
 export async function buildServer(opts: BuildServerOptions = {}): Promise<FastifyInstance> {
   const config: ApiConfig = { ...CONFIG_DEFAULTS, ...loadConfig(), ...opts.config };
-  const db = opts.db ?? createDb(config.databaseUrl).db;
+  const db = opts.db ?? (await createDb(config.databaseUrl)).db;
 
   const app = Fastify({
     // Тесты гоняются с NODE_ENV=test и остаются тихими; в dev/prod пишем через pino.

@@ -50,13 +50,13 @@ export async function compositionsRoutes(
         },
       });
     }
-    const compositions = getPublicCompositions(db, parsed.data, request.user?.id);
+    const compositions = await getPublicCompositions(db, parsed.data, request.user?.id);
     return reply.send(compositions);
   });
 
   // ── GET /api/compositions/public/:id — single public composition ────────
   fastify.get<{ Params: { id: string } }>('/compositions/public/:id', async (request, reply) => {
-    const composition = getPublicCompositionById(db, request.params.id, request.user?.id);
+    const composition = await getPublicCompositionById(db, request.params.id, request.user?.id);
     if (!composition) {
       return reply
         .status(404)
@@ -67,7 +67,7 @@ export async function compositionsRoutes(
 
   // ── GET /api/compositions/mine — own compositions list ──────────────────
   fastify.get('/compositions/mine', { preHandler: requireAuth }, async (request, reply) => {
-    const compositions = getUserCompositions(db, request.user!.id);
+    const compositions = await getUserCompositions(db, request.user!.id);
     return reply.send(compositions);
   });
 
@@ -83,7 +83,7 @@ export async function compositionsRoutes(
         },
       });
     }
-    const composition = createComposition(db, request.user!.id, parsed.data);
+    const composition = await createComposition(db, request.user!.id, parsed.data);
     return reply.status(201).send(composition);
   });
 
@@ -99,7 +99,7 @@ export async function compositionsRoutes(
         },
       });
     }
-    const result = importComposition(db, request.user!.id, parsed.data);
+    const result = await importComposition(db, request.user!.id, parsed.data);
     if (!result.ok) {
       return reply.status(400).send({
         error: {
@@ -117,14 +117,14 @@ export async function compositionsRoutes(
     '/compositions/:id',
     { preHandler: requireAuth },
     async (request, reply) => {
-      const composition = getOwnComposition(db, request.user!.id, request.params.id);
+      const composition = await getOwnComposition(db, request.user!.id, request.params.id);
       if (composition) return reply.send(composition);
 
       // Fallback: allow editing public compositions for catalog moderators
-      if (hasPermission(db, request.user!.id, 'catalog:moderate')) {
-        const pub = getPublicCompositionById(db, request.params.id, request.user!.id);
+      if (await hasPermission(db, request.user!.id, 'catalog:moderate')) {
+        const pub = await getPublicCompositionById(db, request.params.id, request.user!.id);
         if (pub) {
-          const row = db
+          const row = await db
             .select({ moderationStatus: harmonyCompositions.moderationStatus })
             .from(harmonyCompositions)
             .where(eq(harmonyCompositions.id, request.params.id))
@@ -168,12 +168,12 @@ export async function compositionsRoutes(
           },
         });
       }
-      const composition = updateComposition(db, request.user!.id, request.params.id, parsed.data);
+      const composition = await updateComposition(db, request.user!.id, request.params.id, parsed.data);
       if (composition) return reply.send(composition);
 
       // Fallback: catalog moderators can edit any public composition
-      if (hasPermission(db, request.user!.id, 'catalog:moderate')) {
-        const modUpdate = updateCompositionAsModerator(db, request.params.id, parsed.data);
+      if (await hasPermission(db, request.user!.id, 'catalog:moderate')) {
+        const modUpdate = await updateCompositionAsModerator(db, request.params.id, parsed.data);
         if (modUpdate) return reply.send(modUpdate);
       }
 
@@ -188,7 +188,7 @@ export async function compositionsRoutes(
     '/compositions/:id',
     { preHandler: requireAuth },
     async (request, reply) => {
-      const deleted = deleteComposition(db, request.user!.id, request.params.id);
+      const deleted = await deleteComposition(db, request.user!.id, request.params.id);
       if (!deleted) {
         return reply
           .status(404)
@@ -213,7 +213,7 @@ export async function compositionsRoutes(
           },
         });
       }
-      const composition = copyComposition(
+      const composition = await copyComposition(
         db,
         request.user!.id,
         request.params.id,
@@ -233,7 +233,7 @@ export async function compositionsRoutes(
     '/compositions/:id/publish',
     { preHandler: requireAuth },
     async (request, reply) => {
-      const result = publishComposition(db, request.user!.id, request.params.id);
+      const result = await publishComposition(db, request.user!.id, request.params.id);
       if (!result) {
         return reply
           .status(404)
@@ -248,7 +248,7 @@ export async function compositionsRoutes(
     '/compositions/:id/export',
     { preHandler: requireAuth },
     async (request, reply) => {
-      const dsl = exportCompositionDsl(db, request.user!.id, request.params.id);
+      const dsl = await exportCompositionDsl(db, request.user!.id, request.params.id);
       if (dsl === null) {
         return reply
           .status(404)
@@ -263,7 +263,7 @@ export async function compositionsRoutes(
     '/compositions/:id/like',
     { preHandler: requireAuth },
     async (request, reply) => {
-      const result = likeComposition(db, request.user!.id, request.params.id);
+      const result = await likeComposition(db, request.user!.id, request.params.id);
       if (!result) {
         return reply
           .status(404)
@@ -278,7 +278,7 @@ export async function compositionsRoutes(
     '/compositions/:id/like',
     { preHandler: requireAuth },
     async (request, reply) => {
-      const result = unlikeComposition(db, request.user!.id, request.params.id);
+      const result = await unlikeComposition(db, request.user!.id, request.params.id);
       if (!result) {
         return reply
           .status(404)

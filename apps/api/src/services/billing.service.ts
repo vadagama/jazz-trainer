@@ -86,10 +86,10 @@ export function roleNameForTier(tier: SubscriptionTier | null): (typeof SUBSCRIB
 
 // ── Seed subscription tiers ────────────────────────────────────────────────
 
-export function seedSubscriptionTiers(db: DrizzleDb): void {
+export async function seedSubscriptionTiers(db: DrizzleDb): Promise<void> {
   const now = Date.now();
   for (const tier of TIER_SEED) {
-    const existing = db
+    const existing = await db
       .select({ id: subscriptionTiers.id })
       .from(subscriptionTiers)
       .where(eq(subscriptionTiers.id, tier.id))
@@ -103,9 +103,9 @@ export function seedSubscriptionTiers(db: DrizzleDb): void {
 
 // ── Add/remove subscriber role ─────────────────────────────────────────────
 
-function getRoleId(db: DrizzleDb, roleName: string): string | null {
+async function getRoleId(db: DrizzleDb, roleName: string): Promise<string | null> {
   return (
-    db
+    await db
       .select({ id: roles.id })
       .from(roles)
       .where(eq(roles.name, roleName))
@@ -114,13 +114,13 @@ function getRoleId(db: DrizzleDb, roleName: string): string | null {
   );
 }
 
-function assignSubscriberRole(
+async function assignSubscriberRole(
   db: DrizzleDb,
   userId: string,
   tier: SubscriptionTier | null,
-): void {
+): Promise<void> {
   // Remove all existing subscriber roles
-  const allRoleRows = db.select({ id: roles.id, name: roles.name }).from(roles).all();
+  const allRoleRows = await db.select({ id: roles.id, name: roles.name }).from(roles).all();
   const subRoleIds = allRoleRows
     .filter((r) => SUBSCRIBER_ROLE_NAMES.some((n) => n === r.name))
     .map((r) => r.id);
@@ -131,9 +131,9 @@ function assignSubscriberRole(
 
   // Assign the tier-specific role
   const roleName = roleNameForTier(tier);
-  const roleId = getRoleId(db, roleName);
+  const roleId = await getRoleId(db, roleName);
   if (roleId) {
-    const exists = db
+    const exists = await db
       .select()
       .from(userRoles)
       .where(and(eq(userRoles.userId, userId), eq(userRoles.roleId, roleId)))
@@ -171,16 +171,16 @@ function recordHistory(
 
 // ── Get active subscription for user ───────────────────────────────────────
 
-export function getSubscription(db: DrizzleDb, userId: string) {
-  return db
+export async function getSubscription(db: DrizzleDb, userId: string) {
+  return await db
     .select()
     .from(subscriptions)
     .where(and(eq(subscriptions.userId, userId), eq(subscriptions.status, 'active')))
     .get();
 }
 
-export function getSubscriptionWithTier(db: DrizzleDb, userId: string) {
-  return db
+export async function getSubscriptionWithTier(db: DrizzleDb, userId: string) {
+  return await db
     .select({
       sub: subscriptions,
       tier: subscriptionTiers,
@@ -193,14 +193,14 @@ export function getSubscriptionWithTier(db: DrizzleDb, userId: string) {
 
 // ── Activate / update subscription (admin action) ──────────────────────────
 
-export function activateSubscription(
+export async function activateSubscription(
   db: DrizzleDb,
   request: FastifyRequest,
   userId: string,
   tier: SubscriptionTier,
   months: number = 12,
-): void {
-  const tierRecord = db
+): Promise<void> {
+  const tierRecord = await db
     .select()
     .from(subscriptionTiers)
     .where(eq(subscriptionTiers.name, tier))
@@ -210,9 +210,9 @@ export function activateSubscription(
   const now = Date.now();
   const periodEnd = now + months * 30 * 24 * 60 * 60 * 1000;
 
-  const existing = getSubscription(db, userId);
+  const existing = await getSubscription(db, userId);
   const oldTierName = existing
-    ? db.select().from(subscriptionTiers).where(eq(subscriptionTiers.id, existing.tierId)).get()
+    ? (await db.select().from(subscriptionTiers).where(eq(subscriptionTiers.id, existing.tierId)).get())
         ?.name ?? null
     : null;
 
@@ -266,21 +266,21 @@ export function activateSubscription(
 
 // ── Cancel subscription ────────────────────────────────────────────────────
 
-export function cancelSubscription(
+export async function cancelSubscription(
   db: DrizzleDb,
   request: FastifyRequest,
   userId: string,
   reason?: string,
-): void {
-  const sub = getSubscription(db, userId);
+): Promise<void> {
+  const sub = await getSubscription(db, userId);
   if (!sub) throw new Error('No active subscription');
 
   const oldTierName =
-    db
+    (await db
       .select()
       .from(subscriptionTiers)
       .where(eq(subscriptionTiers.id, sub.tierId))
-      .get()
+      .get())
       ?.name ?? null;
 
   const actorId = request.user?.id ?? 'system';
@@ -315,16 +315,16 @@ export function cancelSubscription(
 
 // ── Set subscription status only (no tier change) ─────────────────────────
 
-export function setSubscriptionStatus(
+export async function setSubscriptionStatus(
   db: DrizzleDb,
   request: FastifyRequest,
   userId: string,
   status: 'active' | 'past_due' | 'canceled',
-): void {
-  const sub = getSubscription(db, userId);
+): Promise<void> {
+  const sub = await getSubscription(db, userId);
   if (!sub) throw new Error('No active subscription');
 
-  const tierRecord = db
+  const tierRecord = await db
     .select()
     .from(subscriptionTiers)
     .where(eq(subscriptionTiers.id, sub.tierId))
@@ -355,15 +355,15 @@ export function setSubscriptionStatus(
 
 // ── Degrade expired subscriptions (cron) ───────────────────────────────────
 
-export function degradeExpiredSubscriptions(
+export async function degradeExpiredSubscriptions(
   db: DrizzleDb,
   _config: ApiConfig,
-): { degraded: number; notified: number } {
+): Promise<{ degraded: number; notified: number }> {
   const now = Date.now();
   let degraded = 0;
   let notified = 0;
 
-  const active = db
+  const active = await db
     .select()
     .from(subscriptions)
     .where(eq(subscriptions.status, 'active'))
@@ -410,7 +410,7 @@ export function degradeExpiredSubscriptions(
     }
 
     // Grace ended or no grace given — degrade to free
-    const tierRecord = db
+    const tierRecord = await db
       .select()
       .from(subscriptionTiers)
       .where(eq(subscriptionTiers.id, sub.tierId))
@@ -456,34 +456,34 @@ function sReqStatusEq(
   return eq(subscriptionRequests.status, s);
 }
 
-export function listSubscriptionRequests(db: DrizzleDb, filterStatus?: string) {
+export async function listSubscriptionRequests(db: DrizzleDb, filterStatus?: string) {
   if (filterStatus) {
     const typed = filterStatus as 'pending' | 'approved' | 'rejected' | 'needs_info';
-    return db
+    return await db
       .select()
       .from(subscriptionRequests)
       .where(sReqStatusEq(typed))
       .orderBy(desc(subscriptionRequests.createdAt))
       .all();
   }
-  return db
+  return await db
     .select()
     .from(subscriptionRequests)
     .orderBy(desc(subscriptionRequests.createdAt))
     .all();
 }
 
-export function getSubscriptionRequest(db: DrizzleDb, id: string) {
-  return db.select().from(subscriptionRequests).where(eq(subscriptionRequests.id, id)).get();
+export async function getSubscriptionRequest(db: DrizzleDb, id: string) {
+  return await db.select().from(subscriptionRequests).where(eq(subscriptionRequests.id, id)).get();
 }
 
-export function approveSubscriptionRequest(
+export async function approveSubscriptionRequest(
   db: DrizzleDb,
   request: FastifyRequest,
   requestId: string,
   userId: string,
   tier: SubscriptionTier,
-): void {
+): Promise<void> {
   const now = Date.now();
   const actorId = request.user?.id ?? 'system';
 
@@ -577,30 +577,31 @@ export function requestInfoSubscriptionRequest(
 
 // ── List subscriptions (admin) ─────────────────────────────────────────────
 
-export function listSubscriptions(
+export async function listSubscriptions(
   db: DrizzleDb,
   filters?: { status?: string; tier?: string },
 ) {
-  const rows = db
+  const rows = await db
     .select()
     .from(subscriptions)
     .innerJoin(subscriptionTiers, eq(subscriptions.tierId, subscriptionTiers.id))
     .orderBy(desc(subscriptions.createdAt))
     .all();
 
-  return rows
-    .filter((row) => {
-      if (filters?.status) {
-        const statuses = filters.status.split(',');
-        if (!statuses.includes(row.subscriptions.status)) return false;
-      }
-      if (filters?.tier) {
-        if (row.subscription_tiers.name !== filters.tier) return false;
-      }
-      return true;
-    })
-    .map((row) => {
-      const user = db
+  const filtered = rows.filter((row) => {
+    if (filters?.status) {
+      const statuses = filters.status.split(',');
+      if (!statuses.includes(row.subscriptions.status)) return false;
+    }
+    if (filters?.tier) {
+      if (row.subscription_tiers.name !== filters.tier) return false;
+    }
+    return true;
+  });
+
+  return Promise.all(
+    filtered.map(async (row) => {
+      const user = await db
         .select({ email: users.email })
         .from(users)
         .where(eq(users.id, row.subscriptions.userId))
@@ -618,13 +619,14 @@ export function listSubscriptions(
         createdAt: row.subscriptions.createdAt,
         updatedAt: row.subscriptions.updatedAt,
       };
-    });
+    }),
+  );
 }
 
 // ── Subscription history ───────────────────────────────────────────────────
 
-export function getSubscriptionHistory(db: DrizzleDb, userId: string) {
-  return db
+export async function getSubscriptionHistory(db: DrizzleDb, userId: string) {
+  return await db
     .select()
     .from(subscriptionHistory)
     .where(eq(subscriptionHistory.userId, userId))
@@ -636,8 +638,8 @@ export function getSubscriptionHistory(db: DrizzleDb, userId: string) {
 
 const SUB_REQUEST_COOLDOWN_MS = 24 * 60 * 60 * 1000; // 24 hours
 
-export function isSubscriptionRequestRateLimited(db: DrizzleDb, email: string): boolean {
-  const latest = db
+export async function isSubscriptionRequestRateLimited(db: DrizzleDb, email: string): Promise<boolean> {
+  const latest = await db
     .select({ createdAt: subscriptionRequests.createdAt })
     .from(subscriptionRequests)
     .where(eq(subscriptionRequests.email, email))
@@ -670,8 +672,8 @@ export function createSubscriptionRequest(
 
 // ── User: get their own subscription info ──────────────────────────────────
 
-export function getUserSubscriptionInfo(db: DrizzleDb, userId: string) {
-  const sub = getSubscriptionWithTier(db, userId);
+export async function getUserSubscriptionInfo(db: DrizzleDb, userId: string) {
+  const sub = await getSubscriptionWithTier(db, userId);
   if (!sub) return null;
 
   const now = Date.now();

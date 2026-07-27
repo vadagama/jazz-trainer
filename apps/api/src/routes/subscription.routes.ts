@@ -26,7 +26,7 @@ export async function subscriptionRoutes(
       });
     }
 
-    const info = getUserSubscriptionInfo(db, request.user.id);
+    const info = await getUserSubscriptionInfo(db, request.user.id);
     if (!info) {
       return reply.send({
         tier: 'free' as const,
@@ -38,7 +38,7 @@ export async function subscriptionRoutes(
       });
     }
 
-    const history = getSubscriptionHistory(db, request.user.id).map((h) => ({
+    const history = (await getSubscriptionHistory(db, request.user.id)).map((h) => ({
       id: h.id,
       eventType: h.eventType,
       actorId: h.actorId,
@@ -73,7 +73,7 @@ export async function subscriptionRoutes(
     const { action, tier, message } = parsed.data;
 
     try {
-      createSubscriptionRequest(db, {
+      await createSubscriptionRequest(db, {
         email: request.user.email!,
         name: request.user.name ?? undefined,
         desiredTier: tier ?? 'pro',

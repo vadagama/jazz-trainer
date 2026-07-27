@@ -97,11 +97,11 @@ function normalizeQuery(q: CatalogQuery): CatalogQueryParsed {
 
 // ── public read ────────────────────────────────────────────────────────────
 
-export function getCatalog(
+export async function getCatalog(
   db: DrizzleDb,
   query: CatalogQuery,
   currentUserId?: string,
-): CatalogEntry[] {
+): Promise<CatalogEntry[]> {
   const q = normalizeQuery(query);
   const { sort = 'popular', limit = 20, offset = 0 } = q;
 
@@ -138,7 +138,7 @@ export function getCatalog(
   // Always pin featured above the rest (stable secondary order)
   orderBy.unshift(desc(harmonyCompositions.featured));
 
-  let rows = db
+  let rows = await db
     .select()
     .from(harmonyCompositions)
     .where(and(...conditions))
@@ -182,7 +182,7 @@ export function getCatalog(
   if (publisherIds.length) {
     for (const r of rows) {
       if (!nameMap.has(r.userId)) {
-        const u = db.select({ name: users.name }).from(users).where(eq(users.id, r.userId)).get();
+        const u = await db.select({ name: users.name }).from(users).where(eq(users.id, r.userId)).get();
         nameMap.set(r.userId, u?.name ?? 'Unknown');
       }
     }
@@ -190,11 +190,11 @@ export function getCatalog(
 
   const likedSet = currentUserId
     ? new Set(
-        db
+        (await db
           .select({ id: compositionLikes.compositionId })
           .from(compositionLikes)
           .where(eq(compositionLikes.userId, currentUserId))
-          .all()
+          .all())
           .map((l) => l.id),
       )
     : new Set<string>();
@@ -202,12 +202,12 @@ export function getCatalog(
   return rows.map((r) => toCatalogEntry(r, nameMap.get(r.userId) ?? 'Unknown', likedSet.has(r.id)));
 }
 
-export function getCatalogById(
+export async function getCatalogById(
   db: DrizzleDb,
   id: string,
   currentUserId?: string,
-): CatalogEntry | null {
-  const row = db
+): Promise<CatalogEntry | null> {
+  const row = await db
     .select()
     .from(harmonyCompositions)
     .where(
@@ -220,12 +220,12 @@ export function getCatalogById(
     .get();
   if (!row) return null;
 
-  const u = db.select({ name: users.name }).from(users).where(eq(users.id, row.userId)).get();
+  const u = await db.select({ name: users.name }).from(users).where(eq(users.id, row.userId)).get();
   const publisherName = u?.name ?? 'Unknown';
 
   let likedByMe = false;
   if (currentUserId) {
-    const like = db
+    const like = await db
       .select()
       .from(compositionLikes)
       .where(
@@ -237,8 +237,8 @@ export function getCatalogById(
   return toCatalogEntry(row, publisherName, likedByMe, true);
 }
 
-export function getFeatured(db: DrizzleDb, currentUserId?: string): CatalogEntry[] {
-  const rows = db
+export async function getFeatured(db: DrizzleDb, currentUserId?: string): Promise<CatalogEntry[]> {
+  const rows = await db
     .select()
     .from(harmonyCompositions)
     .where(
@@ -254,17 +254,17 @@ export function getFeatured(db: DrizzleDb, currentUserId?: string): CatalogEntry
   const nameMap = new Map<string, string>();
   for (const r of rows) {
     if (!nameMap.has(r.userId)) {
-      const u = db.select({ name: users.name }).from(users).where(eq(users.id, r.userId)).get();
+      const u = await db.select({ name: users.name }).from(users).where(eq(users.id, r.userId)).get();
       nameMap.set(r.userId, u?.name ?? 'Unknown');
     }
   }
   const likedSet = currentUserId
     ? new Set(
-        db
+        (await db
           .select({ id: compositionLikes.compositionId })
           .from(compositionLikes)
           .where(eq(compositionLikes.userId, currentUserId))
-          .all()
+          .all())
           .map((l) => l.id),
       )
     : new Set<string>();
@@ -274,12 +274,12 @@ export function getFeatured(db: DrizzleDb, currentUserId?: string): CatalogEntry
 
 // ── tags ──────────────────────────────────────────────────────────────────
 
-export function getCatalogTags(db: DrizzleDb, includeHidden = false): CatalogTag[] {
-  const rows = db.select().from(catalogTags).all();
+export async function getCatalogTags(db: DrizzleDb, includeHidden = false): Promise<CatalogTag[]> {
+  const rows = await db.select().from(catalogTags).all();
   const visible = includeHidden ? rows : rows.filter((r) => !r.hidden);
 
   // compute usage counts
-  const allComps = db.select({ tags: harmonyCompositions.tags }).from(harmonyCompositions).all();
+  const allComps = await db.select({ tags: harmonyCompositions.tags }).from(harmonyCompositions).all();
   const counts = new Map<string, number>();
   for (const c of allComps) {
     for (const t of parseTags(c.tags)) {
@@ -303,8 +303,8 @@ function toTagDTO(r: CatalogTagRecord, usageCount: number): CatalogTag {
 
 // ── stats ──────────────────────────────────────────────────────────────────
 
-export function getCatalogStats(db: DrizzleDb, full = false): CatalogStats {
-  const publicApproved = db
+export async function getCatalogStats(db: DrizzleDb, full = false): Promise<CatalogStats> {
+  const publicApproved = await db
     .select()
     .from(harmonyCompositions)
     .where(
@@ -332,7 +332,7 @@ export function getCatalogStats(db: DrizzleDb, full = false): CatalogStats {
     total: publicApproved.length,
     approved: publicApproved.length,
     rejected: full
-      ? (db
+      ? ((await db
           .select({ count: sql<number>`count(*)` })
           .from(harmonyCompositions)
           .where(
@@ -341,7 +341,7 @@ export function getCatalogStats(db: DrizzleDb, full = false): CatalogStats {
               eq(harmonyCompositions.moderationStatus, 'rejected'),
             ),
           )
-          .get()?.count ?? 0)
+          .get())?.count ?? 0)
       : 0,
     featured: publicApproved.filter((r) => r.featured).length,
     byStyle,
@@ -361,19 +361,19 @@ export function getCatalogStats(db: DrizzleDb, full = false): CatalogStats {
 
 // ── editor: publish / update / unpublish ──────────────────────────────────
 
-export function publishCatalogEntry(
+export async function publishCatalogEntry(
   db: DrizzleDb,
   userId: string,
   input: CreateCatalogEntryInput,
-): CatalogEntry | null {
+): Promise<CatalogEntry | null> {
   const now = Date.now();
   const id = input.sourceCompositionId ?? crypto.randomUUID();
-  const publisher = db.select({ name: users.name }).from(users).where(eq(users.id, userId)).get();
+  const publisher = await db.select({ name: users.name }).from(users).where(eq(users.id, userId)).get();
 
   // if sourceCompositionId given, load content from it
   let content = input.content;
   if (input.sourceCompositionId) {
-    const src = db
+    const src = await db
       .select()
       .from(harmonyCompositions)
       .where(
@@ -415,20 +415,20 @@ export function publishCatalogEntry(
     .run();
 
   return toCatalogEntry(
-    db.select().from(harmonyCompositions).where(eq(harmonyCompositions.id, id)).get()!,
+    (await db.select().from(harmonyCompositions).where(eq(harmonyCompositions.id, id)).get())!,
     publisher?.name ?? 'Unknown',
     false,
   );
 }
 
-export function updateCatalogEntry(
+export async function updateCatalogEntry(
   db: DrizzleDb,
   userId: string,
   id: string,
   input: UpdateCatalogEntryInput,
   isAdmin: boolean,
-): CatalogEntry | null {
-  const existing = db
+): Promise<CatalogEntry | null> {
+  const existing = await db
     .select()
     .from(harmonyCompositions)
     .where(eq(harmonyCompositions.id, id))
@@ -450,7 +450,7 @@ export function updateCatalogEntry(
   if (input.content !== undefined) patch.content = JSON.stringify(input.content);
 
   db.update(harmonyCompositions).set(patch).where(eq(harmonyCompositions.id, id)).run();
-  const publisher = db
+  const publisher = await db
     .select({ name: users.name })
     .from(users)
     .where(eq(users.id, existing.userId))
@@ -462,13 +462,13 @@ export function updateCatalogEntry(
   );
 }
 
-export function unpublishCatalogEntry(
+export async function unpublishCatalogEntry(
   db: DrizzleDb,
   userId: string,
   id: string,
   isAdmin: boolean,
-): boolean {
-  const existing = db
+): Promise<boolean> {
+  const existing = await db
     .select()
     .from(harmonyCompositions)
     .where(eq(harmonyCompositions.id, id))
@@ -481,14 +481,14 @@ export function unpublishCatalogEntry(
 
 // ── admin: moderate / feature ─────────────────────────────────────────────
 
-export function rejectCatalogEntry(db: DrizzleDb, request: FastifyRequest, id: string): boolean {
-  const existing = db
+export async function rejectCatalogEntry(db: DrizzleDb, request: FastifyRequest, id: string): Promise<boolean> {
+  const existing = await db
     .select()
     .from(harmonyCompositions)
     .where(eq(harmonyCompositions.id, id))
     .get();
   if (!existing) return false;
-  return withAuditSync(
+  return (await withAuditSync(
     db,
     request,
     'catalog:reject',
@@ -502,17 +502,17 @@ export function rejectCatalogEntry(db: DrizzleDb, request: FastifyRequest, id: s
         .run();
       return { ok: true };
     },
-  ).ok;
+  )).ok;
 }
 
-export function approveCatalogEntry(db: DrizzleDb, request: FastifyRequest, id: string): boolean {
-  const existing = db
+export async function approveCatalogEntry(db: DrizzleDb, request: FastifyRequest, id: string): Promise<boolean> {
+  const existing = await db
     .select()
     .from(harmonyCompositions)
     .where(eq(harmonyCompositions.id, id))
     .get();
   if (!existing) return false;
-  return withAuditSync(
+  return (await withAuditSync(
     db,
     request,
     'catalog:approve',
@@ -526,15 +526,15 @@ export function approveCatalogEntry(db: DrizzleDb, request: FastifyRequest, id: 
         .run();
       return { ok: true };
     },
-  ).ok;
+  )).ok;
 }
 
-export function toggleFeatured(
+export async function toggleFeatured(
   db: DrizzleDb,
   request: FastifyRequest,
   id: string,
-): { featured: boolean } | null {
-  const existing = db
+): Promise<{ featured: boolean } | null> {
+  const existing = await db
     .select()
     .from(harmonyCompositions)
     .where(eq(harmonyCompositions.id, id))
@@ -543,11 +543,11 @@ export function toggleFeatured(
 
   // cap featured at 10
   const featuredCount =
-    db
+    (await db
       .select({ count: sql<number>`count(*)` })
       .from(harmonyCompositions)
       .where(eq(harmonyCompositions.featured, true))
-      .get()?.count ?? 0;
+      .get())?.count ?? 0;
   if (!existing.featured && featuredCount >= 10) {
     return null; // cap reached
   }
@@ -557,10 +557,10 @@ export function toggleFeatured(
   let newOrder = existing.featuredOrder;
   if (newFeatured && existing.featuredOrder === null) {
     const maxOrder =
-      db
+      (await db
         .select({ max: sql<number>`COALESCE(MAX(featured_order), 0)` })
         .from(harmonyCompositions)
-        .get()?.max ?? 0;
+        .get())?.max ?? 0;
     newOrder = maxOrder + 1;
   }
   if (!newFeatured) newOrder = null;
@@ -582,8 +582,8 @@ export function toggleFeatured(
   );
 }
 
-export function reorderFeatured(db: DrizzleDb, id: string, order: number): boolean {
-  const existing = db
+export async function reorderFeatured(db: DrizzleDb, id: string, order: number): Promise<boolean> {
+  const existing = await db
     .select()
     .from(harmonyCompositions)
     .where(eq(harmonyCompositions.id, id))
@@ -596,14 +596,14 @@ export function reorderFeatured(db: DrizzleDb, id: string, order: number): boole
   return true;
 }
 
-export function deleteCatalogEntry(db: DrizzleDb, request: FastifyRequest, id: string): boolean {
-  const existing = db
+export async function deleteCatalogEntry(db: DrizzleDb, request: FastifyRequest, id: string): Promise<boolean> {
+  const existing = await db
     .select()
     .from(harmonyCompositions)
     .where(eq(harmonyCompositions.id, id))
     .get();
   if (!existing) return false;
-  return withAuditSync(
+  return (await withAuditSync(
     db,
     request,
     'catalog:delete',
@@ -614,19 +614,19 @@ export function deleteCatalogEntry(db: DrizzleDb, request: FastifyRequest, id: s
       db.delete(harmonyCompositions).where(eq(harmonyCompositions.id, id)).run();
       return { ok: true };
     },
-  ).ok;
+  )).ok;
 }
 
 // ── admin: batch ──────────────────────────────────────────────────────────
 
-export function batchAction(
+export async function batchAction(
   db: DrizzleDb,
   request: FastifyRequest,
   input: BatchActionInput,
-): { affected: number } {
+): Promise<{ affected: number }> {
   let affected = 0;
   for (const id of input.ids) {
-    const existing = db
+    const existing = await db
       .select()
       .from(harmonyCompositions)
       .where(eq(harmonyCompositions.id, id))
@@ -687,7 +687,7 @@ export function batchAction(
     // Добавить в каталог — для private-записей: создаёт публичную копию со статусом «Не опубликовано»
     if (input.action === 'addToCatalog') {
       if (existing.visibility === 'private') {
-        const result = publishComposition(db, existing.userId, id);
+        const result = await publishComposition(db, existing.userId, id);
         if (result) {
           db.update(harmonyCompositions)
             .set({ moderationStatus: 'rejected' })
@@ -715,12 +715,12 @@ export function batchAction(
 
 // ── admin: tag CRUD ───────────────────────────────────────────────────────
 
-export function createCatalogTag(
+export async function createCatalogTag(
   db: DrizzleDb,
   request: FastifyRequest,
   input: CreateCatalogTagInput,
-): CatalogTag | null {
-  const existing = db
+): Promise<CatalogTag | null> {
+  const existing = await db
     .select({ id: catalogTags.id })
     .from(catalogTags)
     .where(eq(catalogTags.value, input.value))
@@ -740,30 +740,30 @@ export function createCatalogTag(
       .run();
     return { ok: true };
   });
-  return toTagDTO(db.select().from(catalogTags).where(eq(catalogTags.id, id)).get()!, 0);
+  return toTagDTO((await db.select().from(catalogTags).where(eq(catalogTags.id, id)).get())!, 0);
 }
 
-export function updateCatalogTag(
+export async function updateCatalogTag(
   db: DrizzleDb,
   request: FastifyRequest,
   id: string,
   input: UpdateCatalogTagInput,
-): CatalogTag | null {
-  const existing = db.select().from(catalogTags).where(eq(catalogTags.id, id)).get();
+): Promise<CatalogTag | null> {
+  const existing = await db.select().from(catalogTags).where(eq(catalogTags.id, id)).get();
   if (!existing) return null;
 
   // if renaming value, cascade-update in all compositions
   const before = { ...existing };
   if (input.value !== undefined && input.value !== existing.value) {
     // check duplicate
-    const dup = db
+    const dup = await db
       .select({ id: catalogTags.id })
       .from(catalogTags)
       .where(eq(catalogTags.value, input.value))
       .get();
     if (dup) return null;
     // cascade rename in compositions (JSON arrays)
-    const comps = db.select().from(harmonyCompositions).all();
+    const comps = await db.select().from(harmonyCompositions).all();
     for (const c of comps) {
       const tags = parseTags(c.tags);
       if (tags.includes(existing.value)) {
@@ -776,24 +776,28 @@ export function updateCatalogTag(
     }
   }
 
-  return withAuditSync(db, request, 'catalog:tag:update', 'catalog_tag', id, { before }, () => {
+  const updated = await withAuditSync(db, request, 'catalog:tag:update', 'catalog_tag', id, { before }, () => {
     const patch: Partial<CatalogTagRecord> = {};
     if (input.value !== undefined) patch.value = input.value;
     if (input.category !== undefined) patch.category = input.category;
     if (input.description !== undefined) patch.description = input.description;
     if (input.hidden !== undefined) patch.hidden = input.hidden;
     db.update(catalogTags).set(patch).where(eq(catalogTags.id, id)).run();
-    return db.select().from(catalogTags).where(eq(catalogTags.id, id)).get()!;
-  })
-    ? toTagDTO(db.select().from(catalogTags).where(eq(catalogTags.id, id)).get()!, 0)
+    return true;
+  });
+  return updated
+    ? toTagDTO((await db.select().from(catalogTags).where(eq(catalogTags.id, id)).get())!, 0)
     : null;
 }
 
-export function deleteCatalogTag(db: DrizzleDb, request: FastifyRequest, id: string): boolean {
-  const existing = db.select().from(catalogTags).where(eq(catalogTags.id, id)).get();
+export async function deleteCatalogTag(db: DrizzleDb, request: FastifyRequest, id: string): Promise<boolean> {
+  const existing = await db.select().from(catalogTags).where(eq(catalogTags.id, id)).get();
   if (!existing) return false;
 
-  return withAuditSync(
+  // Fetch all comps outside the sync callback
+  const comps = await db.select().from(harmonyCompositions).all();
+
+  return (await withAuditSync(
     db,
     request,
     'catalog:tag:delete',
@@ -802,7 +806,6 @@ export function deleteCatalogTag(db: DrizzleDb, request: FastifyRequest, id: str
     { before: { value: existing.value } },
     () => {
       // remove the tag value from all compositions
-      const comps = db.select().from(harmonyCompositions).all();
       for (const c of comps) {
         const tags = parseTags(c.tags);
         if (tags.includes(existing.value)) {
@@ -816,25 +819,25 @@ export function deleteCatalogTag(db: DrizzleDb, request: FastifyRequest, id: str
       db.delete(catalogTags).where(eq(catalogTags.id, id)).run();
       return { ok: true };
     },
-  ).ok;
+  )).ok;
 }
 
-export function mergeCatalogTags(
+export async function mergeCatalogTags(
   db: DrizzleDb,
   request: FastifyRequest,
   input: MergeCatalogTagsInput,
-): { merged: number } {
-  const target = db.select().from(catalogTags).where(eq(catalogTags.id, input.targetId)).get();
+): Promise<{ merged: number }> {
+  const target = await db.select().from(catalogTags).where(eq(catalogTags.id, input.targetId)).get();
   if (!target) return { merged: 0 };
 
   let merged = 0;
   for (const sourceId of input.sourceIds) {
     if (sourceId === input.targetId) continue;
-    const source = db.select().from(catalogTags).where(eq(catalogTags.id, sourceId)).get();
+    const source = await db.select().from(catalogTags).where(eq(catalogTags.id, sourceId)).get();
     if (!source) continue;
 
     // replace source value with target value in all compositions
-    const comps = db.select().from(harmonyCompositions).all();
+    const comps = await db.select().from(harmonyCompositions).all();
     for (const c of comps) {
       const tags = parseTags(c.tags);
       if (tags.includes(source.value)) {
@@ -865,8 +868,8 @@ export function mergeCatalogTags(
 
 // ── admin: list ALL entries (including rejected) for moderation ───────────
 
-export function getAllCatalogEntriesForModeration(db: DrizzleDb): CatalogEntry[] {
-  const rows = db
+export async function getAllCatalogEntriesForModeration(db: DrizzleDb): Promise<CatalogEntry[]> {
+  const rows = await db
     .select()
     .from(harmonyCompositions)
     .where(eq(harmonyCompositions.visibility, 'public'))
@@ -876,7 +879,7 @@ export function getAllCatalogEntriesForModeration(db: DrizzleDb): CatalogEntry[]
   const nameMap = new Map<string, string>();
   for (const r of rows) {
     if (!nameMap.has(r.userId)) {
-      const u = db.select({ name: users.name }).from(users).where(eq(users.id, r.userId)).get();
+      const u = await db.select({ name: users.name }).from(users).where(eq(users.id, r.userId)).get();
       nameMap.set(r.userId, u?.name ?? 'Unknown');
     }
   }
@@ -888,14 +891,14 @@ export function getAllCatalogEntriesForModeration(db: DrizzleDb): CatalogEntry[]
  * Return user's private compositions formatted as CatalogEntry for admin moderation view.
  * These appear with moderationStatus: 'rejected' (Скрыто) and publisherName = owner.
  */
-export function getUserPrivateCompositionsForCatalog(
+export async function getUserPrivateCompositionsForCatalog(
   db: DrizzleDb,
   userId: string,
-): CatalogEntry[] {
-  const owner = db.select({ name: users.name }).from(users).where(eq(users.id, userId)).get();
+): Promise<CatalogEntry[]> {
+  const owner = await db.select({ name: users.name }).from(users).where(eq(users.id, userId)).get();
   const publisherName = owner?.name ?? 'Unknown';
 
-  const rows = db
+  const rows = await db
     .select()
     .from(harmonyCompositions)
     .where(

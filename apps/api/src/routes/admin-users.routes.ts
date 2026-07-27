@@ -25,12 +25,12 @@ export async function adminUsersRoutes(
 
   // ── GET /api/admin/users ──────────────────────────────────────────────────
   fastify.get('/admin/users', async (_request, reply) => {
-    const all = db.select().from(users).orderBy(users.createdAt).all();
-    const dtos = all.map((u) => {
+    const all = await db.select().from(users).orderBy(users.createdAt).all();
+    const dtos = await Promise.all(all.map(async (u) => {
       const dto = toUserDTO(u);
       let roleIds: string[] = [];
       try {
-        const urRows = db
+        const urRows = await db
           .select({ roleId: userRoles.roleId })
           .from(userRoles)
           .where(eq(userRoles.userId, u.id))
@@ -40,7 +40,7 @@ export async function adminUsersRoutes(
         // user_roles table may not exist yet
       }
       return { ...dto, roles: roleIds };
-    });
+    }));
     return reply.send(dtos);
   });
 
@@ -51,7 +51,7 @@ export async function adminUsersRoutes(
     async (request, reply) => {
     const { id } = request.params;
 
-    const user = db.select().from(users).where(eq(users.id, id)).get();
+    const user = await db.select().from(users).where(eq(users.id, id)).get();
     if (!user) {
       return reply.status(404).send({
         error: { code: 'NOT_FOUND', message: 'User not found' },
@@ -80,7 +80,7 @@ export async function adminUsersRoutes(
     const { roleIds } = parsed.data;
 
     // Super admin constraint: only one user can have super_admin role
-    const superAdminRole = db
+    const superAdminRole = await db
       .select({ id: roles.id })
       .from(roles)
       .where(eq(roles.name, RBAC_ROLES.SUPER_ADMIN))
@@ -92,7 +92,7 @@ export async function adminUsersRoutes(
       user.role !== RBAC_ROLES.SUPER_ADMIN
     ) {
       try {
-        const existingSuper = db
+        const existingSuper = await db
           .select()
           .from(userRoles)
           .where(eq(userRoles.roleId, superAdminRole.id))
@@ -108,18 +108,18 @@ export async function adminUsersRoutes(
     }
 
     try {
-      withAuditSync(db, request, 'user.roles.update', 'user', id, {}, () => {
-        db.delete(userRoles).where(eq(userRoles.userId, id)).run();
+      await withAuditSync(db, request, 'user.roles.update', 'user', id, {}, async () => {
+        await db.delete(userRoles).where(eq(userRoles.userId, id)).run();
         for (const roleId of roleIds) {
-          db.insert(userRoles).values({ userId: id, roleId }).run();
+          await db.insert(userRoles).values({ userId: id, roleId }).run();
         }
         return { roleIds };
       });
 
       // T-041: Invalidate all sessions for the user whose role changed
-      const deletedCount = db.delete(sessions).where(eq(sessions.userId, id)).run();
+      const deletedCount = await db.delete(sessions).where(eq(sessions.userId, id)).run();
       if (deletedCount.changes > 0) {
-        withAuditSync(
+        await withAuditSync(
           db,
           request,
           AUDIT_ACTIONS.AUTH_SESSIONS_TERMINATED_ALL,
@@ -136,10 +136,10 @@ export async function adminUsersRoutes(
       });
     }
 
-    const updated = db.select().from(users).where(eq(users.id, id)).get()!;
+    const updated = await db.select().from(users).where(eq(users.id, id)).get()!;
     let roleIdsOut: string[] = [];
     try {
-      const urRows = db
+      const urRows = await db
         .select({ roleId: userRoles.roleId })
         .from(userRoles)
         .where(eq(userRoles.userId, id))
@@ -158,7 +158,7 @@ export async function adminUsersRoutes(
     async (request, reply) => {
     const { id } = request.params;
 
-    const user = db.select().from(users).where(eq(users.id, id)).get();
+    const user = await db.select().from(users).where(eq(users.id, id)).get();
     if (!user) {
       return reply.status(404).send({
         error: { code: 'NOT_FOUND', message: 'User not found' },
@@ -180,19 +180,19 @@ export async function adminUsersRoutes(
       });
     }
 
-    withAuditSync(
+    await withAuditSync(
       db,
       request,
       'user.delete',
       'user',
       id,
       { before: { email: user.email, role: user.role } },
-      () => {
+      async () => {
         // Clean up dependent records without cascade
-        db.delete(userPermissions).where(eq(userPermissions.userId, id)).run();
+        await db.delete(userPermissions).where(eq(userPermissions.userId, id)).run();
         // userRoles, sessions, userSettings, harmonyCompositions, compositionLikes,
         // lectureLikes cascade via FK. Then delete the user.
-        db.delete(users).where(eq(users.id, id)).run();
+        await db.delete(users).where(eq(users.id, id)).run();
       },
     );
 
@@ -214,7 +214,7 @@ export async function adminUsersRoutes(
       });
     }
 
-    const user = db.select().from(users).where(eq(users.id, id)).get();
+    const user = await db.select().from(users).where(eq(users.id, id)).get();
     if (!user) {
       return reply.status(404).send({
         error: { code: 'NOT_FOUND', message: 'User not found' },
@@ -237,16 +237,16 @@ export async function adminUsersRoutes(
     const { status } = parsed.data;
     const now = Date.now();
 
-    const updated = withAuditSync(
+    const updated = await withAuditSync(
       db,
       request,
       status === 'disabled' ? 'user.block' : 'user.unblock',
       'user',
       id,
       { before: user.status },
-      () => {
-        db.update(users).set({ status, updatedAt: now }).where(eq(users.id, id)).run();
-        return db.select().from(users).where(eq(users.id, id)).get()!;
+      async () => {
+        await db.update(users).set({ status, updatedAt: now }).where(eq(users.id, id)).run();
+        return await db.select().from(users).where(eq(users.id, id)).get()!;
       },
     );
 

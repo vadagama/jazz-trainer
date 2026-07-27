@@ -5,7 +5,7 @@ import { buildServer } from '../src/server.js';
 import { createTestDb } from '../src/db/testUtils.js';
 
 async function makeApp() {
-  const db = createTestDb();
+  const db = await createTestDb();
   return buildServer({
     config: { authDevMode: true, webOrigin: 'http://localhost:5173' },
     db,

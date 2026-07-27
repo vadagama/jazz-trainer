@@ -47,7 +47,7 @@ describe('admin-flags routes', () => {
   let db: DrizzleDb;
 
   beforeEach(async () => {
-    db = createTestDb();
+    db = await createTestDb();
     seedRbac(db);
     app = await makeApp(db);
     await app.ready();

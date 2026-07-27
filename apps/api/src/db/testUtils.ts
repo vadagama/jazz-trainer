@@ -9,8 +9,9 @@ const migrationsFolder = fileURLToPath(new URL('../../drizzle', import.meta.url)
  * Create an isolated in-memory SQLite database, run migrations and seed the
  * system user. Suitable for Vitest tests — each call returns a fresh DB.
  */
-export function createTestDb(): DrizzleDb {
-  const { db } = createDb(':memory:');
+export async function createTestDb(): Promise<DrizzleDb> {
+  const handle = await createDb(':memory:');
+  const { db } = handle;
   try {
     migrate(db, { migrationsFolder });
   } catch (err) {

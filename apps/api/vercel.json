@@ -1,6 +1,7 @@
 {
   "framework": null,
-  "buildCommand": "cd ../.. && npm install --no-package-lock && npm run build -w @jazz/api",
+  "installCommand": "cd ../.. && npm install --no-package-lock",
+  "buildCommand": "cd ../.. && npm run build -w @jazz/api",
   "outputDirectory": "dist",
   "functions": {
     "api/[...path].ts": {

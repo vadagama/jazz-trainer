@@ -790,8 +790,9 @@ if (process.argv[1] && import.meta.url.endsWith(process.argv[1].replace(/\\/g, '
   const { runMigrations } = await import('./migrate.js');
 
   const config = loadConfig();
-  const { db } = createDb(config.databaseUrl);
-  runMigrations(db);
+  const handle = await createDb(config.databaseUrl);
+  const { db } = handle;
+  await runMigrations(db, handle);
   seedSystemUser(db);
   seedRbac(db);
   seedCatalogTags(db);

@@ -1,24 +1,23 @@
-import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
-import type { Database as SQLiteDatabase } from 'better-sqlite3';
+import { migrate as migrateBsql } from 'drizzle-orm/better-sqlite3/migrator';
 import { fileURLToPath } from 'node:url';
-import { createDb } from './index.js';
+import { createDb, type DbHandle, type DrizzleDb } from './index.js';
 import { loadConfig } from '../config.js';
 
 const migrationsFolder = fileURLToPath(new URL('../../drizzle', import.meta.url));
 
 /**
  * One-off backfill for dev databases created before `feature_access` had a
- * `state` column (legacy runtime `is_public` flag). Production databases get
- * the table from migration 0034 and never enter this path.
+ * `state` column. Turso databases are created fresh and skip this path.
  */
-function backfillLegacyIsPublic(sqlite: SQLiteDatabase): void {
+function backfillLegacyIsPublic(handle: DbHandle): void {
+  if (handle.kind !== 'sqlite') return;
   try {
-    const cols = sqlite.pragma('table_info(feature_access)') as { name: string }[];
+    const cols = handle.sqlite.pragma('table_info(feature_access)') as { name: string }[];
     if (cols.length === 0 || !cols.some((c) => c.name === 'is_public')) return;
     if (!cols.some((c) => c.name === 'state')) {
-      sqlite.exec(`ALTER TABLE feature_access ADD COLUMN state TEXT NOT NULL DEFAULT 'active'`);
+      handle.sqlite.exec(`ALTER TABLE feature_access ADD COLUMN state TEXT NOT NULL DEFAULT 'active'`);
     }
-    sqlite.exec(`
+    handle.sqlite.exec(`
       UPDATE feature_access
       SET state = CASE WHEN is_public = 1 THEN 'active' ELSE 'inactive' END;
       ALTER TABLE feature_access DROP COLUMN is_public;
@@ -28,40 +27,25 @@ function backfillLegacyIsPublic(sqlite: SQLiteDatabase): void {
   }
 }
 
-export function runMigrations(
-  db: ReturnType<typeof createDb>['db'],
-  sqlite?: SQLiteDatabase,
-): void {
+export async function runMigrations(db: DrizzleDb, handle?: DbHandle): Promise<void> {
   try {
-    migrate(db, { migrationsFolder });
+    if (handle?.kind === 'turso') {
+      // Turso via libsql migrator
+      const { migrate: migrateLibsql } = await import('drizzle-orm/libsql/migrator');
+      await migrateLibsql(db as unknown as Parameters<typeof migrateLibsql>[0], { migrationsFolder });
+    } else {
+      migrateBsql(db, { migrationsFolder });
+    }
   } catch (err) {
-    // Drizzle-kit snapshot validation may fail non-interactively (TTY required)
-    // when schema snapshots are stale vs actual migrations. SQL statements
-    // are already applied at this point — the error is cosmetic.
     console.error('[db] migration warning:', (err as Error).message);
   }
-  if (sqlite) backfillLegacyIsPublic(sqlite);
+  if (handle) backfillLegacyIsPublic(handle);
 }
 
-/**
- * Run migrations on a Turso (libsql) database from Vercel serverless.
- * Uses the libsql migrator — queries are async over HTTP.
- */
-export async function runTursoMigrations(
-  tursoDb: Awaited<ReturnType<typeof import('./index.js').createTursoDb>>['db'],
-): Promise<void> {
-  const { migrate: migrateLibsql } = await import('drizzle-orm/libsql/migrator');
-  try {
-    await migrateLibsql(tursoDb as unknown as Parameters<typeof migrateLibsql>[0], { migrationsFolder });
-  } catch (err) {
-    console.error('[db] turso migration warning:', (err as Error).message);
-  }
-}
-
-// When executed directly: `npm run db:migrate`
+// CLI: `npm run db:migrate`
 if (process.argv[1] && import.meta.url.endsWith(process.argv[1].replace(/\\/g, '/'))) {
   const config = loadConfig();
-  const { db } = createDb(config.databaseUrl);
-  runMigrations(db);
+  const handle = await createDb(config.databaseUrl);
+  await runMigrations(handle.db, handle);
   console.log('[db] migrations applied');
 }

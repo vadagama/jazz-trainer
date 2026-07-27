@@ -18,14 +18,14 @@ export async function adminRolesRoutes(
   const { db } = opts;
 
   fastify.get('/admin/permissions', async (_request, reply) => {
-    const all = db.select().from(permissions).all();
+    const all = await db.select().from(permissions).all();
     return reply.send(all.map((p) => ({ code: p.code })));
   });
 
   fastify.get('/admin/roles', async (_request, reply) => {
-    const allRoles = db.select().from(roles).all();
-    const result = allRoles.map((r) => {
-      const rps = db
+    const allRoles = await db.select().from(roles).all();
+    const result = await Promise.all(allRoles.map(async (r) => {
+      const rps = await db
         .select({ code: rolePermissions.permissionCode })
         .from(rolePermissions)
         .where(eq(rolePermissions.roleId, r.id))
@@ -37,7 +37,7 @@ export async function adminRolesRoutes(
         inactivePermissions: [] as string[],
         createdAt: r.createdAt instanceof Date ? r.createdAt.getTime() : (r.createdAt as number),
       };
-    });
+    }));
     return reply.send(result);
   });
 
@@ -56,7 +56,7 @@ export async function adminRolesRoutes(
         });
       }
       const { name, permissions: permCodes } = parsed.data;
-      const existing = db.select({ id: roles.id }).from(roles).where(eq(roles.name, name)).get();
+      const existing = await db.select({ id: roles.id }).from(roles).where(eq(roles.name, name)).get();
       if (existing) {
         return reply.status(409).send({
           error: { code: 'CONFLICT', message: 'Role with this name already exists' },
@@ -64,12 +64,12 @@ export async function adminRolesRoutes(
       }
       const id = crypto.randomUUID();
       const now = Date.now();
-      const created = withAuditSync(db, request, 'role.create', 'role', id, {}, () => {
-        db.insert(roles)
+      const created = withAuditSync(db, request, 'role.create', 'role', id, {}, async () => {
+        await db.insert(roles)
           .values({ id, name, createdAt: new Date(now) })
           .run();
         for (const permCode of permCodes) {
-          db.insert(rolePermissions).values({ roleId: id, permissionCode: permCode }).run();
+          await db.insert(rolePermissions).values({ roleId: id, permissionCode: permCode }).run();
         }
         return { id, name, permissions: permCodes, inactivePermissions: [], createdAt: now };
       });
@@ -82,7 +82,7 @@ export async function adminRolesRoutes(
     { preHandler: [requirePermission('roles:write')] },
     async (request, reply) => {
       const { id } = request.params;
-      const role = db.select().from(roles).where(eq(roles.id, id)).get();
+      const role = await db.select().from(roles).where(eq(roles.id, id)).get();
       if (!role) {
         return reply.status(404).send({ error: { code: 'NOT_FOUND', message: 'Role not found' } });
       }
@@ -102,18 +102,18 @@ export async function adminRolesRoutes(
         });
       }
       const { name, permissions: newPerms } = parsed.data;
-      const updated = withAuditSync(db, request, 'role.update', 'role', id, {}, () => {
+      const updated = withAuditSync(db, request, 'role.update', 'role', id, {}, async () => {
         if (name !== undefined) {
-          db.update(roles).set({ name }).where(eq(roles.id, id)).run();
+          await db.update(roles).set({ name }).where(eq(roles.id, id)).run();
         }
         if (newPerms !== undefined) {
-          db.delete(rolePermissions).where(eq(rolePermissions.roleId, id)).run();
+          await db.delete(rolePermissions).where(eq(rolePermissions.roleId, id)).run();
           for (const permCode of newPerms) {
-            db.insert(rolePermissions).values({ roleId: id, permissionCode: permCode }).run();
+            await db.insert(rolePermissions).values({ roleId: id, permissionCode: permCode }).run();
           }
         }
-        const refreshed = db.select().from(roles).where(eq(roles.id, id)).get()!;
-        const rps = db
+        const refreshed = await db.select().from(roles).where(eq(roles.id, id)).get()!;
+        const rps = await db
           .select({ code: rolePermissions.permissionCode })
           .from(rolePermissions)
           .where(eq(rolePermissions.roleId, id))
@@ -138,7 +138,7 @@ export async function adminRolesRoutes(
     { preHandler: [requirePermission('roles:write')] },
     async (request, reply) => {
       const { id } = request.params;
-      const role = db.select().from(roles).where(eq(roles.id, id)).get();
+      const role = await db.select().from(roles).where(eq(roles.id, id)).get();
       if (!role) {
         return reply.status(404).send({ error: { code: 'NOT_FOUND', message: 'Role not found' } });
       }
@@ -151,9 +151,9 @@ export async function adminRolesRoutes(
           .status(403)
           .send({ error: { code: 'FORBIDDEN', message: 'Cannot delete a system role' } });
       }
-      withAuditSync(db, request, 'role.delete', 'role', id, {}, () => {
-        db.delete(rolePermissions).where(eq(rolePermissions.roleId, id)).run();
-        db.delete(roles).where(eq(roles.id, id)).run();
+      withAuditSync(db, request, 'role.delete', 'role', id, {}, async () => {
+        await db.delete(rolePermissions).where(eq(rolePermissions.roleId, id)).run();
+        await db.delete(roles).where(eq(roles.id, id)).run();
       });
       return reply.status(204).send();
     },

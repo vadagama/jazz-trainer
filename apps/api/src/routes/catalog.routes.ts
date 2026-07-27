@@ -40,31 +40,31 @@ export async function catalogRoutes(
         },
       });
     }
-    const entries = getCatalog(db, parsed.data, request.user?.id);
+    const entries = await getCatalog(db, parsed.data, request.user?.id);
     return reply.send(entries);
   });
 
   // ── GET /api/catalog/featured — featured carousel block ──────────────────
   fastify.get('/catalog/featured', async (request, reply) => {
-    const featured = getFeatured(db, request.user?.id);
+    const featured = await getFeatured(db, request.user?.id);
     return reply.send(featured);
   });
 
   // ── GET /api/catalog/tags — available tags with usage counts ────────────
   fastify.get('/catalog/tags', async (_request, reply) => {
-    const tags = getCatalogTags(db, false);
+    const tags = await getCatalogTags(db, false);
     return reply.send(tags);
   });
 
   // ── GET /api/catalog/stats — public stats ───────────────────────────────
   fastify.get('/catalog/stats', async (_request, reply) => {
-    const stats = getCatalogStats(db, false);
+    const stats = await getCatalogStats(db, false);
     return reply.send(stats);
   });
 
   // ── GET /api/catalog/:id — single entry details ─────────────────────────
   fastify.get<{ Params: { id: string } }>('/catalog/:id', async (request, reply) => {
-    const entry = getCatalogById(db, request.params.id, request.user?.id);
+    const entry = await getCatalogById(db, request.params.id, request.user?.id);
     if (!entry) {
       return reply
         .status(404)
@@ -88,7 +88,7 @@ export async function catalogRoutes(
           },
         });
       }
-      const entry = publishCatalogEntry(db, request.user!.id, parsed.data);
+      const entry = await publishCatalogEntry(db, request.user!.id, parsed.data);
       if (!entry) {
         return reply
           .status(404)
@@ -113,8 +113,8 @@ export async function catalogRoutes(
           },
         });
       }
-      const isAdmin = request.hasPermission('catalog:moderate');
-      const entry = updateCatalogEntry(
+      const isAdmin = await request.hasPermission('catalog:moderate');
+      const entry = await updateCatalogEntry(
         db,
         request.user!.id,
         request.params.id,
@@ -135,8 +135,8 @@ export async function catalogRoutes(
     '/catalog/:id',
     { preHandler: [requireAuth, requirePermission('catalog:publish')] },
     async (request, reply) => {
-      const isAdmin = request.hasPermission('catalog:moderate');
-      const ok = unpublishCatalogEntry(db, request.user!.id, request.params.id, isAdmin);
+      const isAdmin = await request.hasPermission('catalog:moderate');
+      const ok = await unpublishCatalogEntry(db, request.user!.id, request.params.id, isAdmin);
       if (!ok) {
         return reply.status(404).send({
           error: { code: 'NOT_FOUND', message: 'Catalog entry not found or not yours' },

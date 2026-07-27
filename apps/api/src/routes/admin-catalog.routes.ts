@@ -48,10 +48,10 @@ export async function adminCatalogRoutes(
     '/admin/catalog',
     { preHandler: [requireAuth, requirePermission('catalog:moderate')] },
     async (request, reply) => {
-      const entries = getAllCatalogEntriesForModeration(db);
+      const entries = await getAllCatalogEntriesForModeration(db);
       // If the user can also publish, include their private compositions
-      if (request.hasPermission('catalog:publish')) {
-        const privateEntries = getUserPrivateCompositionsForCatalog(db, request.user!.id);
+      if (await request.hasPermission('catalog:publish')) {
+        const privateEntries = await getUserPrivateCompositionsForCatalog(db, request.user!.id);
         // Prepend private entries (they go first since they're newest)
         entries.unshift(...privateEntries);
       }
@@ -64,7 +64,7 @@ export async function adminCatalogRoutes(
     '/admin/catalog/stats',
     { preHandler: [requireAuth, requirePermission('catalog:stats:read')] },
     async (_request, reply) => {
-      const stats = getCatalogStats(db, true);
+      const stats = await getCatalogStats(db, true);
       return reply.send(stats);
     },
   );
@@ -74,7 +74,7 @@ export async function adminCatalogRoutes(
     '/admin/catalog/:id/reject',
     { preHandler: [requireAuth, requirePermission('catalog:moderate')] },
     async (request, reply) => {
-      const ok = rejectCatalogEntry(db, request, request.params.id);
+      const ok = await rejectCatalogEntry(db, request, request.params.id);
       if (!ok) {
         return reply.status(404).send({ error: { code: 'NOT_FOUND', message: 'Not found' } });
       }
@@ -87,7 +87,7 @@ export async function adminCatalogRoutes(
     '/admin/catalog/:id/approve',
     { preHandler: [requireAuth, requirePermission('catalog:moderate')] },
     async (request, reply) => {
-      const ok = approveCatalogEntry(db, request, request.params.id);
+      const ok = await approveCatalogEntry(db, request, request.params.id);
       if (!ok) {
         return reply.status(404).send({ error: { code: 'NOT_FOUND', message: 'Not found' } });
       }
@@ -100,7 +100,7 @@ export async function adminCatalogRoutes(
     '/admin/catalog/:id/feature',
     { preHandler: [requireAuth, requirePermission('catalog:feature')] },
     async (request, reply) => {
-      const result = toggleFeatured(db, request, request.params.id);
+      const result = await toggleFeatured(db, request, request.params.id);
       if (!result) {
         return reply.status(404).send({
           error: {
@@ -128,7 +128,7 @@ export async function adminCatalogRoutes(
           },
         });
       }
-      const entry = updateCatalogEntry(db, request.user!.id, request.params.id, parsed.data, true);
+      const entry = await updateCatalogEntry(db, request.user!.id, request.params.id, parsed.data, true);
       if (!entry) {
         return reply.status(404).send({ error: { code: 'NOT_FOUND', message: 'Not found' } });
       }
@@ -141,7 +141,7 @@ export async function adminCatalogRoutes(
     '/admin/catalog/:id/featured-order',
     { preHandler: [requireAuth, requirePermission('catalog:feature')] },
     async (request, reply) => {
-      const ok = reorderFeatured(db, request.params.id, request.body.order);
+      const ok = await reorderFeatured(db, request.params.id, request.body.order);
       if (!ok) {
         return reply.status(404).send({ error: { code: 'NOT_FOUND', message: 'Not found' } });
       }
@@ -154,7 +154,7 @@ export async function adminCatalogRoutes(
     '/admin/catalog/:id',
     { preHandler: [requireAuth, requirePermission('catalog:moderate')] },
     async (request, reply) => {
-      const ok = deleteCatalogEntry(db, request, request.params.id);
+      const ok = await deleteCatalogEntry(db, request, request.params.id);
       if (!ok) {
         return reply.status(404).send({ error: { code: 'NOT_FOUND', message: 'Not found' } });
       }
@@ -177,7 +177,7 @@ export async function adminCatalogRoutes(
           },
         });
       }
-      const result = batchAction(db, request, parsed.data);
+      const result = await batchAction(db, request, parsed.data);
       return reply.send(result);
     },
   );
@@ -188,7 +188,7 @@ export async function adminCatalogRoutes(
     '/admin/catalog/tags',
     { preHandler: [requireAuth, requirePermission('catalog:tags:write')] },
     async (_request, reply) => {
-      const tags = getCatalogTags(db, true);
+      const tags = await getCatalogTags(db, true);
       return reply.send(tags);
     },
   );
@@ -207,7 +207,7 @@ export async function adminCatalogRoutes(
           },
         });
       }
-      const tag = createCatalogTag(db, request, parsed.data);
+      const tag = await createCatalogTag(db, request, parsed.data);
       if (!tag) {
         return reply.status(409).send({
           error: { code: 'DUPLICATE', message: 'Tag value already exists' },
@@ -231,7 +231,7 @@ export async function adminCatalogRoutes(
           },
         });
       }
-      const tag = updateCatalogTag(db, request, request.params.id, parsed.data);
+      const tag = await updateCatalogTag(db, request, request.params.id, parsed.data);
       if (!tag) {
         return reply.status(404).send({ error: { code: 'NOT_FOUND', message: 'Not found' } });
       }
@@ -243,7 +243,7 @@ export async function adminCatalogRoutes(
     '/admin/catalog/tags/:id',
     { preHandler: [requireAuth, requirePermission('catalog:tags:write')] },
     async (request, reply) => {
-      const ok = deleteCatalogTag(db, request, request.params.id);
+      const ok = await deleteCatalogTag(db, request, request.params.id);
       if (!ok) {
         return reply.status(404).send({ error: { code: 'NOT_FOUND', message: 'Not found' } });
       }
@@ -265,7 +265,7 @@ export async function adminCatalogRoutes(
           },
         });
       }
-      const result = mergeCatalogTags(db, request, parsed.data);
+      const result = await mergeCatalogTags(db, request, parsed.data);
       return reply.send(result);
     },
   );

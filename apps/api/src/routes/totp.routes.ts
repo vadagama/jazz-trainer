@@ -17,17 +17,17 @@ export async function totpRoutes(app: FastifyInstance, opts: TotpRoutesOptions):
 
   // ── GET /api/auth/totp/status ──────────────────────────────────────────
   app.get('/api/auth/totp/status', { preHandler: [requireAuth] }, async (request, reply) => {
-    return reply.send({ enabled: isTotpEnabled(db, request.user!.id) });
+    return reply.send({ enabled: await isTotpEnabled(db, request.user!.id) });
   });
 
   // ── POST /api/auth/totp/setup ──────────────────────────────────────────
   app.post('/api/auth/totp/setup', { preHandler: [requireAuth] }, async (request, reply) => {
-    if (isTotpEnabled(db, request.user!.id)) {
+    if (await isTotpEnabled(db, request.user!.id)) {
       return reply.status(409).send({
         error: { code: 'CONFLICT', message: 'TOTP is already enabled. Disable it first.' },
       });
     }
-    const { otpauthUrl } = setupTotp(db, request.user!.id);
+    const { otpauthUrl } = await setupTotp(db, request.user!.id);
     return reply.send({ otpauthUrl });
   });
 
@@ -39,13 +39,13 @@ export async function totpRoutes(app: FastifyInstance, opts: TotpRoutesOptions):
         error: { code: 'VALIDATION_ERROR', message: 'A 6-digit TOTP token is required' },
       });
     }
-    const ok = enableTotp(db, request.user!.id, token);
+    const ok = await enableTotp(db, request.user!.id, token);
     if (!ok) {
       return reply.status(400).send({
         error: { code: 'INVALID_TOTP', message: 'Invalid or expired TOTP token' },
       });
     }
-    withAuditSync(db, request, 'auth:totp:enabled', 'user', request.user!.id, {}, () => ({}));
+    await withAuditSync(db, request, 'auth:totp:enabled', 'user', request.user!.id, {}, () => ({}));
     return reply.send({ enabled: true });
   });
 
@@ -67,7 +67,7 @@ export async function totpRoutes(app: FastifyInstance, opts: TotpRoutesOptions):
       });
     }
 
-    const session = db.select().from(sessions).where(eq(sessions.id, sid)).get();
+    const session = await db.select().from(sessions).where(eq(sessions.id, sid)).get();
     if (!session || session.expiresAt < Date.now()) {
       return reply.status(401).send({
         error: { code: 'SESSION_EXPIRED', message: 'Session expired' },
@@ -76,7 +76,7 @@ export async function totpRoutes(app: FastifyInstance, opts: TotpRoutesOptions):
 
     const userId = session.userId;
 
-    if (!checkTotp(db, userId, token)) {
+    if (!(await checkTotp(db, userId, token))) {
       return reply.status(400).send({
         error: { code: 'INVALID_TOTP', message: 'Invalid TOTP token' },
       });
@@ -84,25 +84,25 @@ export async function totpRoutes(app: FastifyInstance, opts: TotpRoutesOptions):
 
     // Mark session as TOTP-verified
     const now = Date.now();
-    db.update(sessions)
+    await db.update(sessions)
       .set({ totpVerified: 1, totpVerifiedAt: now, lastUsedAt: now })
       .where(eq(sessions.id, sid))
       .run();
 
-    withAuditSync(db, request, 'auth:totp:verified', 'user', userId, {}, () => ({}));
+    await withAuditSync(db, request, 'auth:totp:verified', 'user', userId, {}, () => ({}));
 
     return reply.send({ ok: true });
   });
 
   // ── DELETE /api/auth/totp ─────────────────────────────────────────────
   app.delete('/api/auth/totp', { preHandler: [requireAuth] }, async (request, reply) => {
-    if (!isTotpEnabled(db, request.user!.id)) {
+    if (!(await isTotpEnabled(db, request.user!.id))) {
       return reply.status(404).send({
         error: { code: 'NOT_FOUND', message: 'TOTP is not enabled' },
       });
     }
-    disableTotp(db, request.user!.id);
-    withAuditSync(db, request, 'auth:totp:disabled', 'user', request.user!.id, {}, () => ({}));
+    await disableTotp(db, request.user!.id);
+    await withAuditSync(db, request, 'auth:totp:disabled', 'user', request.user!.id, {}, () => ({}));
     return reply.send({ enabled: false });
   });
 }

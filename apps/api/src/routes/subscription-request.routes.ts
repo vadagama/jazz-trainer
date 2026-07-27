@@ -35,7 +35,7 @@ export async function subscriptionRequestRoutes(
       const { email, name, desiredTier, message } = parsed.data;
 
       // Rate-limit by email: 1 request per 24 hours
-      if (isSubscriptionRequestRateLimited(db, email)) {
+      if (await isSubscriptionRequestRateLimited(db, email)) {
         return reply.status(429).send({
           error: {
             code: 'RATE_LIMITED',
@@ -45,7 +45,7 @@ export async function subscriptionRequestRoutes(
       }
 
       try {
-        createSubscriptionRequest(db, { email, name, desiredTier, message });
+        await createSubscriptionRequest(db, { email, name, desiredTier, message });
         return reply.send({ message: 'Заявка принята. Мы свяжемся с вами в течение 24 часов.' });
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'Internal error';

@@ -19,8 +19,8 @@ export interface AdminFeatureAccessRoutesOptions {
   db: DrizzleDb;
 }
 
-function getPublicFeatures(db: DrizzleDb): { code: string; state: string }[] {
-  const rows = db.select().from(featureAccess).all();
+async function getPublicFeatures(db: DrizzleDb): Promise<{ code: string; state: string }[]> {
+  const rows = await db.select().from(featureAccess).all();
   return rows.map((r) => ({ code: r.featureCode, state: r.state }));
 }
 
@@ -34,7 +34,7 @@ export async function adminFeatureAccessRoutes(
     '/admin/feature-access',
     { preHandler: [requirePermission('roles:read')] },
     async (_request, reply) => {
-      return reply.send(getPublicFeatures(db));
+      return reply.send(await getPublicFeatures(db));
     },
   );
 
@@ -62,18 +62,18 @@ export async function adminFeatureAccessRoutes(
         'feature_access',
         'public',
         {},
-        () => {
-          const existingRows = db.select().from(featureAccess).all();
+        async () => {
+          const existingRows = await db.select().from(featureAccess).all();
           const codes = new Set(existingRows.map((r) => r.featureCode));
 
           for (const [code, state] of featureMap) {
             if (codes.has(code)) {
-              db.update(featureAccess)
+              await db.update(featureAccess)
                 .set({ state: state as 'active' | 'inactive' })
                 .where(eq(featureAccess.featureCode, code))
                 .run();
             } else {
-              db.insert(featureAccess)
+              await db.insert(featureAccess)
                 .values({ featureCode: code, state: state as 'active' | 'inactive' })
                 .run();
             }
@@ -81,7 +81,7 @@ export async function adminFeatureAccessRoutes(
 
           for (const row of existingRows) {
             if (!featureMap.has(row.featureCode)) {
-              db.delete(featureAccess).where(eq(featureAccess.featureCode, row.featureCode)).run();
+              await db.delete(featureAccess).where(eq(featureAccess.featureCode, row.featureCode)).run();
             }
           }
 

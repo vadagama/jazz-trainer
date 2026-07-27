@@ -62,7 +62,7 @@ export async function adminFlagsRoutes(
         status?: string;
       };
 
-      let rows = db.select().from(featureFlags).all();
+      let rows = await db.select().from(featureFlags).all();
 
       const q = query.q?.trim().toLowerCase();
       if (q) {
@@ -93,14 +93,14 @@ export async function adminFlagsRoutes(
     { preHandler: [requirePermission('flags:read')] },
     async (request, reply) => {
       const { key } = request.params;
-      const record = db.select().from(featureFlags).where(eq(featureFlags.key, key)).get();
+      const record = await db.select().from(featureFlags).where(eq(featureFlags.key, key)).get();
       if (!record) {
         return reply.status(404).send({
           error: { code: 'NOT_FOUND', message: 'Flag not found' },
         });
       }
 
-      const history = db
+      const history = await db
         .select({
           id: auditLog.id,
           action: auditLog.action,
@@ -147,7 +147,7 @@ export async function adminFlagsRoutes(
       }
 
       const input = parsed.data;
-      const existing = db
+      const existing = await db
         .select({ key: featureFlags.key })
         .from(featureFlags)
         .where(eq(featureFlags.key, input.key))
@@ -175,9 +175,9 @@ export async function adminFlagsRoutes(
         createdAt: new Date(now),
       };
 
-      const created = withAuditSync(db, request, 'flag.create', 'flag', input.key, {}, () => {
-        db.insert(featureFlags).values(record).run();
-        const row = db.select().from(featureFlags).where(eq(featureFlags.key, input.key)).get()!;
+      const created = withAuditSync(db, request, 'flag.create', 'flag', input.key, {}, async () => {
+        await db.insert(featureFlags).values(record).run();
+        const row = await db.select().from(featureFlags).where(eq(featureFlags.key, input.key)).get()!;
         return toFlagDTO(row);
       });
 
@@ -232,9 +232,9 @@ export async function adminFlagsRoutes(
         'flag',
         key,
         { before: toFlagDTO(existing) },
-        () => {
-          db.update(featureFlags).set(patch).where(eq(featureFlags.key, key)).run();
-          const row = db.select().from(featureFlags).where(eq(featureFlags.key, key)).get()!;
+        async () => {
+          await db.update(featureFlags).set(patch).where(eq(featureFlags.key, key)).run();
+          const row = await db.select().from(featureFlags).where(eq(featureFlags.key, key)).get()!;
           return toFlagDTO(row);
         },
       );
@@ -249,7 +249,7 @@ export async function adminFlagsRoutes(
     { preHandler: [requirePermission('flags:write')] },
     async (request, reply) => {
       const { key } = request.params;
-      const existing = db.select().from(featureFlags).where(eq(featureFlags.key, key)).get();
+      const existing = await db.select().from(featureFlags).where(eq(featureFlags.key, key)).get();
       if (!existing) {
         return reply.status(404).send({
           error: { code: 'NOT_FOUND', message: 'Flag not found' },
@@ -263,8 +263,8 @@ export async function adminFlagsRoutes(
         'flag',
         key,
         { before: toFlagDTO(existing) },
-        () => {
-          db.delete(featureFlags).where(eq(featureFlags.key, key)).run();
+        async () => {
+          await db.delete(featureFlags).where(eq(featureFlags.key, key)).run();
           return null;
         },
       );

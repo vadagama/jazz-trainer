@@ -10,7 +10,7 @@ import type { GoogleProfile } from '../src/routes/auth.routes.js';
 import { createSession, computeFingerprint } from '../src/services/auth.service.js';
 
 async function makeApp(dbOverride?: DrizzleDb): Promise<FastifyInstance> {
-  const db = dbOverride ?? createTestDb();
+  const db = dbOverride ?? (await createTestDb());
   return buildServer({
     config: { authDevMode: true, webOrigin: 'http://localhost:5173' },
     db,
@@ -114,7 +114,7 @@ describe('dev-login not available outside AUTH_DEV_MODE', () => {
   it('returns 404 when AUTH_DEV_MODE is off', async () => {
     const app = await buildServer({
       config: { authDevMode: false },
-      db: createTestDb(),
+      db: await createTestDb(),
     });
     await app.ready();
     const res = await supertest(app.server).post('/api/auth/dev-login').send({ email: 'x@x.com' });
@@ -125,7 +125,7 @@ describe('dev-login not available outside AUTH_DEV_MODE', () => {
 
 describe('system user', () => {
   it('exists in the DB after seed with provider=system', async () => {
-    const db = createTestDb();
+    const db = await createTestDb();
     const sys = db.select().from(users).where(eq(users.id, 'system')).get();
     expect(sys).toBeDefined();
     expect(sys!.provider).toBe('system');
@@ -155,7 +155,7 @@ describe('Google OAuth callback (mocked exchange)', () => {
   };
 
   it('creates user and session on successful callback', async () => {
-    const db = createTestDb();
+    const db = await createTestDb();
     const app = await buildServer({
       config: { authDevMode: false, webOrigin: 'http://localhost:5173', googleClientId: 'id' },
       db,
@@ -186,7 +186,7 @@ describe('Google OAuth callback (mocked exchange)', () => {
   it('redirects with error when state is invalid (CSRF)', async () => {
     const app = await buildServer({
       config: { authDevMode: false, webOrigin: 'http://localhost:5173', googleClientId: 'id' },
-      db: createTestDb(),
+      db: await createTestDb(),
       exchangeGoogleCode: async () => ({ profile: fakeProfile, idToken: '' }),
     });
     await app.ready();
@@ -202,7 +202,7 @@ describe('Google OAuth callback (mocked exchange)', () => {
     let receivedCodeVerifier = '';
     const app = await buildServer({
       config: { authDevMode: false, webOrigin: 'http://localhost:5173', googleClientId: 'id' },
-      db: createTestDb(),
+      db: await createTestDb(),
       exchangeGoogleCode: async (_code, codeVerifier) => {
         receivedCodeVerifier = codeVerifier;
         return { profile: fakeProfile, idToken: '' };
@@ -227,7 +227,7 @@ describe('Google OAuth callback (mocked exchange)', () => {
 
     const app = await buildServer({
       config: { authDevMode: false, webOrigin: 'http://localhost:5173', googleClientId: 'id' },
-      db: createTestDb(),
+      db: await createTestDb(),
       exchangeGoogleCode: async () => ({ profile: fakeProfile, idToken }),
     });
     await app.ready();
@@ -251,7 +251,7 @@ describe('Google OAuth callback (mocked exchange)', () => {
 
     const app = await buildServer({
       config: { authDevMode: false, webOrigin: 'http://localhost:5173', googleClientId: 'id' },
-      db: createTestDb(),
+      db: await createTestDb(),
       exchangeGoogleCode: async () => ({ profile: fakeProfile, idToken }),
     });
     await app.ready();
@@ -283,7 +283,7 @@ function makeIdToken(payload: Record<string, unknown>): string {
 
 describe('permission helper scaffold (A vs B)', () => {
   it('two users share the same DB but get different UUIDs', async () => {
-    const db = createTestDb();
+    const db = await createTestDb();
     const app = await buildServer({ config: { authDevMode: true }, db });
     await app.ready();
 
@@ -313,7 +313,7 @@ describe('session management (T-032)', () => {
   let agent: Agent;
 
   beforeEach(async () => {
-    db = createTestDb();
+    db = await createTestDb();
     app = await buildServer({ config: { authDevMode: true, webOrigin: 'http://localhost:5173' }, db });
     await app.ready();
     agent = supertest.agent(app.server);
@@ -362,7 +362,7 @@ describe('session management (T-032)', () => {
   });
 
   it('DELETE /api/auth/sessions/:id returns 404 for non-owned session', async () => {
-    const otherDb = createTestDb();
+    const otherDb = await createTestDb();
     const otherApp = await buildServer({
       config: { authDevMode: true, webOrigin: 'http://localhost:5173' },
       db: otherDb,
@@ -403,7 +403,7 @@ describe('device fingerprint (T-033)', () => {
   let agent: Agent;
 
   beforeEach(async () => {
-    db = createTestDb();
+    db = await createTestDb();
     app = await buildServer({ config: { authDevMode: true, webOrigin: 'http://localhost:5173' }, db });
     await app.ready();
     agent = supertest.agent(app.server);
@@ -466,7 +466,7 @@ describe('device fingerprint (T-033)', () => {
 
 describe('sliding expiration (T-034)', () => {
   it('extends session on each authenticated request', async () => {
-    const db = createTestDb();
+    const db = await createTestDb();
     const app = await buildServer({ config: { authDevMode: true, webOrigin: 'http://localhost:5173' }, db });
     await app.ready();
     const agent = supertest.agent(app.server);
@@ -493,7 +493,7 @@ describe('sliding expiration (T-034)', () => {
   });
 
   it('deletes session when absolute TTL is exceeded', async () => {
-    const db = createTestDb();
+    const db = await createTestDb();
     const app = await buildServer({
       config: { authDevMode: true, webOrigin: 'http://localhost:5173' },
       db,
@@ -521,7 +521,7 @@ describe('sliding expiration (T-034)', () => {
   });
 
   it('bumps lastUsedAt on each request', async () => {
-    const db = createTestDb();
+    const db = await createTestDb();
     const app = await buildServer({ config: { authDevMode: true, webOrigin: 'http://localhost:5173' }, db });
     await app.ready();
     const agent = supertest.agent(app.server);

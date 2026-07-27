@@ -32,8 +32,9 @@ async function main(): Promise<void> {
     fs.mkdirSync(path.dirname(path.resolve(config.databaseUrl)), { recursive: true });
   }
 
-  const { db, sqlite } = createDb(config.databaseUrl);
-  runMigrations(db, sqlite);
+  const handle = await createDb(config.databaseUrl);
+  const { db } = handle;
+  await runMigrations(db, handle);
 
   // Auto-generate migrations from schema changes AFTER migrations are applied.
   // Drizzle needs the DB to exist and be up-to-date for correct incremental diffs.
@@ -66,9 +67,9 @@ async function main(): Promise<void> {
 
   // ── Cron: degrade expired subscriptions every hour ───────────────────────
   const CRON_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
-  const cronTimer = setInterval(() => {
+  const cronTimer = setInterval(async () => {
     try {
-      const result = degradeExpiredSubscriptions(db, config);
+      const result = await degradeExpiredSubscriptions(db, config);
       if (result.degraded > 0 || result.notified > 0) {
         console.log(`[cron] subscriptions: degraded=${result.degraded} notified=${result.notified}`);
       }
@@ -82,7 +83,7 @@ async function main(): Promise<void> {
   const shutdown = async (signal: string) => {
     console.log(`[api] received ${signal}, shutting down...`);
     await app.close();
-    sqlite.close();
+    if (handle.kind === 'sqlite') handle.sqlite.close();
     process.exit(0);
   };
   process.once('SIGTERM', () => shutdown('SIGTERM'));

@@ -1,5 +1,5 @@
 import fp from 'fastify-plugin';
-import type { FastifyInstance, preHandlerHookHandler } from 'fastify';
+import type { FastifyInstance, FastifyRequest, preHandlerHookHandler } from 'fastify';
 import type { DrizzleDb } from '../db/index.js';
 import { hasPermission } from '../services/rbac.service.js';
 
@@ -15,9 +15,9 @@ export const rbacPlugin = fp(async function rbacPlugin(
   app: FastifyInstance,
   opts: RbacPluginOptions,
 ) {
-  app.decorateRequest('hasPermission', function (permission: string): boolean {
+  app.decorateRequest('hasPermission', async function (this: FastifyRequest, permission: string): Promise<boolean> {
     if (!this.user) return false;
-    return hasPermission(opts.db, this.user.id, permission);
+    return await hasPermission(opts.db, this.user.id, permission);
   });
 
   // Auto-guard every /api/admin/* route
@@ -31,7 +31,7 @@ export const rbacPlugin = fp(async function rbacPlugin(
           error: { code: 'UNAUTHENTICATED', message: 'Login required' },
         });
       }
-      if (!request.hasPermission('admin')) {
+      if (!(await request.hasPermission('admin'))) {
         return reply.status(403).send({
           error: { code: 'FORBIDDEN', message: 'Insufficient permissions' },
         });
@@ -51,7 +51,7 @@ export const rbacPlugin = fp(async function rbacPlugin(
 
 declare module 'fastify' {
   interface FastifyRequest {
-    hasPermission(permission: string): boolean;
+    hasPermission(permission: string): Promise<boolean>;
   }
 }
 
@@ -69,7 +69,7 @@ export function requirePermission(permission: string): preHandlerHookHandler {
       });
       return;
     }
-    if (!request.hasPermission(permission)) {
+    if (!(await request.hasPermission(permission))) {
       await reply.status(403).send({
         error: { code: 'FORBIDDEN', message: `Missing permission: ${permission}` },
       });

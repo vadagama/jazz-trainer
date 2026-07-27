@@ -104,13 +104,13 @@ describe('TOTP — verifyTotpToken', () => {
 describe('TOTP — setupTotp', () => {
   let db: DrizzleDb;
 
-  beforeEach(() => {
-    db = createTestDb();
+  beforeEach(async () => {
+    db = await createTestDb();
     createUser(db, 'user-1', 'totp@test.com');
   });
 
-  it('stores a pending TOTP secret for a new user', () => {
-    const { secret, otpauthUrl } = setupTotp(db, 'user-1');
+  it('stores a pending TOTP secret for a new user', async () => {
+    const { secret, otpauthUrl } = await setupTotp(db, 'user-1');
     expect(secret).toMatch(/^[A-Z2-7]+=*$/);
     expect(otpauthUrl).toContain('otpauth://totp/');
 
@@ -120,9 +120,9 @@ describe('TOTP — setupTotp', () => {
     expect(row!.enabled).toBe(false);
   });
 
-  it('overwrites previous pending secret for same user', () => {
-    const first = setupTotp(db, 'user-1');
-    const second = setupTotp(db, 'user-1');
+  it('overwrites previous pending secret for same user', async () => {
+    const first = await setupTotp(db, 'user-1');
+    const second = await setupTotp(db, 'user-1');
     expect(first.secret).not.toBe(second.secret);
 
     const row = db.select().from(totpSecrets).where(eq(totpSecrets.userId, 'user-1')).get();
@@ -133,94 +133,94 @@ describe('TOTP — setupTotp', () => {
 describe('TOTP — enableTotp', () => {
   let db: DrizzleDb;
 
-  beforeEach(() => {
-    db = createTestDb();
+  beforeEach(async () => {
+    db = await createTestDb();
     createUser(db, 'user-1');
   });
 
-  it('returns false when user has no TOTP setup', () => {
-    expect(enableTotp(db, 'user-1', '123456')).toBe(false);
+  it('returns false when user has no TOTP setup', async () => {
+    expect(await enableTotp(db, 'user-1', '123456')).toBe(false);
   });
 
-  it('returns false when TOTP is already enabled', () => {
-    setupTotp(db, 'user-1');
+  it('returns false when TOTP is already enabled', async () => {
+    await setupTotp(db, 'user-1');
     // Directly mark as enabled
     db.update(totpSecrets)
       .set({ enabled: true })
       .where(eq(totpSecrets.userId, 'user-1'))
       .run();
-    expect(enableTotp(db, 'user-1', '123456')).toBe(false);
+    expect(await enableTotp(db, 'user-1', '123456')).toBe(false);
   });
 
-  it('returns false for wrong token', () => {
-    setupTotp(db, 'user-1');
-    expect(enableTotp(db, 'user-1', '000000')).toBe(false);
+  it('returns false for wrong token', async () => {
+    await setupTotp(db, 'user-1');
+    expect(await enableTotp(db, 'user-1', '000000')).toBe(false);
   });
 });
 
 describe('TOTP — checkTotp', () => {
   let db: DrizzleDb;
 
-  beforeEach(() => {
-    db = createTestDb();
+  beforeEach(async () => {
+    db = await createTestDb();
     createUser(db, 'user-1');
   });
 
-  it('returns false when user has no TOTP record', () => {
-    expect(checkTotp(db, 'user-1', '123456')).toBe(false);
+  it('returns false when user has no TOTP record', async () => {
+    expect(await checkTotp(db, 'user-1', '123456')).toBe(false);
   });
 
-  it('returns false when TOTP is not enabled', () => {
-    setupTotp(db, 'user-1');
-    expect(checkTotp(db, 'user-1', '123456')).toBe(false);
+  it('returns false when TOTP is not enabled', async () => {
+    await setupTotp(db, 'user-1');
+    expect(await checkTotp(db, 'user-1', '123456')).toBe(false);
   });
 });
 
 describe('TOTP — isTotpEnabled', () => {
   let db: DrizzleDb;
 
-  beforeEach(() => {
-    db = createTestDb();
+  beforeEach(async () => {
+    db = await createTestDb();
     createUser(db, 'user-1');
   });
 
-  it('returns false when no record exists', () => {
-    expect(isTotpEnabled(db, 'user-1')).toBe(false);
+  it('returns false when no record exists', async () => {
+    expect(await isTotpEnabled(db, 'user-1')).toBe(false);
   });
 
-  it('returns false when record exists but not enabled', () => {
-    setupTotp(db, 'user-1');
-    expect(isTotpEnabled(db, 'user-1')).toBe(false);
+  it('returns false when record exists but not enabled', async () => {
+    await setupTotp(db, 'user-1');
+    expect(await isTotpEnabled(db, 'user-1')).toBe(false);
   });
 
-  it('returns true when enabled', () => {
-    setupTotp(db, 'user-1');
+  it('returns true when enabled', async () => {
+    await setupTotp(db, 'user-1');
     db.update(totpSecrets)
       .set({ enabled: true })
       .where(eq(totpSecrets.userId, 'user-1'))
       .run();
-    expect(isTotpEnabled(db, 'user-1')).toBe(true);
+    expect(await isTotpEnabled(db, 'user-1')).toBe(true);
   });
 });
 
 describe('TOTP — disableTotp', () => {
   let db: DrizzleDb;
 
-  beforeEach(() => {
-    db = createTestDb();
+  beforeEach(async () => {
+    db = await createTestDb();
     createUser(db, 'user-1');
   });
 
-  it('removes the TOTP record', () => {
-    setupTotp(db, 'user-1');
+  it('removes the TOTP record', async () => {
+    await setupTotp(db, 'user-1');
     db.update(totpSecrets)
       .set({ enabled: true })
       .where(eq(totpSecrets.userId, 'user-1'))
       .run();
-    expect(isTotpEnabled(db, 'user-1')).toBe(true);
+    expect(await isTotpEnabled(db, 'user-1')).toBe(true);
 
     disableTotp(db, 'user-1');
-    expect(isTotpEnabled(db, 'user-1')).toBe(false);
+    expect(await isTotpEnabled(db, 'user-1')).toBe(false);
     expect(
       db.select().from(totpSecrets).where(eq(totpSecrets.userId, 'user-1')).get(),
     ).toBeUndefined();
