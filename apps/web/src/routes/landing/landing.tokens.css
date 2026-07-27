@@ -1,0 +1,126 @@
+/*
+ * Amazilia landing — брендовые токены (BRAND.md §6.2).
+ * Scoped на .amz-landing, чтобы не конфликтовать с токенами приложения (index.css).
+ * Лендинг всегда тёмный — «ночной сад».
+ */
+.amz-landing {
+  --amz-primary: #0d7377; /* глубокий сине-зелёный — оперение колибри */
+  --amz-primary-bright: #14a3a8;
+  --amz-accent: #f0a500; /* тёплый янтарный — клюв и горло */
+  --amz-accent-soft: #ffc247;
+
+  /* Неоновые акценты — те же цвета, что и чипы секций в самом приложении
+     (SECTION_TYPE_COLORS, packages/shared/src/music.ts). Эклектика не выдумана,
+     а взята из реального UI продукта: "Куплет A/B/C", "Бридж", "Соло". */
+  --amz-neon-emerald: #34d399;
+  --amz-neon-purple: #c084fc;
+  --amz-neon-cyan: #22d3ee;
+  --amz-neon-green: #4ade80;
+
+  /* Основной CTA — насыщенный дуотон фиолетовый→бирюзовый (более смелый акцент,
+     та же неоновая палитра, но в затемнённых тонах — для контраста с белым текстом). */
+  --amz-cta-from: #9333ea;
+  --amz-cta-to: #0891b2;
+
+  --amz-bg: #0b0d12; /* почти чёрный — фон самого приложения (oklch(0.16 0.01 265)) */
+  --amz-bg-deep: #05060a;
+  --amz-surface: #13161c; /* тёмно-серый — цвет карточек такта в приложении */
+  --amz-surface-2: #1a1e26;
+  --amz-text: #eaecee; /* светлый, почти белый */
+  --amz-text-dim: #8899aa; /* приглушённый серо-голубой */
+  --amz-success: #2ecc71; /* живой зелёный — листва */
+  --amz-border: rgba(136, 153, 170, 0.14);
+  --amz-border-strong: rgba(136, 153, 170, 0.26);
+
+  --amz-font-display: 'Sora', ui-sans-serif, system-ui, sans-serif;
+  --amz-font-body: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --amz-font-mono:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
+    monospace;
+
+  background-color: var(--amz-bg);
+  color: var(--amz-text);
+  font-family: var(--amz-font-body);
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Мелкие лейблы/чипы/эйбрау — моноширинный шрифт, как подписи "BAR 01" в плеере. */
+.amz-mono {
+  font-family: var(--amz-font-mono);
+  letter-spacing: 0.04em;
+}
+
+/* Неоновое свечение под чип/иконку — используется точечно, не на каждом элементе. */
+.amz-glow {
+  box-shadow: 0 0 0 1px currentColor inset, 0 0 18px -4px currentColor;
+}
+
+.amz-landing h1,
+.amz-landing h2,
+.amz-landing h3,
+.amz-landing .amz-display {
+  font-family: var(--amz-font-display);
+  letter-spacing: -0.02em;
+}
+
+/* Плавное появление секций при скролле */
+.amz-reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition:
+    opacity 0.6s ease,
+    transform 0.6s ease;
+  will-change: opacity, transform;
+}
+.amz-reveal.amz-in {
+  opacity: 1;
+  transform: none;
+}
+
+/* Мягкое «парение» hero-визуала — образ колибри (BRAND §6.5) */
+@keyframes amz-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+.amz-float {
+  animation: amz-float 6s ease-in-out infinite;
+}
+
+/* Взмахи крыльев логотипа-колибри при загрузке/наведении */
+@keyframes amz-wing {
+  0%,
+  100% {
+    transform: scaleY(1);
+  }
+  50% {
+    transform: scaleY(0.82);
+  }
+}
+
+/* Бегущая «беззвучная» подсветка баров (декоративная строка под hero) */
+@keyframes amz-pulse-bar {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .amz-float,
+  .amz-reveal {
+    animation: none !important;
+    transition: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}

@@ -2,20 +2,10 @@
 
 Настройки Vercel-проектов для ручного воспроизведения. Все настройки дублируются в CLI-конфигах (`infra/vercel/*.json`).
 
-## Проект 1: Лендинг
+> **Лендинг** — это React-роут `/landing` внутри Studio (`apps/web`), а не отдельный
+> проект. Отдельный статический проект `amazilia-landing` (`apps/landing`) удалён.
 
-| Параметр | Значение |
-|----------|----------|
-| **Имя** | `amazilia-landing` |
-| **Framework** | Other |
-| **Root Directory** | `apps/landing` |
-| **Build Command** | `cd ../.. && npm run build -- -w @jazz/landing` |
-| **Output Directory** | `dist` |
-| **Install Command** | `cd ../.. && npm ci` |
-| **Dev Command** | `cd ../.. && npm run dev -- -w @jazz/landing` |
-| **Production Branch** | `main` |
-
-## Проект 2: Веб-приложение (Studio)
+## Проект 1: Веб-приложение (Studio)
 
 | Параметр | Значение |
 |----------|----------|
@@ -34,7 +24,7 @@
 |--------|-------------|
 | `/api/:path*` | `https://<api-project>.vercel.app/api/:path*` |
 
-## Проект 3: API
+## Проект 2: API
 
 | Параметр | Значение |
 |----------|----------|
@@ -55,6 +45,5 @@
 
 | Проект | Временный домен |
 |--------|-----------------|
-| Лендинг | `<landing-project>.vercel.app` |
-| Studio | `<studio-project>.vercel.app` |
+| Studio (+ лендинг `/landing`) | `<studio-project>.vercel.app` |
 | API | `<api-project>.vercel.app` |

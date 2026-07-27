@@ -48,14 +48,13 @@ graph TD
 
 | Компонент | Хостинг | Технология | Комментарий |
 |-----------|---------|-----------|-------------|
-| **Лендинг** (`amazilia.app`) | Vercel (отдельный проект) | Vite + Tailwind CSS v4 (vanilla JS) → статический HTML | `apps/landing` в монорепо. Деплоится как отдельный Vercel-проект. Без JS-фреймворка — чистый HTML + CSS + ванильный JS на выходе. |
-| **Веб-приложение** (`studio.amazilia.app`) | Vercel (отдельный проект) | Vite + React SPA (`apps/web`) | Сборка из монорепо. Прокси `/api` → API-сервер. |
+| **Веб-приложение + лендинг** (`studio.amazilia.app`, лендинг на `/landing`) | Vercel (отдельный проект) | Vite + React SPA (`apps/web`) | Сборка из монорепо. Прокси `/api` → API-сервер. Лендинг — React-роут `/landing` внутри приложения (не отдельный проект). |
 | **API-сервер** (`api.amazilia.app`) | Vercel (отдельный проект) | Fastify (`apps/api`) | Stateless REST, завернут в Vercel Serverless Function через `@fastify/vercel`. Подробнее: §1.2.1. |
 | **База данных** | Turso | libSQL (SQLite-совместимая) | Нативная Vercel-интеграция. edge-ready. |
 | **Файловое хранилище** | Vercel Blob Storage | S3-совместимое API | Ассеты, сэмплы, аватары пользователей. |
 | **Email** | Resend | Транзакционные письма | Magic Link, уведомления, welcome-письма. Vercel-интеграция. |
 
-> **ADR-008: Лендинг — статический HTML без JS-фреймворка.** Лендинг не содержит пользовательского состояния и не требует SSR/ISR/роутинга. Единственные интерактивные элементы: canvas-анимация (vanilla JS), форма логина (GET-редирект на `studio.amazilia.app/login`), i18n-переключатель. Vite + Tailwind v4 дают tree-shaken CSS (~15 KB) и минификацию JS (~8 KB) при шаге сборки ~2 сек. Next.js/Astro/React были бы overkill для одной статической страницы. См. §10 для A/B-тестов и Vercel Flags (работают без фреймворка через Edge Config).
+> **ADR-008 (отменён): Лендинг — статический HTML без JS-фреймворка.** Ранее лендинг был отдельным Vite-проектом (`apps/landing`, vanilla JS). Решение отменено: лендинг реализован как React-роут `/landing` внутри Studio (`apps/web/src/routes/landing/`) — единый деплой, переиспользование UI-примитивов и i18n приложения, общий домен. Отдельный проект `amazilia-landing` удалён.
 
 #### 1.2.1. API на Vercel Serverless
 

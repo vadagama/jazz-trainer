@@ -15,7 +15,6 @@
 
 ```bash
 # Деплой конкретного проекта
-vercel --cwd apps/landing --prod
 vercel --cwd apps/web --prod
 vercel --cwd apps/api --prod
 
