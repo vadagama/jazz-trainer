@@ -12,6 +12,7 @@ async function initHandler() {
   const { createDb } = await import('../src/db/index.js');
   const { runMigrations } = await import('../src/db/migrate.js');
   const seedMod = await import('../src/db/seed.js');
+  const billingMod = await import('../src/services/billing.service.js');
 
   const config = loadConfig();
   const handle = await createDb(config.databaseUrl, config.databaseAuthToken ?? undefined);
@@ -19,7 +20,7 @@ async function initHandler() {
 
   await seedMod.seedSystemUser(handle.db);
   await seedMod.seedRbac(handle.db);
-  await seedMod.seedSubscriptionTiers(handle.db);
+  await billingMod.seedSubscriptionTiers(handle.db);
   if (config.authDevMode) await seedMod.seedDevUser(handle.db);
 
   console.log('[api] ready:', config.databaseUrl.startsWith('libsql://') ? 'turso' : 'sqlite');
