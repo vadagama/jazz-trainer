@@ -109,7 +109,6 @@ export {
 export { SOLO_INSTRUMENT_MANIFESTS } from './soloInstrumentRegistry.js';
 export { SoloInstrumentHost } from './soloInstrumentHost.js';
 export { DuckingCompressor, type DuckingCompressorOptions } from './duckingCompressor.js';
-export { testAudioPortContract } from './ports.contract.js';
 export { type DrumSound } from './drumSampleRegistry.js';
 export { resolveDrumSound, selectDrumPlayer, type DrumHitSelection } from './drumSamplePlayer.js';
 export {
@@ -320,7 +319,6 @@ export {
 } from './pianoVoicing.js';
 export { avoidConflicts } from './pianoRhodesInteraction.js';
 export { suggestUpperStructure, type UpperStructure } from './pianoUpperStructures.js';
-export { testSoloInstrumentContract } from './soloInstrument.contract.js';
 
 // -- Solo instrument manifests --
 export { synthDefaultManifest } from './manifests/synthDefaultManifest.js';
