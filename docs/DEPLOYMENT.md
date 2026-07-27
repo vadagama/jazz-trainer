@@ -123,18 +123,30 @@ Vercel предоставляет три встроенных типа окру�
 
 ### 2.2. Переменные окружения (Environment Variables)
 
-Каждое окружение имеет свой набор переменных. Управление через Vercel Dashboard или CLI:
+Каждое окружение имеет свой набор переменных. Управление через Vercel CLI (рекомендовано) или Dashboard:
 
 ```bash
-# Пример: установка переменной для production
-vercel env add DATABASE_URL production
+# Аутентификация
+vercel login
 
-# Для preview
-vercel env add DATABASE_URL preview
+# Привязать директорию к проекту
+cd apps/landing && vercel link --project amazilia-landing --yes
 
-# Для development (локально)
+# Просмотр всех проектов и их production-URL
+vercel projects ls
+
+# Добавить переменную для production
+vercel env add VITE_STUDIO_URL production
+# → ввести значение и Enter
+
+# Просмотр всех переменных проекта
+vercel env ls
+
+# Скачать локально
 vercel env pull .env.local
 ```
+
+> **Важно:** Vite-переменные (`VITE_*`) подставляются на этапе сборки. После изменения — обязательный редеплой (`git push` или `vercel --prod`).
 
 **Критические переменные (каждое окружение — свои значения):**
 

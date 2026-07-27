@@ -250,7 +250,18 @@
 
 - Файл `.env` из корня проекта (3 уровня вверх от `src/config.ts`) — загружается при старте.
 - Переменные из shell/платформы имеют приоритет над `.env`.
-- В продакшене `.env` опционален — переменные задаются через Vercel Dashboard/CLI.
+- В продакшене `.env` опционален — переменные задаются через Vercel CLI или Dashboard.
+
+**Управление через Vercel CLI:**
+
+```bash
+vercel login                                          # аутентификация
+vercel projects ls                                    # список проектов и URL
+cd apps/landing && vercel link --project amazilia-landing --yes  # привязать
+vercel env add VITE_STUDIO_URL production             # добавить переменную
+vercel env ls                                         # просмотр
+git push                                              # редеплой (Vite-переменные требуют пересборки)
+```
 
 ### 8.3. Валидация секретов
 
