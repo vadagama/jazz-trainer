@@ -1,13 +1,6 @@
 {
-  "framework": null,
   "buildCommand": "cd ../.. && npm install --no-package-lock && npm run build -w @jazz/api",
   "outputDirectory": "dist",
-  "functions": {
-    "api/[...path].ts": {
-      "memory": 512,
-      "maxDuration": 30
-    }
-  },
   "git": {
     "deploymentEnabled": {
       "main": true

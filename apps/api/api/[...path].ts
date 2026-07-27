@@ -1,8 +1,9 @@
 /**
  * Vercel serverless entry point — одна функция обрабатывает все /api/* запросы.
  *
- * Использует Turso (@libsql/client) в production и better-sqlite3 локально.
- * Все запросы к БД — async (через `await`), совместимы с обоими драйверами.
+ * Все импорты — динамические (esbuild не бандлит native-модули).
+ * Vercel сначала выполняет installCommand (npm install), затем buildCommand (tsup),
+ * и только потом компилирует этот файл — зависимости уже установлены.
  */
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
@@ -17,23 +18,20 @@ async function initHandler() {
 
   const config = loadConfig();
 
-  // Vercel production: Turso. Fallback: local SQLite in /tmp.
+  // Turso (production) или локальный SQLite
   const dbUrl = config.databaseUrl.startsWith('libsql://')
     ? config.databaseUrl
-    : process.env.VERCEL_ENV
-      ? '/tmp/jazz-trainer.sqlite'
-      : config.databaseUrl;
+    : '/tmp/jazz-trainer.sqlite';
 
   const handle = await createDb(dbUrl, process.env.DATABASE_AUTH_TOKEN);
   await runMigrations(handle.db, handle);
 
-  // Seeds (idempotent).
   await seedMod.seedSystemUser(handle.db);
   await seedMod.seedRbac(handle.db);
   await seedMod.seedSubscriptionTiers(handle.db);
   if (config.authDevMode) await seedMod.seedDevUser(handle.db);
 
-  console.log('[api] serverless handler ready (db:', dbUrl.startsWith('libsql://') ? 'turso' : 'sqlite', ')');
+  console.log('[api] serverless ready:', dbUrl.startsWith('libsql://') ? 'turso' : 'sqlite');
 
   const app = await buildServer({ config, db: handle.db });
   await app.ready();
@@ -44,9 +42,7 @@ async function initHandler() {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (!handlerPromise) {
-    handlerPromise = initHandler();
-  }
+  if (!handlerPromise) handlerPromise = initHandler();
   const handle = await handlerPromise;
   handle(req, res);
 }
