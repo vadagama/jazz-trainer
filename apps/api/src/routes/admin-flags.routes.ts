@@ -175,7 +175,7 @@ export async function adminFlagsRoutes(
         createdAt: new Date(now),
       };
 
-      const created = withAuditSync(db, request, 'flag.create', 'flag', input.key, {}, async () => {
+      const created = await withAuditSync(db, request, 'flag.create', 'flag', input.key, {}, async () => {
         await db.insert(featureFlags).values(record).run();
         const row = await db.select().from(featureFlags).where(eq(featureFlags.key, input.key)).get()!;
         return toFlagDTO(row);
@@ -191,7 +191,7 @@ export async function adminFlagsRoutes(
     { preHandler: [requirePermission('flags:write')] },
     async (request, reply) => {
       const { key } = request.params;
-      const existing = db.select().from(featureFlags).where(eq(featureFlags.key, key)).get();
+      const existing = await db.select().from(featureFlags).where(eq(featureFlags.key, key)).get();
       if (!existing) {
         return reply.status(404).send({
           error: { code: 'NOT_FOUND', message: 'Flag not found' },
@@ -225,7 +225,7 @@ export async function adminFlagsRoutes(
       if (input.rolloutPercent !== undefined) patch.rolloutPercent = input.rolloutPercent ?? null;
       if (input.expiresAt !== undefined) patch.expiresAt = input.expiresAt ?? null;
 
-      const updated = withAuditSync(
+      const updated = await withAuditSync(
         db,
         request,
         'flag.update',
@@ -256,7 +256,7 @@ export async function adminFlagsRoutes(
         });
       }
 
-      withAuditSync(
+      await withAuditSync(
         db,
         request,
         'flag.delete',
