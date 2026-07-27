@@ -58,7 +58,7 @@ function wrapRoute(r: RouteContribution, child: React.ReactNode): React.ReactNod
 }
 
 /** Маршруты, которые рендерятся внутри AppShell (Header + GridContainer). */
-const APP_SHELL_PATHS = new Set(['/studio', '/catalog', '/my', '/theory', '/settings', '/profile']);
+const APP_SHELL_PATHS = new Set(['/studio', '/my', '/theory', '/settings', '/profile']);
 
 function isAppShellRoute(path: string): boolean {
   return APP_SHELL_PATHS.has(path) || path.startsWith('/theory/');

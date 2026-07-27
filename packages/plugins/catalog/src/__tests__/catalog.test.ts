@@ -14,7 +14,7 @@ describe('catalog plugin definition', () => {
 
   it('contributes route for /studio', () => {
     expect(plugin.contributes.routes).toBeDefined();
-    expect(plugin.contributes.routes).toHaveLength(2);
+    expect(plugin.contributes.routes).toHaveLength(1);
     expect(plugin.contributes.routes![0]!.path).toBe('/studio');
     expect(typeof plugin.contributes.routes![0]!.element).toBe('function');
   });

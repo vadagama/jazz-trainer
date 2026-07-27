@@ -20,7 +20,6 @@ export default definePlugin({
   contributes: {
     routes: [
       { path: '/studio', element: () => import('./CatalogPage') },
-      { path: '/catalog', element: () => import('./CatalogPage') },
     ],
     navItems: [{ section: 'main', label: 'Каталог', to: '/studio', icon: 'library' }],
   },
