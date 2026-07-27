@@ -1,6 +1,6 @@
-import { Link } from 'react-router-dom';
 import { useT } from '../landing.i18n';
 import { Reveal } from '../components/Shared';
+import { studioUrl } from '../studiolink';
 
 export function SignIn() {
   const t = useT();
@@ -30,13 +30,13 @@ export function SignIn() {
           </p>
 
           <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
-            <Link
-              to="/catalog"
+            <a
+              href={studioUrl('/studio')}
               className="inline-flex items-center gap-2 rounded-full px-6 py-3 text-base font-semibold text-white shadow-lg transition-transform hover:scale-[1.03]"
               style={{ background: 'linear-gradient(135deg, var(--amz-cta-from), var(--amz-cta-to))' }}
             >
               {t('tryWithoutAccount')} →
-            </Link>
+            </a>
           </div>
         </div>
       </Reveal>

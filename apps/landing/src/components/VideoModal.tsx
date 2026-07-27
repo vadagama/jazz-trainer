@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { X } from 'lucide-react';
 import { useT } from '../landing.i18n';
+import { studioUrl } from '../studiolink';
 
 /**
  * Модальное окно «Watch demo».
@@ -62,14 +62,14 @@ export function VideoModal({ open, onClose }: { open: boolean; onClose: () => vo
             <p className="mt-3 max-w-md" style={{ color: 'var(--amz-text-dim)' }}>
               {t('demoModalSoon')}
             </p>
-            <Link
-              to="/catalog"
+            <a
+              href={studioUrl('/studio')}
               onClick={onClose}
               className="mt-6 inline-flex items-center gap-2 rounded-full px-6 py-3 text-base font-semibold text-white shadow-lg transition-transform hover:scale-[1.03]"
               style={{ background: 'linear-gradient(135deg, var(--amz-cta-from), var(--amz-cta-to))' }}
             >
               {t('ctaTry')} →
-            </Link>
+            </a>
           </div>
         )}
       </div>

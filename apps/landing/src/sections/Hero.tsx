@@ -1,9 +1,9 @@
-import { Link } from 'react-router-dom';
 import { Play } from 'lucide-react';
 import { useT } from '../landing.i18n';
 import { AmaziliaWordmark } from '../components/HummingbirdMark';
 import { LangToggle } from '../components/LangToggle';
 import { BrowserFrame, PhotoCard, Reveal, NEON } from '../components/Shared';
+import { studioUrl } from '../studiolink';
 
 /* Неоновые акценты по кругу — teal/amber/purple, те же тона, что и чипы секций в самом плеере. */
 const NEON_ROTATION = [NEON.teal, NEON.amber, NEON.purple];
@@ -47,13 +47,13 @@ export function Hero({ onWatchDemo }: { onWatchDemo: () => void }) {
             </a>
           </nav>
           <LangToggle />
-          <Link
-            to="/login"
+          <a
+            href={studioUrl('/login')}
             className="rounded-full border px-4 py-1.5 text-sm font-medium transition-colors hover:bg-white/5"
             style={{ borderColor: 'var(--amz-border-strong)', color: 'var(--amz-text)' }}
           >
             {t('signIn')}
-          </Link>
+          </a>
         </div>
       </nav>
 
@@ -70,13 +70,13 @@ export function Hero({ onWatchDemo }: { onWatchDemo: () => void }) {
 
         {/* CTA — аккуратные кнопки слева */}
         <div className="mt-8 flex flex-wrap items-center gap-4">
-          <Link
-            to="/catalog"
+          <a
+            href={studioUrl('/studio')}
             className="amz-cta inline-flex items-center gap-2 rounded-full px-6 py-3 text-base font-semibold text-white shadow-lg transition-transform hover:scale-[1.03]"
             style={{ background: 'linear-gradient(135deg, var(--amz-cta-from), var(--amz-cta-to))' }}
           >
             {t('ctaTry')} →
-          </Link>
+          </a>
           <button
             type="button"
             onClick={onWatchDemo}

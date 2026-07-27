@@ -1,7 +1,7 @@
-import { Link } from 'react-router-dom';
 import { useT } from '../landing.i18n';
 import { AmaziliaWordmark } from '../components/HummingbirdMark';
 import { LangToggle } from '../components/LangToggle';
+import { studioUrl } from '../studiolink';
 
 export function Footer() {
   const t = useT();
@@ -27,9 +27,9 @@ export function Footer() {
               <a href="#sound" className="transition-colors hover:text-white">
                 {t('navSound')}
               </a>
-              <Link to="/login" className="transition-colors hover:text-white">
+              <a href={studioUrl('/login')} className="transition-colors hover:text-white">
                 {t('signIn')}
-              </Link>
+              </a>
             </nav>
             <LangToggle />
           </div>
