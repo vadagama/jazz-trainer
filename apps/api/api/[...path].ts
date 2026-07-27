@@ -1,40 +1,58 @@
 /**
  * Vercel serverless entry point.
- * Все импорты динамические — esbuild не бандлит native-модули.
+ * Ленивая инициализация: первый запрос поднимает БД, последующие — мгновенные.
  */
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 let handlerPromise: Promise<(req: VercelRequest, res: VercelResponse) => void> | null = null;
 
 async function initHandler() {
-  const { buildServer } = await import('../src/server.js');
-  const { loadConfig } = await import('../src/config.js');
-  const { createDb } = await import('../src/db/index.js');
-  const { runMigrations } = await import('../src/db/migrate.js');
-  const seedMod = await import('../src/db/seed.js');
-  const billingMod = await import('../src/services/billing.service.js');
+  console.log('[api] cold start begin');
+  const t0 = Date.now();
 
-  const config = loadConfig();
-  const handle = await createDb(config.databaseUrl, config.databaseAuthToken ?? undefined);
-  await runMigrations(handle.db, handle);
+  try {
+    const { buildServer } = await import('../src/server.js');
+    const { loadConfig } = await import('../src/config.js');
+    const { createDb } = await import('../src/db/index.js');
+    const { runMigrations } = await import('../src/db/migrate.js');
 
-  await seedMod.seedSystemUser(handle.db);
-  await seedMod.seedRbac(handle.db);
-  await billingMod.seedSubscriptionTiers(handle.db);
-  if (config.authDevMode) await seedMod.seedDevUser(handle.db);
+    const config = loadConfig();
+    console.log('[api] config loaded, db url:', config.databaseUrl ? config.databaseUrl.substring(0, 40) + '...' : 'default');
 
-  console.log('[api] ready:', config.databaseUrl.startsWith('libsql://') ? 'turso' : 'sqlite');
+    const handle = await createDb(config.databaseUrl, config.databaseAuthToken ?? undefined);
+    console.log('[api] db created, kind:', handle.kind);
 
-  const app = await buildServer({ config, db: handle.db });
-  await app.ready();
+    await runMigrations(handle.db, handle);
+    console.log('[api] migrations done');
 
-  return (req: VercelRequest, res: VercelResponse) => {
-    app.server.emit('request', req, res);
-  };
+    // Seeds — only if DB is empty (idempotent)
+    const seedMod = await import('../src/db/seed.js');
+    const billingMod = await import('../src/services/billing.service.js');
+    await seedMod.seedSystemUser(handle.db);
+    await seedMod.seedRbac(handle.db);
+    await billingMod.seedSubscriptionTiers(handle.db);
+    console.log('[api] seeds done');
+
+    const app = await buildServer({ config, db: handle.db });
+    await app.ready();
+    console.log('[api] ready in', Date.now() - t0, 'ms');
+
+    return (req: VercelRequest, res: VercelResponse) => {
+      app.server.emit('request', req, res);
+    };
+  } catch (err) {
+    console.error('[api] init failed:', (err as Error).message);
+    throw err;
+  }
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!handlerPromise) handlerPromise = initHandler();
-  const handle = await handlerPromise;
-  handle(req, res);
+  try {
+    const handle = await handlerPromise;
+    handle(req, res);
+  } catch (err) {
+    console.error('[api] handler error:', (err as Error).message);
+    res.status(500).send({ error: { code: 'INIT_FAILED', message: (err as Error).message } });
+  }
 }
