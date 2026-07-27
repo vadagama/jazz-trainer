@@ -3,6 +3,8 @@
  * Scoped на .amz-landing, чтобы не конфликтовать с токенами приложения (index.css).
  * Лендинг всегда тёмный — «ночной сад».
  */
+@import 'tailwindcss';
+
 .amz-landing {
   --amz-primary: #0d7377; /* глубокий сине-зелёный — оперение колибри */
   --amz-primary-bright: #14a3a8;
