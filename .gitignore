@@ -50,5 +50,13 @@ apps/web/public/samples/_source/
 
 # Playwright MCP artifacts and dev screenshots
 .playwright-mcp/
+# Ignore PNG/JPEG screenshots but keep static assets (logos, favicons)
+**/test-results/*.png
+**/test-results/*.jpeg
 *.png
 *.jpeg
+!apps/web/public/logo.png
+!apps/landing/public/logo.png
+!apps/web/public/landing/logo.png
+!apps/landing/public/landing/logo.png
+.vercel
