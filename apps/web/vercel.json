@@ -10,7 +10,7 @@
       "destination": "https://amazilia-api-olegs-projects-8669fe80.vercel.app/api/:path*"
     },
     {
-      "source": "/((?!api/|.*\\.(png|jpg|jpeg|gif|svg|webp|ico|css|js|woff2?|json|xml|txt)).*)",
+      "source": "/(.*)",
       "destination": "/index.html"
     }
   ],
