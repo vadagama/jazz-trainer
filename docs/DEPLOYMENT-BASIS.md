@@ -224,6 +224,7 @@
 | `API_PORT` | `3999` | Порт API (локально) |
 | `NODE_ENV` | — | `production` / `development` / `test` |
 | `LOG_LEVEL` | `info` | Уровень логирования pino |
+| `VITE_STUDIO_URL` | `http://localhost:5173` | URL проекта `amazilia-studio` (используется лендингом для ссылок: вход, CTA). На Vercel задаётся в Dashboard проекта `amazilia-landing` |
 | `WEB_ORIGIN` | `http://localhost:5173` | Origin веб-приложения (CORS) |
 | `DATABASE_URL` | `./data/jazz-trainer.sqlite` | Путь к SQLite (локально) / Turso URL (план) |
 | `AUTH_DEV_MODE` | `false` | Режим dev-аутентификации |

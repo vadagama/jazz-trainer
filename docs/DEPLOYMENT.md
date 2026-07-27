@@ -143,6 +143,7 @@ vercel env pull .env.local
 | `VITE_API_BASE_URL` | URL API-сервера для веб-приложения | Production: `https://api.amazilia.app`<br/>Preview: `https://api-preview.amazilia.app` |
 | `DATABASE_URL` | URL подключения к Turso | Production: prod-БД<br/>Preview: preview-БД |
 | `DATABASE_AUTH_TOKEN` | Токен Turso | Все (разные значения) |
+| `VITE_STUDIO_URL` | URL студии для ссылок с лендинга (вход, CTA) | Проект `amazilia-landing`: Production = `https://<studio>.vercel.app` |
 | `VITE_AMPLITUDE_API_KEY` | Ключ Amplitude (продуктовая аналитика) | Все (разные для prod/preview) |
 
 
