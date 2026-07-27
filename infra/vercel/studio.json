@@ -1,13 +1,14 @@
 {
   "name": "amazilia-studio",
   "framework": null,
-  "buildCommand": "cd ../.. && npm install --no-package-lock && npm run build -w @jazz/web",
+  "installCommand": "cd ../.. && npm install --no-package-lock",
+  "buildCommand": "cd ../.. && npm run build -w @jazz/web",
   "outputDirectory": "dist",
   "devCommand": "cd ../.. && npm run dev -w @jazz/web",
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://amazilia-api.vercel.app/api/:path*"
+      "destination": "https://amazilia-api-production.up.railway.app/api/:path*"
     },
     {
       "source": "/(.*)",

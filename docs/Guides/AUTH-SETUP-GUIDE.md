@@ -168,13 +168,13 @@ NODE_ENV=production
 SESSION_SECRET=<random-64-char-string>
 GOOGLE_CLIENT_ID=...
 GOOGLE_CLIENT_SECRET=...
-GOOGLE_CALLBACK_URL=https://api.amazilia.app/api/auth/google/callback
+GOOGLE_CALLBACK_URL=https://amazilia-api-production.up.railway.app/api/auth/google/callback
 GITHUB_CLIENT_ID=...
 GITHUB_CLIENT_SECRET=...
-GITHUB_CALLBACK_URL=https://api.amazilia.app/api/auth/github/callback
+GITHUB_CALLBACK_URL=https://amazilia-api-production.up.railway.app/api/auth/github/callback
 RESEND_API_KEY=...
 EMAIL_FROM=noreply@amazilia.app
-WEB_ORIGIN=https://amazilia.app
+WEB_ORIGIN=https://amazilia-studio.vercel.app
 ```
 
 > ⚠️ Сервер откажется запускаться, если `SESSION_SECRET` отсутствует или равен дефолтному `'dev-insecure-change-me'`.

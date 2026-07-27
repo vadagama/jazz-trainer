@@ -220,6 +220,13 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
     if (initializedRef.current) return;
     initializedRef.current = true;
 
+    // Pre-warm: start AudioContext on any first user gesture so all samples
+    // finish decoding before the user clicks Play.
+    const warmAudioContext = () => {
+      void Tone.start();
+    };
+    document.addEventListener('pointerdown', warmAudioContext, { once: true });
+
     const tone = Tone.getTransport();
     tone.PPQ = 480;
 
@@ -294,13 +301,6 @@ export function useTransport(opts: UseTransportOptions): TransportControls {
         // Prevent a metronome error from breaking the scheduling loop
       }
     };
-
-    // Pre-warm: start AudioContext on any first user gesture so all samples
-    // finish decoding before the user clicks Play.
-    const warmAudioContext = () => {
-      void Tone.start();
-    };
-    document.addEventListener('pointerdown', warmAudioContext, { once: true });
 
     // ── Bass setup ─────────────────────────────────────────────────────────
     // Bass contributes two variant instruments (upright + electric) via the

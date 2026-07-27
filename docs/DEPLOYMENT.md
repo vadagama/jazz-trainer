@@ -11,80 +11,87 @@ graph TD
     end
 
     subgraph vercel["Vercel Platform"]
-        VERCEL_LANDING["🟢 Проект: Лендинг<br/>amazilia.app<br/>Vite + Tailwind (vanilla JS, статический HTML)"]
+        VERCEL_LANDING["🟢 Проект: Лендинг<br/>amazilia.app<br/>Vite + React (apps/landing)"]
         VERCEL_STUDIO["🟢 Проект: Веб-приложение<br/>studio.amazilia.app<br/>apps/web (Vite React SPA)"]
-        VERCEL_API["🟢 Проект: API<br/>api.amazilia.app<br/>apps/api (Fastify → serverless)"]
-        VERCEL_BLOB["📦 Vercel Blob Storage<br/>S3-совместимое<br/>файлы, сэмплы, аватары"]
-        VERCEL_EDGE["⚡ Vercel Edge Config<br/>фича-флаги, A/B тесты"]
         VERCEL_CDN["🌐 Vercel Delivery Network<br/>CDN + Edge Functions"]
-        VERCEL_FW["🛡 Vercel Firewall<br/>WAF, DDoS, Bot Management"]
-        VERCEL_OBS["📊 Vercel Observability<br/>мониторинг, алерты, Web Vitals"]
-        VERCEL_FLAGS["🎚 Vercel Flags<br/>feature flags, A/B testing"]
+    end
+
+    subgraph railway["Railway"]
+        RAILWAY_API["🟢 API-сервер<br/>api.amazilia.app<br/>Fastify (Docker, long-lived)"]
+        SQLITE["🗄 SQLite<br/>better-sqlite3 + Drizzle ORM<br/>in-memory rate-limit"]
     end
 
     subgraph external["Внешние сервисы"]
-        TURSO["🗄 Turso DB<br/>libSQL (SQLite-совместимая)<br/>Edge-ready"]
         RESEND["✉ Resend<br/>транзакционные email<br/>(Magic Link, уведомления)"]
-        SENTRY["🐛 Sentry<br/>отслеживание ошибок"]
-        SUPPORT["💬 Система поддержки<br/>Crisp / Intercom / Discord"]
+    end
+
+    subgraph planned["Запланировано"]
+        TURSO["🗄 Turso DB 🟡"]
+        BLOB["📦 Vercel Blob 🟡"]
+        SENTRY["🐛 Sentry 🟡"]
+        AMPLITUDE["📊 Amplitude 🟡"]
     end
 
     U -->|"https://amazilia.app"| VERCEL_CDN
     VERCEL_CDN --> VERCEL_LANDING
     U -->|"https://studio.amazilia.app"| VERCEL_CDN
     VERCEL_CDN --> VERCEL_STUDIO
-    VERCEL_STUDIO -->|"/api/* → api.amazilia.app"| VERCEL_API
-    VERCEL_API --> TURSO
-    VERCEL_STUDIO --> VERCEL_BLOB
+    VERCEL_STUDIO -->|"/api/* → api.amazilia.app"| RAILWAY_API
+    RAILWAY_API --> SQLITE
     VERCEL_LANDING -->|"CTA → studio.amazilia.app"| VERCEL_STUDIO
-    VERCEL_OBS -.-> VERCEL_STUDIO
-    VERCEL_OBS -.-> VERCEL_LANDING
-    VERCEL_OBS -.-> VERCEL_API
-    VERCEL_FW -.-> VERCEL_CDN
-    SENTRY -.-> VERCEL_API
+    RAILWAY_API -.-> RESEND
 ```
 
 ### 1.2. Компоненты и их размещение
 
-| Компонент | Хостинг | Технология | Комментарий |
-|-----------|---------|-----------|-------------|
-| **Веб-приложение + лендинг** (`studio.amazilia.app`, лендинг на `/landing`) | Vercel (отдельный проект) | Vite + React SPA (`apps/web`) | Сборка из монорепо. Прокси `/api` → API-сервер. Лендинг — React-роут `/landing` внутри приложения (не отдельный проект). |
-| **API-сервер** (`api.amazilia.app`) | Vercel (отдельный проект) | Fastify (`apps/api`) | Stateless REST, завернут в Vercel Serverless Function через `@fastify/vercel`. Подробнее: §1.2.1. |
-| **База данных** | Turso | libSQL (SQLite-совместимая) | Нативная Vercel-интеграция. edge-ready. |
-| **Файловое хранилище** | Vercel Blob Storage | S3-совместимое API | Ассеты, сэмплы, аватары пользователей. |
-| **Email** | Resend | Транзакционные письма | Magic Link, уведомления, welcome-письма. Vercel-интеграция. |
+| Компонент | Хостинг | Технология | Статус |
+|-----------|---------|-----------|--------|
+| **Лендинг** (`amazilia.app`) | Vercel (проект `amazilia-landing`) | Vite + React (`apps/landing`) | 🟢 |
+| **Веб-приложение** (`studio.amazilia.app`) | Vercel (проект `amazilia-studio`) | Vite + React SPA (`apps/web`) | 🟢 |
+| **API-сервер** (`api.amazilia.app`) | Railway (Docker) | Fastify (`apps/api`) | 🟢 |
+| **База данных** | Локальный диск Railway | SQLite (`better-sqlite3`) + Drizzle ORM | 🟢 |
+| **Email** | Resend | Транзакционные письма | 🟢 |
+| **Аутентификация** | OAuth + Magic Link + TOTP | Google, GitHub, email | 🟢 |
+| **База данных (план)** | Turso | libSQL (SQLite-совместимая) | 🟡 |
+| **Файловое хранилище (план)** | Vercel Blob Storage | S3-совместимое API | 🟡 |
 
-> **ADR-008 (отменён): Лендинг — статический HTML без JS-фреймворка.** Ранее лендинг был отдельным Vite-проектом (`apps/landing`, vanilla JS). Решение отменено: лендинг реализован как React-роут `/landing` внутри Studio (`apps/web/src/routes/landing/`) — единый деплой, переиспользование UI-примитивов и i18n приложения, общий домен. Отдельный проект `amazilia-landing` удалён.
+> **ADR-008 (отменён): Лендинг как роут внутри Studio.** Предполагалось объединить лендинг и студию в один проект Vercel с лендингом на `/landing`. Решение отменено: лендинг остаётся отдельным Vite-проектом (`apps/landing/`) — независимый деплой, изолированные ресурсы, собственный `vercel.json`.
 
-#### 1.2.1. API на Railway (нативный Fastify)
+#### 1.2.1. API на Railway (нативный Fastify) 🟢
 
-`apps/api` — **long-lived** Fastify-сервер на Railway: cron-задачи (`setInterval`), in-memory rate-limit, SQLite на диске. В отличие от serverless — нет холодных стартов, нет ограничений на длительность запроса.
+`apps/api` — **long-lived** Fastify-сервер на Railway: cron-задачи (`setInterval`), in-memory rate-limit, SQLite на диске (`/app/data/`). В отличие от serverless — нет холодных стартов, нет ограничений на длительность запроса, не нужно переписывать синхронный код `better-sqlite3` на async.
 
-> **Причина выбора Railway вместо Vercel Serverless:** serverless-подход требовал миграции rate-limit на внешний стор (Upstash), переноса cron в Vercel Cron Jobs, и обязательной миграции SQLite → Turso. Railway позволяет оставить текущую архитектуру без изменений.
+> **Причина выбора Railway вместо Vercel Serverless:** serverless-подход требовал миграции rate-limit на внешний стор (Upstash), переноса cron в Vercel Cron Jobs, и обязательной миграции SQLite → Turso (переход на async-драйвер). Railway позволяет оставить текущую архитектуру без изменений.
 
-**Реализация:**
+**Реализация (всё готово ✅):**
 
-- **Dockerfile:** `Dockerfile.api` — двухстадийная сборка (builder + runtime)
-- **CI/CD:** GitHub Actions → `railway up` при push в `main`
+- **Dockerfile:** `Dockerfile.api` — двухстадийная сборка (builder + runtime), Node 22 Alpine
+- **CI/CD:** GitHub Actions → `railway up` при push в `main` (job `deploy-api`)
 - **Конфигурация:** `.railwayignore`, `infra/railway/README.md`
+- **Railway Project ID:** `29a9e3e1-2d04-46c3-b10e-2136f9f1546e`
+- **База:** SQLite в `/app/data/jazz-trainer.sqlite`
+
+> **Примечание:** `apps/api/vercel.json` с serverless-конфигурацией сохранён для возможной будущей миграции на Vercel Serverless + Turso.
 
 ### 1.3. Доменная структура
 
-```
-amazilia.app           → Лендинг (Vercel Project #1)
-studio.amazilia.app    → Веб-приложение (Vercel Project #2)
-api.amazilia.app       → API-сервер (Vercel Project #3)
-```
-
-**Первый этап (бесплатные домены Vercel):**
+**Целевые домены (после покупки `amazilia.app`):**
 
 ```
-<проект>.vercel.app          → Лендинг
-<проект>-studio.vercel.app   → Веб-приложение
-<проект>-api.vercel.app      → API
+amazilia.app           → Лендинг (Vercel)
+studio.amazilia.app    → Веб-приложение (Vercel)
+api.amazilia.app       → API-сервер (Railway, CNAME → Railway)
 ```
 
-После покупки `amazilia.app` — перенастройка DNS через Vercel Domains.
+**Текущие домены (бесплатные):**
+
+| Проект | Домен | Платформа |
+|--------|-------|-----------|
+| Лендинг | `<landing>.vercel.app` | Vercel |
+| Studio | `<studio>.vercel.app` | Vercel |
+| API | `<project>.up.railway.app` | Railway |
+
+После покупки `amazilia.app` — Vercel-домены через Vercel Domains, API через Railway Custom Domain.
 
 ---
 
@@ -131,7 +138,7 @@ vercel env pull .env.local
 
 | Переменная | Назначение | Окружение |
 |-----------|-----------|-----------|
-| `VITE_API_BASE_URL` | URL API-сервера для веб-приложения | Production: `https://api.amazilia.app`<br/>Preview: `https://api-preview.amazilia.app` |
+| `VITE_API_BASE_URL` | URL API-сервера для веб-приложения | Production: `https://amazilia-api-production.up.railway.app`<br/>Preview: `https://amazilia-api-production.up.railway.app` |
 | `DATABASE_URL` | URL подключения к Turso | Production: prod-БД<br/>Preview: preview-БД |
 | `DATABASE_AUTH_TOKEN` | Токен Turso | Все (разные значения) |
 | `VITE_STUDIO_URL` | URL студии для ссылок с лендинга (вход, CTA) | Проект `amazilia-landing`: Production = `https://<studio>.vercel.app` |
@@ -170,7 +177,7 @@ vercel env pull .env.local
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://api.amazilia.app/api/:path*"
+      "destination": "https://amazilia-api-production.up.railway.app/api/:path*"
     }
   ],
   "headers": [
@@ -191,7 +198,7 @@ vercel env pull .env.local
 
 ---
 
-## 3. Пайплайн релизов (CI/CD)
+## 3. Пайплайн релизов (CI/CD) 🟢
 
 ### 3.1. Общая схема
 
@@ -206,31 +213,23 @@ graph LR
         LINT["lint"]
         TEST["test"]
         TYPECHECK["typecheck"]
-        BUILD["build"]
+        DEPLOY_API["deploy-api<br/>(Railway)"]
     end
 
-    subgraph vercel_deploy["Vercel Deploy"]
+    subgraph vercel_deploy["Vercel Deploy (авто)"]
         PREV_LANDING["Preview: лендинг"]
         PREV_STUDIO["Preview: веб-приложение"]
-        PREV_API["Preview: API"]
         PROD_LANDING["Production: лендинг"]
         PROD_STUDIO["Production: веб-приложение"]
-        PROD_API["Production: API"]
     end
 
-    PR --> LINT
-    LINT --> TEST
-    TEST --> TYPECHECK
-    TYPECHECK --> BUILD
-    BUILD --> PREV_LANDING
-    BUILD --> PREV_STUDIO
-    BUILD --> PREV_API
-    MAIN --> LINT
-    LINT --> TEST
-    TEST --> TYPECHECK
-    BUILD --> PROD_LANDING
-    BUILD --> PROD_STUDIO
-    BUILD --> PROD_API
+    PR --> LINT --> TEST --> TYPECHECK
+    TYPECHECK --> PREV_LANDING
+    TYPECHECK --> PREV_STUDIO
+    MAIN --> LINT --> TEST --> TYPECHECK
+    TYPECHECK --> DEPLOY_API
+    TYPECHECK --> PROD_LANDING
+    TYPECHECK --> PROD_STUDIO
 ```
 
 ### 3.2. GitHub Actions — этапы
@@ -246,7 +245,6 @@ on:
     branches: [main]
 
 jobs:
-  # 1. Статический анализ
   verify:
     runs-on: ubuntu-latest
     steps:
@@ -254,96 +252,120 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
-      - run: npm ci
-      - run: npm rebuild better-sqlite3
-      - run: npm run typecheck
-      - run: npm run lint
-      - run: npm run test
+      - name: Install dependencies
+        run: |
+          rm -rf node_modules package-lock.json
+          npm install --no-audit --no-fund
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Lint
+        run: npm run lint
+      - name: Tests
+        run: npm run test
 
-  # 2. Деплой лендинга — выполняет Vercel (автоматически при push/PR)
-  # Настройка: Vercel Git Integration → проект лендинга → auto-deploy
-
-  # 3. Деплой веб-приложения — выполняет Vercel (автоматически)
-  # Настройка: Vercel Git Integration → проект веб-приложения → auto-deploy
-
-  # 4. Деплой API — выполняет Vercel (автоматически)
-  # Настройка: Vercel Git Integration → проект API → auto-deploy
-  # API деплоится вместе с фронтом — Preview для каждого PR.
+  deploy-api:
+    needs: verify
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Railway CLI
+        run: npm i -g @railway/cli
+      - name: Deploy API to Railway
+        run: railway up --service amazilia-api
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
 ```
 
 ### 3.3. Стратегия деплоя
 
 | Событие | Действие |
 |---------|----------|
-| **Pull Request открыт** | Vercel: автоматический Preview-деплой лендинга + веб-приложения + API. GitHub Actions: lint/typecheck/test. |
-| **Push в feature-ветку** | Vercel: Preview-деплой. GitHub Actions: lint/typecheck/test. |
-| **Push в `main`** | Vercel: Production-деплой лендинга + веб-приложения + API. GitHub Actions: lint/typecheck/test. |
-| **Rollback** | `vercel rollback` (мгновенный откат к предыдущему деплою) |
+| **Pull Request** | GitHub Actions: lint/typecheck/test. Vercel: авто-Preview деплой лендинга + веб-приложения. |
+| **Push в `main`** | GitHub Actions: lint/typecheck/test → `deploy-api` (Railway). Vercel: авто-Production деплой лендинга + веб-приложения. |
+| **Rollback (Vercel)** | `vercel rollback` (мгновенный откат лендинга/студии) |
+| **Rollback (Railway)** | `railway rollback` или редеплой предыдущего коммита |
 
 ### 3.4. Preview Deployments (тестирование на проде)
 
-Каждый Pull Request автоматически получает уникальный Preview URL:
+Каждый Pull Request автоматически получает уникальный Preview URL от Vercel:
 
 ```
 my-feature-g1a2b.vercel.app          ← лендинг
 my-feature-g1a2b-studio.vercel.app   ← веб-приложение
-my-feature-g1a2b-api.vercel.app      ← API
 ```
+
+API на Railway — общий для всех preview (in-memory rate-limit, общая SQLite).
 
 **Использование:**
 - Ручное тестирование перед мержем
 - Демонстрация заказчику
 - E2E-тесты на Preview-окружении
-- Vercel Toolbar → комментарии прямо на Preview-деплое
 
-### 3.5. Vercel Toolbar
+### 3.5. Vercel Toolbar 🟡
 
-Встроенная панель разработчика для Preview и Production:
-
-- **Комментарии:** оставлять замечания прямо на странице (не нужен скриншот)
+Встроенная панель разработчика для Preview и Production (требует настройки):
+- **Комментарии:** оставлять замечания прямо на странице
 - **Feature Flags:** переключать фича-флаги для тестирования
-- **Draft Mode:** просмотр черновиков контента
 - **Performance:** замер Web Vitals на лету
 
 ---
 
-## 4. Инфраструктура как код (IaC)
+## 4. Инфраструктура как код (IaC) 🟢
 
-### 4.1. Структура `infra/` в монорепо
+### 4.1. Структура `infra/` в монорепо (актуальная)
 
 ```
 infra/
-├── README.md                    # описание инфраструктуры и процедур
-├── vercel/
-│   ├── landing.json            # конфиг проекта лендинга (Vercel CLI)
-│   ├── studio.json             # конфиг проекта веб-приложения
-│   ├── api.json                # конфиг проекта API
-│   └── env/
-│       ├── production.env      # production переменные (зашифрованы SOPS)
-│       ├── preview.env         # preview переменные (зашифрованы SOPS)
-│       └── development.env     # development переменные (не секретные)
+├── README.md                     ← обзорная документация
+├── ci/
+│   └── pipeline.yml              ← копия .github/workflows/ci.yml
+├── railway/
+│   └── README.md                 ← Railway-проект, деплой, переменные
+├── scripts/
+│   └── backup-blob.sh            ← заглушка бэкапа (не реализовано)
+├── secrets/
+│   └── .sops.yaml                ← SOPS-конфиг (ключ не настроен)
 ├── turso/
-│   └── databases.tf            # Terraform: Turso БД
-├── resend/
-│   └── domains.tf              # Terraform: верификация доменов Resend
-├── .sops.yaml                  # конфиг шифрования SOPS
-└── keys.txt                    # публичные age-ключи команды
+│   └── schema.sql                ← дамп схемы (заглушка)
+└── vercel/
+    ├── landing.json              ← IaC-копия apps/landing/vercel.json
+    ├── studio.json               ← IaC-копия apps/web/vercel.json
+    ├── api.json                  ← IaC-копия apps/api/vercel.json
+    ├── project-settings.md       ← ручное воспроизведение настроек
+    └── env/                      ← (пусто)
 ```
 
 ### 4.2. Подход: Configuration over Terraform
 
-- **Vercel** — через Vercel CLI (`vercel link`, `vercel env`), конфиги версионируются в `infra/vercel/`.
-- **Turso** — Terraform-провайдер Turso.
-- **Секреты** — SOPS + age (шифруются перед коммитом в git).
+- **Vercel** — через Vercel CLI + Git Integration. Конфиги в `infra/vercel/`.
+- **Railway** — через GitHub Actions `railway up`. Документировано в `infra/railway/README.md`.
+- **Turso** — план: Terraform-провайдер (пока заглушка `infra/turso/schema.sql`).
+- **Секреты** — SOPS + age (`.sops.yaml` создан, ключ не настроен 🟡).
 
 ---
 
 ## 5. Хранение данных и бэкапирование
 
-### 5.1. База данных: Turso
+### 5.1. База данных: SQLite (текущая) 🟢
 
-### 5.2. Файловое хранилище: Vercel Blob
+Текущее состояние: API на Railway использует SQLite через `better-sqlite3` + Drizzle ORM.
+
+| Характеристика | Значение |
+|----------------|----------|
+| Драйвер | `better-sqlite3` (нативный C-модуль) |
+| ORM | Drizzle (`drizzle-orm/better-sqlite3`) |
+| Файл БД | `/app/data/jazz-trainer.sqlite` (Railway), `./data/jazz-trainer.sqlite` (локально) |
+| WAL | Включён |
+| Миграции | `drizzle-kit` → `apps/api/drizzle/` |
+
+Бэкапирование: Railway не предоставляет встроенных бэкапов диска. Рекомендовано периодическое копирование SQLite-файла в Vercel Blob (после его настройки).
+
+### 5.2. База данных: Turso (план) 🟡
+
+Целевая БД после миграции — Turso (libSQL, edge-ready, встроенные бэкапы). Требует замены драйвера и перевода синхронного кода на async.
+
+### 5.3. Файловое хранилище: Vercel Blob (план) 🟡
 
 ```ts
 const url = 'https://blob.vercel-storage.com/...';
@@ -355,7 +377,18 @@ const blobs = await list({ prefix: 'samples/' });
 
 ## 6. Безопасность сервиса и защита от взлома
 
-### 6.1. Vercel Firewall (WAF)
+### 6.1. Middleware API (Fastify-плагины) 🟢
+
+| Плагин | Назначение |
+|--------|------------|
+| `@fastify/helmet` | HTTP-заголовки безопасности |
+| `@fastify/cors` | CORS между доменами |
+| `@fastify/rate-limit` | Защита от перебора (in-memory) |
+| `authPlugin` | Аутентификация (сессии) |
+| `rbacPlugin` | Авторизация (RBAC) |
+| `adminIpFilterPlugin` | IP-фильтр super_admin |
+
+### 6.2. Vercel Firewall (WAF) 🟡
 
 ```json
 {
@@ -363,28 +396,27 @@ const blobs = await list({ prefix: 'samples/' });
     "rules": [
       {
         "action": "block",
-        "condition": {
-          "ip": "0.0.0.0/0",
-          "path": "/wp-admin"
-        }
+        "condition": { "ip": "0.0.0.0/0", "path": "/wp-admin" }
       }
     ],
-    "managedRulesets": {
-      "owasp": "paranoid"
-    }
+    "managedRulesets": { "owasp": "paranoid" }
   }
 }
 ```
 
-### 6.2. Дополнительные меры безопасности
+### 6.3. Защита переменных окружения 🟡
 
-### 6.3. Защита переменных окружения
+- CI/CD: `RAILWAY_TOKEN` в GitHub Secrets ✅
+- SOPS + age: `.sops.yaml` создан, ключ не настроен 🟡
+- Railway/Vercel env vars: через Dashboard
 
 ---
 
 ## 7. CDN и доставка контента
 
-### 7.1. Vercel Delivery Network
+### 7.1. Vercel Delivery Network 🟢
+
+Заголовки кеширования в `vercel.json`:
 
 ```json
 {
@@ -399,148 +431,76 @@ const blobs = await list({ prefix: 'samples/' });
 }
 ```
 
-### 7.2. Оптимизация для аудио-файлов
+### 7.2. Оптимизация для аудио-файлов 🟡
 
 ---
 
 ## 8. Мониторинг и наблюдаемость (Observability)
 
-### 8.1. Vercel Observability
+### 8.1. Vercel Observability 🟡
 
 | Возможность | Тариф | Что даёт |
 |------------|-------|----------|
-| **Web Vitals** | Все планы | LCP, CLS, FID, INP — метрики реальных пользователей |
-| **Vercel Functions** | Все планы | Latency, ошибки, холодные старты |
-| **Edge Requests** | Все планы | RPS, статус-коды, география |
+| **Web Vitals** | Все планы | LCP, CLS, FID, INP |
 | **Observability Plus** | Pro | P50/P95/P99, retention 30 дней, алерты |
-| **Monitoring** | Pro | Кастомные дашборды, алерты на метрики |
 
-### 8.2. Sentry (Error Tracking)
-
-На уровне приложения подключаем Sentry:
+### 8.2. Sentry (Error Tracking) 🟡
 
 ```typescript
-// apps/web/src/sentry.ts
-import * as Sentry from '@sentry/react';
-
 Sentry.init({
   dsn: import.meta.env.VITE_SENTRY_DSN,
-  environment: import.meta.env.VERCEL_ENV, // 'production' | 'preview' | 'development'
+  environment: import.meta.env.VERCEL_ENV,
   integrations: [Sentry.browserTracingIntegration()],
   tracesSampleRate: 0.1,
 });
 ```
 
-**Что отслеживаем:**
-- Необработанные ошибки React
-- Ошибки API-запросов
-- Performance traces (медленные загрузки)
-- Source maps загружаются при деплое (Vercel-плагин Sentry)
+### 8.3. Мониторинг API 🟢/🟡
 
-### 8.3. Мониторинг API
-
-API на Vercel Serverless — мониторинг встроен в Vercel Observability:
-- Статистика функций — латентность, ошибки, холодные старты
-- Логи — `console.log` → Vercel Logs (стриминг в реальном времени)
-- Алерты — Vercel Monitoring (Pro-план)
+- Текущий: Railway показывает статус деплоя, логи контейнера ✅
+- План: Sentry для ошибок 🟡
 
 ---
 
 ## 9. Аналитика
 
-### 9.1. Vercel Analytics
-
-Встроенная аналитика Vercel для базовых метрик:
+### 9.1. Vercel Analytics 🟡
 
 ```bash
 npm install @vercel/analytics
 ```
 
 ```typescript
-// apps/web/src/main.tsx
 import { Analytics } from '@vercel/analytics/react';
 root.render(<><App /><Analytics /></>);
 ```
 
-**Что даёт:**
-- Web Vitals (LCP, CLS, FID, INP)
-- Page views, уникальные посетители
-- География, устройства, источники трафика
-
-### 9.2. Amplitude — продуктовая аналитика
-
-Amplitude используется для глубокой продуктовой аналитики: воронки, когорты, ретеншен, A/B-эксперименты.
-
-**Установка:**
+### 9.2. Amplitude — продуктовая аналитика 🟡
 
 ```bash
 npm install @amplitude/analytics-browser
 ```
 
-**Инициализация:**
-
 ```typescript
-// apps/web/src/amplitude.ts
-import * as amplitude from '@amplitude/analytics-browser';
-
 amplitude.init(import.meta.env.VITE_AMPLITUDE_API_KEY, {
-  defaultTracking: {
-    pageViews: true,      // авто-трекинг просмотров страниц
-    sessions: true,       // авто-трекинг сессий
-    formInteractions: false,
-    fileDownloads: false,
-  },
+  defaultTracking: { pageViews: true, sessions: true },
 });
 ```
 
-**Импорт в `main.tsx`:**
-
-```typescript
-// apps/web/src/main.tsx
-import './amplitude';     // инициализация Amplitude
-import { Analytics } from '@vercel/analytics/react';
-root.render(<><App /><Analytics /></>);
-```
-
-**Отслеживание событий:**
-
-```typescript
-import { track } from '@amplitude/analytics-browser';
-
-// Событие с параметрами
-track('exercise_completed', {
-  exerciseId: 'ii-V-I-major',
-  bpm: 120,
-  score: 85,
-  duration: 120,
-});
-
-// Идентификация пользователя (после логина)
-import { setUserId } from '@amplitude/analytics-browser';
-setUserId(user.id);
-```
-
-**Ключевые события для отслеживания (MVP):**
+**Ключевые события (MVP):**
 
 | Событие | Параметры | Зачем |
 |---------|----------|-------|
 | `landing_visit` | `source`, `utm_*` | Анализ источников трафика |
-| `signup_started` | `provider` (google/github/email) | Воронка регистрации |
-| `signup_completed` | `provider` | Конверсия регистрации |
+| `signup_started` | `provider` | Воронка регистрации |
 | `exercise_started` | `exerciseId`, `style`, `bpm` | Популярность упражнений |
 | `exercise_completed` | `exerciseId`, `score`, `duration` | Вовлечённость |
-| `feature_used` | `feature` | Использование фич |
-| `subscription_viewed` | — | Интерес к платному |
-| `subscription_started` | `tier` | Конверсия в подписку |
 
-**Amplitude Experiment (A/B-тесты):** для продвинутых A/B-тестов, требующих статзначимости (в дополнение к Vercel Flags для быстрых тоглов).
-
-### 9.3. UTM-разметка (лендинг → приложение)
-
+### 9.3. UTM-разметка (лендинг → приложение) 🟡
 
 ---
 
-## 10. Повышение конверсии лендинга
+## 10. Повышение конверсии лендинга 🟡
 
 ### 10.1. A/B-тестирование через Vercel Flags
 
@@ -561,29 +521,33 @@ const showPricingVariant = await flag({
 
 ### 11.1. Два уровня фича-флагов
 
-### 11.2. Vercel Flags — настройка
+- **Vercel Flags** — A/B-тесты, UI-эксперименты 🟡
+- **Внутренние БД-флаги** (`useFlag()` из `@jazz/plugin-sdk`) — RBAC-доступ 🟢
+
+### 11.2. Vercel Flags — настройка 🟡
 
 ```ts
 const flag = await getFlags();
-const requireAuth = flag({
-  key: 'require-auth',
-  defaultValue: false,
-});
+const requireAuth = flag({ key: 'require-auth', defaultValue: false });
 ```
 
-### 11.3. Vercel Edge Config
+### 11.3. Vercel Edge Config 🟡
 
 ```ts
 const isAuthRequired = await edgeConfig.get('require-auth');
 ```
 
-### 11.4. Взаимодействие с внутренними флагами
+### 11.4. Взаимодействие с внутренними флагами 🟢
+
+Внутренние флаги работают через БД и `useFlag()` / `usePermission()` на фронте.
 
 ---
 
 ## 12. Рассылки и уведомления
 
-### 12.1. Resend — транзакционные email
+### 12.1. Resend — транзакционные email 🟢
+
+Реализовано: `apps/api/src/services/email.service.ts`
 
 ```ts
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -597,17 +561,23 @@ async function sendMagicLink(email: string, link: string) {
 }
 ```
 
-### 12.2. Другие виды уведомлений
+Dev-режим: если `RESEND_API_KEY` не задан — ссылка печатается в консоль.
+
+### 12.2. Другие виды уведомлений 🟡
 
 ---
 
 ## 13. Управление доменами и субдоменами
 
-### 13.1. Регистрация и настройка доменов
+### 13.1. Регистрация и настройка доменов ⏳
 
-### 13.2. SSL-сертификаты
+Домен `amazilia.app` ещё не куплен. Используются бесплатные домены Vercel и Railway.
 
-### 13.3. Редиректы
+### 13.2. SSL-сертификаты 🟢
+
+Vercel и Railway автоматически выпускают SSL через Let's Encrypt.
+
+### 13.3. Редиректы 🟡
 
 ```json
 {
@@ -625,13 +595,14 @@ async function sendMagicLink(email: string, link: string) {
 
 ---
 
-## 14. Система поддержки и тикетов
+## 14. Система поддержки и тикетов 🟡
 
-### 14.1. Варианты реализации
+### 14.1. Рекомендованная связка
 
-### 14.2. Рекомендованная связка
+- **Crisp** — live chat + тикеты
+- **GitHub Issues** — баг-репорты, фича-реквесты
 
-### 14.3. Интеграция Crisp в лендинг и приложение
+### 14.2. Интеграция Crisp
 
 ```html
 <script>
@@ -647,76 +618,97 @@ async function sendMagicLink(email: string, link: string) {
 
 ## 15. Двухстадийная стратегия доступа к сервису
 
-### 15.1. Стадия 1: Открытый доступ (MVP)
+### 15.1. Стадия 1: Открытый доступ (MVP) 🟢
 
-### 15.2. Стадия 2: Доступ по регистрации
+Приложение доступно без регистрации (`AUTH_DEV_MODE=true`).
 
-### 15.3. Переключение между стадиями
+### 15.2. Стадия 2: Доступ по регистрации 🟢
+
+OAuth (Google, GitHub) + Magic Link + TOTP 2FA реализованы. Включение — `AUTH_DEV_MODE=false`.
+
+### 15.3. Переключение между стадиями 🟢
+
+Переключение — через переменную `AUTH_DEV_MODE` на Railway. Требуется редеплой. Vercel Flags (план) позволят переключать мгновенно.
 
 ---
 
 ## 16. Управление переменными (Environment Variables)
 
-### 16.1. Иерархия переменных
+### 16.1. Иерархия переменных 🟢
+
+- **Локально:** `.env` файл (корень проекта)
+- **Railway:** Dashboard → Variables (для API)
+- **Vercel:** Dashboard/CLI (для лендинга и студии)
+- **GitHub Secrets:** `RAILWAY_TOKEN` (для CI/CD)
+- Приоритет: shell/платформа > `.env` файл
 
 ### 16.2. Жизненный цикл переменной
 
 ### 16.3. Каталог переменных
 
+Полный актуальный каталог: [DEPLOYMENT-BASIS.md §8](DEPLOYMENT-BASIS.md#8-переменные-окружения).
+
 ---
 
 ## 17. План действий (Roadmap)
 
-### Фаза 1: Подготовка инфраструктуры (1–2 дня)
+> **Актуализировано 2026-07-28.** Учтён выбор Railway для API вместо Vercel Serverless.
 
-| Шаг | Задача | Исполнитель |
-|-----|--------|-------------|
-| 1.1 | Создать проект лендинга на Vercel (бесплатный домен) | devops |
-| 1.2 | Создать проект веб-приложения на Vercel (бесплатный домен) | devops |
-| 1.3 | Создать проект API на Vercel (бесплатный домен) | devops |
-| 1.4 | Создать Turso-БД для production и preview | devops |
-| 1.5 | Настроить Vercel Blob Storage | devops |
-| 1.6 | Создать `infra/` структуру в репозитории | devops |
-| 1.7 | Настроить GitHub Actions CI/CD (обновить `.github/workflows/ci.yml`) | devops |
-| 1.8 | Настроить SOPS + age для секретов | devops |
+### Фаза 1: Подготовка инфраструктуры ✅ ВЫПОЛНЕНО
 
-### Фаза 2: Миграция БД (1 день)
+| Шаг | Задача | Статус |
+|-----|--------|--------|
+| 1.1 | Проект лендинга на Vercel (`amazilia-landing`) | ✅ |
+| 1.2 | Проект веб-приложения на Vercel (`amazilia-studio`) | ✅ |
+| 1.3 | Проект API на Railway (`amazilia-api`) | ✅ |
+| 1.4 | Создать `infra/` структуру в репозитории | ✅ |
+| 1.5 | Настроить GitHub Actions CI/CD (verify + deploy-api) | ✅ |
+| 1.6 | Настроить Railway-деплой (Dockerfile.api + railway up) | ✅ |
+| 1.7 | Создать `vercel.json` для всех трёх проектов | ✅ |
 
-| Шаг | Задача | Исполнитель |
-|-----|--------|-------------|
-| 2.1 | Сменить драйвер `better-sqlite3` → `@libsql/client` | software-engineer |
-| 2.2 | Обновить `drizzle.config.ts` | software-engineer |
-| 2.3 | Запустить миграции на Turso | devops |
-| 2.4 | Настроить бэкапы Turso | devops |
+### Фаза 2: Миграция БД 🟡 ОТЛОЖЕНО
 
-### Фаза 3: Настройка observability и безопасности (1 день)
+| Шаг | Задача | Статус |
+|-----|--------|--------|
+| 2.1 | Сменить драйвер `better-sqlite3` → `@libsql/client` | 🟡 |
+| 2.2 | Создать Turso БД | 🟡 |
+| 2.3 | Накатить миграции на Turso | 🟡 |
+| 2.4 | Настроить бэкапы Turso | 🟡 |
 
-| Шаг | Задача | Исполнитель |
-|-----|--------|-------------|
-| 3.1 | Подключить Vercel Analytics (лендинг + приложение) | devops |
-| 3.2 | Подключить Sentry (приложение + API) | devops |
-| 3.3 | Настроить WAF и Bot Management | devops |
-| 3.4 | Настроить Vercel Flags + Edge Config | devops |
-| 3.5 | Настроить Resend для email | devops |
+> **Причина отсрочки:** Railway позволяет использовать SQLite/better-sqlite3 без изменений. Миграция на Turso нужна при переходе на Vercel Serverless или для edge-ready БД.
 
-### Фаза 4: Деплой и настройка API (1 день)
+### Фаза 3: Observability, безопасность, аналитика 🟡
 
-| Шаг | Задача | Исполнитель |
-|-----|--------|-------------|
-| 4.1 | Собрать и задеплоить лендинг (Стадия 1) | devops |
-| 4.2 | Собрать и задеплоить веб-приложение (Стадия 1) | devops |
-| 4.3 | Обернуть Fastify в serverless-функцию (`@fastify/vercel`), настроить `vercel.json` для `apps/api/` | software-engineer |
-| 4.4 | Переключить rate-limit на внешний стор (Upstash или Turso) | software-engineer |
-| 4.5 | Задеплоить API через `vercel --prod` | devops |
-| 4.6 | Настроить прокси `/api` → API-сервер в `vercel.json` веб-приложения | devops |
-| 4.7 | Проверить сквозную работу | devops |
+| Шаг | Задача | Статус |
+|-----|--------|--------|
+| 3.1 | Подключить Vercel Analytics | 🟡 |
+| 3.2 | Подключить Sentry | 🟡 |
+| 3.3 | Настроить Vercel Firewall (WAF) | 🟡 |
+| 3.4 | Настроить Vercel Flags + Edge Config | 🟡 |
+| 3.5 | Подключить Amplitude | 🟡 |
+| 3.6 | Настроить SOPS + age (ключ) | 🟡 |
+| 3.7 | Настроить Vercel Blob Storage | 🟡 |
 
-### Фаза 5: Стадия 2 (аутентификация)
+### Фаза 4: Деплой и настройка ✅ ВЫПОЛНЕНО (Railway)
 
-| Шаг | Задача | Исполнитель |
-|-----|--------|-------------|
-| 5.1 | Переключить Vercel Flag `require-auth` → `true` | devops |
-| 5.2 | Проверить редиректы неавторизованных пользователей | QA |
+| Шаг | Задача | Статус |
+|-----|--------|--------|
+| 4.1 | Деплой лендинга на Vercel | ✅ |
+| 4.2 | Деплой веб-приложения на Vercel | ✅ |
+| 4.3 | Деплой API на Railway (Docker) | ✅ |
+| 4.4 | Настроить прокси `/api` → Railway API | ✅ |
+| 4.5 | Проверить сквозную работу | ✅ |
+
+### Фаза 5: Продакшен-фичи
+
+| Шаг | Задача | Статус |
+|-----|--------|--------|
+| 5.1 | Аутентификация (OAuth + Magic Link + TOTP) | ✅ |
+| 5.2 | Resend email-рассылка | ✅ |
+| 5.3 | RBAC и аудит | ✅ |
+| 5.4 | Покупка домена `amazilia.app` | ⏳ |
+| 5.5 | Настройка собственных доменов | ⏳ |
+| 5.6 | Система поддержки (Crisp) | 🟡 |
 
 ---
 
@@ -753,24 +745,25 @@ Devops-агент также должен использовать **Vercel MCP*
 
 ## 19. Чек-лист готовности к запуску
 
-- [ ] Лендинг деплоится на `amazilia.app` (или бесплатный Vercel-домен)
-- [ ] Веб-приложение деплоится на `studio.amazilia.app`
-- [ ] API деплоится на `api.amazilia.app`
-- [ ] Turso БД доступна из API
-- [ ] Vercel Blob работает (загрузка/скачивание файлов)
-- [ ] HTTPS включен для всех доменов
-- [ ] Environment Variables настроены для production
-- [ ] CI/CD проходит (lint → test → typecheck → build)
-- [ ] Preview Deployments создаются для PR (включая API)
+- [x] Лендинг деплоится на бесплатный Vercel-домен
+- [x] Веб-приложение деплоится на бесплатный Vercel-домен
+- [x] API деплоится на Railway (бесплатный домен `.up.railway.app`)
+- [ ] Turso БД доступна из API (пока SQLite на Railway)
+- [ ] Vercel Blob работает
+- [x] HTTPS включен для всех доменов (Vercel + Railway автоматически)
+- [x] Environment Variables настроены (Railway + Vercel)
+- [x] CI/CD проходит (lint → typecheck → test → deploy-api)
+- [x] Preview Deployments создаются для PR (лендинг + студия)
 - [ ] Vercel Analytics показывает данные
 - [ ] Amplitude принимает события
 - [ ] Sentry принимает ошибки
 - [ ] WAF активен
 - [ ] Feature Flags работают (Edge Config)
-- [ ] Resend отправляет письма
-- [ ] Документация `infra/README.md` актуальна
-- [ ] `DEPLOYMENT.md` закоммичен в репо
+- [x] Resend отправляет письма (dev-mode fallback)
+- [x] Аутентификация работает (OAuth + Magic Link + TOTP)
+- [x] Документация `infra/README.md` актуален
+- [x] `DEPLOYMENT.md` закоммичен в репо
 
 ---
 
-_Документ описывает требования к размещению Amazilia на Vercel. Создан 2026-07-26. Обновлён 2026-07-27: API на Vercel Serverless, Fly.io в бэклог, добавлен Amplitude (v2.1). Исполнитель: devops AI agent._
+_Документ описывает требования к размещению Amazilia. Создан 2026-07-26. Актуализирован 2026-07-28: отражён выбор Railway для API, добавлены статус-маркеры 🟢/🟡/⏳, обновлены Roadmap и чек-лист (v3.0). Исполнитель: devops AI agent._

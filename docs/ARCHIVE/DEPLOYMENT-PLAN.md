@@ -1,6 +1,6 @@
 # DEPLOYMENT-PLAN — План раскатки Amazilia для DevOps
 
-> **Версия:** v1.0 от 2026-07-27
+> **Версия:** v1.1 от 2026-07-28 (актуализация: отметки о выполнении)
 > **Основание:** `docs/DEPLOYMENT.md` — архитектура размещения
 > **Исполнитель:** devops AI agent
 > **Приоритеты заказчика:** P0 (CI/CD + домены) → P1 (Лендинг) → P2 (App + API) → P3 (Turso БД) → P4 (Amplitude)
@@ -25,11 +25,11 @@
 
 ---
 
-## Фаза 0: Vercel Git Integration + базовый CI/CD (приоритет P0)
+## Фаза 0: Vercel Git Integration + базовый CI/CD ✅ ВЫПОЛНЕНО
 
 **Цель:** три пустых Vercel-проекта связаны с репозиторием, CI/CD пайплайн проверяет код при PR/push в `main`, получены временные домены.
 
-### Шаг 0.1 — Установка и аутентификация Vercel CLI
+### Шаг 0.1 — Установка и аутентификация Vercel CLI ✅
 
 ```bash
 # Установить Vercel CLI глобально
@@ -44,7 +44,7 @@ vercel link
 
 **Результат:** Vercel CLI готов к работе, в корне появится `.vercel/` (добавить в `.gitignore`).
 
-### Шаг 0.2 — Создание трёх Vercel-проектов
+### Шаг 0.2 — Создание Vercel-проектов ✅
 
 Каждый проект — отдельный деплой из монорепо. Создаются через Vercel Dashboard:
 
@@ -66,7 +66,7 @@ vercel link
 - `<studio-project>.vercel.app`
 - `<api-project>.vercel.app`
 
-### Шаг 0.3 — Создание `infra/` структуры
+### Шаг 0.3 — Создание `infra/` структуры ✅
 
 Создать директорию IaC согласно `DEPLOYMENT.md §4.1`:
 
@@ -170,7 +170,7 @@ mkdir -p infra/vercel/env infra/turso infra/resend
 }
 ```
 
-### Шаг 0.4 — Создание `vercel.json` в директориях проектов
+### Шаг 0.4 — Создание `vercel.json` в директориях проектов ✅
 
 Создать симлинки или копии из `infra/vercel/` на время настройки:
 
@@ -187,7 +187,7 @@ cp infra/vercel/api.json apps/api/vercel.json
 
 > В будущем Vercel-проекты можно будет сконфигурировать через Dashboard, и `vercel.json` станет не нужен (IaC в `infra/` — source of truth, dashboard — execution). Но для первой настройки через Git Integration файлы в корне проекта необходимы.
 
-### Шаг 0.5 — Актуализация CI/CD пайплайна
+### Шаг 0.5 — Актуализация CI/CD пайплайна ✅
 
 Текущий `.github/workflows/ci.yml` не содержит шагов `lint` и `build`. Обновить:
 
@@ -231,7 +231,7 @@ jobs:
 
 > **Почему без `build`:** Vercel выполняет сборку на своей стороне. CI проверяет только качество кода (typecheck + lint + test). Если нужна проверка сборки в CI — добавить шаг `npm run build` (увеличит время CI на ~2–5 мин).
 
-### Шаг 0.6 — Настройка Vercel Git Integration (автодеплой)
+### Шаг 0.6 — Настройка Vercel Git Integration (автодеплой) ✅
 
 В каждом Vercel-проекте (Dashboard → Settings → Git):
 
@@ -240,19 +240,19 @@ jobs:
 3. **Pull Request** → автоматический Preview-деплой = включён
 4. **Skipped commits:** `[skip ci]`, `[skip deploy]`
 
-**Результат Фазы 0:**
-- Три пустых Vercel-проекта связаны с GitHub
+**Результат Фазы 0 (актуальный):**
+- Два Vercel-проекта (лендинг + студия) связаны с GitHub + один Railway-проект (API)
 - CI/CD: PR → lint/typecheck/test + Preview-деплой; merge в main → Production-деплой
 - Три временных домена: `<project>.vercel.app`
 - `infra/` структура создана и закоммичена
 
 ---
 
-## Фаза 1: Лендинг на временном домене (приоритет P1)
+## Фаза 1: Лендинг на временном домене ✅ ВЫПОЛНЕНО
 
 **Цель:** работающий лендинг на `<landing-project>.vercel.app`, видимый внешнему миру.
 
-### Шаг 1.1 — Проверить, что `apps/landing` собирается
+### Шаг 1.1 — Проверить, что `apps/landing` собирается ✅
 
 ```bash
 cd apps/landing
@@ -261,7 +261,7 @@ npm run build
 
 Ожидаемый результат: `dist/` с `index.html`, CSS, JS.
 
-### Шаг 1.2 — Настроить переменные окружения для лендинга
+### Шаг 1.2 — Настроить переменные окружения для лендинга ✅
 
 Через Vercel Dashboard (проект Landing → Settings → Environment Variables):
 
@@ -271,7 +271,7 @@ npm run build
 
 Пока Amplitude не настроен — можно оставить пустым (или временный ключ).
 
-### Шаг 1.3 — Первый деплой лендинга
+### Шаг 1.3 — Первый деплой лендинга ✅
 
 **Способ A: Push в `main`** (рекомендовано)
 
@@ -290,7 +290,7 @@ cd apps/landing
 vercel --prod
 ```
 
-### Шаг 1.4 — Валидация лендинга
+### Шаг 1.4 — Валидация лендинга ✅
 
 - [ ] Лендинг открывается по `https://<landing-project>.vercel.app`
 - [ ] HTTPS работает (Vercel автоматически выпускает сертификат)
@@ -302,11 +302,13 @@ vercel --prod
 
 ---
 
-## Фаза 2: Веб-приложение + API (приоритет P2)
+## Фаза 2: Веб-приложение + API ❌ ПЛАН ИЗМЕНЁН
 
-**Цель:** работающее приложение на `<studio-project>.vercel.app` и API на `<api-project>.vercel.app`.
+**Цель (пересмотрена):** API деплоится на Railway (Docker), а не Vercel Serverless. Шаги 2.1–2.4 (serverless-обёртка) не выполнялись.
 
-### Шаг 2.1 — Подготовка API к serverless
+> **Решение:** API выбран Railway (Docker) вместо Vercel Serverless. Serverless-обёртка (`@fastify/vercel`) не создавалась. `apps/api/vercel.json` сохранён для возможной будущей миграции.
+
+### Шаг 2.1 — Подготовка API к serverless ❌ ПРОПУЩЕНО
 
 **Исполнитель:** software-engineer (потребуется изменение кода).
 
@@ -318,11 +320,11 @@ vercel --prod
 
 → **Решение:** объединить шаги 2.1 и 3.1. Сначала миграция БД, потом деплой API.
 
-### Шаг 2.2 — Миграция `better-sqlite3` → `@libsql/client` (см. Фазу 3, шаг 3.1)
+### Шаг 2.2 — Миграция `better-sqlite3` ❌ ПРОПУЩЕНО → `@libsql/client` (см. Фазу 3, шаг 3.1)
 
 Выполняется software-engineer. DevOps ждёт готовности миграции.
 
-### Шаг 2.3 — Создание serverless-обёртки для API
+### Шаг 2.3 — Создание serverless-обёртки ❌ ПРОПУЩЕНО
 
 Файл `apps/api/api/[...path].ts`:
 
@@ -343,7 +345,7 @@ export default fastifyVercel(app);
 npm install --workspace=@jazz/api @fastify/vercel
 ```
 
-### Шаг 2.4 — Rate-limit: переключить на внешний стор
+### Шаг 2.4 — Rate-limit ❌ ПРОПУЩЕНО
 
 Текущий `apps/api/src/plugins/rate-limit.plugin.ts` использует in-memory хранилище — **не работает в serverless** (инстансы не разделяют память).
 
@@ -353,7 +355,7 @@ npm install --workspace=@jazz/api @fastify/vercel
 
 → Рекомендовано: **Upstash Redis** (бесплатный тир: 10K команд/день).
 
-### Шаг 2.5 — Настройка переменных окружения API
+### Шаг 2.5 — Настройка переменных окружения API ✅ (Railway)
 
 Через Vercel Dashboard (проект API → Settings → Environment Variables):
 
@@ -364,7 +366,7 @@ npm install --workspace=@jazz/api @fastify/vercel
 | `RESEND_API_KEY` | Resend API key | Production |
 | `PUBLIC_URL` | `https://<api-project>.vercel.app` | Production |
 
-### Шаг 2.6 — Настройка переменных окружения веб-приложения
+### Шаг 2.6 — Настройка переменных окружения веб-приложения ✅
 
 Через Vercel Dashboard (проект Studio → Settings → Environment Variables):
 
@@ -374,7 +376,7 @@ npm install --workspace=@jazz/api @fastify/vercel
 | `VITE_AMPLITUDE_API_KEY` | Amplitude API key | Production |
 | `VITE_SENTRY_DSN` | Sentry DSN | Production |
 
-### Шаг 2.7 — Деплой API
+### Шаг 2.7 — Деплой API ✅ (Railway, не Vercel)
 
 ```bash
 # Из корня монорепо
@@ -382,14 +384,14 @@ cd apps/api
 vercel --prod
 ```
 
-### Шаг 2.8 — Деплой веб-приложения
+### Шаг 2.8 — Деплой веб-приложения ✅
 
 ```bash
 cd apps/web
 vercel --prod
 ```
 
-### Шаг 2.9 — Валидация приложения
+### Шаг 2.9 — Валидация приложения ✅
 
 - [ ] Веб-приложение открывается по `https://<studio-project>.vercel.app`
 - [ ] API отвечает по `https://<api-project>.vercel.app/api/health`
@@ -401,11 +403,11 @@ vercel --prod
 
 ---
 
-## Фаза 3: Turso Database (приоритет P3)
+## Фаза 3: Turso Database ❌ НЕ ВЫПОЛНЕНО
 
-**Цель:** production-БД создана, миграции накачены, API работает с Turso, `better-sqlite3` удалён.
+**Статус:** НЕ ВЫПОЛНЕНО. Railway позволяет использовать SQLite/better-sqlite3 без изменений. Миграция на Turso отложена до перехода на Vercel Serverless или необходимости edge-ready БД., API работает с Turso, `better-sqlite3` удалён.
 
-### Шаг 3.1 — Миграция драйвера (software-engineer)
+### Шаг 3.1 — Миграция драйвера ❌
 
 Заменить `better-sqlite3` → `@libsql/client` в `apps/api/`:
 
@@ -422,7 +424,7 @@ npm install --workspace=@jazz/api @libsql/client
 - `driver: 'turso'` вместо `better-sqlite3`
 - `url` / `authToken` из переменных окружения
 
-### Шаг 3.2 — Создание Turso БД
+### Шаг 3.2 — Создание Turso БД ❌
 
 Через Turso CLI:
 
@@ -446,7 +448,7 @@ turso db show amazilia-prod --url
 turso db tokens create amazilia-prod
 ```
 
-### Шаг 3.3 — Запуск миграций на Turso
+### Шаг 3.3 — Запуск миграций на Turso ❌
 
 ```bash
 # Сгенерировать миграции (если изменилась схема)
@@ -458,7 +460,7 @@ DATABASE_AUTH_TOKEN="..." \
 npm run db:migrate --workspace=@jazz/api
 ```
 
-### Шаг 3.4 — Настройка бэкапов Turso
+### Шаг 3.4 — Настройка бэкапов Turso ❌
 
 Turso автоматически делает daily-бэкапы. Проверить:
 
@@ -467,7 +469,7 @@ turso db show amazilia-prod
 # Убедиться: backups: enabled
 ```
 
-### Шаг 3.5 — Удаление `better-sqlite3` из CI
+### Шаг 3.5 — Удаление `better-sqlite3` из CI ❌ (сохранён для Railway)
 
 Убрать строку из `.github/workflows/ci.yml`:
 
@@ -476,7 +478,7 @@ turso db show amazilia-prod
 - run: npm rebuild better-sqlite3
 ```
 
-### Шаг 3.6 — Валидация БД
+### Шаг 3.6 — Валидация БД ❌
 
 - [ ] API отвечает на запросы, данные читаются/пишутся
 - [ ] Миграции применены (проверить `drizzle migrations list`)
@@ -487,24 +489,24 @@ turso db show amazilia-prod
 
 ---
 
-## Фаза 4: Amplitude Analytics (приоритет P4)
+## Фаза 4: Amplitude Analytics ❌ НЕ ВЫПОЛНЕНО
 
 **Цель:** продуктовая аналитика подключена, Amplitude принимает события из лендинга и приложения.
 
-### Шаг 4.1 — Создание Amplitude-проекта
+### Шаг 4.1 — Создание Amplitude-проекта ❌
 
 1. Зарегистрироваться на https://amplitude.com
 2. Создать проект: **Amazilia**
 3. Получить API Key (Settings → Projects → Amazilia → API Key)
 4. Создать **отдельный ключ для development/preview** (рекомендовано: разделить prod и test-данные)
 
-### Шаг 4.2 — Установка SDK в веб-приложение
+### Шаг 4.2 — Установка SDK ❌
 
 ```bash
 npm install --workspace=@jazz/web @amplitude/analytics-browser
 ```
 
-### Шаг 4.3 — Инициализация Amplitude в коде (software-engineer)
+### Шаг 4.3 — Инициализация Amplitude в коде ❌
 
 Создать `apps/web/src/amplitude.ts`:
 
@@ -529,7 +531,7 @@ export { track, setUserId } from '@amplitude/analytics-browser';
 import './amplitude'; // инициализация Amplitude — до App
 ```
 
-### Шаг 4.4 — Добавить Amplitude на лендинг
+### Шаг 4.4 — Добавить Amplitude на лендинг ❌
 
 Варианты:
 1. **Через npm** (если лендинг использует JS-бандлер)
@@ -537,7 +539,7 @@ import './amplitude'; // инициализация Amplitude — до App
 
 Для Vite-лендинга (источник DEPLOYMENT.md §1.1): через npm, аналогично веб-приложению.
 
-### Шаг 4.5 — Базовые события (software-engineer)
+### Шаг 4.5 — Базовые события ❌
 
 Добавить трекинг ключевых событий согласно `DEPLOYMENT.md §9.2`:
 
@@ -549,7 +551,7 @@ import './amplitude'; // инициализация Amplitude — до App
 | `exercise_started` | `apps/web` — старт упражнения |
 | `exercise_completed` | `apps/web` — завершение упражнения |
 
-### Шаг 4.6 — Настройка переменных окружения
+### Шаг 4.6 — Настройка переменных окружения ❌
 
 Добавить в Vercel-проекты:
 
@@ -558,7 +560,7 @@ import './amplitude'; // инициализация Amplitude — до App
 | Landing | `VITE_AMPLITUDE_API_KEY` | Amplitude API Key |
 | Studio | `VITE_AMPLITUDE_API_KEY` | Amplitude API Key |
 
-### Шаг 4.7 — Валидация аналитики
+### Шаг 4.7 — Валидация аналитики ❌
 
 - [ ] Amplitude показывает live-пользователей (Amplitude → User Look-Up)
 - [ ] События `landing_visit` приходят с лендинга
@@ -569,9 +571,9 @@ import './amplitude'; // инициализация Amplitude — до App
 
 ---
 
-## Фаза 5: Переключение на собственный домен (после покупки `amazilia.app`)
+## Фаза 5: Переключение на собственный домен ⏳ ОЖИДАЕТ
 
-### Шаг 5.1 — Добавить домен в Vercel
+### Шаг 5.1 — Добавить домен в Vercel ⏳ (домен не куплен)
 
 Vercel Dashboard → проект → Settings → Domains → Add Domain:
 
@@ -581,17 +583,17 @@ Vercel Dashboard → проект → Settings → Domains → Add Domain:
 | Studio | `studio.amazilia.app` |
 | API | `api.amazilia.app` |
 
-### Шаг 5.2 — Настроить DNS
+### Шаг 5.2 — Настроить DNS ⏳
 
 Vercel предложит DNS-записи. Добавить их у регистратора домена.
 
-### Шаг 5.3 — Обновить переменные окружения
+### Шаг 5.3 — Обновить переменные окружения ⏳
 
 Заменить временные домены на целевые:
 - `VITE_API_BASE_URL` → `https://api.amazilia.app`
 - Rewrite в `vercel.json` студии → `https://api.amazilia.app`
 
-### Шаг 5.4 — Редиректы с временных доменов (опционально)
+### Шаг 5.4 — Редиректы с временных доменов ⏳
 
 ```json
 {
@@ -669,4 +671,4 @@ graph TD
 
 ---
 
-_План создан software-architect AI agent на основе `docs/DEPLOYMENT.md` и приоритетов заказчика. Версия 1.0, 2026-07-27._
+_План создан software-architect AI agent на основе `docs/DEPLOYMENT.md` и приоритетов заказчика. Версия 1.0, 2026-07-27. Актуализирован 2026-07-28 devops AI agent: проставлены отметки о выполнении/отмене/отсрочке. Основное отклонение от плана: API на Railway вместо Vercel Serverless, БД SQLite вместо Turso._

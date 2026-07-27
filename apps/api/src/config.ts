@@ -91,6 +91,16 @@ function validateSecrets(config: ApiConfig): void {
     console.warn('[api] WARNING: using insecure default SESSION_SECRET — change in production');
   }
 
+  // In production, WEB_ORIGIN must point to the actual frontend origin.
+  // Default localhost origin will cause CORS and OAuth cookie failures.
+  if (isProd && config.webOrigin === 'http://localhost:5173') {
+    console.warn(
+      '[api] WARNING: WEB_ORIGIN is still the dev default (http://localhost:5173). ' +
+        'CORS and OAuth callbacks will fail in production. ' +
+        'Set WEB_ORIGIN=https://amazilia-studio.vercel.app (or your production frontend origin).',
+    );
+  }
+
   if (config.googleClientId && !config.googleClientSecret && isProd) {
     fail('GOOGLE_CLIENT_ID is set but GOOGLE_CLIENT_SECRET is missing');
   }
@@ -109,9 +119,14 @@ function validateSecrets(config: ApiConfig): void {
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): ApiConfig {
+  // webOrigin is the canonical frontend origin. The browser accesses the API
+  // through a reverse proxy (Vite dev server / Vercel rewrites), so OAuth
+  // callback URLs must use this origin to keep cookies on the same domain.
+  const webOrigin = env.WEB_ORIGIN ?? 'http://localhost:5173';
+
   const config: ApiConfig = {
-    port: Number(env.API_PORT ?? 3999),
-    webOrigin: env.WEB_ORIGIN ?? 'http://localhost:5173',
+    port: Number(env.API_PORT ?? env.PORT ?? 3999),
+    webOrigin,
     authDevMode: env.AUTH_DEV_MODE === 'true',
     databaseUrl: env.DATABASE_URL ?? env.TURSO_DATABASE_URL ?? env.AMAZILIA_DB_TURSO_DATABASE_URL ?? './data/jazz-trainer.sqlite',
     databaseAuthToken: env.DATABASE_AUTH_TOKEN ?? env.TURSO_AUTH_TOKEN ?? env.AMAZILIA_DB_TURSO_AUTH_TOKEN ?? null,
@@ -120,10 +135,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ApiConfig {
     sessionMaxAbsoluteTtlMs: Number(env.SESSION_MAX_ABSOLUTE_TTL_MS ?? SEVEN_DAYS_MS),
     googleClientId: env.GOOGLE_CLIENT_ID ?? null,
     googleClientSecret: env.GOOGLE_CLIENT_SECRET ?? null,
-    googleCallbackUrl: env.GOOGLE_CALLBACK_URL ?? 'http://localhost:3999/api/auth/google/callback',
+    googleCallbackUrl: env.GOOGLE_CALLBACK_URL ?? `${webOrigin}/api/auth/google/callback`,
     githubClientId: env.GITHUB_CLIENT_ID ?? null,
     githubClientSecret: env.GITHUB_CLIENT_SECRET ?? null,
-    githubCallbackUrl: env.GITHUB_CALLBACK_URL ?? 'http://localhost:3999/api/auth/github/callback',
+    githubCallbackUrl: env.GITHUB_CALLBACK_URL ?? `${webOrigin}/api/auth/github/callback`,
     googleHd: env.GOOGLE_HD ?? null,
     resendApiKey: env.RESEND_API_KEY ?? null,
     emailFrom: env.EMAIL_FROM ?? 'noreply@amazilia.app',

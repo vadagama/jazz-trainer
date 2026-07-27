@@ -15,11 +15,11 @@
 |-----------|-----------|--------|
 | **Веб-приложение** | Vercel (проект `amazilia-studio`) | 🟢 |
 | **Лендинг** | Vercel (проект `amazilia-landing`) | 🟢 |
-| **API-сервер** | Vercel (проект `amazilia-api`) | 🟢 |
+| **API-сервер** | Railway (Docker) | 🟢 |
 | **База данных** | SQLite (`better-sqlite3` + Drizzle ORM) | 🟢 |
 | **CI/CD** | GitHub Actions | 🟢 |
 
-> **Архитектура:** три независимых Vercel-проекта — лендинг (`/`), веб-приложение (`/studio`, `/login`, `/signup`), API.
+> **Архитектура:** два Vercel-проекта (лендинг + студия) + Railway (API).
 > Лендинг — отдельный Vite + React проект в `apps/landing/`, студия — в `apps/web/`.
 
 ---
@@ -64,7 +64,7 @@
 
 | Source | Destination |
 |--------|-------------|
-| `/api/:path*` | `https://<api-project>.vercel.app/api/:path*` |
+| `/api/:path*` | `https://amazilia-api-production.up.railway.app/api/:path*` |
 | `/((?!api/).*)` | `/index.html` (SPA fallback) |
 
 **Заголовки кеширования:**
@@ -115,8 +115,7 @@
 |-----|---------|
 | Checkout | `actions/checkout@v4` |
 | Setup Node | Node 22, npm cache |
-| Install | `npm ci` |
-| Rebuild native | `npm rebuild better-sqlite3` |
+| Install | `rm -rf node_modules && npm install --no-audit --no-fund` |
 | Typecheck | `npm run typecheck` |
 | Lint | `npm run lint` |
 | Test | `npm run test` |
@@ -341,9 +340,10 @@ npm run test                   # Vitest
 # Сборка
 npm run build                  # typecheck + сборка web + api
 
-# Деплой (через Vercel CLI)
-vercel --cwd apps/web --prod   # Studio
-vercel --cwd apps/api --prod   # API
+# Деплой
+vercel --cwd apps/web --prod      # Studio (Vercel)
+vercel --cwd apps/landing --prod  # Лендинг (Vercel)
+railway up                        # API (Railway)
 
 # Переменные окружения Vercel
 vercel env ls                  # Список переменных
@@ -360,8 +360,9 @@ sops --decrypt infra/secrets/.env.encrypted > .env
 
 | Аспект | `DEPLOYMENT.md` (план) | `DEPLOYMENT-BASIS.md` (факт) |
 |--------|------------------------|------------------------------|
+| API-хостинг | Vercel Serverless | Railway (Docker) |
 | БД | Turso (libSQL) | SQLite (`better-sqlite3`) |
-| Проектов Vercel | 3 (Лендинг + Studio + API) | 3 (Лендинг + Studio + API) |
+| Проектов | 3 Vercel (Лендинг + Studio + API) | 2 Vercel + 1 Railway |
 | Sentry | Описан | Отсутствует в коде |
 | Vercel Blob | Описан | Заглушка |
 | Vercel Flags/Edge Config | Описаны | Отсутствуют |
@@ -371,4 +372,4 @@ sops --decrypt infra/secrets/.env.encrypted > .env
 
 ---
 
-_Обновлено: 2026-07-27. Актуализировать при изменении любого артефакта в `infra/` или конфигурации Vercel._
+_Обновлено: 2026-07-28. Актуализировать при изменении любого артефакта в `infra/` или конфигурации Vercel/Railway._
