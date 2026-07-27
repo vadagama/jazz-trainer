@@ -9,6 +9,6 @@ export default defineConfig({
   sourcemap: true,
   // Bundle workspace packages (they ship TS source, not compiled JS).
   noExternal: [/^@jazz\//],
-  // Native modules must stay external.
-  external: ['better-sqlite3', '@libsql/client'],
+  // Native modules and test-only deps must stay external.
+  external: ['better-sqlite3', '@libsql/client', 'vitest'],
 });
