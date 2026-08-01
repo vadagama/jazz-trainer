@@ -54,6 +54,25 @@ sops --decrypt infra/secrets/.env.encrypted > .env
 ./infra/scripts/rollback-db.sh --latest
 ```
 
+## Git Hooks (pre-push)
+
+Автоматические проверки перед `git push`. Настраиваются один раз:
+
+```bash
+bash infra/scripts/activate-git-hooks.sh
+```
+
+**Что проверяется:**
+
+| Ситуация | Проверка |
+|----------|----------|
+| Пуш в любую ветку | Целостность `package-lock.json` (2 сек) |
+| Пуш в `main` | typecheck + lint + test (полный цикл CI) |
+
+**Пропустить проверки:** `git push --no-verify`
+
+Путь к хукам: `infra/git-hooks/` (версионируются в git).
+
 ---
 
 ## Rollback-процедуры (Фаза 8)
