@@ -9,6 +9,7 @@ function makeConfig(
     port: 3999,
     webOrigin: 'http://localhost:5173',
     authDevMode: false,
+    devSecret: null,
     databaseUrl: ':memory:',
     databaseAuthToken: null,
     sessionSecret: 'test',
@@ -26,6 +27,8 @@ function makeConfig(
     totpIssuer: 'Amazilia',
     superAdminSessionMaxAbsoluteTtlMs: 900_000,
     adminIpAllowlist: null,
+    superAdminEmails: [],
+    superAdminGitHubLogins: [],
   };
 }
 
