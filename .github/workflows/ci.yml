@@ -49,13 +49,9 @@ jobs:
       - name: Install Railway CLI
         run: npm i -g @railway/cli
 
-      # Фаза 6.4.2: миграции применяются до деплоя API.
-      # Если миграции упали — API не деплоится.
-      - name: Run DB migrations (prod)
-        run: railway run --service amazilia-api "npm run db:migrate -- -w @jazz/api"
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-
+      # Миграции применяются сервером при старте (src/index.ts: runMigrations).
+      # Railway сам отслеживает health-check и не заменит старый деплой,
+      # если новый контейнер не станет здоровым.
       - name: Deploy to Railway (prod)
         run: railway up --service amazilia-api
         env:
