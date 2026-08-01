@@ -40,6 +40,8 @@ export interface ApiConfig {
   port: number;
   webOrigin: string;
   authDevMode: boolean;
+  /** Shared secret for dev-login. When set, dev-login requires X-Dev-Secret header. */
+  devSecret: string | null;
   databaseUrl: string;
   /** Auth token for Turso (libsql:// URLs). Optional for local SQLite. */
   databaseAuthToken: string | null;
@@ -64,6 +66,10 @@ export interface ApiConfig {
   superAdminSessionMaxAbsoluteTtlMs: number;
   /** CSV of allowed IPs/CIDRs for super_admin admin access. Null = disabled. */
   adminIpAllowlist: string | null;
+  /** Emails that auto-grant super_admin role on first OAuth/Magic Link login. */
+  superAdminEmails: string[];
+  /** GitHub usernames that auto-grant super_admin role on first GitHub OAuth login. */
+  superAdminGitHubLogins: string[];
 }
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
@@ -145,7 +151,16 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ApiConfig {
     totpIssuer: env.TOTP_ISSUER ?? 'Amazilia',
     superAdminSessionMaxAbsoluteTtlMs: Number(env.SUPER_ADMIN_SESSION_MAX_TTL_MS ?? 15 * 60 * 1000),
     adminIpAllowlist: env.ADMIN_IP_ALLOWLIST ?? null,
+    superAdminEmails: (env.SUPER_ADMIN_EMAILS ?? '').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean),
+    superAdminGitHubLogins: (env.SUPER_ADMIN_GITHUB_LOGINS ?? '').split(',').map((s) => s.trim()).filter(Boolean),
+    devSecret: env.AUTH_DEV_SECRET ?? null,
   };
+
+  // Production guard: AUTH_DEV_MODE must never be true in production
+  if (process.env.NODE_ENV === 'production' && config.authDevMode) {
+    fail('AUTH_DEV_MODE=true is forbidden in production');
+  }
+
   validateSecrets(config);
   return config;
 }
