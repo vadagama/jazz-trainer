@@ -1,0 +1,71 @@
+#!/bin/bash
+# pre-push — проверки перед отправкой в origin/main
+#
+# Быстрые проверки (выполняются всегда):
+#   1. Целостность lock-файла (npm ci --dry-run)
+#
+# Полные проверки (только при пуше в main):
+#   2. typecheck + lint + test
+#
+# Чтобы пропустить проверки: git push --no-verify
+
+set -euo pipefail
+
+# Читаем refs из stdin (git push передаёт их через stdin)
+while read -r local_ref local_sha remote_ref remote_sha; do
+  # Пропускаем удаление веток
+  if [ "$local_sha" = "0000000000000000000000000000000000000000" ]; then
+    continue
+  fi
+
+  BRANCH=$(echo "$remote_ref" | sed 's|refs/heads/||')
+  REMOTE=$(echo "$remote_ref" | sed 's|refs/remotes/||; s|/[^/]*$||')
+
+  echo ""
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo "🔍 pre-push: проверка перед пушем в $REMOTE/$BRANCH"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+  # ── Шаг 1: lockfile integrity (всегда, быстро) ──
+  echo ""
+  echo "📦 Проверка lock-файла..."
+  if ! npm ci --dry-run --ignore-scripts > /dev/null 2>&1; then
+    echo ""
+    echo "❌ package-lock.json рассинхронизирован с package.json"
+    echo ""
+    echo "   Запусти: npm install"
+    echo "   Закоммить: git add package-lock.json && git commit --amend"
+    echo ""
+    echo "   Или пропусти проверку: git push --no-verify"
+    exit 1
+  fi
+  echo "   ✅ lock-файл в порядке"
+
+  # ── Шаг 2: полные проверки (только push в main) ──
+  if [ "$BRANCH" = "main" ]; then
+    echo ""
+    echo "🚀 Пуш в main — запускаю полные проверки..."
+
+    echo ""
+    echo "🔎 typecheck..."
+    npm run typecheck -- --workspace-concurrency=1
+
+    echo ""
+    echo "🧹 lint..."
+    npm run lint
+
+    echo ""
+    echo "🧪 tests..."
+    npm run test
+
+    echo ""
+    echo "✅ Все проверки пройдены"
+  else
+    echo ""
+    echo "   ℹ️  Пуш в $BRANCH — только быстрая проверка lock-файла"
+    echo "   (полный CI запустится на GitHub)"
+  fi
+done
+
+echo ""
+exit 0
