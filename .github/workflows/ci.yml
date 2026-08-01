@@ -19,20 +19,31 @@ jobs:
         with:
           node-version: 22
 
-      - name: Cache node_modules
+      - name: Cache npm
         uses: actions/cache@v4
         with:
-          path: node_modules
+          path: ~/.npm
           key: npm-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
           restore-keys: npm-${{ runner.os }}-
 
+      - name: Verify lockfile integrity
+        # Catch package.json / lockfile mismatch with an actionable error.
+        # npm ci --dry-run exits non-zero when lockfile is out of sync.
+        run: |
+          npm ci --dry-run --ignore-scripts > /dev/null 2>&1 || {
+            echo "::error::package-lock.json is out of sync with package.json"
+            echo "::error::Run 'npm install' locally and commit the updated lockfile."
+            exit 1
+          }
+
       - name: Install dependencies
-        # npm ci can miss platform-specific optional deps (npm bug #4828).
-        # npm install re-resolves fresh and includes all native binaries.
-        run: npm install --prefer-offline
+        # npm ci: strict install from lockfile.
+        # 2x faster than npm install, fully deterministic.
+        run: npm ci
 
       - name: Typecheck
-        run: npm run typecheck
+        # Fail fast: stop at first workspace error instead of running all in parallel.
+        run: npm run typecheck -- --workspace-concurrency=1
 
       - name: Lint
         run: npm run lint
