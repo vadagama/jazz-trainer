@@ -34,7 +34,7 @@ describe('RBAC — resolvePermissions', () => {
 
   beforeEach(async () => {
     db = await createTestDb();
-    seedRbac(db);
+    await seedRbac(db);
   });
 
   it('returns empty set for non-existent user', async () => {
@@ -137,7 +137,7 @@ describe('RBAC — hasPermission', () => {
 
   beforeEach(async () => {
     db = await createTestDb();
-    seedRbac(db);
+    await seedRbac(db);
   });
 
   it('returns true when user has permission via role', async () => {

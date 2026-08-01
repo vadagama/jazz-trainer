@@ -84,7 +84,7 @@ describe('Billing — seedSubscriptionTiers', () => {
   beforeEach(async () => {
     db = await createTestDb();
     ensureBillingTables(db);
-    seedRbac(db);
+    await seedRbac(db);
   });
   it('seeds all three tiers', async () => {
     await seedSubscriptionTiers(db);
@@ -104,7 +104,7 @@ describe('Billing — subscription requests', () => {
   beforeEach(async () => {
     db = await createTestDb();
     ensureBillingTables(db);
-    seedRbac(db);
+    await seedRbac(db);
     await seedSubscriptionTiers(db);
   });
   it('creates a pending request', () => {
@@ -153,7 +153,7 @@ describe('Billing — subscription lifecycle', () => {
   beforeEach(async () => {
     db = await createTestDb();
     ensureBillingTables(db);
-    seedRbac(db);
+    await seedRbac(db);
     await seedSubscriptionTiers(db);
     createTestUser(db, 'user-1');
     createTestUser(db, 'admin-1', RBAC_ROLES.ADMIN);
@@ -225,7 +225,7 @@ describe('Billing — subscription request approval', () => {
   beforeEach(async () => {
     db = await createTestDb();
     ensureBillingTables(db);
-    seedRbac(db);
+    await seedRbac(db);
     await seedSubscriptionTiers(db);
     createTestUser(db, 'admin-1', RBAC_ROLES.ADMIN);
     createTestUser(db, 'user-1');
@@ -258,7 +258,7 @@ describe('Billing — degradeExpiredSubscriptions', () => {
   beforeEach(async () => {
     db = await createTestDb();
     ensureBillingTables(db);
-    seedRbac(db);
+    await seedRbac(db);
     await seedSubscriptionTiers(db);
     createTestUser(db, 'user-1');
   });

@@ -20,8 +20,8 @@ export async function createTestDb(): Promise<DrizzleDb> {
     // the duplicate is already applied; the error is cosmetic for in-memory tests.
     console.error('[test-db] migration warning:', (err as Error).message);
   }
-  seedSystemUser(db);
-  seedFeatureStates(db);
-  seedDemoCompositions(db);
+  await seedSystemUser(db);
+  await seedFeatureStates(db);
+  await seedDemoCompositions(db);
   return db;
 }

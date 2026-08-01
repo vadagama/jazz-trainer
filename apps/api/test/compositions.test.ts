@@ -7,7 +7,7 @@ import type { DrizzleDb } from '../src/db/index.js';
 
 async function makeApp(db?: DrizzleDb): Promise<FastifyInstance> {
   return buildServer({
-    config: { authDevMode: true, webOrigin: 'http://localhost:5173' },
+    config: { authDevMode: true, devSecret: undefined, webOrigin: 'http://localhost:5173' },
     db: db ?? (await createTestDb()),
   });
 }

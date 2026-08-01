@@ -42,6 +42,7 @@ const CONFIG_DEFAULTS: ApiConfig = {
   port: 3999,
   webOrigin: 'http://localhost:5173',
   authDevMode: false,
+  devSecret: null,
   databaseUrl: './data/jazz-trainer.sqlite',
   databaseAuthToken: null,
   sessionSecret: 'dev-insecure-change-me',
@@ -59,6 +60,8 @@ const CONFIG_DEFAULTS: ApiConfig = {
   totpIssuer: 'Amazilia',
   superAdminSessionMaxAbsoluteTtlMs: 15 * 60 * 1000,
   adminIpAllowlist: null,
+  superAdminEmails: [],
+  superAdminGitHubLogins: [],
 };
 
 /**
@@ -67,6 +70,11 @@ const CONFIG_DEFAULTS: ApiConfig = {
  */
 export async function buildServer(opts: BuildServerOptions = {}): Promise<FastifyInstance> {
   const config: ApiConfig = { ...CONFIG_DEFAULTS, ...loadConfig(), ...opts.config };
+  // When authDevMode is explicitly enabled (e.g. in tests), dev-login should not
+  // require a dev secret unless one is explicitly provided.
+  if (opts.config?.authDevMode && opts.config?.devSecret === undefined) {
+    config.devSecret = null;
+  }
   const db = opts.db ?? (await createDb(config.databaseUrl, config.databaseAuthToken ?? undefined)).db;
 
   const app = Fastify({

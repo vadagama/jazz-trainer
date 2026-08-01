@@ -51,7 +51,7 @@ describe('featureAccess — resolveUserFeatureAccess', () => {
 
   beforeEach(async () => {
     db = await createTestDb();
-    seedRbac(db);
+    await seedRbac(db);
   });
 
   it('regular user: default codes active, other features inactive', async () => {

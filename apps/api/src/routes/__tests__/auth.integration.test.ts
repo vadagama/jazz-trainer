@@ -15,8 +15,8 @@ import type { GitHubProfile } from '../../routes/auth.routes.js';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-function ensureBillingTables(db: DrizzleDb) {
-  seedRbac(db);
+async function ensureBillingTables(db: DrizzleDb) {
+  await seedRbac(db);
 }
 
 function makeGitHubExchange(overrides: Partial<GitHubProfile> = {}) {
@@ -96,10 +96,10 @@ describe('Integration — Dev Login & Session', () => {
 
   beforeAll(async () => {
     db = await createTestDb();
-    ensureBillingTables(db);
+    await ensureBillingTables(db);
     app = await buildServer({
       db,
-      config: { authDevMode: true, sessionSecret: 'test-secret-dev' },
+      config: { authDevMode: true, devSecret: undefined, sessionSecret: 'test-secret-dev' },
     });
   });
 
@@ -165,7 +165,7 @@ describe('Integration — Magic Link', () => {
 
   beforeAll(async () => {
     const db = await createTestDb();
-    ensureBillingTables(db);
+    await ensureBillingTables(db);
     app = await buildServer({
       db,
       config: { sessionSecret: 'test-secret-magic' },
@@ -205,7 +205,7 @@ describe('Integration — GitHub OAuth mock', () => {
 
   beforeAll(async () => {
     const db = await createTestDb();
-    ensureBillingTables(db);
+    await ensureBillingTables(db);
     app = await buildServer({
       db,
       config: {
@@ -232,7 +232,7 @@ describe('Integration — Subscription flow', () => {
 
   beforeAll(async () => {
     const db = await createTestDb();
-    ensureBillingTables(db);
+    await ensureBillingTables(db);
     app = await buildServer({ db, config: { sessionSecret: 'test-billing' } });
   });
 
@@ -264,7 +264,7 @@ describe('Integration — Admin subscription permission gating', () => {
 
   beforeAll(async () => {
     const db = await createTestDb();
-    ensureBillingTables(db);
+    await ensureBillingTables(db);
     app = await buildServer({ db, config: { sessionSecret: 'test-admin' } });
   });
 

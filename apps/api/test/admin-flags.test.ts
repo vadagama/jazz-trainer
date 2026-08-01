@@ -13,7 +13,7 @@ const SESSION_TTL = 30 * 24 * 60 * 60 * 1000;
 
 async function makeApp(db: DrizzleDb): Promise<FastifyInstance> {
   return buildServer({
-    config: { authDevMode: true, webOrigin: 'http://localhost:5173' },
+    config: { authDevMode: true, devSecret: undefined, webOrigin: 'http://localhost:5173' },
     db,
   });
 }
@@ -48,7 +48,7 @@ describe('admin-flags routes', () => {
 
   beforeEach(async () => {
     db = await createTestDb();
-    seedRbac(db);
+    await seedRbac(db);
     app = await makeApp(db);
     await app.ready();
     agent = supertest.agent(app.server);

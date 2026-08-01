@@ -12,7 +12,7 @@ import { createSession, computeFingerprint } from '../src/services/auth.service.
 async function makeApp(dbOverride?: DrizzleDb): Promise<FastifyInstance> {
   const db = dbOverride ?? (await createTestDb());
   return buildServer({
-    config: { authDevMode: true, webOrigin: 'http://localhost:5173' },
+    config: { authDevMode: true, devSecret: undefined, webOrigin: 'http://localhost:5173' },
     db,
   });
 }

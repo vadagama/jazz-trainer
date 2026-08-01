@@ -7,7 +7,7 @@ import { createTestDb } from '../src/db/testUtils.js';
 async function makeApp() {
   const db = await createTestDb();
   return buildServer({
-    config: { authDevMode: true, webOrigin: 'http://localhost:5173' },
+    config: { authDevMode: true, devSecret: undefined, webOrigin: 'http://localhost:5173' },
     db,
   });
 }
