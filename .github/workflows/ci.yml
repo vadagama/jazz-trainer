@@ -24,7 +24,9 @@ jobs:
           restore-keys: npm-${{ runner.os }}-
 
       - name: Install dependencies
-        run: npm ci
+        # npm ci can miss platform-specific optional deps (npm bug #4828).
+        # npm install re-resolves fresh and includes all native binaries.
+        run: npm install --prefer-offline
 
       - name: Typecheck
         run: npm run typecheck
