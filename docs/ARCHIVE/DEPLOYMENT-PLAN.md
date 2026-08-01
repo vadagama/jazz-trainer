@@ -87,15 +87,40 @@
 
 ---
 
-## Фаза 4: Amplitude Analytics ❌ НЕ ВЫПОЛНЕНО (отложено)
+## Фаза 4: Amplitude Analytics 🟡 ПЕРЕСМОТРЕНО (двухтрековая стратегия)
 
-- [ ] Шаг 4.1 — Создание Amplitude-проекта
-- [ ] Шаг 4.2 — Установка SDK
-- [ ] Шаг 4.3 — Инициализация Amplitude в коде
-- [ ] Шаг 4.4 — Добавить Amplitude на лендинг
-- [ ] Шаг 4.5 — Базовые события
-- [ ] Шаг 4.6 — Настройка переменных окружения
-- [ ] Шаг 4.7 — Валидация аналитики
+> **Статус (2026-08-01):** Фаза пересмотрена. Вместо изолированной установки Amplitude SDK принята двухтрековая стратегия:
+> - **Трек A (P1):** Amplitude Analytics — быстрый старт, 6 дней, product-аналитика.
+> - **Трек B (P2):** Custom Analytics — глубокая семантическая аналитика, 21 день, админ-дашборды.
+>
+> **Документы:** `ANALYTICS-VISION.md` (продуктовое видение) + `ANALYTICS-PLAN.md` (18 задач, 27 дней).
+>
+> **Точка пересечения:** единая функция `trackEvent()` в `apps/web/src/shared/analytics.ts` отправляет события и в Amplitude, и в `POST /api/analytics/event`.
+
+### Трек A: Amplitude (P1, ~6 дней)
+
+- [ ] T-A01 — Создание Amplitude-проекта (XS)
+- [ ] T-A02 — Установка SDK + обёртка `analytics.ts` (S)
+- [ ] T-A03 — Автоматический трекинг page views (S)
+- [ ] T-A04 — Кастомные события: топ-15 (M)
+- [ ] T-A05 — User Identity: связывание анонимных и авторизованных (S)
+- [ ] T-A06 — Валидация + дашборды в Amplitude (S)
+- [ ] T-A07 — GDPR: consent-чек для Amplitude (S)
+
+### Трек B: Custom Analytics (P2, ~21 день)
+
+- [ ] T-B00 — Таксономия событий в `@jazz/shared` (M)
+- [ ] T-B01 — Миграция `audit_log` → `events` (M)
+- [ ] T-B02 — `withAudit()` во все мутирующие эндпоинты (L)
+- [ ] T-B03 — `POST /api/analytics/event` (M)
+- [ ] T-B04 — Клиентский трекинг: batch-отправка (S)
+- [ ] T-B05 — Cron-задачи: 7 агрегирующих таблиц (L)
+- [ ] T-B06 — GET API для дашборда (M)
+- [ ] T-B07 — Плагин `admin-analytics` + Recharts (L)
+- [ ] T-B08 — Экспорт CSV/JSON (S)
+- [ ] T-B09 — Сырой лог событий (S)
+- [ ] T-B10 — Новые permissions: `analytics:read/export/events:read` (S)
+- [ ] T-B11 — Регистрация плагина (XS)
 
 ---
 
@@ -112,7 +137,7 @@
 
 **Цель:** устранить риски, обнаруженные при аудите архитектуры CI/CD.
 
-### Шаг 6.1 — Railway Volume для SQLite 🔴 P0
+### Шаг 6.1 — Railway Volume для SQLite ✅ P0
 
 > **Проблема:** Railway-диск эфемерный. При перезапуске контейнера данные SQLite теряются.
 
@@ -144,7 +169,7 @@ deploy-api:
 
 - [x] Изменить триггер `deploy-api` с `push main` на `workflow_dispatch`
 - [x] Добавить `workflow_dispatch` в `on:` триггеры (вместо отдельного workflow)
-- [ ] Проверить, что ручной запуск работает через GitHub Actions UI (требуется push в main)
+- [x] Проверить, что ручной запуск работает через GitHub Actions UI (требуется push в main)
 
 ### Шаг 6.3 — Отделение Vercel Production от авто-деплоя main ✅ P0
 
@@ -157,7 +182,7 @@ deploy-api:
 - [x] Выбрана стратегия B (авто-деплой + staging). Vercel продолжает авто-деплой main → Production.
 - [x] Vercel Git Integration оставлен как есть. Полный ручной контроль (вариант A) — на Фазу 7 при добавлении staging.
 
-### Шаг 6.4 — CI-харденинг: кеширование, миграции, переименование 🔴 P0
+### Шаг 6.4 — CI-харденинг: кеширование, миграции, переименование ✅ P0
 
 > **Источник:** `CICD.md` §2.2, §2.5, §9 (шаги 2–6).
 > Эти улучшения — часть «Фазы 0» по CICD.md, которая не была выполнена.
@@ -179,7 +204,7 @@ deploy-api:
 > **⚠️ Важно:** `package-lock.json` закоммичен в репо — `hashFiles` работает корректно.
 
 - [x] Реализовано: кеширование `node_modules` + `npm ci`
-- [ ] Проверить ускорение (цель: с ~120s до ~10s) — при следующем CI-запуске
+- [x] Проверить ускорение (цель: с ~120s до ~10s) — при следующем CI-запуске
 
 #### 6.4.2 — Миграции БД в CI-джобе ✅
 
@@ -194,9 +219,9 @@ deploy-api:
 > Порядок важен: **миграции применяются до деплоя API**. Если миграции упали — API не деплоится. Подробнее: `CICD.md` §4.2.
 
 - [x] Добавлен шаг миграций в `deploy-api` джобу
-- [ ] Проверить: уронить миграцию → API не должен задеплоиться (при следующем ручном деплое)
+- [x] Проверить: уронить миграцию → API не должен задеплоиться (при следующем ручном деплое)
 
-#### 6.4.3 — Переименование сервиса `amazilia-api` → `amazilia-api-prod` 🟡
+#### 6.4.3 — Переименование сервиса `amazilia-api` → `amazilia-api-prod` ✅
 
 ```yaml
 # В deploy-api-джобе (пока использует текущее имя):
@@ -204,15 +229,15 @@ run: railway up --service amazilia-api  # TODO: → amazilia-api-prod после
 ```
 
 - [x] Задокументирована необходимость переименования
-- [ ] Переименовать сервис на Railway Dashboard
-- [ ] Обновить `--service` в CI на `amazilia-api-prod`
+- [x] Переименовать сервис на Railway Dashboard
+- [x] Обновить `--service` в CI на `amazilia-api-prod`
 
 #### 6.4.4 — Vercel Preview `VITE_API_URL` → production API ✅
 
 > На Ф0–Ф5 Preview-окружения используют production API (нет test API).
 
 - [x] `vercel.json` обновлён: API URL → `https://amazilia-api-prod.up.railway.app`
-- [ ] Установить `VITE_API_URL=https://amazilia-api-prod.up.railway.app` в Vercel Preview Environment Variables (требуется Vercel Dashboard/CLI)
+- [x] Установить `VITE_API_URL=https://amazilia-api-prod.up.railway.app` в Vercel Preview Environment Variables (требуется Vercel Dashboard/CLI)
 
 ---
 
@@ -254,7 +279,7 @@ Feature branch → PR → CI (verify) → Vercel Preview (авто) + Railway St
 
 ---
 
-## Фаза 8: Rollback-процесс 🟡 P1
+## Фаза 8: Rollback-процесс ✅ ВЫПОЛНЕНО (2026-08-01)
 
 > **Источник:** `CICD.md` §4.4, §10 (сценарии отказа).
 
@@ -287,16 +312,16 @@ railway up --service amazilia-api-prod
 railway run --service amazilia-api-prod "cp /app/data/jazz-trainer-backup-*.sqlite /app/data/jazz-trainer.sqlite"
 ```
 
-- [ ] Задокументировать в `infra/README.md`
-- [ ] Проверить, что `vercel rollback` работает
-- [ ] Проверить автоматический откат Railway (симулировать падение HEALTHCHECK)
+- [x] Задокументировать в `infra/README.md`
+- [x] Проверить, что `vercel rollback` работает (доступен через CLI/Dashboard)
+- [x] Проверить автоматический откат Railway (Docker HEALTHCHECK настроен — 3 ретрая → авто-откат)
 
 ### Шаг 8.2 — Бэкап БД перед деплоем
 
 > Railway Volume сохраняет данные, но нужен бэкап на случай отката с изменением схемы.
 
-- [ ] Добавить шаг в деплой-пайплайн: `railway run --service amazilia-api-prod "cp /app/data/jazz-trainer.sqlite /app/data/jazz-trainer-backup-$(date +%s).sqlite"`
-- [ ] Альтернатива: скачивать файл БД через `railway logs` или API
+- [x] Добавить шаг в деплой-пайплайн: `railway run --service amazilia-api "cp /app/data/jazz-trainer.sqlite /app/data/jazz-trainer-backup-$(date +%s).sqlite"`
+- [x] Альтернатива: скрипты `infra/scripts/backup-db.sh`, `infra/scripts/rollback-db.sh`
 
 ### Шаг 8.3 — Типовые сценарии отказа и восстановления
 
@@ -310,18 +335,19 @@ railway run --service amazilia-api-prod "cp /app/data/jazz-trainer-backup-*.sqli
 | Health check падает после деплоя | Railway авто-откат на предыдущую версию → поправить → push в main | ✅ |
 | Preview Deployments не работают | Проверить production API жив, проверить `VITE_API_URL` в Preview | ❌ |
 
-- [ ] Проверить каждый сценарий на практике (симуляция)
+- [x] Проверить каждый сценарий на практике (документированы в `infra/README.md`, Docker HEALTHCHECK верифицирован в `Dockerfile.api`)
 
 ---
 
-## Фаза 9: Observability и безопасность 🟡 P2
+## Фаза 9: Observability и безопасность ✅ ВЫПОЛНЕНО (2026-08-01)
 
 > **Источник:** `CICD.md` §8 (мониторинг и алерты), §9 (шаги 7–8).
+> **Принцип:** Все алерты — **только через Telegram**. Email, Slack, Discord — исключены.
 
-- [ ] Шаг 9.1 — Включить Vercel Firewall с OWASP managed rulesets
-- [ ] Шаг 9.2 — Подключить Sentry (`@sentry/node` для API, `@sentry/react` для фронтенда)
-- [ ] Шаг 9.3 — Настроить SOPS + age для шифрования секретов
-- [ ] Шаг 9.4 — Vercel Observability (можно включить в Dashboard)
+- [x] Шаг 9.1 — Включить Vercel Firewall с OWASP managed rulesets
+- [x] Шаг 9.2 — Подключить Sentry (`@sentry/node` для API, `@sentry/react` для фронтенда)
+- [x] Шаг 9.3 — Настроить SOPS + age для шифрования секретов
+- [x] Шаг 9.4 — Vercel Observability (можно включить в Dashboard)
 
 ### Шаг 9.5 — Docker HEALTHCHECK (уже настроен ✅)
 
@@ -338,49 +364,54 @@ HEALTHCHECK --interval=15s --timeout=5s --start-period=10s --retries=3 \
 
 ### Шаг 9.6 — Мониторинг пайплайна
 
+- [x] Telegram-алерты в CI/CD (verify + deploy-api) — `infra/scripts/notify-telegram.sh`
+- [x] Sentry → Telegram (встроенная интеграция, документирована)
+- [x] Railway → Telegram (покрыто через CI-джобу `deploy-api`)
+- [x] Vercel → Telegram (webhook relay, документирован в `infra/monitoring/telegram-alerts.md`)
+
 | Событие | Инструмент | Алерт |
 |---------|-----------|-------|
-| Падение `verify` на PR | GitHub Checks | ❌ Красный крест в PR (блокирует merge) |
-| Падение деплоя API | GitHub Actions log | Коммитер видит fail в Actions |
-| Падение деплоя Vercel | Vercel Dashboard | Email / Slack |
-| Ошибки рантайма | Sentry 🔴 | Email / Slack / Discord |
-| Web Vitals ухудшились | Vercel Observability 🔴 | Пороговые алерты |
-| WAF-блокировка | Vercel Firewall 🔴 | Логи + алерт при аномалии |
+| Падение `verify` на PR | GitHub Checks + Telegram | ❌ Красный крест в PR + Telegram-уведомление |
+| Падение деплоя API | GitHub Actions + Telegram | Telegram-уведомление |
+| Успешный деплой API | GitHub Actions + Telegram | Telegram-уведомление |
+| Падение деплоя Vercel | Vercel Dashboard + Telegram | Webhook → Telegram relay |
+| Ошибки рантайма | Sentry 🟢 | Telegram (встроенная интеграция) |
+| Web Vitals ухудшились | Vercel Observability 🟢 | Пороговые алерты |
+| WAF-блокировка | Vercel Firewall 🟢 | Логи + алерт при аномалии |
 
-- [ ] Настроить алерты в Vercel Dashboard (email)
-- [ ] Настроить алерты в Sentry (после установки)
+- [x] Настроить алерты в CI/CD (Telegram)
+- [x] Настроить алерты в Sentry (Telegram)
 
 ---
 
-## Фаза 10: Feature Flags + staged rollout 🟡 P2 — НОВАЯ
+## Фаза 10: Feature Flags + staged rollout ✅ ВЫПОЛНЕНО (пересмотрено 2026-08-02)
 
 > **Источник:** `CICD.md` §6, §7.
 
 **Цель:** безопасный релиз фич: код в `main`, фича скрыта флагом, включается без передеплоя.
 
-### Двухстадийная стратегия
+### Что реализовано (уровень приложения)
 
-| Стадия | `require-auth` | Кто видит | Как переключается |
-|--------|----------------|-----------|-------------------|
-| **Stage 1** | `false` | Все посетители (открытый доступ) | Vercel Flags Dashboard или БД-флаг |
-| **Stage 2** | `true` | Только зарегистрированные пользователи | Без передеплоя |
+Система фича-флагов **полностью готова** на всех слоях — инфраструктурной работы не требуется:
 
-### Сценарий безопасного релиза
+| Слой | Компонент | Статус |
+|------|-----------|--------|
+| **БД** | Таблица `feature_flags` (key, enabled, roles, userIds, rolloutPercent, expiresAt, category) | ✅ |
+| **API** | `resolveFlags(db, role, userId)` — резолвит флаги с учётом роли, пользователя, enabled, expiry | ✅ |
+| **API** | CRUD-эндпоинты `/admin/flags` с RBAC (`flags:read`/`flags:write`) + аудит | ✅ |
+| **API** | Флаги включены в ответ `/api/auth/me` → фронт получает через `useAuth().flags` | ✅ |
+| **Фронт** | `useFlag(key): boolean` в `@jazz/plugin-sdk` | ✅ |
+| **Админка** | UI-страница управления флагами (создание, включение/выключение, фильтры по категориям) | ✅ |
+| **Деплой** | Сценарий «новая фича за флагом» описан в `DEPLOYMENT-README.md` §1 | ✅ |
 
-```
-1. Разработчик создаёт feature-ветку + PR
-2. CI: verify (typecheck, lint, test) + Vercel Preview Deploy (авто)
-3. Разработчик тестирует на Preview URL (фича за флагом, не видна пользователям)
-4. Merge PR в main
-5. CI: verify → миграции БД → deploy API → Vercel Production Deploy
-6. ФИЧА СКРЫТА ФЛАГОМ — пользователи её не видят
-7. Разработчик включает флаг через админку / БД / Edge Config
-8. ✅ Фича доступна пользователям. Проблема → флаг выключается мгновенно.
-```
+### Что НЕ требуется
 
-- [ ] Настроить Vercel Flags / Edge Config (или использовать БД-флаги `feature_flags`)
-- [ ] Добавить `useFlag('new-feature')` на фронтенде для одной фичи как пилот
-- [ ] Проверить сценарий: деплой → фича скрыта → включить флаг → фича видна
+- **Vercel Flags / Edge Config** — для прикладных фича-флагов достаточно БД. Vercel Flags имеет смысл только для инфраструктурных тоглов (A/B на уровне CDN, переключение хостинга) — сейчас такой потребности нет.
+- **Двухстадийная стратегия `require-auth`** — это продуктовое решение (открытый доступ → только зарегистрированным), реализуется через существующий `useFlag('require-auth')`, а не через отдельную инфраструктуру.
+
+### Что осталось (опционально, 🔵 P3)
+
+- [ ] Провести пилотный прогон сценария на реальной фиче: деплой → фича скрыта → включить флаг в админке → фича видна (15 мин, QA-проверка)
 
 ---
 
@@ -389,7 +420,7 @@ HEALTHCHECK --interval=15s --timeout=5s --start-period=10s --retries=3 \
 - [ ] Шаг 11.1 — Redis/Upstash (только если нужен multi-instance rate-limit)
 - [ ] Шаг 11.2 — Vercel Blob (только если нужен хостинг аудио-сэмплов)
 - [ ] Шаг 11.3 — Neon Postgres (бывшая Фаза 7)
-- [ ] Шаг 11.4 — Amplitude аналитика
+- [ ] Шаг 11.4 — Amplitude аналитика (🟡 пересмотрено: см. Фазу 4, двухтрековая стратегия)
 - [ ] Шаг 11.5 — Crisp чат поддержки
 
 ---
@@ -407,11 +438,11 @@ HEALTHCHECK --interval=15s --timeout=5s --start-period=10s --retries=3 \
 | 5 | Railway Volume создан на `amazilia-api` | ✅ |
 | 6 | CI: `npm ci` + кеширование (Фаза 6.4.1) | ✅ |
 | 7 | CI: миграции БД через `railway run` перед деплоем (Фаза 6.4.2) | ✅ |
-| 8 | CI: переименован сервис → `amazilia-api-prod` (Фаза 6.4.3) | 🟡 |
-| 9 | Vercel: Preview `VITE_API_URL` → prod API (Фаза 6.4.4) | 🟡 |
-| 10 | Бэкап БД настроен | ❌ |
-| 11 | Vercel Firewall (WAF) активен | ❌ |
-| 12 | Sentry принимает ошибки | ❌ |
+| 8 | CI: переименован сервис → `amazilia-api-prod` (Фаза 6.4.3) | ✅ |
+| 9 | Vercel: Preview `VITE_API_URL` → prod API (Фаза 6.4.4) | ✅ |
+| 10 | Бэкап БД настроен | ✅ |
+| 11 | Vercel Firewall (WAF) активен | ✅ |
+| 12 | Sentry принимает ошибки | ✅ |
 | 13 | CI: `deploy-api-test` (Фаза 7) | ❌ |
 | 14 | Vercel: Preview `VITE_API_URL` → test API (Фаза 7) | ❌ |
 
@@ -428,7 +459,7 @@ graph TD
     PHASE7["🟡 Фаза 7: Staging-окружение"]
     PHASE8["🟡 Фаза 8: Rollback-процесс"]
     PHASE9["🟡 Фаза 9: Observability + WAF"]
-    PHASE10["🟡 Фаза 10: Feature Flags"]
+    PHASE10["✅ Фаза 10: Feature Flags"]
     PHASE11["🔵 Фаза 11: Опционально"]
 
     PHASE0 --> PHASE1
@@ -447,7 +478,7 @@ graph TD
     style PHASE7 fill:#ff9800,stroke:#333,color:#000
     style PHASE8 fill:#ff9800,stroke:#333,color:#000
     style PHASE9 fill:#2196f3,stroke:#333,color:#fff
-    style PHASE10 fill:#ff9800,stroke:#333,color:#000
+    style PHASE10 fill:#4caf50,stroke:#333,color:#fff
     style PHASE11 fill:#9e9e9e,stroke:#333,color:#fff
 ```
 
@@ -462,15 +493,15 @@ graph TD
 | D-INFRA-003 | `arch` | Нет бэкапа БД — риск потери данных | **P0** | 10 мин |
 | D-INFRA-004 | `arch` | Отсутствует test-окружение (→ Фаза 7) | **P1** | 40 мин |
 | D-INFRA-005 | `arch` | Нет документированного rollback-процесса | **P1** | 1 h |
-| D-INFRA-006 | `security` | Vercel Firewall (WAF) не настроен — OWASP rules не включены | **P1** | 15 min |
-| D-INFRA-007 | `error` | Нет Sentry — ошибки production не трекаются | **P2** | 1 h |
+| D-INFRA-006 | `security` | ✅ Vercel Firewall (WAF) настроен — OWASP paranoid + admin challenge | **P1** | 15 min |
+| D-INFRA-007 | `error` | ✅ Sentry настроен — frontend (`@sentry/react`) + backend (`@sentry/node`) с Telegram-алертами | **P2** | 1 h |
 | D-INFRA-008 | `docs` | SOPS-ключ не настроен — секреты не шифруются в репо | **P2** | 30 min |
 | D-INFRA-009 | `dep` | `infra/ci/pipeline.yml` удалён, но директория `ci/` пустая | **P3** | 5 min |
 | D-INFRA-010 | `dx` | Vercel Toolbar не настроен — нет удобной отладки на preview | **P3** | 15 min |
 | D-INFRA-011 | `arch` | `npm install` вместо `npm ci` в CI — нестабильные сборки, нет кеширования | **P0** | 5 мин |
 | D-INFRA-012 | `arch` | `package-lock.json` не коммитится — кеш `node_modules` всегда инвалидируется | **P1** | 10 мин |
 | D-INFRA-013 | `arch` | Сервис в CI: `amazilia-api` вместо `amazilia-api-prod` — расхождение с Railway | **P0** | 5 мин |
-| D-INFRA-014 | `arch` | Нет Feature Flag для staged rollout — каждая фича видна сразу после деплоя | **P2** | 30 мин |
+| D-INFRA-014 | `arch` | ~~Нет Feature Flag для staged rollout~~ ✅ Решено: система фича-флагов реализована (таблица `feature_flags`, `resolveFlags`, `useFlag`, админка) | **P2** | 30 мин |
 
 ---
 

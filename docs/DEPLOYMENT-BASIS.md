@@ -17,12 +17,18 @@
 | **API-сервер** | Railway (Docker) | Fastify (`apps/api`) | `https://amazilia-api-production.up.railway.app` | 🟢 |
 | **База данных** | Railway Volume | SQLite (`better-sqlite3`) + Drizzle | `/app/data/` (persistent) | 🟢 |
 | **Email** | Resend | Транзакционные письма | — | 🟢 |
-| **CI/CD** | GitHub Actions | verify (cache + npm ci) + deploy-api (workflow_dispatch + миграции) | `.github/workflows/ci.yml` | 🟢 |
+| **CI/CD** | GitHub Actions | verify (cache + npm ci) + deploy-api (workflow_dispatch + backup + деплой) + backup-db (cron daily) | `.github/workflows/ci.yml` | 🟢 |
 | **Preview Deployments** | Vercel (авто) | Каждый PR получает Preview URL | `<hash>-.vercel.app` | 🟢 |
 | **Feature Flags** | Свой движок в БД | `feature_flags` таблица + `useFlag()` | — | 🟢 |
+| **Rollback-процесс** | Документирован + авто-откат | Vercel Promote, Railway rollback + HEALTHCHECK, бэкап БД в CI | `infra/README.md` | 🟢 |
 | **База данных (план)** | Turso | libSQL (`@libsql/client`) | — | 🟡 |
 | **Файловое хранилище** | Vercel Blob | S3-совместимое | — | 🔴 |
-| **Sentry** | Sentry | Error tracking | — | 🔴 |
+| **Sentry** | Sentry | Error tracking (frontend + backend) + Telegram alerts | — | 🟢 |
+| **Vercel Observability** | Vercel | Web Vitals, Analytics | — | 🟢 |
+| **Vercel Firewall** | Vercel | OWASP managed rulesets + admin route challenge | — | 🟢 |
+| **SOPS + age** | SOPS | Шифрование секретов | `infra/secrets/.sops.yaml` | 🟢 |
+| **Telegram Alerts** | Telegram Bot API | Все алерты (CI, Sentry, Railway, Vercel) через Telegram | `infra/scripts/notify-telegram.sh`, `POST /api/webhooks/vercel` | 🟢 |
+| **Vercel Deployment Webhook** | Vercel → Railway API | Webhook `POST /api/webhooks/vercel` → Telegram relay | `apps/api/src/routes/webhook.routes.ts` | 🟢 |
 | **Vercel Flags SDK** | Vercel | A/B-тесты, staged rollout | — | 🔴 |
 
 ---
@@ -112,14 +118,21 @@ on:
 
 jobs:
   verify:         # cache node_modules → npm ci → typecheck → lint → test
-  deploy-api:     # workflow_dispatch only: railway run migrate → railway up
+  deploy-api:     # workflow_dispatch only: backup DB → railway up
 ```
 
-**Ключевые изменения (Фаза 6):**
-- Кеширование `node_modules` через `actions/cache@v4` + `npm ci` вместо `npm install`
+**Ключевые изменения (Фаза 6 + Фаза 8):**
+- Кеширование `node_modules` через `actions/cache@v4` + `npm install --prefer-offline`
 - `deploy-api` только через `workflow_dispatch` (ручной гейт для продакшена)
-- Миграции БД (`railway run "npm run db:migrate"`) перед `railway up`
+- Бэкап БД (`railway run "cp ...backup-$(date +%s).sqlite"`) перед `railway up` (Фаза 8.2)
+- Миграции применяются сервером при старте (автоматически)
 - Сервис: `amazilia-api` (планируется переименование в `amazilia-api-prod`)
+
+**Rollback:**
+- **API:** Railway авто-откат через HEALTHCHECK + `railway rollback` вручную
+- **БД:** восстановление из бэкапа: `./infra/scripts/rollback-db.sh --latest`
+- **Фронтенд:** Vercel Dashboard → Promote to Production (мгновенно, без билда)
+- **Feature flag:** выключить в админке (мгновенно, без передеплоя)
 
 **Vercel деплои:** автоматические через Git Integration (PR = Preview, push `main` = Production).
 
@@ -133,8 +146,8 @@ jobs:
 | 2 | **Нет test БД** — локальная разработка и preview разделяют прод? | Высокое. Нельзя безопасно тестировать миграции. | Создать `jazz-trainer-test` (§5.1) |
 | 3 | **API URL хардкоден** в `vercel.json` | Среднее. Preview использует production API. | Заменить на `$VITE_API_URL` через Vercel env vars |
 | 4 | **Нет test API** — Preview деплои идут напрямую в production API | Среднее. Нельзя изолированно тестировать API-изменения. | Создать `amazilia-api-test` (§5.2) |
-| 5 | **Нет Sentry** — ошибки продакшена не видны | Среднее. Баги обнаруживаются случайно. | Настроить Sentry (§9) |
-| 6 | **Нет WAF** — API открыт для всех IP | Низкое (пока один пользователь). Вырастет со временем. | Настроить Vercel Firewall (§6) |
+| 5 | **Нет Sentry** — ошибки продакшена не видны | Решено. ✅ | Настроить Sentry (Фаза 12) |
+| 6 | **Нет WAF** — API открыт для всех IP | Решено. ✅ | Настроить Vercel Firewall (Фаза 11) |
 | 7 | **Нет Vercel Blob** — нет файлового хранилища | Низкое. MIDI/аватары пока не загружаются. | Установить Vercel Blob (§7) |
 
 ---
@@ -154,6 +167,11 @@ jobs:
 - ✅ RBAC + audit log в БД
 - ✅ Railway Volume: SQLite persistence подтверждён (Фаза 3)
 - ✅ Docker HEALTHCHECK для Railway
+- ✅ Rollback-процесс: Vercel Promote, Railway auto-rollback + manual, DB backup before deploy (Фаза 8)
+- ✅ Vercel Firewall (WAF): OWASP paranoid + admin route challenge для studio, OWASP paranoid для landing (Фаза 11)
+- ✅ Бэкап БД перед деплоем в CI/CD (Фаза 8.2)
+- ✅ Бэкап БД по расписанию — ежедневный cron + артефакт GitHub Actions (Фаза 10)
+- ✅ Скрипты бэкапа/восстановления БД: `infra/scripts/backup-db.sh`, `infra/scripts/rollback-db.sh` (Фаза 8)
 
 ---
 

@@ -66,10 +66,62 @@ API деплоится на Railway как long-lived Docker-контейнер 
 | `AUTH_DEV_MODE` | `false` |
 | `GOOGLE_CALLBACK_URL` | `https://amazilia-studio.vercel.app/api/auth/google/callback` (через Vercel proxy) |
 | `GITHUB_CALLBACK_URL` | `https://amazilia-studio.vercel.app/api/auth/github/callback` (через Vercel proxy) |
+| `SENTRY_DSN` | Sentry DSN для backend (`amazilia-api` project) |
+| `TELEGRAM_BOT_TOKEN` | Токен Telegram бота для алертов |
+| `TELEGRAM_CHAT_ID` | ID Telegram чата для алертов |
+| `VERCEL_WEBHOOK_SECRET` | Секрет для валидации Vercel webhook (x-vercel-signature) |
 
 > **Важно:** OAuth callback URL должны указывать на Vercel-прокси (`amazilia-studio.vercel.app`),
 > а не напрямую на Railway. Это нужно, чтобы OAuth state-куки (установленные через прокси)
 > были доступны при обработке callback.
+
+### Firewall (WAF) — Фаза 11
+
+> ⚠️ `vercel.json` **не поддерживает** `firewall` для non-Next.js проектов.
+> WAF настраивается **только через Vercel Dashboard**:
+>   1. Vercel Dashboard → проект → Firewall
+>   2. Managed Rulesets → OWASP → выбрать `paranoid`
+>   3. Custom Rules → добавить правило: path `/admin/*` → action `challenge`
+
+| Проект | OWASP Ruleset | Custom Rules |
+|--------|--------------|-------------|
+| **Studio** | `paranoid` | Admin routes (`/admin/*`) → `challenge` |
+| **Landing** | `paranoid` | — |
+
+### Sentry — Фаза 12
+
+**Проекты созданы:**
+
+| Проект | Platform | ID |
+|--------|----------|----|
+| `amazilia-studio` | `javascript-react` | `4511837235380224` |
+| `amazilia-api` | `node` | `4511837235314688` |
+
+**Необходимые действия для активации:**
+
+1. ✅ Создать два проекта в [Sentry](https://sentry.io): `amazilia-studio` (Browser/React) и `amazilia-api` (Node.js)
+2. Добавить Telegram-интеграцию: Project Settings → Integrations → Telegram
+3. Задать переменные окружения:
+
+| Variable | Где | Статус |
+|----------|-----|--------|
+| `VITE_SENTRY_DSN` | Vercel (`amazilia-studio` env vars) | ✅ Production |
+| `SENTRY_DSN` | Railway (`amazilia-api-prod` env vars) | ✅ |
+| `SENTRY_AUTH_TOKEN` | GitHub Secrets | ✅ (`sntrys_...` — `org:ci` scope) |
+
+> Код инициализации уже готов: `apps/web/src/lib/sentry.ts` и `apps/api/src/lib/sentry.ts`.
+> **После ближайшего push в `main`** (или Redeploy в Vercel Dashboard) Sentry начнёт принимать ошибки.
+> Без DSN Sentry работает в no-op режиме — ошибки не собираются, но приложение функционирует.
+
+> **Важно:** OAuth callback URL должны указывать на Vercel-прокси (`amazilia-studio.vercel.app`),
+> а не напрямую на Railway. Это нужно, чтобы OAuth state-куки (установленные через прокси)
+> были доступны при обработке callback.
+
+### Observability (Фаза 9)
+
+| Variable | Value |
+|----------|-------|
+| `VITE_SENTRY_DSN` | Sentry DSN для frontend (`amazilia-studio` project) |
 
 ### База данных
 

@@ -5,6 +5,9 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  schedule:
+    # Ежедневный бэкап БД в 03:00 UTC
+    - cron: '0 3 * * *'
 
 jobs:
   verify:
@@ -37,6 +40,14 @@ jobs:
       - name: Tests
         run: npm run test
 
+      # Фаза 9: уведомление в Telegram при падении CI (verify)
+      - name: Notify Telegram (verify failed)
+        if: failure()
+        run: bash infra/scripts/notify-telegram.sh "❌ CI verify failed on ${{ github.ref_name }}" "error"
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+
   deploy-api:
     needs: verify
     # Фаза 6: ручной деплой-гейт — API деплоится только через workflow_dispatch.
@@ -49,10 +60,95 @@ jobs:
       - name: Install Railway CLI
         run: npm i -g @railway/cli
 
-      # Миграции применяются сервером при старте (src/index.ts: runMigrations).
-      # Railway сам отслеживает health-check и не заменит старый деплой,
-      # если новый контейнер не станет здоровым.
-      - name: Deploy to Railway (prod)
-        run: railway up --service amazilia-api
+      # Фаза 8.2: бэкап БД перед деплоем на случай отката с изменением схемы.
+      # Бэкап сохраняется на Railway Volume в /app/data/ рядом с основным файлом.
+      # Имя файла включает unix-timestamp для уникальности.
+      - name: Backup DB before deploy
+        run: |
+          railway run --service amazilia-api-prod \
+            "cp /app/data/jazz-trainer.sqlite /app/data/jazz-trainer-backup-\$(date +%s).sqlite"
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+      # Railway сам отслеживает health-check и не заменит старый деплой,
+      # если новый контейнер не станет здоровым (авто-откат).
+      # Миграции применяются сервером при старте (src/index.ts: runMigrations).
+      - name: Deploy to Railway (prod)
+        run: railway up --service amazilia-api-prod
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+      # Фаза 9: уведомление в Telegram при успешном деплое
+      - name: Notify Telegram (deploy success)
+        if: success()
+        run: bash infra/scripts/notify-telegram.sh "✅ API deployed to Railway" "success"
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+
+      # Фаза 9: уведомление в Telegram при падении деплоя
+      - name: Notify Telegram (deploy failed)
+        if: failure()
+        run: bash infra/scripts/notify-telegram.sh "❌ API deploy to Railway failed" "error"
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+
+  # Фаза 10: ежедневный бэкап БД по расписанию (cron)
+  # Создаёт бэкап на Railway Volume и скачивает как артефакт GitHub Actions (30 дней хранения).
+  backup-db:
+    # Только по расписанию или вручную через workflow_dispatch.
+    # Не запускается на PR/push — только deploy-api делает бэкап перед деплоем.
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Railway CLI
+        run: npm i -g @railway/cli
+
+      - name: Generate backup filename
+        run: echo "BACKUP_NAME=jazz-trainer-backup-$(date +%s).sqlite" >> $GITHUB_ENV
+
+      - name: Create backup on Railway Volume
+        run: |
+          railway run --service amazilia-api-prod \
+            "cp /app/data/jazz-trainer.sqlite /app/data/${BACKUP_NAME}"
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          BACKUP_NAME: ${{ env.BACKUP_NAME }}
+
+      - name: Download backup
+        run: |
+          railway run --service amazilia-api-prod "cat /app/data/${BACKUP_NAME}" > "${BACKUP_NAME}"
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          BACKUP_NAME: ${{ env.BACKUP_NAME }}
+
+      - name: Upload backup as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: db-backup-${{ github.run_id }}
+          path: ${{ env.BACKUP_NAME }}
+          retention-days: 30
+
+      - name: Cleanup old backups on Railway Volume (keep last 7)
+        run: |
+          railway run --service amazilia-api-prod \
+            "ls -t /app/data/jazz-trainer-backup-*.sqlite 2>/dev/null | tail -n +8 | xargs -r rm" || true
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+      - name: Notify Telegram (backup success)
+        if: success()
+        run: bash infra/scripts/notify-telegram.sh "✅ Daily DB backup completed" "success"
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+
+      - name: Notify Telegram (backup failed)
+        if: failure()
+        run: bash infra/scripts/notify-telegram.sh "❌ Daily DB backup failed" "error"
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
