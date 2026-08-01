@@ -29,17 +29,18 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
+# su-exec for privilege-dropping in entrypoint
+RUN apk add --no-cache su-exec
+
 # Copy built API, migrations, and node_modules
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
 COPY --from=builder /app/apps/api/drizzle ./apps/api/drizzle
 COPY --from=builder /app/apps/api/package.json ./apps/api/package.json
 COPY --from=builder /app/node_modules ./node_modules
 
-# Ensure data directory for SQLite with write permissions
-RUN mkdir -p /app/data && chown node:node /app/data
-
-# Switch to non-root user
-USER node
+# Entrypoint fixes volume permissions before dropping to node user
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 EXPOSE 3999
 
@@ -47,4 +48,4 @@ EXPOSE 3999
 HEALTHCHECK --interval=15s --timeout=5s --start-period=10s --retries=3 \
   CMD node -e "require('http').get('http://localhost:'+(process.env.PORT||3999)+'/api/health',r=>{process.exit(r.statusCode===200?0:1)})"
 
-CMD ["node", "apps/api/dist/index.js"]
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
