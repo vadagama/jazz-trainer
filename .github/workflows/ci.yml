@@ -4,6 +4,7 @@ on:
   pull_request:
   push:
     branches: [main]
+  workflow_dispatch:
 
 jobs:
   verify:
@@ -15,10 +16,15 @@ jobs:
         with:
           node-version: 22
 
+      - name: Cache node_modules
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: npm-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: npm-${{ runner.os }}-
+
       - name: Install dependencies
-        run: |
-          rm -rf node_modules package-lock.json
-          npm install --no-audit --no-fund
+        run: npm ci
 
       - name: Typecheck
         run: npm run typecheck
@@ -31,7 +37,9 @@ jobs:
 
   deploy-api:
     needs: verify
-    if: github.ref == 'refs/heads/main'
+    # Фаза 6: ручной деплой-гейт — API деплоится только через workflow_dispatch.
+    # Авто-деплой при push в main отключён для защиты продакшена.
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -39,7 +47,14 @@ jobs:
       - name: Install Railway CLI
         run: npm i -g @railway/cli
 
-      - name: Deploy API to Railway
+      # Фаза 6.4.2: миграции применяются до деплоя API.
+      # Если миграции упали — API не деплоится.
+      - name: Run DB migrations (prod)
+        run: railway run --service amazilia-api "npm run db:migrate -- -w @jazz/api"
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+      - name: Deploy to Railway (prod)
         run: railway up --service amazilia-api
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}

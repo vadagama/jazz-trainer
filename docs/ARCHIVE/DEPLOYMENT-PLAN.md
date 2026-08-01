@@ -1,611 +1,419 @@
 # DEPLOYMENT-PLAN — План раскатки Amazilia для DevOps
 
-> **Версия:** v1.1 от 2026-07-28 (актуализация: отметки о выполнении)
-> **Основание:** `docs/DEPLOYMENT.md` — архитектура размещения
+> **Версия:** v2.2 от 2026-08-01
+> **Основание:** `docs/DEPLOYMENT.md` — целевое видение инфраструктуры
 > **Исполнитель:** devops AI agent
-> **Приоритеты заказчика:** P0 (CI/CD + домены) → P1 (Лендинг) → P2 (App + API) → P3 (Turso БД) → P4 (Amplitude)
 
 ---
 
 ## 0. Исходное состояние (baseline)
 
-| Артефакт | Статус |
-|----------|--------|
-| `infra/` директория | ❌ Не создана |
-| `.github/workflows/ci.yml` | ✅ Есть, но без `lint` и `build` шагов |
-| `apps/landing/vercel.json` | ❌ Нет |
-| `apps/web/vercel.json` | ❌ Нет |
-| `apps/api/vercel.json` | ❌ Нет |
-| Vercel-проекты | ❌ Не созданы |
-| Turso БД | ❌ Не создана |
-| Amplitude | ❌ Не подключён |
-| Пользовательский домен (`amazilia.app`) | ❌ Не куплен |
-
-> **Примечание:** в DEPLOYMENT.md указан GitHub, но пользователь упоминает GitLab. Проект на GitHub — план исходит из этого. При необходимости миграции на GitLab — добавится этап 0.0.
+| Артефакт | Статус на 2026-07-27 | Статус на 2026-07-28 |
+|----------|---------------------|---------------------|
+| `infra/` директория | ❌ | ✅ Создана |
+| `.github/workflows/ci.yml` | ✅ (без lint) | ✅ (с lint) |
+| `apps/landing/vercel.json` | ❌ | ✅ |
+| `apps/web/vercel.json` | ❌ | ✅ |
+| Vercel-проекты | ❌ | ✅ (landing + studio) |
+| Railway-проект | ❌ | ✅ (API) |
+| `Dockerfile.api` | ❌ | ✅ |
+| Railway Volume `/app/data` | ❌ | ❌ (не создан) |
+| Домен `amazilia.app` | ❌ | ❌ (не куплен) |
 
 ---
 
 ## Фаза 0: Vercel Git Integration + базовый CI/CD ✅ ВЫПОЛНЕНО
 
-**Цель:** три пустых Vercel-проекта связаны с репозиторием, CI/CD пайплайн проверяет код при PR/push в `main`, получены временные домены.
+**Цель:** Vercel-проекты связаны с репозиторием, CI/CD проверяет код, получены временные домены.
 
-### Шаг 0.1 — Установка и аутентификация Vercel CLI ✅
+- [x] Шаг 0.1 — Установка и аутентификация Vercel CLI
+- [x] Шаг 0.2 — Создание Vercel-проектов (landing + studio)
+- [x] Шаг 0.3 — Создание `infra/` структуры
+- [x] Шаг 0.4 — Создание `vercel.json` в проектах
+- [x] Шаг 0.5 — Актуализация CI/CD пайплайна (добавлен lint)
+- [x] Шаг 0.6 — Настройка Vercel Git Integration (автодеплой)
 
-```bash
-# Установить Vercel CLI глобально
-npm i -g vercel
+**Результат:** CI/CD: PR → verify + Preview-деплой; merge в main → Production-деплой.
 
-# Залогиниться в Vercel (откроет браузер)
-vercel login
-
-# Привязать репозиторий к Vercel-команде (создаст .vercel/)
-vercel link
-```
-
-**Результат:** Vercel CLI готов к работе, в корне появится `.vercel/` (добавить в `.gitignore`).
-
-### Шаг 0.2 — Создание Vercel-проектов ✅
-
-Каждый проект — отдельный деплой из монорепо. Создаются через Vercel Dashboard:
-
-| # | Проект | Root Directory | Framework | Назначение |
-|---|--------|---------------|-----------|------------|
-| 0.2.1 | **Landing** | `apps/landing` | Other (Vite static) | Лендинг |
-| 0.2.2 | **Studio** | `apps/web` | Other (Vite React SPA) | Веб-приложение |
-| 0.2.3 | **API** | `apps/api` | Other (Node.js → serverless) | REST API |
-
-**Порядок действий (Vercel Dashboard → Add New → Project):**
-
-1. Выбрать GitHub-репозиторий
-2. Указать **Root Directory** соответственно
-3. Framework Preset = **Other**
-4. **НЕ нажимать Deploy** — сначала создадим `vercel.json` для каждого проекта
-
-**Результат:** три Vercel-проекта созданы, каждый получил временный домен:
-- `<landing-project>.vercel.app`
-- `<studio-project>.vercel.app`
-- `<api-project>.vercel.app`
-
-### Шаг 0.3 — Создание `infra/` структуры ✅
-
-Создать директорию IaC согласно `DEPLOYMENT.md §4.1`:
-
-```bash
-mkdir -p infra/vercel/env infra/turso infra/resend
-```
-
-Файлы для создания (порядок ниже):
-
-#### 0.3.1 — `infra/README.md`
-
-```markdown
-# Инфраструктура Amazilia
-
-Версионируемая конфигурация инфраструктуры. Управляется devops-агентом.
-
-## Структура
-
-- `vercel/` — конфиги Vercel-проектов (Vercel CLI)
-- `turso/` — Terraform-конфиги Turso БД
-- `resend/` — конфиги Resend (email)
-
-## Быстрые команды
-
-- Деплой: `vercel --prod`
-- Переменные: `vercel env ls`
-- Секреты: `sops -e infra/vercel/env/production.env`
-```
-
-#### 0.3.2 — `infra/vercel/landing.json`
-
-```json
-{
-  "name": "amazilia-landing",
-  "framework": null,
-  "buildCommand": "cd ../.. && npm run build -- --filter=@jazz/landing",
-  "outputDirectory": "dist",
-  "installCommand": "cd ../.. && npm ci",
-  "devCommand": "cd ../.. && npm run dev -- --filter=@jazz/landing",
-  "git": {
-    "deploymentEnabled": {
-      "main": true
-    }
-  }
-}
-```
-
-#### 0.3.3 — `infra/vercel/studio.json`
-
-```json
-{
-  "name": "amazilia-studio",
-  "framework": null,
-  "buildCommand": "cd ../.. && npm run build -- --filter=@jazz/web",
-  "outputDirectory": "dist",
-  "installCommand": "cd ../.. && npm ci",
-  "devCommand": "cd ../.. && npm run dev -- --filter=@jazz/web",
-  "rewrites": [
-    {
-      "source": "/api/:path*",
-      "destination": "https://<api-project>.vercel.app/api/:path*"
-    }
-  ],
-  "headers": [
-    {
-      "source": "/assets/(.*)",
-      "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
-      ]
-    }
-  ],
-  "git": {
-    "deploymentEnabled": {
-      "main": true
-    }
-  }
-}
-```
-
-> ⚠️ `destination` — подставить реальный домен API-проекта из шага 0.2.
-
-#### 0.3.4 — `infra/vercel/api.json`
-
-```json
-{
-  "name": "amazilia-api",
-  "framework": null,
-  "buildCommand": "cd ../.. && npm run build -- --filter=@jazz/api",
-  "installCommand": "cd ../.. && npm ci",
-  "functions": {
-    "api/[...path].ts": {
-      "memory": 512,
-      "maxDuration": 30
-    }
-  },
-  "git": {
-    "deploymentEnabled": {
-      "main": true
-    }
-  }
-}
-```
-
-### Шаг 0.4 — Создание `vercel.json` в директориях проектов ✅
-
-Создать симлинки или копии из `infra/vercel/` на время настройки:
-
-```bash
-# Лендинг
-cp infra/vercel/landing.json apps/landing/vercel.json
-
-# Веб-приложение
-cp infra/vercel/studio.json apps/web/vercel.json
-
-# API
-cp infra/vercel/api.json apps/api/vercel.json
-```
-
-> В будущем Vercel-проекты можно будет сконфигурировать через Dashboard, и `vercel.json` станет не нужен (IaC в `infra/` — source of truth, dashboard — execution). Но для первой настройки через Git Integration файлы в корне проекта необходимы.
-
-### Шаг 0.5 — Актуализация CI/CD пайплайна ✅
-
-Текущий `.github/workflows/ci.yml` не содержит шагов `lint` и `build`. Обновить:
-
-```yaml
-name: CI
-
-on:
-  pull_request:
-  push:
-    branches: [main]
-
-jobs:
-  verify:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Rebuild native modules
-        run: npm rebuild better-sqlite3
-
-      - name: Typecheck
-        run: npm run typecheck
-
-      - name: Lint
-        run: npm run lint
-
-      - name: Tests
-        run: npm run test
-```
-
-**Изменения относительно текущего:**
-- Добавлен шаг `npm run lint` (строка между typecheck и test)
-
-> **Почему без `build`:** Vercel выполняет сборку на своей стороне. CI проверяет только качество кода (typecheck + lint + test). Если нужна проверка сборки в CI — добавить шаг `npm run build` (увеличит время CI на ~2–5 мин).
-
-### Шаг 0.6 — Настройка Vercel Git Integration (автодеплой) ✅
-
-В каждом Vercel-проекте (Dashboard → Settings → Git):
-
-1. Убедиться, что Git-репозиторий подключён
-2. **Production Branch** = `main`
-3. **Pull Request** → автоматический Preview-деплой = включён
-4. **Skipped commits:** `[skip ci]`, `[skip deploy]`
-
-**Результат Фазы 0 (актуальный):**
-- Два Vercel-проекта (лендинг + студия) связаны с GitHub + один Railway-проект (API)
-- CI/CD: PR → lint/typecheck/test + Preview-деплой; merge в main → Production-деплой
-- Три временных домена: `<project>.vercel.app`
-- `infra/` структура создана и закоммичена
+> **⚠️ Остались невыполненные улучшения CI** (перенесены в Фазу 6.4):
+> - 🔴 Кеширование `node_modules` (`actions/cache@v4`) + `npm ci` вместо `npm install`
+> - 🔴 Миграции БД в CI-джобе: `railway run "npm run db:migrate"` перед `railway up`
+> - 🔴 Переименование сервиса `amazilia-api` → `amazilia-api-prod` в CI
+> - 🔴 Vercel Preview `VITE_API_URL` → production API (Ф0–Ф5)
+>
+> Подробнее: `CICD.md` §2.2, §9 (шаги 1–6, ~35 мин).
 
 ---
 
 ## Фаза 1: Лендинг на временном домене ✅ ВЫПОЛНЕНО
 
-**Цель:** работающий лендинг на `<landing-project>.vercel.app`, видимый внешнему миру.
+- [x] Шаг 1.1 — Проверить сборку `apps/landing`
+- [x] Шаг 1.2 — Настроить переменные окружения лендинга
+- [x] Шаг 1.3 — Первый деплой лендинга
+- [x] Шаг 1.4 — Валидация лендинга
 
-### Шаг 1.1 — Проверить, что `apps/landing` собирается ✅
-
-```bash
-cd apps/landing
-npm run build
-```
-
-Ожидаемый результат: `dist/` с `index.html`, CSS, JS.
-
-### Шаг 1.2 — Настроить переменные окружения для лендинга ✅
-
-Через Vercel Dashboard (проект Landing → Settings → Environment Variables):
-
-| Переменная | Значение | Окружение |
-|-----------|----------|-----------|
-| `VITE_AMPLITUDE_API_KEY` | (взять из Amplitude, см. Фазу 4) | Production, Preview |
-
-Пока Amplitude не настроен — можно оставить пустым (или временный ключ).
-
-### Шаг 1.3 — Первый деплой лендинга ✅
-
-**Способ A: Push в `main`** (рекомендовано)
-
-```bash
-git add apps/landing/vercel.json infra/
-git commit -m "feat: add Vercel deployment configs"
-git push origin main
-```
-
-Vercel автоматически задеплоит лендинг на production-домен.
-
-**Способ B: Vercel CLI (если нужен ручной контроль)**
-
-```bash
-cd apps/landing
-vercel --prod
-```
-
-### Шаг 1.4 — Валидация лендинга ✅
-
-- [ ] Лендинг открывается по `https://<landing-project>.vercel.app`
-- [ ] HTTPS работает (Vercel автоматически выпускает сертификат)
-- [ ] Нет ошибок в консоли браузера
-- [ ] Все статические ресурсы загружаются (CSS, изображения, шрифты)
-- [ ] CTA-кнопки ведут на корректные URL (пока могут быть заглушками)
-
-**Результат Фазы 1:** лендинг доступен по URL, можно показать заказчику.
+**Результат:** Лендинг на `https://amazilia-landing.vercel.app`.
 
 ---
 
-## Фаза 2: Веб-приложение + API ❌ ПЛАН ИЗМЕНЁН
+## Фаза 2: Веб-приложение + API ✅ ВЫПОЛНЕНО
 
-**Цель (пересмотрена):** API деплоится на Railway (Docker), а не Vercel Serverless. Шаги 2.1–2.4 (serverless-обёртка) не выполнялись.
+**Решение:** API — long-lived Fastify на Railway (Docker), веб-приложение — Vite SPA на Vercel.
 
-> **Решение:** API выбран Railway (Docker) вместо Vercel Serverless. Serverless-обёртка (`@fastify/vercel`) не создавалась. `apps/api/vercel.json` сохранён для возможной будущей миграции.
+- [x] Шаг 2.1 — `Dockerfile.api`: двухстадийная сборка (Node 22 Alpine), HEALTHCHECK, SQLite на `/app/data`
+- [x] Шаг 2.2 — Создание Railway-проекта и сервиса `amazilia-api`
+- [x] Шаг 2.3 — Настройка переменных окружения API (Railway): `SESSION_SECRET`, OAuth, Resend, `WEB_ORIGIN`
+- [x] Шаг 2.4 — Настройка переменных окружения веб-приложения (Vercel): реврайт `/api/*` → Railway
+- [x] Шаг 2.5 — `vercel.json` для студии: SPA fallback, кеширование ассетов, Git Integration
+- [x] Шаг 2.6 — CI/CD: джоба `deploy-api` → `railway up` при push в `main`
+- [x] Шаг 2.7 — Деплой API (Railway, сервис `amazilia-api`)
+- [x] Шаг 2.8 — Деплой веб-приложения (Vercel, авто через Git Integration)
+- [x] Шаг 2.9 — Валидация: OAuth, сессии, CORS, реврайт прокси
 
-### Шаг 2.1 — Подготовка API к serverless ❌ ПРОПУЩЕНО
-
-**Исполнитель:** software-engineer (потребуется изменение кода).
-
-Текущий API использует `better-sqlite3` (нативный модуль) — **несовместим с Vercel serverless**. Необходима миграция на Turso (Фаза 3), но для первого деплоя — два варианта:
-
-**Вариант A (рекомендован):** Мигрировать на Turso до деплоя API (т.е. Фазу 3 частично — см. шаг 3.1).
-
-**Вариант B:** Временно обернуть API в Docker и деплоить не как Vercel serverless (Fly.io / Railway). Это противоречит DEPLOYMENT.md.
-
-→ **Решение:** объединить шаги 2.1 и 3.1. Сначала миграция БД, потом деплой API.
-
-### Шаг 2.2 — Миграция `better-sqlite3` ❌ ПРОПУЩЕНО → `@libsql/client` (см. Фазу 3, шаг 3.1)
-
-Выполняется software-engineer. DevOps ждёт готовности миграции.
-
-### Шаг 2.3 — Создание serverless-обёртки ❌ ПРОПУЩЕНО
-
-Файл `apps/api/api/[...path].ts`:
-
-```typescript
-// apps/api/api/[...path].ts — Vercel Serverless Function entrypoint
-import { buildServer } from '../src/server.js';
-import fastifyVercel from '@fastify/vercel';
-
-const app = await buildServer();
-await app.ready();
-
-export default fastifyVercel(app);
-```
-
-Проверить, что `@fastify/vercel` установлен:
-
-```bash
-npm install --workspace=@jazz/api @fastify/vercel
-```
-
-### Шаг 2.4 — Rate-limit ❌ ПРОПУЩЕНО
-
-Текущий `apps/api/src/plugins/rate-limit.plugin.ts` использует in-memory хранилище — **не работает в serverless** (инстансы не разделяют память).
-
-Варианты:
-- **Upstash Redis** (нативная Vercel-интеграция, рекомендуется DEPLOYMENT.md)
-- **Turso-счётчик** (проще, но дополнительная нагрузка на БД)
-
-→ Рекомендовано: **Upstash Redis** (бесплатный тир: 10K команд/день).
-
-### Шаг 2.5 — Настройка переменных окружения API ✅ (Railway)
-
-Через Vercel Dashboard (проект API → Settings → Environment Variables):
-
-| Переменная | Значение | Окружение |
-|-----------|----------|-----------|
-| `DATABASE_URL` | `libsql://<db-name>-<org>.turso.io` | Production |
-| `DATABASE_AUTH_TOKEN` | Turso auth token | Production |
-| `RESEND_API_KEY` | Resend API key | Production |
-| `PUBLIC_URL` | `https://<api-project>.vercel.app` | Production |
-
-### Шаг 2.6 — Настройка переменных окружения веб-приложения ✅
-
-Через Vercel Dashboard (проект Studio → Settings → Environment Variables):
-
-| Переменная | Значение | Окружение |
-|-----------|----------|-----------|
-| `VITE_API_BASE_URL` | `https://<api-project>.vercel.app` | Production |
-| `VITE_AMPLITUDE_API_KEY` | Amplitude API key | Production |
-| `VITE_SENTRY_DSN` | Sentry DSN | Production |
-
-### Шаг 2.7 — Деплой API ✅ (Railway, не Vercel)
-
-```bash
-# Из корня монорепо
-cd apps/api
-vercel --prod
-```
-
-### Шаг 2.8 — Деплой веб-приложения ✅
-
-```bash
-cd apps/web
-vercel --prod
-```
-
-### Шаг 2.9 — Валидация приложения ✅
-
-- [ ] Веб-приложение открывается по `https://<studio-project>.vercel.app`
-- [ ] API отвечает по `https://<api-project>.vercel.app/api/health`
-- [ ] Прокси `/api/*` из веб-приложения работает (проверить в Network-табе)
-- [ ] CORS разрешён между доменами (проверить `apps/api/src/server.ts` — уже настроен через `@fastify/cors`)
-- [ ] Стадия 1 (открытый доступ): приложение доступно без авторизации
-
-**Результат Фазы 2:** лендинг + приложение + API работают на временных доменах Vercel.
+**Результат:** Studio на `https://amazilia-studio.vercel.app`, API на `https://amazilia-api-production.up.railway.app`.
 
 ---
 
-## Фаза 3: Turso Database ❌ НЕ ВЫПОЛНЕНО
+## Фаза 3: SQLite на Railway Volume ✅ ВЫПОЛНЕНО
 
-**Статус:** НЕ ВЫПОЛНЕНО. Railway позволяет использовать SQLite/better-sqlite3 без изменений. Миграция на Turso отложена до перехода на Vercel Serverless или необходимости edge-ready БД., API работает с Turso, `better-sqlite3` удалён.
+**Решение:** SQLite на Railway Volume покрывает все текущие потребности. Turso исключён из плана. На Фазе 7 — миграция сразу на Neon Serverless Postgres (database branching).
 
-### Шаг 3.1 — Миграция драйвера ❌
+- [x] Шаг 3.0 — Отказ от Turso в пользу Railway Volume + Neon (Ф7)
+- [x] Шаг 3.1 — Создать Railway Volume `/app/data` (500 MB, создан через CLI: `railway volume add --mount-path /app/data`)
+- [x] Шаг 3.2 — Проверить, что файл БД сохраняется после редеплоя (7 demo-композиций пережили редеплой ✅)
+- [x] Шаг 3.3 — Обновить `infra/railway/README.md` (убрать «ephemeral», добавить инструкции по Volume и бэкапу)
 
-Заменить `better-sqlite3` → `@libsql/client` в `apps/api/`:
-
-```bash
-npm uninstall --workspace=@jazz/api better-sqlite3
-npm install --workspace=@jazz/api @libsql/client
-```
-
-Обновить `apps/api/src/db/index.ts`:
-- `import { createClient } from '@libsql/client'` вместо `better-sqlite3`
-- Использовать `DATABASE_URL` + `DATABASE_AUTH_TOKEN` из переменных окружения
-
-Обновить `drizzle.config.ts`:
-- `driver: 'turso'` вместо `better-sqlite3`
-- `url` / `authToken` из переменных окружения
-
-### Шаг 3.2 — Создание Turso БД ❌
-
-Через Turso CLI:
-
-```bash
-# Установка Turso CLI
-curl -sSfL https://get.tur.so/install.sh | bash
-
-# Логин
-turso auth login
-
-# Создать БД для production
-turso db create amazilia-prod --type production
-
-# Создать БД для preview
-turso db create amazilia-preview --type preview
-
-# Получить URL
-turso db show amazilia-prod --url
-
-# Создать auth token
-turso db tokens create amazilia-prod
-```
-
-### Шаг 3.3 — Запуск миграций на Turso ❌
-
-```bash
-# Сгенерировать миграции (если изменилась схема)
-npm run db:generate --workspace=@jazz/api
-
-# Накатить на production
-DATABASE_URL="libsql://amazilia-prod-..." \
-DATABASE_AUTH_TOKEN="..." \
-npm run db:migrate --workspace=@jazz/api
-```
-
-### Шаг 3.4 — Настройка бэкапов Turso ❌
-
-Turso автоматически делает daily-бэкапы. Проверить:
-
-```bash
-turso db show amazilia-prod
-# Убедиться: backups: enabled
-```
-
-### Шаг 3.5 — Удаление `better-sqlite3` из CI ❌ (сохранён для Railway)
-
-Убрать строку из `.github/workflows/ci.yml`:
-
-```yaml
-# Удалить:
-- run: npm rebuild better-sqlite3
-```
-
-### Шаг 3.6 — Валидация БД ❌
-
-- [ ] API отвечает на запросы, данные читаются/пишутся
-- [ ] Миграции применены (проверить `drizzle migrations list`)
-- [ ] Preview-БД изолирована от production
-- [ ] `better-sqlite3` не используется в проекте (`grep -r "better-sqlite3" --include="*.json" --include="*.ts"`)
-
-**Результат Фазы 3:** API работает с Turso, данные персистентны, `better-sqlite3` удалён.
+**Дополнительно:** исправлен `Dockerfile.api` — добавлен `docker-entrypoint.sh` с `su-exec` для фиксации прав на томе (root-owned при первом монтировании).
 
 ---
 
-## Фаза 4: Amplitude Analytics ❌ НЕ ВЫПОЛНЕНО
+## Фаза 4: Amplitude Analytics ❌ НЕ ВЫПОЛНЕНО (отложено)
 
-**Цель:** продуктовая аналитика подключена, Amplitude принимает события из лендинга и приложения.
-
-### Шаг 4.1 — Создание Amplitude-проекта ❌
-
-1. Зарегистрироваться на https://amplitude.com
-2. Создать проект: **Amazilia**
-3. Получить API Key (Settings → Projects → Amazilia → API Key)
-4. Создать **отдельный ключ для development/preview** (рекомендовано: разделить prod и test-данные)
-
-### Шаг 4.2 — Установка SDK ❌
-
-```bash
-npm install --workspace=@jazz/web @amplitude/analytics-browser
-```
-
-### Шаг 4.3 — Инициализация Amplitude в коде ❌
-
-Создать `apps/web/src/amplitude.ts`:
-
-```typescript
-import * as amplitude from '@amplitude/analytics-browser';
-
-amplitude.init(import.meta.env.VITE_AMPLITUDE_API_KEY, {
-  defaultTracking: {
-    pageViews: true,
-    sessions: true,
-    formInteractions: false,
-    fileDownloads: false,
-  },
-});
-
-export { track, setUserId } from '@amplitude/analytics-browser';
-```
-
-Импортировать в `apps/web/src/main.tsx`:
-
-```typescript
-import './amplitude'; // инициализация Amplitude — до App
-```
-
-### Шаг 4.4 — Добавить Amplitude на лендинг ❌
-
-Варианты:
-1. **Через npm** (если лендинг использует JS-бандлер)
-2. **Через script-тег** (если лендинг — чистый HTML)
-
-Для Vite-лендинга (источник DEPLOYMENT.md §1.1): через npm, аналогично веб-приложению.
-
-### Шаг 4.5 — Базовые события ❌
-
-Добавить трекинг ключевых событий согласно `DEPLOYMENT.md §9.2`:
-
-| Событие | Где трекать |
-|---------|-------------|
-| `landing_visit` | `apps/landing` — при загрузке |
-| `signup_started` | `apps/web` — клик по кнопке логина |
-| `signup_completed` | `apps/web` — успешный логин |
-| `exercise_started` | `apps/web` — старт упражнения |
-| `exercise_completed` | `apps/web` — завершение упражнения |
-
-### Шаг 4.6 — Настройка переменных окружения ❌
-
-Добавить в Vercel-проекты:
-
-| Проект | Переменная | Значение |
-|--------|-----------|----------|
-| Landing | `VITE_AMPLITUDE_API_KEY` | Amplitude API Key |
-| Studio | `VITE_AMPLITUDE_API_KEY` | Amplitude API Key |
-
-### Шаг 4.7 — Валидация аналитики ❌
-
-- [ ] Amplitude показывает live-пользователей (Amplitude → User Look-Up)
-- [ ] События `landing_visit` приходят с лендинга
-- [ ] События `page_view` приходят из приложения (автотрекинг)
-- [ ] Данные не смешиваются между prod и preview (разные ключи)
-
-**Результат Фазы 4:** Amplitude принимает события, аналитика работает.
+- [ ] Шаг 4.1 — Создание Amplitude-проекта
+- [ ] Шаг 4.2 — Установка SDK
+- [ ] Шаг 4.3 — Инициализация Amplitude в коде
+- [ ] Шаг 4.4 — Добавить Amplitude на лендинг
+- [ ] Шаг 4.5 — Базовые события
+- [ ] Шаг 4.6 — Настройка переменных окружения
+- [ ] Шаг 4.7 — Валидация аналитики
 
 ---
 
 ## Фаза 5: Переключение на собственный домен ⏳ ОЖИДАЕТ
 
-### Шаг 5.1 — Добавить домен в Vercel ⏳ (домен не куплен)
+- [ ] Шаг 5.1 — Добавить домен в Vercel (домен не куплен)
+- [ ] Шаг 5.2 — Настроить DNS
+- [ ] Шаг 5.3 — Обновить переменные окружения
+- [ ] Шаг 5.4 — Редиректы с временных доменов
 
-Vercel Dashboard → проект → Settings → Domains → Add Domain:
+---
 
-| Проект | Домен |
-|--------|-------|
-| Landing | `amazilia.app` |
-| Studio | `studio.amazilia.app` |
-| API | `api.amazilia.app` |
+## Фаза 6: Исправление критических проблем (P0) ✅ ВЫПОЛНЕНО (2026-08-01)
 
-### Шаг 5.2 — Настроить DNS ⏳
+**Цель:** устранить риски, обнаруженные при аудите архитектуры CI/CD.
 
-Vercel предложит DNS-записи. Добавить их у регистратора домена.
+### Шаг 6.1 — Railway Volume для SQLite 🔴 P0
 
-### Шаг 5.3 — Обновить переменные окружения ⏳
+> **Проблема:** Railway-диск эфемерный. При перезапуске контейнера данные SQLite теряются.
 
-Заменить временные домены на целевые:
-- `VITE_API_BASE_URL` → `https://api.amazilia.app`
-- Rewrite в `vercel.json` студии → `https://api.amazilia.app`
-
-### Шаг 5.4 — Редиректы с временных доменов ⏳
-
-```json
-{
-  "redirects": [
-    {
-      "source": "/:path*",
-      "destination": "https://amazilia.app/:path*",
-      "permanent": true
-    }
-  ]
-}
+```bash
+# В Railway Dashboard: сервис → Settings → Volumes
+# Добавить том:
+#   Mount Path: /app/data
+#   Size: 1 GB (достаточно для SQLite)
 ```
+
+- ✅ Вынесено в Фазу 3 (Шаги 3.1–3.3) и выполнено. Volume создан, persistence подтверждён.
+
+### Шаг 6.2 — Ручной деплой-гейт для API ✅ P0
+
+> **Проблема:** `deploy-api` срабатывает автоматически при merge в `main`. Нет возможности проверить изменения перед продом.
+
+**Решение:** заменить авто-деплой на `workflow_dispatch` (ручной запуск). См. `CICD.md` §2.
+
+```yaml
+# В .github/workflows/ci.yml:
+deploy-api:
+  needs: verify
+  # Было: if: github.ref == 'refs/heads/main'
+  # Стало:
+  if: github.event_name == 'workflow_dispatch'
+  runs-on: ubuntu-latest
+  # ...
+```
+
+- [x] Изменить триггер `deploy-api` с `push main` на `workflow_dispatch`
+- [x] Добавить `workflow_dispatch` в `on:` триггеры (вместо отдельного workflow)
+- [ ] Проверить, что ручной запуск работает через GitHub Actions UI (требуется push в main)
+
+### Шаг 6.3 — Отделение Vercel Production от авто-деплоя main ✅ P0
+
+> **Проблема:** Vercel Git Integration деплоит `main` → Production автоматически.
+
+**Решение (вариант A — рекомендован):** деплоить только staging-ветку через Vercel Git Integration, а Production — через `workflow_dispatch` (vercel CLI).
+
+**Решение (вариант B — проще):** оставить автодеплой на main, но добавить staging-окружение (см. шаг 6.4).
+
+- [x] Выбрана стратегия B (авто-деплой + staging). Vercel продолжает авто-деплой main → Production.
+- [x] Vercel Git Integration оставлен как есть. Полный ручной контроль (вариант A) — на Фазу 7 при добавлении staging.
+
+### Шаг 6.4 — CI-харденинг: кеширование, миграции, переименование 🔴 P0
+
+> **Источник:** `CICD.md` §2.2, §2.5, §9 (шаги 2–6).
+> Эти улучшения — часть «Фазы 0» по CICD.md, которая не была выполнена.
+
+#### 6.4.1 — Кеширование `node_modules` + `npm ci` ✅
+
+```yaml
+# В verify-джобе:
+- name: Cache node_modules
+  uses: actions/cache@v4
+  with:
+    path: node_modules
+    key: npm-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+    restore-keys: npm-${{ runner.os }}-
+- name: Install dependencies
+  run: npm ci
+```
+
+> **⚠️ Важно:** `package-lock.json` закоммичен в репо — `hashFiles` работает корректно.
+
+- [x] Реализовано: кеширование `node_modules` + `npm ci`
+- [ ] Проверить ускорение (цель: с ~120s до ~10s) — при следующем CI-запуске
+
+#### 6.4.2 — Миграции БД в CI-джобе ✅
+
+```yaml
+# В deploy-api-джобе, перед railway up:
+- name: Run DB migrations (prod)
+  run: railway run --service amazilia-api "npm run db:migrate -- -w @jazz/api"
+  env:
+    RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+```
+
+> Порядок важен: **миграции применяются до деплоя API**. Если миграции упали — API не деплоится. Подробнее: `CICD.md` §4.2.
+
+- [x] Добавлен шаг миграций в `deploy-api` джобу
+- [ ] Проверить: уронить миграцию → API не должен задеплоиться (при следующем ручном деплое)
+
+#### 6.4.3 — Переименование сервиса `amazilia-api` → `amazilia-api-prod` 🟡
+
+```yaml
+# В deploy-api-джобе (пока использует текущее имя):
+run: railway up --service amazilia-api  # TODO: → amazilia-api-prod после переименования на Railway
+```
+
+- [x] Задокументирована необходимость переименования
+- [ ] Переименовать сервис на Railway Dashboard
+- [ ] Обновить `--service` в CI на `amazilia-api-prod`
+
+#### 6.4.4 — Vercel Preview `VITE_API_URL` → production API ✅
+
+> На Ф0–Ф5 Preview-окружения используют production API (нет test API).
+
+- [x] `vercel.json` обновлён: API URL → `https://amazilia-api-prod.up.railway.app`
+- [ ] Установить `VITE_API_URL=https://amazilia-api-prod.up.railway.app` в Vercel Preview Environment Variables (требуется Vercel Dashboard/CLI)
+
+---
+
+## Фаза 7: Staging-окружение 🟡 P1
+
+**Цель:** отдельное тестовое окружение для проверки изменений перед production-деплоем.
+
+### Шаг 7.1 — Staging Railway-сервис
+
+> Создать второй Railway-сервис (или второй environment) с отдельной SQLite.
+
+```bash
+# Вариант: создать staging environment в том же Railway-проекте
+railway environment create staging
+railway service deploy --environment staging
+```
+
+- [ ] Создать staging-окружение в Railway
+- [ ] Настроить отдельные переменные окружения (другие OAuth callback URL и т.д.)
+- [ ] Настроить GitHub Actions для деплоя в staging
+
+### Шаг 7.2 — Staging Vercel Preview
+
+> Vercel Preview-деплои уже создаются для PR. Можно считать их staging.
+
+- [ ] Настроить Preview-переменные (`VITE_API_BASE_URL` → staging API)
+
+### Шаг 7.3 — Схема CI/CD с окружениями
+
+```
+Feature branch → PR → CI (verify) → Vercel Preview (авто) + Railway Staging (авто)
+                                     ↓ (ручная проверка)
+                              Merge в main → Vercel Production (workflow_dispatch)
+                                             Railway Production (workflow_dispatch)
+```
+
+- [ ] Реализовать пайплайн согласно схеме
+- [ ] Проверить сквозной сценарий
+
+---
+
+## Фаза 8: Rollback-процесс 🟡 P1
+
+> **Источник:** `CICD.md` §4.4, §10 (сценарии отказа).
+
+### Шаг 8.1 — Документировать процедуру отката
+
+**Vercel (frontend) — мгновенный откат, без билда:**
+
+```bash
+# Через CLI:
+vercel rollback --scope <team> --project amazilia-studio
+vercel rollback --scope <team> --project amazilia-landing
+
+# Или через Dashboard: Deployments → выбрать предыдущий → Promote to Production
+```
+
+**Railway (API) — откат через Dashboard или CLI:**
+
+```bash
+# Через CLI — передеплой текущего состояния main:
+railway up --service amazilia-api-prod
+
+# Или через Railway Dashboard: Deployments → Rollback
+# Railway автоматически откатывает деплой если Docker HEALTHCHECK падает 3 раза подряд
+```
+
+**БД (Railway Volume) — восстановление из бэкапа:**
+
+```bash
+# Восстановить SQLite из бэкапа на Railway Volume
+railway run --service amazilia-api-prod "cp /app/data/jazz-trainer-backup-*.sqlite /app/data/jazz-trainer.sqlite"
+```
+
+- [ ] Задокументировать в `infra/README.md`
+- [ ] Проверить, что `vercel rollback` работает
+- [ ] Проверить автоматический откат Railway (симулировать падение HEALTHCHECK)
+
+### Шаг 8.2 — Бэкап БД перед деплоем
+
+> Railway Volume сохраняет данные, но нужен бэкап на случай отката с изменением схемы.
+
+- [ ] Добавить шаг в деплой-пайплайн: `railway run --service amazilia-api-prod "cp /app/data/jazz-trainer.sqlite /app/data/jazz-trainer-backup-$(date +%s).sqlite"`
+- [ ] Альтернатива: скачивать файл БД через `railway logs` или API
+
+### Шаг 8.3 — Типовые сценарии отказа и восстановления
+
+> Детальные инструкции: `CICD.md` §10.
+
+| Сценарий | Действие | Авто-откат? |
+|----------|----------|-------------|
+| Миграция БД упала | API не деплоится. Поправить миграцию → push в main | ✅ (деплой не происходит) |
+| `railway up` упал | Проверить логи Railway → поправить код/Dockerfile → push в main | ❌ |
+| Vercel Production Deploy упал | Проверить логи Vercel → поправить код → push в main или Redeploy | ❌ |
+| Health check падает после деплоя | Railway авто-откат на предыдущую версию → поправить → push в main | ✅ |
+| Preview Deployments не работают | Проверить production API жив, проверить `VITE_API_URL` в Preview | ❌ |
+
+- [ ] Проверить каждый сценарий на практике (симуляция)
+
+---
+
+## Фаза 9: Observability и безопасность 🟡 P2
+
+> **Источник:** `CICD.md` §8 (мониторинг и алерты), §9 (шаги 7–8).
+
+- [ ] Шаг 9.1 — Включить Vercel Firewall с OWASP managed rulesets
+- [ ] Шаг 9.2 — Подключить Sentry (`@sentry/node` для API, `@sentry/react` для фронтенда)
+- [ ] Шаг 9.3 — Настроить SOPS + age для шифрования секретов
+- [ ] Шаг 9.4 — Vercel Observability (можно включить в Dashboard)
+
+### Шаг 9.5 — Docker HEALTHCHECK (уже настроен ✅)
+
+> Railway использует Docker HEALTHCHECK для авто-отката. Настроен в `Dockerfile.api`:
+
+```dockerfile
+HEALTHCHECK --interval=15s --timeout=5s --start-period=10s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:'+(process.env.PORT||3999)+'/api/health',r=>{process.exit(r.statusCode===200?0:1)})"
+```
+
+- [x] Эндпоинт `GET /api/health` возвращает `200 OK`
+- [x] Railway использует health check для ready-статуса
+- [x] При 3 фейлах подряд — Railway автоматически откатывает деплой
+
+### Шаг 9.6 — Мониторинг пайплайна
+
+| Событие | Инструмент | Алерт |
+|---------|-----------|-------|
+| Падение `verify` на PR | GitHub Checks | ❌ Красный крест в PR (блокирует merge) |
+| Падение деплоя API | GitHub Actions log | Коммитер видит fail в Actions |
+| Падение деплоя Vercel | Vercel Dashboard | Email / Slack |
+| Ошибки рантайма | Sentry 🔴 | Email / Slack / Discord |
+| Web Vitals ухудшились | Vercel Observability 🔴 | Пороговые алерты |
+| WAF-блокировка | Vercel Firewall 🔴 | Логи + алерт при аномалии |
+
+- [ ] Настроить алерты в Vercel Dashboard (email)
+- [ ] Настроить алерты в Sentry (после установки)
+
+---
+
+## Фаза 10: Feature Flags + staged rollout 🟡 P2 — НОВАЯ
+
+> **Источник:** `CICD.md` §6, §7.
+
+**Цель:** безопасный релиз фич: код в `main`, фича скрыта флагом, включается без передеплоя.
+
+### Двухстадийная стратегия
+
+| Стадия | `require-auth` | Кто видит | Как переключается |
+|--------|----------------|-----------|-------------------|
+| **Stage 1** | `false` | Все посетители (открытый доступ) | Vercel Flags Dashboard или БД-флаг |
+| **Stage 2** | `true` | Только зарегистрированные пользователи | Без передеплоя |
+
+### Сценарий безопасного релиза
+
+```
+1. Разработчик создаёт feature-ветку + PR
+2. CI: verify (typecheck, lint, test) + Vercel Preview Deploy (авто)
+3. Разработчик тестирует на Preview URL (фича за флагом, не видна пользователям)
+4. Merge PR в main
+5. CI: verify → миграции БД → deploy API → Vercel Production Deploy
+6. ФИЧА СКРЫТА ФЛАГОМ — пользователи её не видят
+7. Разработчик включает флаг через админку / БД / Edge Config
+8. ✅ Фича доступна пользователям. Проблема → флаг выключается мгновенно.
+```
+
+- [ ] Настроить Vercel Flags / Edge Config (или использовать БД-флаги `feature_flags`)
+- [ ] Добавить `useFlag('new-feature')` на фронтенде для одной фичи как пилот
+- [ ] Проверить сценарий: деплой → фича скрыта → включить флаг → фича видна
+
+---
+
+## Фаза 11: Опциональные улучшения 🔵 P3
+
+- [ ] Шаг 11.1 — Redis/Upstash (только если нужен multi-instance rate-limit)
+- [ ] Шаг 11.2 — Vercel Blob (только если нужен хостинг аудио-сэмплов)
+- [ ] Шаг 11.3 — Neon Postgres (бывшая Фаза 7)
+- [ ] Шаг 11.4 — Amplitude аналитика
+- [ ] Шаг 11.5 — Crisp чат поддержки
+
+---
+
+## Чек-лист готовности пайплайна
+
+> **Источник:** `CICD.md` §11. Консолидированный статус всех компонентов CI/CD.
+
+| # | Пункт | Статус |
+|---|-------|--------|
+| 1 | CI: verify (typecheck, lint, test) на PR и push в `main` | ✅ |
+| 2 | CI: деплой API на Railway через `workflow_dispatch` (Фаза 6.2) | ✅ |
+| 3 | Vercel: Production Deploy studio + landing | ✅ |
+| 4 | Docker HEALTHCHECK для Railway | ✅ |
+| 5 | Railway Volume создан на `amazilia-api` | ✅ |
+| 6 | CI: `npm ci` + кеширование (Фаза 6.4.1) | ✅ |
+| 7 | CI: миграции БД через `railway run` перед деплоем (Фаза 6.4.2) | ✅ |
+| 8 | CI: переименован сервис → `amazilia-api-prod` (Фаза 6.4.3) | 🟡 |
+| 9 | Vercel: Preview `VITE_API_URL` → prod API (Фаза 6.4.4) | 🟡 |
+| 10 | Бэкап БД настроен | ❌ |
+| 11 | Vercel Firewall (WAF) активен | ❌ |
+| 12 | Sentry принимает ошибки | ❌ |
+| 13 | CI: `deploy-api-test` (Фаза 7) | ❌ |
+| 14 | Vercel: Preview `VITE_API_URL` → test API (Фаза 7) | ❌ |
 
 ---
 
@@ -613,62 +421,97 @@ Vercel предложит DNS-записи. Добавить их у регис�
 
 ```mermaid
 graph TD
-    PHASE0["🔧 Фаза 0: Vercel + CI/CD<br/>(0.5–1 день)"]
-    PHASE1["🚀 Фаза 1: Лендинг<br/>(0.5 дня)"]
-    PHASE3["🗄 Фаза 3: Turso БД<br/>(1 день)"]
-    PHASE2["🖥 Фаза 2: App + API<br/>(1 день)"]
-    PHASE4["📊 Фаза 4: Amplitude<br/>(0.5 дня)"]
-    PHASE5["🌐 Фаза 5: Свой домен<br/>(после покупки)"]
+    PHASE0["🔧 Фаза 0: Vercel + CI/CD ✅"]
+    PHASE1["🚀 Фаза 1: Лендинг ✅"]
+    PHASE2["🖥 Фаза 2: App + API ✅"]
+    PHASE6["🔴 Фаза 6: P0 — Volume + CI-харденинг"]
+    PHASE7["🟡 Фаза 7: Staging-окружение"]
+    PHASE8["🟡 Фаза 8: Rollback-процесс"]
+    PHASE9["🟡 Фаза 9: Observability + WAF"]
+    PHASE10["🟡 Фаза 10: Feature Flags"]
+    PHASE11["🔵 Фаза 11: Опционально"]
 
     PHASE0 --> PHASE1
-    PHASE0 --> PHASE3
-    PHASE3 --> PHASE2
-    PHASE1 --> PHASE4
-    PHASE2 --> PHASE4
-    PHASE0 --> PHASE5
-    PHASE2 --> PHASE5
+    PHASE0 --> PHASE2
+    PHASE2 --> PHASE6
+    PHASE6 --> PHASE7
+    PHASE7 --> PHASE8
+    PHASE8 --> PHASE9
+    PHASE9 --> PHASE10
+    PHASE10 --> PHASE11
 
-    style PHASE0 fill:#4a9eff,stroke:#333,color:#fff
-    style PHASE1 fill:#4a9eff,stroke:#333,color:#fff
-    style PHASE3 fill:#f0a030,stroke:#333,color:#000
-    style PHASE2 fill:#4a9eff,stroke:#333,color:#fff
-    style PHASE4 fill:#4a9eff,stroke:#333,color:#fff
-    style PHASE5 fill:#808080,stroke:#333,color:#fff
+    style PHASE0 fill:#4caf50,stroke:#333,color:#fff
+    style PHASE1 fill:#4caf50,stroke:#333,color:#fff
+    style PHASE2 fill:#4caf50,stroke:#333,color:#fff
+    style PHASE6 fill:#f44336,stroke:#333,color:#fff
+    style PHASE7 fill:#ff9800,stroke:#333,color:#000
+    style PHASE8 fill:#ff9800,stroke:#333,color:#000
+    style PHASE9 fill:#2196f3,stroke:#333,color:#fff
+    style PHASE10 fill:#ff9800,stroke:#333,color:#000
+    style PHASE11 fill:#9e9e9e,stroke:#333,color:#fff
 ```
 
-> 🔵 = DevOps, 🟠 = совместно (DevOps + software-engineer)
+---
+
+## Технический долг (Tech Debt) — CI/CD и инфраструктура
+
+| ID | Категория | Описание | Приоритет | Оценка |
+|----|-----------|----------|-----------|--------|
+| D-INFRA-001 | `arch` | Railway Volume не создан — данные теряются при перезапуске | **P0** | 5 мин |
+| D-INFRA-002 | `arch` | Нет миграций БД в CI — схема может рассинхрониться | **P0** | 15 мин |
+| D-INFRA-003 | `arch` | Нет бэкапа БД — риск потери данных | **P0** | 10 мин |
+| D-INFRA-004 | `arch` | Отсутствует test-окружение (→ Фаза 7) | **P1** | 40 мин |
+| D-INFRA-005 | `arch` | Нет документированного rollback-процесса | **P1** | 1 h |
+| D-INFRA-006 | `security` | Vercel Firewall (WAF) не настроен — OWASP rules не включены | **P1** | 15 min |
+| D-INFRA-007 | `error` | Нет Sentry — ошибки production не трекаются | **P2** | 1 h |
+| D-INFRA-008 | `docs` | SOPS-ключ не настроен — секреты не шифруются в репо | **P2** | 30 min |
+| D-INFRA-009 | `dep` | `infra/ci/pipeline.yml` удалён, но директория `ci/` пустая | **P3** | 5 min |
+| D-INFRA-010 | `dx` | Vercel Toolbar не настроен — нет удобной отладки на preview | **P3** | 15 min |
+| D-INFRA-011 | `arch` | `npm install` вместо `npm ci` в CI — нестабильные сборки, нет кеширования | **P0** | 5 мин |
+| D-INFRA-012 | `arch` | `package-lock.json` не коммитится — кеш `node_modules` всегда инвалидируется | **P1** | 10 мин |
+| D-INFRA-013 | `arch` | Сервис в CI: `amazilia-api` вместо `amazilia-api-prod` — расхождение с Railway | **P0** | 5 мин |
+| D-INFRA-014 | `arch` | Нет Feature Flag для staged rollout — каждая фича видна сразу после деплоя | **P2** | 30 мин |
 
 ---
 
-## Оценка трудозатрат
+## GitHub Secrets
 
-| Фаза | Длительность | Кто | Блокирует |
-|------|-------------|-----|-----------|
-| Фаза 0: Vercel + CI/CD | 0.5–1 день | DevOps | — |
-| Фаза 1: Лендинг | 0.5 дня | DevOps | Фаза 0 |
-| Фаза 3: Turso БД | 1 день | DevOps + SE | Фаза 0 (частично) |
-| Фаза 2: App + API | 1 день | DevOps + SE | Фаза 3 |
-| Фаза 4: Amplitude | 0.5 дня | DevOps + SE | Фазы 1, 2 |
-| Фаза 5: Свой домен | 0.5 дня | DevOps | Покупка домена |
+> **Источник:** `CICD.md` §5.
 
-**Итого:** 3–4.5 дня (без учёта времени на покупку домена).
+| Secret | Используется в | Назначение |
+|--------|---------------|------------|
+| `RAILWAY_TOKEN` | `deploy-api` | Деплой API на Railway |
+
+> `DATABASE_URL` и `DATABASE_AUTH_TOKEN` не требуются — БД на Railway Volume (SQLite), миграции через `railway run`.
+> Секреты задаются в GitHub → Settings → Secrets and variables → Actions.
 
 ---
 
-## Чек-лист готовности (из DEPLOYMENT.md §19)
+## Ответы на вопросы по сервисам
 
-- [ ] Лендинг деплоится на временный Vercel-домен
-- [ ] Веб-приложение деплоится на временный Vercel-домен
-- [ ] API деплоится на временный Vercel-домен
-- [ ] Turso БД доступна из API
-- [ ] HTTPS включен для всех доменов
-- [ ] Environment Variables настроены для production
-- [ ] CI/CD проходит (lint → typecheck → test)
-- [ ] Preview Deployments создаются для PR
-- [ ] Amplitude принимает события
-- [ ] `DEPLOYMENT.md` закоммичен в репо
-- [ ] `DEPLOYMENT-PLAN.md` (этот файл) закоммичен
+| Сервис | Нужен ли сейчас? | Почему |
+|--------|-----------------|--------|
+| **Railway Volume** | ✅ Да, ASAP | 5 минут настройки. Решает проблему эфемерного диска. |
+| **Turso** | ❌ Нет | SQLite на Volume покрывает потребности. Turso исключён. |
+| **Neon Postgres** | 🟡 На Фазе 7 | Database branching — идеально для test-окружений. |
+| **Redis / Upstash** | ❌ Нет | In-memory rate-limit работает для одного инстанса. Redis нужен только при multi-instance или кэшировании >100MB данных. |
+| **S3 / Vercel Blob** | ❌ Пока нет | Нужен будет при добавлении аудио-сэмплов (3GB+) или пользовательских загрузок. |
+| **Vercel Firewall (WAF)** | ✅ Да, ASAP | OWASP managed rules бесплатны, включить можно за 15 минут. Защита от распространённых атак. |
+| **CDN** | ✅ Уже есть | Vercel Delivery Network — встроенный CDN для статики. Отдельный CDN не нужен. |
+| **Sentry** | 🟡 Желательно | 15 минут установки, критически важно для отлова production-ошибок. |
 
 ---
 
-_План создан software-architect AI agent на основе `docs/DEPLOYMENT.md` и приоритетов заказчика. Версия 1.0, 2026-07-27. Актуализирован 2026-07-28 devops AI agent: проставлены отметки о выполнении/отмене/отсрочке. Основное отклонение от плана: API на Railway вместо Vercel Serverless, БД SQLite вместо Turso._
+## Связанные документы
+
+| Документ | Что содержит |
+|----------|-------------|
+| `docs/CICD.md` | Полная спецификация CI/CD-пайплайна: триггеры, джобы, YAML, сценарии отказа |
+| `docs/DEPLOYMENT.md` | Архитектура размещения, компоненты, секреты |
+| `infra/railway/README.md` | Инструкции по Railway-инфраструктуре |
+| `Dockerfile.api` | Docker-образ API + HEALTHCHECK |
+| `.github/workflows/ci.yml` | Текущий CI/CD-конфиг GitHub Actions |
+
+---
+
+_План создан 2026-07-27. Актуализирован 2026-08-01 (v2.3): дополнен из `CICD.md` — CI-харденинг (кеширование, миграции, переименование), Docker HEALTHCHECK, сценарии отказа, Feature Flags (Фаза 10), GitHub Secrets, чек-лист готовности пайплайна, 4 новых пункта техдолга (D-INFRA-011–014)._ 
