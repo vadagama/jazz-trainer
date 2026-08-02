@@ -122,19 +122,23 @@ jobs:
         run: echo "BACKUP_NAME=jazz-trainer-backup-$(date +%s).sqlite" >> $GITHUB_ENV
 
       - name: Create backup on Railway Volume
+        # Fallback: skip if DB file doesn't exist yet (e.g. first deploy not done).
         run: |
           railway run --service amazilia-api-prod \
-            "cp /app/data/jazz-trainer.sqlite /app/data/${BACKUP_NAME}"
+            "if [ -f /app/data/jazz-trainer.sqlite ]; then cp /app/data/jazz-trainer.sqlite /app/data/$BACKUP_NAME; else echo '[backup] No DB file — skipping'; fi"
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-          BACKUP_NAME: ${{ env.BACKUP_NAME }}
 
       - name: Download backup
+        # Skip download if backup was not created.
         run: |
-          railway run --service amazilia-api-prod "cat /app/data/${BACKUP_NAME}" > "${BACKUP_NAME}"
+          if railway run --service amazilia-api-prod "test -f /app/data/$BACKUP_NAME" 2>/dev/null; then
+            railway run --service amazilia-api-prod "cat /app/data/$BACKUP_NAME" > "$BACKUP_NAME"
+          else
+            echo "[backup] No backup file to download - skipping"
+          fi
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-          BACKUP_NAME: ${{ env.BACKUP_NAME }}
 
       - name: Upload backup as artifact
         uses: actions/upload-artifact@v4
@@ -142,6 +146,7 @@ jobs:
           name: db-backup-${{ github.run_id }}
           path: ${{ env.BACKUP_NAME }}
           retention-days: 30
+          if-no-files-found: ignore
 
       - name: Cleanup old backups on Railway Volume (keep last 7)
         run: |
